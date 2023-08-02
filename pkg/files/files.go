@@ -79,6 +79,15 @@ func (f *File) HasContent() bool {
 	return len(f.Content) == 0
 }
 
+// returns file size in kb
+func (f *File) Size() int {
+	info, err := os.Stat(f.Path)
+	if err != nil {
+		log.Fatalf("[ERROR] unable to determine file size: %v", err)
+	}
+	return int(info.Size()) / 1024.0
+}
+
 // --- simple security features
 
 func (f *File) IsProtected() bool {
