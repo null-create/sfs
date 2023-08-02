@@ -16,7 +16,7 @@ import (
 // enusre -rw-r----- permissions
 const PERMS = 0640 // go's default is 066
 
-// used to store the association between files naem and UUID
+// used to store the association between a file's name and its UUID
 type NameMap map[string]string
 
 func newNameMap(fileName string, uuid string) NameMap {
