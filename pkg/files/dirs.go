@@ -164,19 +164,16 @@ func (d *Directory) clean(dirPath string) error {
 
 		if entry.IsDir() {
 			// keep going if we find a subdirectory
-			err = d.clean(path)
-			if err != nil {
+			if err = d.clean(path); err != nil {
 				return err
 			}
 			// remove the directory
-			err = os.Remove(path)
-			if err != nil {
+			if err = os.Remove(path); err != nil {
 				return err
 			}
 		} else {
 			// remove the file
-			err = os.Remove(path)
-			if err != nil {
+			if err = os.Remove(path); err != nil {
 				return err
 			}
 		}
@@ -390,8 +387,12 @@ func (d *Directory) AddSubDirs(dirs []*Directory) {
 		log.Printf("[DEBUG] dir list is empty")
 		return
 	}
-	for _, dir := range dirs {
-		d.addSubDir(dir)
+	if !d.IsProtected() {
+		for _, dir := range dirs {
+			d.addSubDir(dir)
+		}
+	} else {
+		log.Printf("[DEBUG] directory (id=%s) is protected", d.ID)
 	}
 }
 
