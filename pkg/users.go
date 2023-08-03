@@ -8,12 +8,13 @@ import (
 
 type User struct {
 	// user credentails
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	UserName  string `json:"user_name"`
-	Password  string `json:"password"`
-	Email     string `json:"email"`
-	LastLogin string `json:"last_login"`
+	ID        string        `json:"id"`
+	NMap      files.NameMap `json:"nmap"`
+	Name      string        `json:"name"`
+	UserName  string        `json:"user_name"`
+	Password  string        `json:"password"`
+	Email     string        `json:"email"`
+	LastLogin string        `json:"last_login"`
 
 	// used for maintenance roles
 	Admin bool `json:"admin"`
