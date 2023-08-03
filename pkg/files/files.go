@@ -95,10 +95,6 @@ func (f *File) Size() int {
 
 // ----------- simple security features
 
-func (f *File) IsProtected() bool {
-	return f.Protected
-}
-
 func (f *File) Lock(password string) {
 	if password == f.Key {
 		f.Protected = true
@@ -145,7 +141,6 @@ func (f *File) Load() {
 			log.Fatalf("[ERROR] unable to read file %s: %v", f.Name, err)
 		}
 		f.Content = data
-		log.Printf("[DEBUG] file (%s) loaded", file.Name())
 	} else {
 		log.Printf("[DEBUG] file (id=%s) is protected", f.ID)
 	}
