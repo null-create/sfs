@@ -50,7 +50,7 @@ func BuildToUpdate(dir *Directory, idx *SyncIndex) *SyncIndex {
 	for _, f := range dir.Files {
 		// check if the time difference between most recent sync and last sync
 		// is greater than zero.
-		if f.LastSync.Sub(idx.LastSync[f.ServerPath]) > 0 {
+		if f.LastSync.Sub(idx.LastSync[f.Path]) > 0 {
 			idx.ToUpdate[f.ID] = f
 		}
 	}
