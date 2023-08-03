@@ -24,7 +24,11 @@ func NewServer() *Server {
 	// get http server configs
 	c := SrvConfig()
 
+	// TODO:
 	// instantiate db
+
+	// TODO:
+	// instantiate handlers
 
 	// instantiate router
 	rtr := NewRouter()
