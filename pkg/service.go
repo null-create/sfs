@@ -159,6 +159,7 @@ func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
 	return drive
 }
 
+// TODO: test!
 // generate some base line meta data for this service instance.
 // should generate a users.json file (which will keep track of active users),
 // and a drives.json, containing info about each drive, its total size, its location,
@@ -190,6 +191,7 @@ func saveBaselineFile(dir, filename string, data map[string]interface{}) {
 	}
 }
 
+// TODO:
 // get the size of a hard drive. Will be useful for real-time health checks
 func DiskSize(path string) (float64, error) {
 	return 0.0, nil
