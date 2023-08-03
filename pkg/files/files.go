@@ -17,11 +17,13 @@ import (
 const PERMS = 0640 // go's default is 066
 
 // used to store the association between a file's name and its UUID
+//
+// key = UUID, value = file name (TODO: or file path?)
 type NameMap map[string]string
 
 func newNameMap(fileName string, uuid string) NameMap {
 	nm := make(NameMap, 1)
-	nm[fileName] = uuid
+	nm[uuid] = fileName
 	return nm
 }
 
@@ -70,8 +72,8 @@ func NewFile(fileName string, owner string, path string) *File {
 		Key:       "default",
 
 		Path:       path,
-		ServerPath: path,
-		ClientPath: path,
+		ServerPath: path, // temporary
+		ClientPath: path, // temporary
 
 		CheckSum:  cs,
 		Algorithm: "sha256",
@@ -143,17 +145,21 @@ func (f *File) Load() {
 			log.Fatalf("[ERROR] unable to read file %s: %v", f.Name, err)
 		}
 		f.Content = data
+		log.Printf("[DEBUG] file (%s) loaded", file.Name())
 	} else {
-		log.Print("[DEBUG] file is protected")
+		log.Printf("[DEBUG] file (id=%s) is protected", f.ID)
 	}
 }
 
+// update (or create) a file.
+// does not load file contents into memory (i.e. fill f.Content)
 func (f *File) Save(data []byte) error {
 	if !f.Protected {
 		f.m.Lock()
 		defer f.m.Unlock()
 
-		// If the file doesn't exist, it will be created, otherwise the file will be truncated
+		// If the file doesn't exist, it will be created,
+		// otherwise the file will be truncated
 		file, err := os.Create(f.Path)
 		if err != nil {
 			return fmt.Errorf("[ERROR] unable to create file %s: %v", f.Name, err)
@@ -164,8 +170,7 @@ func (f *File) Save(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("[ERROR] unable to write file %s: %v", f.Path, err)
 		}
-
-		f.Content = data
+		// update sync time
 		f.LastSync = time.Now()
 
 	} else {
@@ -178,6 +183,7 @@ func (f *File) Save(data []byte) error {
 func (f *File) Clear() error {
 	if !f.Protected {
 		f.Content = []byte{}
+		log.Printf("[DEBUG] in-memory file content cleared (external file not altered)")
 	} else {
 		log.Print("[DEBUG] file is protected")
 	}
