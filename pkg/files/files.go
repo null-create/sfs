@@ -128,21 +128,24 @@ func (f *File) Load() {
 	if f.Path == "" {
 		log.Fatalf("[ERROR] no path specified")
 	}
+	if !f.Protected {
+		f.m.Lock()
+		defer f.m.Unlock()
 
-	f.m.Lock()
-	defer f.m.Unlock()
+		file, err := os.Open(f.Path)
+		if err != nil {
+			log.Fatalf("[ERROR] unable to open file %s: %v", f.Path, err)
+		}
+		defer file.Close()
 
-	file, err := os.Open(f.Path)
-	if err != nil {
-		log.Fatalf("[ERROR] unable to open file %s: %v", f.Path, err)
+		data, err := os.ReadFile(file.Name())
+		if err != nil {
+			log.Fatalf("[ERROR] unable to read file %s: %v", f.Name, err)
+		}
+		f.Content = data
+	} else {
+		log.Print("[DEBUG] file is protected")
 	}
-	defer file.Close()
-
-	data, err := os.ReadFile(file.Name())
-	if err != nil {
-		log.Fatalf("[ERROR] unable to read file %s: %v", f.Name, err)
-	}
-	f.Content = data
 }
 
 func (f *File) Save(data []byte) error {
