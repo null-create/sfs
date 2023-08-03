@@ -28,16 +28,18 @@ func newNameMap(fileName string, uuid string) NameMap {
 type File struct {
 	m sync.Mutex
 
+	// metadata
 	Name  string
 	ID    string
 	NMap  NameMap
 	Owner string
 
+	// security stuff
 	Protected bool
 	Key       string
 
-	LastSync time.Time
-
+	// synchronization and file integrity fields
+	LastSync   time.Time
 	Path       string
 	ServerPath string
 	ClientPath string
@@ -45,6 +47,7 @@ type File struct {
 	CheckSum  string
 	Algorithm string
 
+	// file content/bytes
 	Content []byte
 }
 
@@ -88,7 +91,7 @@ func (f *File) Size() int {
 	return int(info.Size()) / 1024.0
 }
 
-// --- simple security features
+// ----------- simple security features
 
 func (f *File) IsProtected() bool {
 	return f.Protected
@@ -119,7 +122,7 @@ func (f *File) ChangePassword(password string, newPassword string) {
 	}
 }
 
-//---- CRUD-------
+// ----------- I/O
 
 func (f *File) Load() {
 	if f.Path == "" {
@@ -147,16 +150,16 @@ func (f *File) Save(data []byte) error {
 		f.m.Lock()
 		defer f.m.Unlock()
 
-		// If the file doesn't exist, it will be created.
+		// If the file doesn't exist, it will be created, otherwise the file will be truncated
 		file, err := os.Create(f.Path)
 		if err != nil {
-			return fmt.Errorf("[ERROR] unable to create file: %v", err)
+			return fmt.Errorf("[ERROR] unable to create file %s: %v", f.Name, err)
 		}
 		defer file.Close()
 
 		_, err = file.Write(data)
 		if err != nil {
-			log.Fatalf("[ERROR] unable to write file %s: %v", f.Path, err)
+			return fmt.Errorf("[ERROR] unable to write file %s: %v", f.Path, err)
 		}
 
 		f.Content = data
@@ -168,7 +171,7 @@ func (f *File) Save(data []byte) error {
 	return nil
 }
 
-// clears *f.Content* not the actual external file contents
+// clears *f.Content* not the actual external file contents!
 func (f *File) Clear() error {
 	if !f.Protected {
 		f.Content = []byte{}
@@ -178,7 +181,7 @@ func (f *File) Clear() error {
 	return nil
 }
 
-// ------- File integrity
+// ----------- File integrity
 
 func CalculateChecksum(filePath string, hashType string) (string, error) {
 	file, err := os.Open(filePath)
@@ -196,7 +199,7 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 	case "sha256":
 		h = sha256.New()
 	default:
-		return "", fmt.Errorf("unsupported hash type: %s", hashType)
+		return "", fmt.Errorf("[ERROR] unsupported hash type: %s", hashType)
 	}
 
 	if _, err := io.Copy(h, file); err != nil {
