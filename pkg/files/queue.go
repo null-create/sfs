@@ -14,6 +14,7 @@ type Queue struct {
 func NewQ(total int) *Queue {
 	return &Queue{
 		Total: total,
+		Queue: make([]*Batch, total),
 	}
 }
 
