@@ -84,13 +84,14 @@ func (f *File) HasContent() bool {
 	return len(f.Content) == 0
 }
 
-// returns file size in kb
-func (f *File) Size() int {
+// returns file size in bytes
+// uses os.Stat() - "length in bytes for regular files; system-dependent for others"
+func (f *File) Size() int64 {
 	info, err := os.Stat(f.Path)
 	if err != nil {
 		log.Fatalf("[ERROR] unable to determine file size: %v", err)
 	}
-	return int(info.Size()) / 1024.0
+	return info.Size()
 }
 
 // ----------- simple security features
@@ -182,6 +183,16 @@ func (f *File) Clear() error {
 	} else {
 		log.Print("[DEBUG] file is protected")
 	}
+	return nil
+}
+
+// update file checksum
+func (f *File) UpdateChecksum() error {
+	newCs, err := CalculateChecksum(f.Path, f.Algorithm)
+	if err != nil {
+		return fmt.Errorf("[ERROR] CalculateChecksum failed: %v", err)
+	}
+	f.CheckSum = newCs
 	return nil
 }
 
