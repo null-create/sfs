@@ -6,14 +6,14 @@ import "log"
 // Batch.limit is set by the network profiler
 type Batch struct {
 	ID    string `json:"id"`    // batch ID (UUID)
-	Limit int    `json:"limit"` // total FILE SIZE in kb allowable for this batch.
-	Cap   int    `json:"cap"`   // remaining capacity (in kb)
+	Limit int64  `json:"limit"` // total FILE SIZE in kb allowable for this batch.
+	Cap   int64  `json:"cap"`   // remaining capacity (in kb)
 
 	// files to be uploaded or downloaded
 	Files []*File
 }
 
-func NewBatch(id string, limit int) *Batch {
+func NewBatch(id string, limit int64) *Batch {
 	return &Batch{
 		ID:    id,
 		Limit: limit,
@@ -40,7 +40,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	// TODO: if we reach our limit before we finish with files []*Files, we should
 	// return a new list with the remaining files that weren't added to this batch
 	if len(added) == len(files) {
-		log.Printf("[DEBUG] all files added to batch. remaining capacity: %d", b.Limit-len(b.Files))
+		log.Printf("[DEBUG] all files added to batch. remaining capacity: %d", b.Limit-int64(len(b.Files)))
 		return nil
 	} else {
 		log.Print("[DEBUG] batch wasn't able to add all files from supplied list. returning list of remaining files")
