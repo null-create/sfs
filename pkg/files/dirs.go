@@ -429,6 +429,7 @@ func (d *Directory) GetSubDirs() map[string]*Directory {
 }
 
 // Returns the size of a directory with all its contents.
+// TODO: implement our own version of Walk for this function
 func (d *Directory) DirSize() (float64, error) {
 	var size float64
 
