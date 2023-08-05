@@ -202,7 +202,24 @@ func TestRemoveSubDirs(t *testing.T) {
 	assert.Equal(t, 0, len(td.Dirs))
 }
 
-func TestGetDirSize(t *testing.T) {}
+func TestGetDirSize(t *testing.T) {
+	testDir := NewDirectory("testDir", "me", GetTestingDir())
+	tf, err := MakeTestFiles(t, 1)
+	if err != nil {
+		t.Errorf("[ERROR] unable to create test files: %v", err)
+	}
+	testDir.AddFile(tf[0])
+
+	tdSize, err := testDir.DirSize()
+	if err != nil {
+		t.Errorf("[ERROR] unable to to get directory size %v", err)
+	}
+	assert.NotEqual(t, 0, tdSize)
+
+	if err := RemoveTestFiles(t, 1); err != nil {
+		t.Errorf("[ERROR] unable to remove test file %v", err)
+	}
+}
 
 func TestWalk(t *testing.T) {}
 
