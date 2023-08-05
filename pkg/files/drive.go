@@ -85,10 +85,6 @@ func NewDrive(id string, name string, owner string, rootPath string) *Drive {
 
 }
 
-func (d *Drive) IsProtected() bool {
-	return d.Protected
-}
-
 func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }
@@ -120,7 +116,7 @@ func (d *Drive) Unlock(password string) {
 }
 
 func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool) {
-	if !d.IsProtected() {
+	if !d.Protected {
 		if password == d.Key {
 			d.Key = newPassword
 			log.Printf("[DEBUG] password updated")

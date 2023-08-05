@@ -33,7 +33,7 @@ func TestDriveSecurityFeatures(t *testing.T) {
 	testDrive := NewDrive("1", "test-drive", "me", testDir)
 
 	testDrive.Lock("default")
-	assert.True(t, testDrive.IsProtected())
+	assert.True(t, testDrive.Protected)
 
 	testDrive.SetNewPassword("wrongPassword", "newPassword", false)
 	assert.NotEqual(t, "wrongPassword", testDrive.Key)
@@ -44,7 +44,7 @@ func TestDriveSecurityFeatures(t *testing.T) {
 
 	// test admin override
 	testDrive.Lock("newPassword")
-	assert.True(t, testDrive.IsProtected())
+	assert.True(t, testDrive.Protected)
 
 	testDrive.SetNewPassword("anotherPassword", "newPassword", true)
 	assert.Equal(t, "newPassword", testDrive.Key)
