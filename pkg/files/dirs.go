@@ -288,6 +288,9 @@ func (d *Directory) AddFiles(files []*File) {
 // removes internal file object from file map
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
+		if err := os.Remove(file.Path); err != nil {
+			log.Fatalf("[ERROR] unable to remove file: %v", err)
+		}
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 
@@ -372,22 +375,24 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 // removes a subdirecty and *all of its child directories*
 // use with caution!
 func (d *Directory) RemoveSubDir(dirID string) error {
-	if !d.Protected {
-		if d.HasDir(dirID) {
+	if d.HasDir(dirID) {
+		if !d.Dirs[dirID].Protected {
 			// remove actual subdir and all its children
-			if err := d.Clean(dirID); err != nil {
+			if err := d.Clean(d.Dirs[dirID].Path); err != nil {
 				return err
 			}
+			// remove from subdir map & update sync time
 			delete(d.Dirs, dirID)
 			d.LastSync = time.Now().UTC()
 
 			log.Printf("[DEBUG] directory %s deleted", dirID)
 		} else {
-			log.Printf("[DEBUG] directory %s not found", dirID)
+			log.Printf("[DEBUG] directory %s is protected", dirID)
 		}
 	} else {
-		log.Printf("[DEBUG] dir (%s) is protected", d.ID)
+		log.Printf("[DEBUG] directory %s not found", dirID)
 	}
+
 	return nil
 }
 
