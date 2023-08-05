@@ -3,7 +3,6 @@ package files
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -18,17 +17,12 @@ const (
 
 // makes temp files and file objects for testing purposes
 func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
-	// build path to test file directory
-	curDir, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to get current working directory: %v", err)
-	}
-	testDir := filepath.Join(curDir, "test_files")
+	testDir := GetTestingDir()
 
 	// build dummy file objects + test files
 	testFiles := make([]*File, 0)
 	for i := 0; i < total; i++ {
-		name := fmt.Sprintf("%s/test-%d.txt", testDir, i)
+		name := fmt.Sprintf("%s/test-%d.txt", testDir, i) // TODO: replace with filepath.Join()
 
 		file, err := os.Create(name)
 		if err != nil {
@@ -43,15 +37,10 @@ func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 }
 
 func RemoveTestFiles(t *testing.T, total int) error {
-	// build path to test file directory
-	curDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("[ERROR] unable to get current working directory: %v", err)
-	}
-	testDir := filepath.Join(curDir, "test_files")
+	testDir := GetTestingDir()
 
 	for i := 0; i < total; i++ {
-		name := fmt.Sprintf("%s/test-%d.txt", testDir, i)
+		name := fmt.Sprintf("%s/test-%d.txt", testDir, i) // TODO: replace with filepath.Join()
 		if err := os.Remove(name); err != nil {
 			return fmt.Errorf("[ERROR] unable to remove test file: %v", err)
 		}
