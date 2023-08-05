@@ -221,7 +221,41 @@ func TestGetDirSize(t *testing.T) {
 	}
 }
 
-func TestWalk(t *testing.T) {}
+func TestWalk(t *testing.T) {
+	testDir1 := NewDirectory("testDir1", "me", filepath.Join(GetTestingDir(), "testDir1"))
+	testDir2 := NewDirectory("testDir2", "me", filepath.Join(GetTestingDir(), "testDir2"))
+	testDir3 := NewDirectory("testDir3", "me", filepath.Join(GetTestingDir(), "testDir3"))
+	testDir4 := NewDirectory("testDir4", "me", filepath.Join(GetTestingDir(), "testDir4"))
+	testDir5 := NewDirectory("testDir5", "me", filepath.Join(GetTestingDir(), "testDir5"))
+
+	idToFind := testDir3.ID
+
+	testDirs := []*Directory{testDir1, testDir2, testDir3, testDir4, testDir5}
+
+	// add a bunch of dummy directories to each testDir
+	for _, td := range testDirs {
+		if err := td.AddSubDirs(MakeTestDirs(t, 10)); err != nil {
+			t.Errorf("[ERROR] unable to add test directories %v", err)
+		}
+	}
+
+	// make layered file system
+	testDir4.Parent = testDir5
+	testDir5.AddSubDir(testDir4)
+
+	testDir3.Parent = testDir4
+	testDir4.AddSubDir(testDir3)
+
+	testDir2.Parent = testDir3
+	testDir3.AddSubDir(testDir2)
+
+	testDir1.Parent = testDir2
+	testDir2.addSubDir(testDir1)
+
+	// run Walk and check result
+	dir := testDir5.Walk(idToFind)
+	assert.Equal(t, idToFind, dir.ID)
+}
 
 func TestWalkS(t *testing.T) {}
 
