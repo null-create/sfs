@@ -21,9 +21,9 @@ const PERMS = 0640 // go's default is 066
 // key = UUID, value = file name (TODO: or file path?)
 type NameMap map[string]string
 
-func newNameMap(fileName string, uuid string) NameMap {
+func newNameMap(file string, uuid string) NameMap {
 	nm := make(NameMap, 1)
-	nm[uuid] = fileName
+	nm[uuid] = file
 	return nm
 }
 
@@ -85,6 +85,7 @@ func (f *File) HasContent() bool {
 }
 
 // returns file size in bytes
+//
 // uses os.Stat() - "length in bytes for regular files; system-dependent for others"
 func (f *File) Size() int64 {
 	info, err := os.Stat(f.Path)

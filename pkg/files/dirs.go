@@ -106,14 +106,6 @@ func NewDirectory(name string, owner string, path string) *Directory {
 	}
 }
 
-func (d *Directory) IsRoot() bool {
-	return d.Root
-}
-
-func (d *Directory) IsProtected() bool {
-	return d.Protected
-}
-
 func (d *Directory) HasParent() bool {
 	if d.Parent == nil {
 		log.Print("[ERROR] parent directory cannot be nil")
@@ -133,7 +125,7 @@ func (d *Directory) clear() {
 
 // used to securely run clear()
 func (d *Directory) Clear(password string) {
-	if !d.IsProtected() {
+	if !d.Protected {
 		d.clear()
 	} else {
 		log.Print("[DEBUG] directory protected")
@@ -153,49 +145,39 @@ recursively cleans all contents from a directory and its subdirectories
 mainly just want to make sure dirPath is what we *actually* want to clean,
 not a system/OS path or anything vital of any kind :(
 */
-// func (d *Directory) clean(dirPath string) error {
-// 	entries, err := os.ReadDir(dirPath)
-// 	if err != nil {
-// 		return err
-// 	}
+func (d *Directory) clean(dirPath string) error {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return err
+	}
 
-// 	for _, entry := range entries {
-// 		path := filepath.Join(dirPath, entry.Name())
+	for _, entry := range entries {
+		path := filepath.Join(dirPath, entry.Name())
 
-// 		if entry.IsDir() {
-// 			// keep going if we find a subdirectory
-// 			if err = d.clean(path); err != nil {
-// 				return err
-// 			}
-// 			// remove the directory
-// 			if err = os.Remove(path); err != nil {
-// 				return err
-// 			}
-// 		} else {
-// 			// remove the file
-// 			if err = os.Remove(path); err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
+		if entry.IsDir() {
+			// keep going if we find a subdirectory
+			if err = d.clean(path); err != nil {
+				return err
+			}
+			// remove the directory
+			if err = os.Remove(path); err != nil {
+				return err
+			}
+		} else {
+			// remove the file
+			if err = os.Remove(path); err != nil {
+				return err
+			}
+		}
+	}
 
-// 	return nil
-// }
-
-// **TEMP while we make sure we use the above function correctly.**
-//
-// doesn't actually remove directores or files, just clears internal
-// data structures
-func (d *Directory) clean(path string) error {
-	d.Files = make(map[string]*File)
-	d.Dirs = make(map[string]*Directory)
 	return nil
 }
 
 // calls d.clean(), which recursively removes all files and
-// subdirectories from a drive
+// subdirectories from a drive starting at the given path
 func (d *Directory) Clean(dirPath string) error {
-	if !d.IsProtected() {
+	if !d.Protected {
 		if err := d.clean(dirPath); err != nil {
 			return err
 		}
@@ -206,36 +188,16 @@ func (d *Directory) Clean(dirPath string) error {
 	return nil
 }
 
-// TODO: look into more efficient ways to check for
-// existence of keys in map[string]Type objects
-// d.Files and d.Directories are both map[string]Type respectively,
-// so we should theoretically be able to just try a key and see if it
-// works, rather than iterate over every item since the keys in both
-// maps are the files and directories UUIDs.
-// O(n) vs O(1)!
-
-/*
-	if err, ok := d.Directories[fileID]; ok {
+func (d *Directory) HasFile(fileID string) bool {
+	if _, ok := d.Files[fileID]; ok {
 		return true
 	}
-*/
-
-func (d *Directory) HasFile(fileID string) bool {
-
-	for _, f := range d.Files {
-		if f.ID == fileID {
-			return true
-		}
-	}
-
 	return false
 }
 
 func (d *Directory) HasDir(dirID string) bool {
-	for _, dir := range d.Dirs {
-		if dir.ID == dirID {
-			return true
-		}
+	if _, ok := d.Dirs[dirID]; ok {
+		return true
 	}
 	return false
 }
@@ -265,7 +227,6 @@ func (d *Directory) SetPassword(password string, newPassword string) error {
 	return fmt.Errorf("[ERROR] wrong password")
 }
 
-// protected OPs
 func (d *Directory) Lock(password string) bool {
 	if password == d.Key {
 		d.Protected = true
@@ -286,25 +247,23 @@ func (d *Directory) Unlock(password string) bool {
 
 // --------- file management
 
-func (d *Directory) addFile(f *File) {
-	d.Files[f.ID] = f
-	d.Files[f.ID].LastSync = time.Now()
+// updates internal file map and file's sync time
+func (d *Directory) addFile(file *File) {
+	d.Files[file.ID] = file
+	d.Files[file.ID].LastSync = time.Now().UTC()
 
-	// load into memory just to create the file
-	if len(f.Content) == 0 {
-		f.Load()
-	}
-	f.Save(f.Content)
-	f.Clear()
-
-	log.Printf("[DEBUG] file %s (%s) added", f.Name, f.ID)
+	log.Printf("[DEBUG] file %s (%s) added", file.Name, file.ID)
 }
 
 func (d *Directory) AddFile(file *File) {
-	if !d.HasFile(file.ID) {
-		d.addFile(file)
+	if !d.Protected {
+		if !d.HasFile(file.ID) {
+			d.addFile(file)
+		} else {
+			log.Printf("[DEBUG] file %s (%s) already present in directory", file.Name, file.ID)
+		}
 	} else {
-		log.Printf("[DEBUG] file %s (%s) already present in directory", file.Name, file.ID)
+		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
 	}
 }
 
@@ -313,42 +272,35 @@ func (d *Directory) AddFiles(files []*File) {
 		log.Printf("[DEBUG] no files recieved")
 		return
 	}
-	for _, f := range files {
-		if !d.HasFile(f.ID) {
-			d.addFile(f)
-		} else {
-			log.Printf("[DEBUG] file %v already exists)", f.ID)
+	if !d.Protected {
+		for _, f := range files {
+			if !d.HasFile(f.ID) {
+				d.addFile(f)
+			} else {
+				log.Printf("[DEBUG] file (%v) already exists)", f.ID)
+			}
 		}
+	} else {
+		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
 	}
 }
 
+// removes internal file object from file map
 func (d *Directory) removeFile(fileID string) error {
-	removed := false
-	for _, f := range d.Files {
-		if f.ID == fileID {
-			// remove actual file
-			err := os.Remove(f.ServerPath)
-			if err != nil {
-				return fmt.Errorf("[ERROR] unable to remove file: %s \n%v\n ", f.Name, err)
-			}
+	if file, ok := d.Files[fileID]; ok {
+		delete(d.Files, file.ID)
+		d.LastSync = time.Now().UTC()
 
-			// update internal files list and directory's last sync time
-			delete(d.Files, f.ID)
-			d.LastSync = time.Now()
-			removed = true
-
-			log.Printf("[DEBUG] file %s removed", f.ID)
-		}
-	}
-	if !removed {
-		log.Printf("[DEBUG] no file with ID %v was found or removed", fileID)
+		log.Printf("[DEBUG] file %s removed", file.ID)
+	} else {
+		return fmt.Errorf("[ERROR] file %s not found", file.ID)
 	}
 	return nil
 }
 
 // Removes actual file plus internal File object
 func (d *Directory) RemoveFile(fileID string) error {
-	if !d.IsProtected() {
+	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
 			return fmt.Errorf("[ERROR] unable to remove file: %s", err)
 		}
@@ -381,7 +333,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 
 	dir.Parent = d
 	d.Dirs[dir.ID] = dir
-	d.Dirs[dir.ID].LastSync = time.Now()
+	d.Dirs[dir.ID].LastSync = time.Now().UTC()
 
 	log.Printf("[DEBUG] dir %s (%s) added", dir.Name, dir.ID)
 	return nil
@@ -389,7 +341,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 
 // add a single sub directory to the current directory
 func (d *Directory) AddSubDir(dir *Directory) error {
-	if !d.IsProtected() {
+	if !d.Protected {
 		if err := d.addSubDir(dir); err != nil {
 			return err
 		}
@@ -400,44 +352,57 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 }
 
 // add a slice of directory objects to the current directory
-func (d *Directory) AddSubDirs(dirs []*Directory) {
+func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	if len(dirs) == 0 {
 		log.Printf("[DEBUG] dir list is empty")
-		return
+		return nil
 	}
-	if !d.IsProtected() {
+	if !d.Protected {
 		for _, dir := range dirs {
-			d.addSubDir(dir)
+			if err := d.addSubDir(dir); err != nil {
+				return err
+			}
 		}
 	} else {
 		log.Printf("[DEBUG] directory (id=%s) is protected", d.ID)
 	}
+	return nil
 }
 
 // removes a subdirecty and *all of its child directories*
 // use with caution!
-func (d *Directory) RemoveSubDir(dir *Directory) {
-	if d.HasDir(dir.ID) {
-		delete(d.Dirs, dir.ID) // remove from d.Dirs
-		d.Clean(dir.ID)        // remove actual subdir and all its children
-		d.LastSync = time.Now()
+func (d *Directory) RemoveSubDir(dirID string) error {
+	if !d.Protected {
+		if d.HasDir(dirID) {
+			// remove actual subdir and all its children
+			if err := d.Clean(dirID); err != nil {
+				return err
+			}
+			delete(d.Dirs, dirID)
+			d.LastSync = time.Now().UTC()
 
-		log.Printf("[DEBUG] directory %s (%s) deleted", dir.Name, dir.ID)
+			log.Printf("[DEBUG] directory %s deleted", dirID)
+		} else {
+			log.Printf("[DEBUG] directory %s not found", dirID)
+		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) not found", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir (%s) is protected", d.ID)
 	}
+	return nil
 }
 
 // removes *ALL* sub directories and their children for a given directory
-func (d *Directory) RemoveSubDirs() {
-	if !d.IsProtected() {
-		d.Dirs = make(map[string]*Directory, 0)
-		d.Clean(d.Path)
-
+func (d *Directory) RemoveSubDirs() error {
+	if !d.Protected {
+		if err := d.Clean(d.Path); err != nil {
+			return err
+		}
+		d.Clear(d.Key)
 		log.Printf("[DEBUG] dir(%s) all sub directories deleted", d.ID)
 	} else {
 		log.Printf("[DEBUG] dir(%s) is protected. no sub directories deleted", d.ID)
 	}
+	return nil
 }
 
 // directly returns the subdirectory, assuming the supplied key is valid
