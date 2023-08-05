@@ -13,6 +13,8 @@ const (
 	TestDirName = "testDir"
 )
 
+//---------- test fixtures --------------------------------
+
 // makes test subdirectories
 //
 // (and eventually actual subdirs within nimbus/pkg/files/test_files)
@@ -56,6 +58,8 @@ func RemoveTestDirs(t *testing.T, total int) error {
 	}
 	return nil
 }
+
+// ----------------------------------------------------------------
 
 func TestSecurityFeatures(t *testing.T) {
 	testDirs := MakeTestDirs(t, 2)
@@ -160,10 +164,6 @@ func TestRemoveFiles(t *testing.T) {
 	if err := RemoveTestDirs(t, 1); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
-	if err := RemoveTestFiles(t, total); err != nil {
-		t.Errorf("[ERROR] unable to remove test files: %v", err)
-	}
-
 }
 
 func TestAddSubDirs(t *testing.T) {
@@ -234,22 +234,15 @@ func TestWalk(t *testing.T) {
 
 	// add a bunch of dummy directories to each testDir
 	for _, td := range testDirs {
-		if err := td.AddSubDirs(MakeTestDirs(t, 10)); err != nil {
+		if err := td.AddSubDirs(MakeTestDirs(t, RandInt(50))); err != nil {
 			t.Errorf("[ERROR] unable to add test directories %v", err)
 		}
 	}
 
 	// make layered file system
-	testDir4.Parent = testDir5
 	testDir5.AddSubDir(testDir4)
-
-	testDir3.Parent = testDir4
 	testDir4.AddSubDir(testDir3)
-
-	testDir2.Parent = testDir3
 	testDir3.AddSubDir(testDir2)
-
-	testDir1.Parent = testDir2
 	testDir2.addSubDir(testDir1)
 
 	// run Walk and check result
