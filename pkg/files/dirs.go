@@ -372,27 +372,32 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	return nil
 }
 
+func (d *Directory) removeDir(dirID string) error {
+	if dir, ok := d.Dirs[dirID]; ok {
+		if err := os.Remove(dir.Path); err != nil {
+			return fmt.Errorf("[ERROR] unable to remove directory %s: %v", dirID, err)
+		}
+	} else {
+		log.Printf("[DEBUG] directory (id=%s) is not found", dirID)
+	}
+	return nil
+}
+
 // removes a subdirecty and *all of its child directories*
 // use with caution!
 func (d *Directory) RemoveSubDir(dirID string) error {
-	if d.HasDir(dirID) {
-		if !d.Dirs[dirID].Protected {
-			// remove actual subdir and all its children
-			if err := d.Clean(d.Dirs[dirID].Path); err != nil {
-				return err
-			}
-			// remove from subdir map & update sync time
-			delete(d.Dirs, dirID)
-			d.LastSync = time.Now().UTC()
-
-			log.Printf("[DEBUG] directory %s deleted", dirID)
-		} else {
-			log.Printf("[DEBUG] directory %s is protected", dirID)
+	if !d.Protected {
+		if err := d.removeDir(dirID); err != nil {
+			return err
 		}
-	} else {
-		log.Printf("[DEBUG] directory %s not found", dirID)
-	}
+		// remove from subdir map & update sync time
+		delete(d.Dirs, dirID)
+		d.LastSync = time.Now().UTC()
 
+		log.Printf("[DEBUG] directory %s deleted", dirID)
+	} else {
+		log.Printf("[DEBUG] directory %s is protected", dirID)
+	}
 	return nil
 }
 
