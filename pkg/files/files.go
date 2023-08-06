@@ -27,6 +27,19 @@ func newNameMap(file string, uuid string) NameMap {
 	return nm
 }
 
+/*
+
+get keys from the map -- faster than using append()
+see: https://stackoverflow.com/questions/21362950/getting-a-slice-of-keys-from-a-map
+keys := make([]int, len(mymap))
+
+i := 0
+for k := range mymap {
+    keys[i] = k
+    i++
+}
+*/
+
 type File struct {
 	m sync.Mutex
 
@@ -136,13 +149,14 @@ func (f *File) Load() {
 		if err != nil {
 			log.Fatalf("[ERROR] unable to open file %s: %v", f.Path, err)
 		}
-		defer file.Close()
 
 		data, err := os.ReadFile(file.Name())
 		if err != nil {
 			log.Fatalf("[ERROR] unable to read file %s: %v", f.Name, err)
 		}
+
 		f.Content = data
+		file.Close()
 	} else {
 		log.Printf("[DEBUG] file (id=%s) is protected", f.ID)
 	}
@@ -161,7 +175,6 @@ func (f *File) Save(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("[ERROR] unable to create file %s: %v", f.Name, err)
 		}
-		defer file.Close()
 
 		_, err = file.Write(data)
 		if err != nil {
@@ -169,6 +182,7 @@ func (f *File) Save(data []byte) error {
 		}
 		// update sync time
 		f.LastSync = time.Now()
+		file.Close()
 
 	} else {
 		log.Print("[DEBUG] file is protected")
