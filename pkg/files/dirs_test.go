@@ -110,6 +110,9 @@ func TestSecurityFeatures(t *testing.T) {
 	if err := RemoveTestDirs(t, 2); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
+	if err := RemoveTestFiles(t, 1); err != nil {
+		t.Errorf("[ERROR] unable to remove test files: %v", err)
+	}
 }
 
 func TestAddFiles(t *testing.T) {
