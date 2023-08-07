@@ -329,6 +329,7 @@ func (d *Directory) GetFileList() []NameMap {
 
 // -------- sub directory methods
 
+// creates the directory and updates internal data structures
 func (d *Directory) addSubDir(dir *Directory) error {
 	if err := os.MkdirAll(dir.Path, PERMS); err != nil {
 		return fmt.Errorf("[ERROR] could not create directory: %v", err)
@@ -343,6 +344,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 }
 
 // add a single sub directory to the current directory
+//
+// creates a new directory using dir's internal file path and
+// initializes a directory structure
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		if err := d.addSubDir(dir); err != nil {
@@ -402,6 +406,8 @@ func (d *Directory) RemoveSubDir(dirID string) error {
 }
 
 // removes *ALL* sub directories and their children for a given directory
+//
+// calls d.Clean() which recursively deletes all subdirctories and their children
 func (d *Directory) RemoveSubDirs() error {
 	if !d.Protected {
 		if err := d.Clean(d.Path); err != nil {
