@@ -9,30 +9,45 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-const (
-	TestDirName = "testDir"
-)
+const TestDirName string = "testDir"
 
 //---------- test fixtures --------------------------------
 
-// makes test subdirectories
+// make test files within a testing/tmp directory
+func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
+	testFiles := make([]*File, 0)
+
+	for i := 0; i < total; i++ {
+		name := fmt.Sprintf("test-file-%d.txt", i)
+		tfPath := filepath.Join(tdPath, name)
+
+		file, err := os.Create(tfPath)
+		if err != nil {
+			t.Fatalf("[ERROR] failed to create test file: %v", err)
+		}
+		file.Write([]byte(testData))
+		file.Close()
+
+		testFiles = append(testFiles, NewFile(name, "me", tfPath))
+	}
+
+	return testFiles
+}
+
+// makes testing/tmp directory objects.
 //
-// (and eventually actual subdirs within nimbus/pkg/files/test_files)
+// *does not* create actual test directories.
+// this is typically done via directory.AddSubDir()
 func MakeTestDirs(t *testing.T, total int) []*Directory {
 	testingDir := GetTestingDir()
 
 	testDirs := make([]*Directory, 0)
 	for i := 0; i < total; i++ {
 		tdName := fmt.Sprintf("%s%d", TestDirName, i)
-		tmpDir := filepath.Join(testingDir, tdName)
+		tmpDirPath := filepath.Join(testingDir, tdName)
 
-		// if err := os.Mkdir(tmpDir, 0666); err != nil {
-		// 	t.Errorf("[ERROR] failed to create temporary directory: %v", err)
-		// }
-
-		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDir))
+		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDirPath))
 	}
-
 	return testDirs
 }
 
@@ -196,11 +211,10 @@ func TestRemoveSubDirs(t *testing.T) {
 	if err := td.AddSubDirs(testDirs); err != nil {
 		t.Errorf("[ERROR] unable to add subdirs to test directory: %v", err)
 	}
+	assert.Equal(t, total, len(td.Dirs))
 
-	for _, testDir := range testDirs {
-		if err := td.RemoveSubDir(testDir.ID); err != nil {
-			t.Errorf("[ERROR] unable to remove test subdir: %v", err)
-		}
+	if err := td.RemoveSubDir(td.ID); err != nil {
+		t.Errorf("[ERROR] unable to remove test subdir: %v", err)
 	}
 	assert.Equal(t, 0, len(td.Dirs))
 }
@@ -225,11 +239,12 @@ func TestGetDirSize(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
-	testDir1 := NewDirectory("testDir1", "me", filepath.Join(GetTestingDir(), "testDir1"))
-	testDir2 := NewDirectory("testDir2", "me", filepath.Join(GetTestingDir(), "testDir2"))
-	testDir3 := NewDirectory("testDir3", "me", filepath.Join(GetTestingDir(), "testDir3"))
-	testDir4 := NewDirectory("testDir4", "me", filepath.Join(GetTestingDir(), "testDir4"))
-	testDir5 := NewDirectory("testDir5", "me", filepath.Join(GetTestingDir(), "testDir5"))
+	testingDir := GetTestingDir()
+	testDir1 := NewDirectory("testDir1", "me", filepath.Join(testingDir, "testDir1"))
+	testDir2 := NewDirectory("testDir2", "me", filepath.Join(testingDir, "testDir2"))
+	testDir3 := NewDirectory("testDir3", "me", filepath.Join(testingDir, "testDir3"))
+	testDir4 := NewDirectory("testDir4", "me", filepath.Join(testingDir, "testDir4"))
+	testDir5 := NewDirectory("testDir5", "me", filepath.Join(testingDir, "testDir5"))
 
 	idToFind := testDir3.ID
 
@@ -246,13 +261,62 @@ func TestWalk(t *testing.T) {
 	testDir5.AddSubDir(testDir4)
 	testDir4.AddSubDir(testDir3)
 	testDir3.AddSubDir(testDir2)
-	testDir2.addSubDir(testDir1)
+	testDir2.AddSubDir(testDir1)
 
 	// run Walk and check result
 	dir := testDir5.Walk(idToFind)
+	assert.NotEqual(t, nil, dir)
 	assert.Equal(t, idToFind, dir.ID)
 }
 
-func TestWalkS(t *testing.T) {}
+func TestWalkS(t *testing.T) {
+	testingDir := GetTestingDir()
+	testDir1 := NewDirectory("testDir1", "me", filepath.Join(testingDir, "testDir1"))
+	testDir2 := NewDirectory("testDir2", "me", filepath.Join(testingDir, "testDir2"))
+	testDir3 := NewDirectory("testDir3", "me", filepath.Join(testingDir, "testDir3"))
+	testDir4 := NewDirectory("testDir4", "me", filepath.Join(testingDir, "testDir4"))
+	testDir5 := NewDirectory("testDir5", "me", filepath.Join(testingDir, "testDir5"))
+
+	testDirs := []*Directory{testDir1, testDir2, testDir3, testDir4, testDir5}
+
+	// add a bunch of dummy directories with test files in each one
+	var total int
+	for _, td := range testDirs {
+		tdirs := MakeTestDirs(t, RandInt(50))
+		for _, dir := range tdirs {
+			if testFiles, err := MakeTestFiles(t, 5); err == nil {
+				total += len(testFiles)
+				dir.AddFiles(testFiles)
+			} else {
+				t.Errorf("[ERROR] unable to make test files: %v", err)
+			}
+		}
+		if err := td.AddSubDirs(tdirs); err != nil {
+			t.Errorf("[ERROR] unable to add test directories %v", err)
+		}
+	}
+
+	// make layered file system
+	testDir5.AddSubDir(testDir4)
+	testDir4.AddSubDir(testDir3)
+	testDir3.AddSubDir(testDir2)
+	testDir2.AddSubDir(testDir1)
+
+	// run WalkS to get a SyncIndex pointer
+	index := testDir5.WalkS()
+
+	assert.NotEqual(t, nil, index)
+	assert.NotEqual(t, 0, len(index.LastSync))
+
+	// clean up after testing
+	for _, td := range testDir5.Dirs {
+		if err := testDir5.RemoveSubDir(td.ID); err != nil {
+			t.Errorf("[ERROR] unable to remove test directory %v", err)
+		}
+	}
+
+	// // clean up after testing
+	// testDir5.Clean(testingDir)
+}
 
 func TestWalkF(t *testing.T) {}
