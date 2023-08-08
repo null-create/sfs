@@ -49,8 +49,8 @@ type Drive struct {
 	Root *Directory
 }
 
-func check(id string, name string, owner string, rootPath string) bool {
-	if id == "" || name == "" || owner == "" || rootPath == "" {
+func check(id string, name string, owner string, rootPath string, root *Directory) bool {
+	if id == "" || name == "" || owner == "" || rootPath == "" || root == nil {
 		log.Printf("[ERROR] invalid drive parameters. none can be empty!")
 		return false
 	}
@@ -58,8 +58,8 @@ func check(id string, name string, owner string, rootPath string) bool {
 }
 
 // Creates a new Drive service for a user.
-func NewDrive(id string, name string, owner string, rootPath string) *Drive {
-	if !check(id, name, owner, rootPath) {
+func NewDrive(id string, name string, owner string, rootPath string, root *Directory) *Drive {
+	if !check(id, name, owner, rootPath, root) {
 		return nil
 	}
 
@@ -77,12 +77,13 @@ func NewDrive(id string, name string, owner string, rootPath string) *Drive {
 		TotalSize: MAX_SIZE,
 		UsedSpace: 0,
 		FreeSpace: MAX_SIZE,
-		DriveRoot: rootPath,
 
 		Protected: false,
 		Key:       "default",
-	}
 
+		DriveRoot: rootPath,
+		Root:      root,
+	}
 }
 
 func (d *Drive) RemainingSize() float64 {
