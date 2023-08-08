@@ -45,6 +45,7 @@ type Service struct {
 	Srv *server.Server
 }
 
+// ***TODO: connect router or API***
 // NOTE: http server is not instantiated with NewService()
 func NewService(name string, admin bool) *Service {
 	c := GetServiceConfig()
@@ -87,7 +88,6 @@ func (s *Service) Stop() {
 	s.Srv.Shutdown()
 }
 
-// get total active users
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
@@ -107,13 +107,28 @@ func (s *Service) AddUser(u *User) {
 	s.Users[u.ID] = u
 }
 
-func (s *Service) RemoveUser(u *User) error {
-	if usr, ok := s.Users[u.Drive.ID]; ok {
-		delete(s.Users, u.Drive.ID)
+func (s *Service) RemoveUser(id string) error {
+	if usr, ok := s.Users[id]; ok {
+		// remove all user directory and file contents if necessary
+		if len(usr.Drive.Root.Dirs) != 0 {
+			if err := usr.Drive.Root.Clean(usr.Drive.Root.RootPath); err != nil {
+				return fmt.Errorf("[ERROR] unable to remove user and drive contents: %v", err)
+			}
+		}
+		// remove from User directory map
+		delete(s.Users, usr.Drive.ID)
 	} else {
-		return fmt.Errorf("[ERROR] user/drive %s not found", usr.Drive.ID)
+		return fmt.Errorf("[ERROR] user (id=%s) not found", id)
 	}
 	return nil
+}
+
+func (s *Service) GetUser(id string) (*User, error) {
+	if usr, ok := s.Users[id]; ok {
+		return usr, nil
+	} else {
+		return nil, fmt.Errorf("[ERROR] user %s not found", id)
+	}
 }
 
 // clear all active users drives and deletes all content within
