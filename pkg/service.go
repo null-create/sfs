@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/nimbus/pkg/files"
@@ -149,10 +150,11 @@ func (s *Service) TotalSize() float64 {
 
 // Build a new privilaged Drive directory for a client on a Nimbus server
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	drivePath := fmt.Sprintf("%s/%s", s.ServicePath, name)
+	drivePath := filepath.Join(s.ServicePath, name)
 
 	newID := files.NewUUID()
-	drive := files.NewDrive(newID, name, owner, drivePath)
+	newRoot := files.NewRootDirectory(name, owner, filepath.Join(drivePath, name))
+	drive := files.NewDrive(newID, name, owner, drivePath, newRoot)
 
 	s.GenBaseFiles(drivePath)
 
