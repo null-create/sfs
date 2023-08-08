@@ -2,6 +2,7 @@ package files
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -9,28 +10,48 @@ import (
 
 // make a dummy file system. does NOT create assoiatedfiles!
 // contains only mocked internal data structures
-func MakeDummySystem(t *testing.T) (*Drive, *Directory, *Directory) {
+func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
+	testingDir := GetTestingDir()
+	driveRoot := filepath.Join(testingDir, "testDir")
 
-	testDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("[ERROR] failed to get current working directory: %v", err)
-	}
+	// create test drive and a dummy user root directory
+	testRoot := NewRootDirectory("testRoot", "me", driveRoot)
+	testFiles1 := MakeTestDirFiles(t, 5, testRoot.Path)
+	testRoot.AddFiles(testFiles1)
 
-	testDrive := NewDrive("testDrive", "test-drive", "me", "/")
-	testRoot := NewRootDirectory("testRoot", "me", "path/to/test.txt")
-	testDirectory := NewDirectory("test-dir", "me", testDir)
-	testDirectory.Parent = testRoot
+	testDrive := NewDrive(NewUUID(), "testDrive", "me", driveRoot, testRoot)
 
-	return testDrive, testRoot, testDirectory
+	// create a subdirectory with dummy files
+	testDirectory := NewDirectory("test-dir", "me", filepath.Join(driveRoot, "testSubDir"))
+	testFiles2 := MakeTestDirFiles(t, 5, testDirectory.Path)
+	testDirectory.AddFiles(testFiles2)
+
+	testRoot.AddSubDir(testDirectory)
+
+	return testDrive, testRoot
 }
 
-func TestDriveSecurityFeatures(t *testing.T) {
-	testDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("[ERROR] failed to get current working directory: %v", err)
+// removes only the actual test files, directories and subdirectories directly
+// under ../nimbus/pkg/files/test_files
+func RemoveDummySystem(t *testing.T) (err error) {
+	testingDir := GetTestingDir()
+	driveRoot := filepath.Join(testingDir, "testDir")
+
+	if err := os.Remove(driveRoot); err != nil {
+		return err
 	}
 
-	testDrive := NewDrive("1", "test-drive", "me", testDir)
+	return nil
+}
+
+// ----------------------------------------------------------------
+
+func TestDriveSecurityFeatures(t *testing.T) {
+	testDir := GetTestingDir()
+	tmpDir := filepath.Join(testDir, "testDir")
+
+	testRoot := NewRootDirectory("testRoot", "me", filepath.Join(tmpDir, "testRoot"))
+	testDrive := NewDrive(NewUUID(), "test-drive", "me", tmpDir, testRoot)
 
 	testDrive.Lock("default")
 	assert.True(t, testDrive.Protected)
@@ -50,16 +71,23 @@ func TestDriveSecurityFeatures(t *testing.T) {
 	assert.Equal(t, "newPassword", testDrive.Key)
 }
 
-// func TestGetDriveSize(t *testing.T) {
-// 	total := RandInt(MAX)
-// 	MakeTestFiles(t, total)
+func TestGetDriveSize(t *testing.T) {
+	testDrive, _ := MakeDummySystem(t)
 
-// 	testDrive, _, _ := MakeDummySystem(t)
-// 	testDrive.Root.AddFiles(MakeDummyFiles(t, total))
+	if testFiles, err := MakeTestFiles(t, 10); err == nil {
+		testDrive.Root.AddFiles(testFiles)
+	} else {
+		t.Errorf("[ERROR] unable to make test files: %v", err)
+	}
+	assert.NotEqual(t, 0, len(testDrive.Root.Files))
 
-// 	// iterate over directory and get the total size,
-// 	// assert result is not 0. maybe find a way to get actual size
-// 	// and make sure result is equal as well.
+	// get the size of the drive
+	dirSize := testDrive.DriveSize()
+	assert.NotEqual(t, 0, dirSize)
 
-// 	RemoveTestFiles(t, total)
-// }
+	// TODO: figure out actual expected size to compare to
+
+	if err := RemoveTestFiles(t, 10); err != nil {
+		t.Errorf("[ERROR] unable to remove test files: %v", err)
+	}
+}
