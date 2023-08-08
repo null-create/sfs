@@ -42,11 +42,12 @@ func NewUser(name string, userName string, email string, newDrive *files.Drive, 
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
 	return &User{
-		ID:       files.NewUUID(),
-		Name:     name,
-		UserName: userName,
-		Password: "default",
-		Email:    email,
+		ID:        files.NewUUID(),
+		Name:      name,
+		UserName:  userName,
+		Password:  "default",
+		Email:     email,
+		LastLogin: time.Now(), // just to initalize the time.Time object
 
 		Admin: isAdmin,
 
