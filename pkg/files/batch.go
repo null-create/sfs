@@ -2,21 +2,23 @@ package files
 
 import "log"
 
+// max batch size (1gb / 1,073,741,824 bytes)
+const MAX int64 = 1e+9
+
 // batch represents a collection of files to be uploaded or downloaded
 // Batch.limit is set by the network profiler
 type Batch struct {
-	ID    string `json:"id"`    // batch ID (UUID)
-	Limit int64  `json:"limit"` // total FILE SIZE in kb allowable for this batch.
-	Cap   int64  `json:"cap"`   // remaining capacity (in kb)
+	ID  string `json:"id"`  // batch ID (UUID)` // total FILE SIZE in mb allowable for this batch.
+	Cap int64  `json:"cap"` // remaining capacity (in bytes)
 
 	// files to be uploaded or downloaded
 	Files []*File
 }
 
-func NewBatch(id string, limit int64) *Batch {
+func NewBatch() *Batch {
 	return &Batch{
-		ID:    id,
-		Limit: limit,
+		ID:  NewUUID(),
+		Cap: MAX,
 	}
 }
 
@@ -26,26 +28,26 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	added := make([]*File, len(files))
 	for _, f := range files {
 		if b.Cap-f.Size() <= 0 {
-			log.Print("[DEBUG] batch limit reached with this file. attempting to add others...")
 			// we want to check the other files in this list
 			// since they may be small enough to add onto this batch.
+			log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.Size(), b.Cap)
 			continue
 		} else {
 			b.Files = append(b.Files, f)
-			b.Cap -= f.Size() // update remaning file capacity
-			added = append(added, f)
+			b.Cap -= f.Size()        // update remaning file capacity
+			added = append(added, f) // save to added files list
 		}
 	}
 
 	// TODO: if we reach our limit before we finish with files []*Files, we should
 	// return a new list with the remaining files that weren't added to this batch
 	if len(added) == len(files) {
-		log.Printf("[DEBUG] all files added to batch. remaining capacity: %d", b.Limit-int64(len(b.Files)))
+		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
 		return nil
-	} else {
+	} else if len(added) < len(files) {
 		log.Print("[DEBUG] batch wasn't able to add all files from supplied list. returning list of remaining files")
-		// TODO: create ramaining files list
-		// (compare added with files and store any that ARENT in added in a remaining files list)
+		// TODO: capture remaining files
+		// (files-added) = remaining files list to be returned
 	}
-	return nil
+	return added
 }

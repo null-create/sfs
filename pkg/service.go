@@ -55,6 +55,7 @@ func NewService(name string, admin bool) *Service {
 		ServicePath: c.ServiceRoot,
 		AdminMode:   admin,
 		Users:       make(map[string]*User),
+		Srv:         server.NewServer(),
 	}
 	// input admin mode and credentials, if necessary
 	if admin {
@@ -76,11 +77,8 @@ func (s *Service) RunTime() float64 {
 }
 
 // instantiate a new Nimbus server
-func (s *Service) Start() error {
-	s.Srv = server.NewServer()
+func (s *Service) Start() {
 	s.Srv.Start()
-
-	return nil
 }
 
 // shut down service instance
@@ -101,10 +99,11 @@ func (s *Service) GetUsers() map[string]*User {
 }
 
 func (s *Service) AddUser(u *User) {
-	if s.Users == nil {
-		s.Users = make(map[string]*User, 0)
+	if _, ok := s.Users[u.ID]; !ok {
+		s.Users[u.ID] = u
+	} else {
+		log.Printf("[DEBUG] user (id=%s) already present", u.ID)
 	}
-	s.Users[u.ID] = u
 }
 
 func (s *Service) RemoveUser(id string) error {
@@ -133,24 +132,29 @@ func (s *Service) GetUser(id string) (*User, error) {
 
 // clear all active users drives and deletes all content within
 func (s *Service) ClearAll(adminKey string) {
-	if adminKey == s.AdminKey {
-		if len(s.Users) == 0 {
-			log.Printf("[DEBUG] no drives to remove")
-			return
-		}
-		// remove all files and directories for this user
-		log.Print("[DEBUG] cleaning...")
-		for _, usr := range s.Users {
-			usr.Drive.Root.Clean(usr.Drive.Root.RootPath)
-			delete(s.Users, usr.Drive.ID)
-			log.Printf("[DEBUG] user %s was removed", usr.UserName)
+	if s.IsAdminMode() {
+		if adminKey == s.AdminKey {
+			if len(s.Users) == 0 {
+				log.Printf("[DEBUG] no drives to remove")
+				return
+			}
+			// remove all files and directories for this user
+			log.Print("[DEBUG] cleaning...")
+			for _, usr := range s.Users {
+				usr.Drive.Root.Clean(usr.Drive.Root.RootPath)
+				delete(s.Users, usr.Drive.ID)
+				log.Printf("[DEBUG] user %s was removed", usr.UserName)
+			}
+			log.Print("[DEBUG] ...done")
+		} else {
+			log.Print("[DEBUG] enter admin password to clear all user drives")
 		}
 	} else {
-		log.Printf("[DEBUG] must enter admin password to clear all user drives")
+		log.Print("[DEBUG] must be in admin mode to run s.ClearAll()")
 	}
 }
 
-// get total size of all active user drives
+// get total size (in kb!) of all active user drives
 func (s *Service) TotalSize() float64 {
 	if len(s.Users) == 0 {
 		log.Printf("[DEBUG] no drives to measure")
@@ -160,15 +164,15 @@ func (s *Service) TotalSize() float64 {
 	for _, usr := range s.Users {
 		total += usr.Drive.DriveSize()
 	}
-	return total
+	return total / 1000
 }
 
 // Build a new privilaged Drive directory for a client on a Nimbus server
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
 	drivePath := filepath.Join(s.ServicePath, name)
-
 	newID := files.NewUUID()
-	newRoot := files.NewRootDirectory(name, owner, filepath.Join(drivePath, name))
+
+	newRoot := files.NewRootDirectory("root", owner, filepath.Join(drivePath, "root"))
 	drive := files.NewDrive(newID, name, owner, drivePath, newRoot)
 
 	s.GenBaseFiles(drivePath)

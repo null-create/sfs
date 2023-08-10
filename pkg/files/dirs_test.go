@@ -13,6 +13,14 @@ const TestDirName string = "testDir"
 
 //---------- test fixtures --------------------------------
 
+// creates an empty directory under ../nimbus/pkg/files/test_files
+func MakeTmpDir(t *testing.T, path string) error {
+	if err := os.Mkdir(path, 0666); err != nil {
+		return fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
+	}
+	return nil
+}
+
 // make test files within a testing/tmp directory
 func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 	testFiles := make([]*File, 0)
@@ -21,6 +29,7 @@ func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 		name := fmt.Sprintf("test-file-%d.txt", i)
 		tfPath := filepath.Join(tdPath, name)
 
+		// Create creates or truncates the named file.
 		file, err := os.Create(tfPath)
 		if err != nil {
 			t.Fatalf("[ERROR] failed to create test file: %v", err)
@@ -51,8 +60,15 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 	return testDirs
 }
 
+func RemoveTmpDir(t *testing.T, path string) error {
+	if err := os.Remove(path); err != nil {
+		t.Errorf("[ERROR] unable to remove temp directory: %v", err)
+	}
+	return nil
+}
+
 // currently a no-op until the access issue is resolved
-func RemoveTestDirs(t *testing.T, total int) error {
+func RemoveTestDirs(t *testing.T) error {
 	testingDir := GetTestingDir()
 
 	entries, err := os.ReadDir(testingDir)
@@ -122,7 +138,7 @@ func TestSecurityFeatures(t *testing.T) {
 	assert.NotEqual(t, 0, len(td.Dirs))
 	assert.NotEqual(t, 0, len(td.Files))
 
-	if err := RemoveTestDirs(t, 2); err != nil {
+	if err := RemoveTestDirs(t); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 	if err := RemoveTestFiles(t, 1); err != nil {
@@ -148,7 +164,7 @@ func TestAddFiles(t *testing.T) {
 	assert.NotEqual(t, 0, len(td.Files))
 	assert.Equal(t, total, len(td.Files))
 
-	if err := RemoveTestDirs(t, 1); err != nil {
+	if err := RemoveTestDirs(t); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 	if err := RemoveTestFiles(t, total); err != nil {
@@ -179,7 +195,7 @@ func TestRemoveFiles(t *testing.T) {
 	}
 	assert.Equal(t, 0, len(td.Files))
 
-	if err := RemoveTestDirs(t, 1); err != nil {
+	if err := RemoveTestDirs(t); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -196,7 +212,7 @@ func TestAddSubDirs(t *testing.T) {
 	}
 	assert.Equal(t, total, len(td.Dirs))
 
-	if err := RemoveTestDirs(t, total); err != nil {
+	if err := RemoveTestDirs(t); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }

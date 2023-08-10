@@ -12,18 +12,27 @@ import (
 // contains only mocked internal data structures
 func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	testingDir := GetTestingDir()
-	driveRoot := filepath.Join(testingDir, "testDir")
+	driveRoot := filepath.Join(testingDir, "testDrive")
 
-	// create test drive and a dummy user root directory
+	// make a tmp directory and add with some test files
+	if err := MakeTmpDir(t, driveRoot); err != nil {
+		t.Errorf("[ERROR] failed to create temporary directory: %v", err)
+	}
+
+	testFiles1 := MakeTestDirFiles(t, 5, driveRoot)
 	testRoot := NewRootDirectory("testRoot", "me", driveRoot)
-	testFiles1 := MakeTestDirFiles(t, 5, testRoot.Path)
 	testRoot.AddFiles(testFiles1)
 
 	testDrive := NewDrive(NewUUID(), "testDrive", "me", driveRoot, testRoot)
 
 	// create a subdirectory with dummy files
-	testDirectory := NewDirectory("test-dir", "me", filepath.Join(driveRoot, "testSubDir"))
-	testFiles2 := MakeTestDirFiles(t, 5, testDirectory.Path)
+	sdPath := filepath.Join(driveRoot, "testSubDir")
+	if err := MakeTmpDir(t, sdPath); err != nil {
+		t.Errorf("[ERROR] unable to create temporary subdirectory: %v", err)
+	}
+
+	testFiles2 := MakeTestDirFiles(t, 5, sdPath)
+	testDirectory := NewDirectory("test-dir", "me", sdPath)
 	testDirectory.AddFiles(testFiles2)
 
 	testRoot.AddSubDir(testDirectory)
@@ -73,12 +82,6 @@ func TestDriveSecurityFeatures(t *testing.T) {
 
 func TestGetDriveSize(t *testing.T) {
 	testDrive, _ := MakeDummySystem(t)
-
-	if testFiles, err := MakeTestFiles(t, 10); err == nil {
-		testDrive.Root.AddFiles(testFiles)
-	} else {
-		t.Errorf("[ERROR] unable to make test files: %v", err)
-	}
 	assert.NotEqual(t, 0, len(testDrive.Root.Files))
 
 	// get the size of the drive
@@ -87,7 +90,9 @@ func TestGetDriveSize(t *testing.T) {
 
 	// TODO: figure out actual expected size to compare to
 
-	if err := RemoveTestFiles(t, 10); err != nil {
-		t.Errorf("[ERROR] unable to remove test files: %v", err)
+	// clean up
+	// TODO: doesn't remove test_files/testDrive. need to fix.
+	if err := testDrive.Root.Clean(testDrive.Root.Path); err != nil {
+		t.Errorf("[ERROR] unable to remove test drive: %v", err)
 	}
 }

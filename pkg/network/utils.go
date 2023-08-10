@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const PROFILE = "network-profile.json"
+const PROFILE string = "network-profile.json"
 
 func GetHostName() string {
 	hostname, err := os.Hostname()
@@ -19,6 +19,8 @@ func GetHostName() string {
 
 // SaveProfile creates a simple .json file of our network speed averages
 func SaveProfile(profile *NetworkProfile) error {
+
+	// TODO: create dedicated service file path for network profile
 
 	// Open the JSON file for writing
 	file, err := os.Create(PROFILE)

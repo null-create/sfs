@@ -48,14 +48,14 @@ func NewServer() *Server {
 func (s *Server) Start() {
 	s.StartTime = time.Now()
 	if err := s.Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal("[ERROR] server startup failed")
+		log.Fatalf("[ERROR] server startup failed: %v", err)
 	}
 }
 
 // shuts down server and returns the total run time
 func (s *Server) Shutdown() float64 {
 	if err := s.Srv.Close(); err != nil && err != http.ErrServerClosed {
-		log.Fatal("[ERROR] server shutdown failed")
+		log.Fatalf("[ERROR] server shutdown failed: %v", err)
 	}
 	return s.RunTime()
 }

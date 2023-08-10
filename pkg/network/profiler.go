@@ -2,15 +2,18 @@ package network
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
 const (
 	MAX       = 100
 	URL       = "http://www.google.com"
-	TEST_DATA = "../test_files/shrek.txt"
+	TEST_DATA = "/test_files/shrek.txt"
 )
 
 // We measure network resources by timing how long it takes to download a file of
@@ -35,7 +38,7 @@ func measureSpeed(url string, client *http.Client) (downloadSpeed, uploadSpeed f
 
 	resp, err := client.Get(URL)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("[ERROR] failed to get URL: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -43,12 +46,20 @@ func measureSpeed(url string, client *http.Client) (downloadSpeed, uploadSpeed f
 	downloadSpeed = float64(resp.ContentLength) / downloadDuration
 
 	//-----Measure upload speed with larger text file
+	here, err := os.Getwd()
+	if err != nil {
+		return 0, 0, fmt.Errorf("[ERROR] failed to get current directory: %v", err)
+	}
+	uploadData, err := os.ReadFile(filepath.Join(here, TEST_DATA))
+	if err != nil {
+		return 0, 0, fmt.Errorf("[ERROR] could not open test data: %v", err)
+	}
+
 	start = time.Now()
 
-	uploadData := []byte(TEST_DATA)
 	_, err = client.Post(URL, "application/octet-stream", bytes.NewReader(uploadData))
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("[ERROR] could not upload test data: %v", err)
 	}
 
 	uploadDuration := time.Since(start).Seconds()
@@ -62,15 +73,12 @@ func averageSpeeds(iterations int) (float64, float64) {
 	var upTotal float64
 	var downTotal float64
 
-	// initialize a simple HTTP client to measure speed with
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
 	log.Print("[DEBUG] starting network profiling...")
 
 	for i := 0; i < iterations; i++ {
-		up, down, err := measureSpeed(URL, client)
+		up, down, err := measureSpeed(URL, &http.Client{
+			Timeout: 10 * time.Second,
+		})
 		if err != nil {
 			log.Fatalf("[ERROR] error measuring average download and upload speed \n%v\n ", err)
 		}
@@ -86,7 +94,7 @@ func averageSpeeds(iterations int) (float64, float64) {
 	return upAvg, downAvg
 }
 
-func ProfileNetwork() {
+func ProfileNetwork() *NetworkProfile {
 	profile := NetNetorkProfile()
 	upAvg, dwnAvg := averageSpeeds(MAX)
 
@@ -95,4 +103,6 @@ func ProfileNetwork() {
 
 	// save our average speeds as our network profile
 	SaveProfile(profile)
+
+	return profile
 }
