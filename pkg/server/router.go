@@ -9,13 +9,50 @@ import (
 )
 
 /*
-TODO:
-	design API specifications
+ROUTES:
 
-	New to come up with repsectieve GET, POST, PUT, DELETE, etc.
-	methods and /nimbus/ (or /n/usr/root ?) etc routes, and
-	associated handlers
+// ----- meta
+
+GET    /v1/u/{userID}                // "home". return a root directory listing
+
+// ----- files
+
+GET    /v1/u/{userID}/f/files       // get list of user files and directories
+POST   /v1/u/{userID}/f/files       // send a file to the server
+
+GET    /v1/u/{userID}/f/{fileID}    // get info about a file
+POST   /v1/u/{userID}/f/{fileID}    // send a new file to the server
+UPDATE /v1/u/{userID}/f/{fileID}    // update a file on the server
+DELETE /v1/u/{userID}/f/{fileID}    // delete a file on the server
+
+// ---- directories
+
+GET    /v1/u/{userID}/d/dirs        // get list of user directories
+
+GET    /v1/u/{userID}/d/{dirID}     // get list of subdirectories
+POST   /v1/u/{userID}/d/{dirID}     // create a directory to the server
+UPDATE /v1/u/{userID}/d/{dirID}     // update a directory on the server
+DELETE /v1/u/{userID}/d/{dirID}     // delete a directory
+
+// ----- sync operations
+
+GET    /v1/u/{userID}/sync      // fetch file last sync times from server
+POST   /v1/u/{userID}/sync      // send a last sync index to the server to
+                                // initiate a client/server file sync.
 */
+
+// add json header to requests
+func ContentTypeJson(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json;charset=utf8")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// get a URL parameter value from a request
+func GetParam(req *http.Request, param string) string {
+	return chi.URLParam(req, param)
+}
 
 // based off example from: https://github.com/go-chi/chi/blob/master/README.md
 func NewRouter() *chi.Mux {
@@ -26,35 +63,49 @@ func NewRouter() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(ContentTypeJson)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	// placeholder for homepage
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hi"))
 	})
 
-	// // RESTy example routes for "articles" resource
-	// r.Route("/articles", func(r chi.Router) {
-	// 	r.With(paginate).Get("/", listArticles)                           // GET /articles
-	// 	r.With(paginate).Get("/{month}-{day}-{year}", listArticlesByDate) // GET /articles/01-16-2017
+	// TODO: add handlers
 
-	// 	r.Post("/", createArticle)       // POST /articles
-	// 	r.Get("/search", searchArticles) // GET /articles/search
+	//v1 routing
+	r.Route("/v1", func(r chi.Router) {
+		// "home". return a root directory listing
+		r.Get("/u/{userID}", nil)
 
-	// 	// Regexp url parameters:
-	// 	r.Get("/{articleSlug:[a-z-]+}", getArticleBySlug) // GET /articles/home-is-toronto
+		// ----- files
 
-	// 	// Subrouters:
-	// 	r.Route("/{articleID}", func(r chi.Router) {
-	// 		r.Use(ArticleCtx)
-	// 		r.Get("/", getArticle)       // GET /articles/123
-	// 		r.Put("/", updateArticle)    // PUT /articles/123
-	// 		r.Delete("/", deleteArticle) // DELETE /articles/123
-	// 	})
-	// })
+		r.Get("/u/{userID}/f/files", nil) // get list of user files and directories
+
+		r.Get("/u/{userID}/f/{fileID}", nil)    // get info about a file
+		r.Post("/u/{userID}/f/{fileID}", nil)   // add a new file to the server
+		r.Put("/u/{userID}/f/{fileID}", nil)    // update a file on the server
+		r.Delete("/u/{userID}/f/{fileID}", nil) // delete a file on the server
+
+		// ----- directories
+
+		r.Get("/u/{userID}/d/dirs/", nil)    // get list of user directories
+		r.Delete("/u/{userID}/d/dirs/", nil) // delete all user directories
+
+		r.Get("/u/{userID}/d/{dirID}", nil)    // get list of subdirectories
+		r.Post("/u/{userID}/d/{dirID}", nil)   // create a directory to the server
+		r.Put("/u/{userID}/d/{dirID}", nil)    // update a directory on the server
+		r.Delete("/u/{userID}/d/{dirID}", nil) // delete a directory
+
+		// ----- sync operations
+
+		r.Get("/u/{userID}/sync", nil)  // fetch file last sync times from server
+		r.Post("/u/{userID}/sync", nil) // send a last sync index to the server to initiate a client/server file sync.
+	})
 
 	// Mount the admin sub-router
 	r.Mount("/admin", adminRouter())
