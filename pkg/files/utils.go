@@ -32,3 +32,23 @@ func NewUUID() string {
 	}
 	return uuid.String()
 }
+
+// return the difference between two []*File slices.
+//
+// assuming that go's map implementation has ~O(1) access time,
+// then this function should work in ~O(n) on an unsorted slice.
+//
+// https://stackoverflow.com/questions/19374219/how-to-find-the-difference-between-two-slices-of-strings
+func Diff(f, g []*File) []*File {
+	tmp := make(map[*File]string, len(g))
+	for _, file := range g {
+		tmp[file] = "hi"
+	}
+	var diff []*File
+	for _, file := range f {
+		if _, found := tmp[file]; !found {
+			diff = append(diff, file)
+		}
+	}
+	return diff
+}
