@@ -25,6 +25,24 @@ func NewSyncIndex() *SyncIndex {
 }
 
 /*
+get a slice of file paths from the SyncIndex.ToUpdate map
+
+can be used when generating lists of files to be processed for uploading or downloading
+*/
+func (s *SyncIndex) GetFilePaths() []string {
+	if len(s.ToUpdate) == 0 {
+		log.Printf("[DEBUG] no files queued for uploading or downloading")
+		return nil
+	}
+
+	fp := make([]string, 0)
+	for _, file := range s.ToUpdate {
+		fp = append(fp, file.Path)
+	}
+	return fp
+}
+
+/*
 build a new sync index starting with a given directory which
 is treated as the "root" of our inquiry. all subdirectories will be checked,
 but we assume this is the root, and that there is no parent directory!
