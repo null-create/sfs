@@ -58,6 +58,12 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		// batches to not contain as many possible files since one files weight may greatly tip the scales,
 		// as it were. NP problems are hard.
 		//
+		// pre-sorting the list of files will introduce a lower O(n log n) bound on any possible
+		// resulting solution, so our current approach, roughly O(nk), where n is the number of
+		// of times we need to re-iterate over the list of files (and remaning subsets after each batch)
+		// and where k is the size of the current list we're building a batch from. k is a shrinking
+		// subsize size of the original file list.
+		//
 		// individual files that exceed b.Cap won't be added to the batch ever.
 		// TODO: investigate this case
 		if b.Cap-f.Size() >= 0 {
