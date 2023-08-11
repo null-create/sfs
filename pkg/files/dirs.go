@@ -128,7 +128,6 @@ func (d *Directory) Clear(password string) {
 	if !d.Protected {
 		d.clear()
 	} else {
-		log.Print("[DEBUG] directory protected")
 		if password == d.Key {
 			d.clear()
 		} else {
@@ -546,7 +545,7 @@ func (d *Directory) WalkF(op func(file *File) error) {
 	walkf(d, op)
 }
 
-func walkf(dir *Directory, op func(file *File) error) {
+func walkf(dir *Directory, op func(f *File) error) {
 	// run operation on each file, if possible
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
