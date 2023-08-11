@@ -36,6 +36,7 @@ func NewServer() *Server {
 	return &Server{
 		Rtr: rtr,
 		Srv: &http.Server{
+			Handler:      rtr,
 			Addr:         c.Server.Addr,
 			ReadTimeout:  c.Server.TimeoutRead,
 			WriteTimeout: c.Server.TimeoutWrite,
