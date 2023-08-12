@@ -11,10 +11,11 @@ type Queue struct {
 	Queue []*Batch // a batch represents a collection of files to be uploaded or downloaded
 }
 
-func NewQ(limit int) *Queue {
+// create a new upload/download queue
+func NewQ() *Queue {
 	return &Queue{
 		Total: 0,
-		Queue: make([]*Batch, 0, limit),
+		Queue: make([]*Batch, 0),
 	}
 }
 
