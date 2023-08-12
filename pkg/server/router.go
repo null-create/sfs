@@ -97,7 +97,7 @@ func NewRouter() *chi.Mux {
 		r.Delete("/u/{userID}/d/dirs/", nil) // delete all user directories
 
 		r.Get("/u/{userID}/d/{dirID}", nil)    // get list of subdirectories
-		r.Post("/u/{userID}/d/{dirID}", nil)   // create a directory to the server
+		r.Post("/u/{userID}/d/{dirID}", nil)   // create a (empty) directory to the server
 		r.Put("/u/{userID}/d/{dirID}", nil)    // update a directory on the server
 		r.Delete("/u/{userID}/d/{dirID}", nil) // delete a directory
 
