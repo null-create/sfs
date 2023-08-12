@@ -48,22 +48,21 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		//
 		// this is basically a greedy approach, but that may be subect to change.
 		//
-		// the main criteria is essentially that whatever
-		// the size of the *current* file is, it shouldn't cause us to exceed our
-		// capacity (b.Cap = MAX), so even if a list of files has an unsorted
-		// series of valies, we will only ever care about the effect of the *current* file's size
-		// in relation to the remaining capacity of the batch, not the sum total
-		// of the given file list (sorted or otherwise).
+		// the main criteria is essentially that whatever the size of the *current* file is,
+		// it shouldn't cause us to exceed our capacity (b.Cap = MAX), so even if a list of
+		// files has an unsorted series of valies, we will only ever care about the effect of
+		// the *current* file's size in relation to the remaining capacity of the batch, not
+		// the sum total of the given file list (sorted or otherwise).
 		//
 		// since lists are unsorted, a file that is much larger than its neighbors may cause
-		// batches to not contain as many possible files since one files weight may greatly tip the scales,
-		// as it were. NP problems are hard.
+		// batches to not contain as many possible files since one files weight may greatly tip
+		// the scales, as it were. NP problems are hard.
 		//
 		// pre-sorting the list of files will introduce a lower O(n log n) bound on any possible
-		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the number of
-		// of times we need to iterate over the list of files (and remaning subsets after each batch)
-		// and where k is the size of the current list we're building a batch from. k is the current size
-		// size of the original file list (assuming shrinkage).
+		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the
+		// number of times we need to iterate over the list of files (and remaning subsets after
+		// each batch) and where k is the size of the current list we're building a batch from.
+		// k is the current size size of the original file list (assuming shrinkage).
 		//
 		// individual files that exceed b.Cap won't be added to the batch ever.
 		// TODO: investigate this case
