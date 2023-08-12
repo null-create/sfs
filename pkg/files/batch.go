@@ -12,17 +12,16 @@ const MAX int64 = 1e+9
 // batch represents a collection of files to be uploaded or downloaded
 // Batch.limit is set by the network profiler
 type Batch struct {
-	ID  string `json:"id"`  // batch ID (UUID)` // total FILE SIZE in mb allowable for this batch.
-	Cap int64  `json:"cap"` // remaining capacity (in bytes)
-
-	// files to be uploaded or downloaded
-	Files []*File
+	ID    string  // batch ID (UUID)
+	Cap   int64   // remaining capacity (in bytes)
+	Files []*File // files to be uploaded or downloaded
 }
 
 func NewBatch() *Batch {
 	return &Batch{
-		ID:  NewUUID(),
-		Cap: MAX,
+		ID:    NewUUID(),
+		Cap:   MAX,
+		Files: make([]*File, 0),
 	}
 }
 
@@ -45,6 +44,8 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	notAdded := make([]*File, 0)
 
 	for _, f := range files {
+		// "if a file's size doesn't cause us to exceed the remaining batch size, add it."
+		//
 		// this is basically a greedy approach, but that may be subect to change.
 		//
 		// the main criteria is essentially that whatever
@@ -59,7 +60,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		// as it were. NP problems are hard.
 		//
 		// pre-sorting the list of files will introduce a lower O(n log n) bound on any possible
-		// resulting solution, so our current approach, roughly O(nk), where n is the number of
+		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the number of
 		// of times we need to re-iterate over the list of files (and remaning subsets after each batch)
 		// and where k is the size of the current list we're building a batch from. k is a shrinking
 		// subsize size of the original file list.
@@ -82,7 +83,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 			continue
 		}
 	}
-
+	// success
 	if len(added) == len(files) {
 		// if all files were successfully added
 		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
@@ -94,7 +95,8 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		return Diff(added, files)
 	}
 	// if b.Cap < MAX and we have left over files that were passed over for
-	// being to large for the current batch
+	// being to large for the current batch.
+	// use AddFiles() again over notAdded list until no more files remain.
 	if len(notAdded) > 0 && b.Cap < MAX {
 		return notAdded
 	}
