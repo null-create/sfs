@@ -61,9 +61,9 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		//
 		// pre-sorting the list of files will introduce a lower O(n log n) bound on any possible
 		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the number of
-		// of times we need to re-iterate over the list of files (and remaning subsets after each batch)
-		// and where k is the size of the current list we're building a batch from. k is a shrinking
-		// subsize size of the original file list.
+		// of times we need to iterate over the list of files (and remaning subsets after each batch)
+		// and where k is the size of the current list we're building a batch from. k is the current size
+		// size of the original file list (assuming shrinkage).
 		//
 		// individual files that exceed b.Cap won't be added to the batch ever.
 		// TODO: investigate this case
