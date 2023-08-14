@@ -19,7 +19,7 @@ Automatically back up your project files and sync file states across multiple de
 `SFS` uses a number of open source projects to work properly:
 
 - [Chi] - Chi is a small, idiomatic and composable router for building HTTP services.
-- [SQLite3] - A sqlite3 driver that conforms to the built-in database/sql interface
+- [SQLite3] - A sqlite3 driver that conforms to the built-in database/sql interface.
 
 
 
@@ -44,7 +44,7 @@ sfs --version
 
 ## Docker
 
-Dillinger is very easy to install and deploy in a Docker container.
+`SFS` is very easy to install and deploy in a Docker container.
 
 By default, the Docker will expose port 8080, so change this within the
 Dockerfile if necessary. When ready, simply use the Dockerfile to
@@ -86,10 +86,3 @@ MIT
 
    [Chi]: <https://pkg.go.dev/github.com/go-chi/chi>
    [SQLite3]: <https://pkg.go.dev/github.com/mattn/go-sqlite3>
-
-   [PlDb]: <https://github.com/joemccann/dillinger/tree/master/plugins/dropbox/README.md>
-   [PlGh]: <https://github.com/joemccann/dillinger/tree/master/plugins/github/README.md>
-   [PlGd]: <https://github.com/joemccann/dillinger/tree/master/plugins/googledrive/README.md>
-   [PlOd]: <https://github.com/joemccann/dillinger/tree/master/plugins/onedrive/README.md>
-   [PlMe]: <https://github.com/joemccann/dillinger/tree/master/plugins/medium/README.md>
-   [PlGa]: <https://github.com/RahulHP/dillinger/blob/master/plugins/googleanalytics/README.md>
