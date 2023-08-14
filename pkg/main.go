@@ -7,6 +7,7 @@ package pkg
  /        \ |     \  /        \
 /_______  / \___  / /_______  /
         \/      \/          \/
+    (AKA) SIMPLE FILE SYNC
 */
 
 func main() {
