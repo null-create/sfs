@@ -37,41 +37,34 @@ but its in place as a mechanism for resource management.
 // NOTE this does not check whether there are any duplicate files in the
 // files []*File slice... probably should do that
 func (b *Batch) AddFiles(files []*File) []*File {
-	// remember which ones we added so we don't have to modify files slice in-place
-	// as we're iterating over it
+	// remember which ones we added so we don't have to modify the
+	// files slice in-place as we're iterating over it
 	added := make([]*File, 0)
-	// remember which files that were too big for this batch
+	// remember which files that were passed over for this batch
 	notAdded := make([]*File, 0)
 
 	for _, f := range files {
-		// "if a file's size doesn't cause us to exceed the remaining batch size, add it."
+		// "if a current file's size doesn't cause us to exceed the remaining batch capacity, add it."
 		//
-		// this is basically a greedy approach, but that may be subect to change.
-		//
-		// the main criteria is essentially that whatever the size of the *current* file is,
-		// it shouldn't cause us to exceed our capacity (b.Cap = MAX), so even if a list of
-		// files has an unsorted series of valies, we will only ever care about the effect of
-		// the *current* file's size in relation to the remaining capacity of the batch, not
-		// the sum total of the given file list (sorted or otherwise).
+		// this is basically a greedy approach, but that may change.
 		//
 		// since lists are unsorted, a file that is much larger than its neighbors may cause
 		// batches to not contain as many possible files since one files weight may greatly tip
 		// the scales, as it were. NP problems are hard.
 		//
-		// pre-sorting the list of files will introduce a lower O(n log n) bound on any possible
+		// pre-sorting the list of files will introduce a lower O(nlogn) bound on any possible
 		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the
 		// number of times we need to iterate over the list of files (and remaning subsets after
-		// each batch) and where k is the current size of the current list we're building a
-		// batch from (assuming shrinkage)
+		// each batch) and where k is the size of the *current* list we're iterating over and
+		// building a batch from (assuming shrinkage with each pass).
 		//
-		// individual files that exceed b.Cap won't be added to the batch ever.
 		// TODO: investigate this case
+		// individual files that exceed b.Cap won't be added to the batch ever.
 		if b.Cap-f.Size() >= 0 {
 			b.Files = append(b.Files, f)
 			b.Cap -= f.Size()        // decrement remaning file capacity
 			added = append(added, f) // save to added files list
-			// don't bother checking the rest
-			if b.Cap == 0 {
+			if b.Cap == 0 {          // don't bother checking the rest
 				break
 			}
 		} else {
@@ -82,6 +75,10 @@ func (b *Batch) AddFiles(files []*File) []*File {
 			continue
 		}
 	}
+
+	// TODO: figure out how to communicate which of these scenarious
+	// was the case to the caller of this function.
+
 	// success
 	if len(added) == len(files) {
 		// if all files were successfully added

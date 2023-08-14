@@ -23,7 +23,6 @@ Will likely be the entry point used for when a server is spun up.
 All service configurations may end up living here.
 */
 type Service struct {
-	Name     string    `json:"name"`
 	InitTime time.Time `json:"init_time"`
 
 	// Drive directory path for Nimbus service on the server
@@ -40,22 +39,16 @@ type Service struct {
 	// so this can be used for measuring disc size and executing
 	// health checks
 	Users map[string]*User `json:"users"`
-
-	// HTTP server
-	Srv *server.Server
 }
 
-// ***TODO: connect router or API***
 // NOTE: http server is not instantiated with NewService()
 func NewService(name string, admin bool) *Service {
 	c := GetServiceConfig()
 	svc := &Service{
-		Name:        name,
 		InitTime:    time.Now(),
 		ServicePath: c.ServiceRoot,
 		AdminMode:   admin,
 		Users:       make(map[string]*User),
-		Srv:         server.NewServer(),
 	}
 	// input admin mode and credentials, if necessary
 	if admin {
@@ -74,16 +67,6 @@ func (s *Service) IsAdminMode() bool {
 // returns the service run time in seconds
 func (s *Service) RunTime() float64 {
 	return time.Since(s.InitTime).Seconds()
-}
-
-// instantiate a new Nimbus server
-func (s *Service) Start() {
-	s.Srv.Start()
-}
-
-// shut down service instance
-func (s *Service) Stop() {
-	s.Srv.Shutdown()
 }
 
 func (s *Service) TotalUsers() int {

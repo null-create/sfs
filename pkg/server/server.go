@@ -5,15 +5,12 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/go-chi/chi"
 )
 
 type Server struct {
 	StartTime time.Time
 
 	Db  *sql.DB      // database connection
-	Rtr *chi.Mux     // router
 	Srv *http.Server // server
 }
 
@@ -27,14 +24,10 @@ func NewServer() *Server {
 	// TODO:
 	// instantiate db
 
-	// TODO:
-	// instantiate handlers
-
 	// instantiate router
 	rtr := NewRouter()
 
 	return &Server{
-		Rtr: rtr,
 		Srv: &http.Server{
 			Handler:      rtr,
 			Addr:         c.Server.Addr,

@@ -7,7 +7,12 @@ import (
 	"os"
 )
 
-func (s *Server) DownloadHandler() http.HandlerFunc {
+// NOTE: handlers will likely need to be connected to the internal db package
+
+// hanlder for file downloads
+func (s *Server) DownloadHandler(fileID string) http.HandlerFunc {
+	// TODO: use servers db connection to pull metadata (filepath to download to)
+	// about the file using the supplied fileID
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Open the file to be downloaded
 		filePath := "example.txt" // TODO: Replace with the path to the file you want to download to
@@ -23,17 +28,22 @@ func (s *Server) DownloadHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
 		// Copy the file's content to the response writer
-		io.Copy(w, file)
+		if _, err := io.Copy(w, file); err != nil {
+			http.Error(w, "[ERROR] file not found", http.StatusNotFound)
+		}
 	}
 }
 
-func (s *Server) UploadHandler() http.HandlerFunc {
+// hanlder for file uploads
+func (s *Server) UploadHandler(fileID string) http.HandlerFunc {
+	// TODO: use servers db connection to pull filename
+	// of file to upload from fileID
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			// Get the uploaded file from the request
 			file, handler, err := r.FormFile("file")
 			if err != nil {
-				http.Error(w, "Error uploading file", http.StatusBadRequest)
+				http.Error(w, "[ERROR] error uploading file", http.StatusBadRequest)
 				return
 			}
 			defer file.Close()
@@ -42,48 +52,57 @@ func (s *Server) UploadHandler() http.HandlerFunc {
 			uploadedFilePath := handler.Filename
 			newFile, err := os.Create(uploadedFilePath)
 			if err != nil {
-				http.Error(w, "Error creating file", http.StatusInternalServerError)
+				http.Error(w, "[ERROR] error creating file", http.StatusInternalServerError)
 				return
 			}
 			defer newFile.Close()
 
 			// Copy the uploaded content to the new file
-			io.Copy(newFile, file)
-
-			fmt.Fprintf(w, "File uploaded successfully")
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			if _, err := io.Copy(newFile, file); err != nil {
+				http.Error(w, "[ERROR] error copying uploaded file", http.StatusInternalServerError)
+			}
+			fmt.Fprint(w, fmt.Sprintf("file (id=%s) uploaded successfully", fileID))
 		}
 	}
 }
 
 func (s *Server) GetFile() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
 
+		}
 	}
 }
 
 func (s *Server) PutFile() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
 
+		}
 	}
 }
 
 func (s *Server) GetFiles() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
 
+		}
 	}
 }
 
 func (s *Server) GetDir() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
 
+		}
 	}
 }
 
 func (s *Server) GetDirs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
 
+		}
 	}
 }
 

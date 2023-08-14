@@ -11,8 +11,6 @@ import (
 
 // baseline queries
 const (
-	CreateUserTable = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY, message VARCHAR(255))"
-	CreateFileTable = "CREATE TABLE IF NOT EXISTS files (id INT PRIMARY KEY, message VARCHAR(255))"
 	InsertDataUser  = "INSERT INTO users (message) VALUES (?)"
 	InsertDataFile  = "INSERT INTO files (message) VALUES (?)"
 	GetUserMesssage = "SELECT message FROM users WHERE id = (?)"
@@ -24,6 +22,14 @@ type Query struct {
 	Conn    *sql.DB
 }
 
+func NewQuery() *Query {
+	return &Query{}
+}
+
+func (q *Query) ShowQuery() {
+	fmt.Printf("Query: %s", q.String)
+}
+
 func (q *Query) Connect(dbPath string) {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
@@ -32,27 +38,24 @@ func (q *Query) Connect(dbPath string) {
 	q.Conn = db
 }
 
-func (q *Query) Add(queryStr string) {
-	q.String = queryStr
-}
-
-func (q *Query) ShowQuery() {
-	fmt.Printf("Query: %s", q.String)
-}
-
-// connect to database and send query
-func (q *Query) Ask() {
-	rows, err := q.Conn.Query(q.String)
+// connect to database and send query. Query struct will
+// hold the last executed query, assuming it was successfull.
+func (q *Query) Ask(query string) {
+	rows, err := q.Conn.Query(query)
 	if err != nil {
 		log.Fatal(err)
 	}
+	q.String = query
 	q.Results = rows
 	rows.Close()
 }
 
+func (q *Query) Rows() *sql.Rows {
+	return q.Results
+}
+
 func (q *Query) Close() {
-	err := q.Conn.Close()
-	if err != nil {
-		log.Fatal(err)
+	if err := q.Conn.Close(); err != nil {
+		log.Fatalf("[ERROR] unable to close database connection: %v", err)
 	}
 }

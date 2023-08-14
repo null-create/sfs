@@ -28,7 +28,7 @@ func RandInt(limit int) int {
 func NewUUID() string {
 	uuid, err := uuid.NewUUID()
 	if err != nil {
-		log.Fatalf("[ERROR] Could not generate UUID:\n%v\n", err)
+		log.Fatalf("[ERROR] Could not generate UUID: \n%v\n", err)
 	}
 	return uuid.String()
 }
