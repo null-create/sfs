@@ -8,10 +8,10 @@ Automatically back up your project files and sync file states across multiple de
 
 ## Features
 
-- Syncrhonize file states across devices upon save.
+- Synchronize file states across devices upon save.
 - Manage a local and remote file system via a simple browser interface.
 - Comes with a robust CLI tool to manage files and directories.
-- Intended for home use but built with scaling capabilities.
+- Intended for home LAN use but built with scaling capabilities.
 
 
 ## Tech
@@ -20,6 +20,7 @@ Automatically back up your project files and sync file states across multiple de
 
 - [Chi] - Chi is a small, idiomatic and composable router for building HTTP services.
 - [SQLite3] - A sqlite3 driver that conforms to the built-in database/sql interface.
+- [envdecode] - envdecode is a Go package for populating structs from environment variables.
 
 
 
@@ -38,7 +39,7 @@ go build main.go -o sfs      # for linux/macOS
 go build main.go -o sfs.exe  # for windows
 
 # set executable to go path and test
-cp sfs ~/go/bin 
+cp sfs ~/go/bin              # change to where your go/bin file is located
 sfs --version
 ```
 
@@ -86,3 +87,4 @@ MIT
 
    [Chi]: <https://pkg.go.dev/github.com/go-chi/chi>
    [SQLite3]: <https://pkg.go.dev/github.com/mattn/go-sqlite3>
+   [envdecode]: <github.com/joeshaw/envdecode>
