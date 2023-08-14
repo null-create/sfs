@@ -1,4 +1,4 @@
-package pkg
+package server
 
 import (
 	"encoding/json"
@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/files"
-	"github.com/sfs/pkg/server"
 )
 
 /*
@@ -38,7 +38,7 @@ type Service struct {
 	// user structs contain a pointer to the users Drive directory,
 	// so this can be used for measuring disc size and executing
 	// health checks
-	Users map[string]*User `json:"users"`
+	Users map[string]*auth.User `json:"users"`
 }
 
 // NOTE: http server is not instantiated with NewService()
@@ -48,11 +48,11 @@ func NewService(name string, admin bool) *Service {
 		InitTime:    time.Now(),
 		ServicePath: c.ServiceRoot,
 		AdminMode:   admin,
-		Users:       make(map[string]*User),
+		Users:       make(map[string]*auth.User),
 	}
 	// input admin mode and credentials, if necessary
 	if admin {
-		s := server.SrvConfig()
+		s := SrvConfig()
 		svc.AdminMode = true
 		svc.Admin = s.Server.Admin
 		svc.AdminKey = s.Server.AdminKey
@@ -73,7 +73,7 @@ func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
 
-func (s *Service) GetUsers() map[string]*User {
+func (s *Service) GetUsers() map[string]*auth.User {
 	if len(s.Users) == 0 {
 		log.Printf("[DEBUG] no users found")
 		return nil
@@ -81,7 +81,7 @@ func (s *Service) GetUsers() map[string]*User {
 	return s.Users
 }
 
-func (s *Service) AddUser(u *User) {
+func (s *Service) AddUser(u *auth.User) {
 	if _, ok := s.Users[u.ID]; !ok {
 		s.Users[u.ID] = u
 	} else {
@@ -105,7 +105,7 @@ func (s *Service) RemoveUser(id string) error {
 	return nil
 }
 
-func (s *Service) GetUser(id string) (*User, error) {
+func (s *Service) GetUser(id string) (*auth.User, error) {
 	if usr, ok := s.Users[id]; ok {
 		return usr, nil
 	} else {

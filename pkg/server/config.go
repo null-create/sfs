@@ -27,8 +27,30 @@ type serverConf struct {
 func SrvConfig() *Conf {
 	var c Conf
 	if err := envdecode.StrictDecode(&c); err != nil {
-		log.Fatalf("Failed to decode: %s", err)
+		log.Fatalf("[ERROR] failed to decode server config .env file: %s", err)
 	}
 
 	return &c
+}
+
+type SFSConf struct {
+	ServiceRoot string `env:"SERVICE_ROOT,required"`
+}
+
+func GetServiceConfig() *SFSConf {
+	var conf SFSConf
+	if err := envdecode.StrictDecode(&conf); err != nil {
+		log.Fatalf("[ERROR] failed to decode service .env file: %s", err)
+	}
+	return &SFSConf{
+		ServiceRoot: conf.ServiceRoot,
+	}
+}
+
+func (n *SFSConf) GetServiceRoot() string {
+	if n.ServiceRoot == "" {
+		log.Fatalf("[ERROR] no service root set!")
+		return ""
+	}
+	return n.ServiceRoot
 }
