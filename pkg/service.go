@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/nimbus/pkg/files"
-	"github.com/nimbus/pkg/server"
+	"github.com/sfs/pkg/files"
+	"github.com/sfs/pkg/server"
 )
 
 /*
