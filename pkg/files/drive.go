@@ -42,7 +42,6 @@ type Drive struct {
 	AuthType  string `json:"authType"`
 
 	// location of the drive on physical server filesystem
-	// should always have the prefix nimbus/drive-name
 	DriveRoot string `json:"driveRoot"`
 
 	// User's root directory
