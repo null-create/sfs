@@ -511,7 +511,7 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	// check files
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
-			idx.LastSync[file.Path] = file.LastSync
+			idx.LastSync[file.ID] = file.LastSync
 		}
 	} else {
 		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
