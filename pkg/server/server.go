@@ -10,13 +10,14 @@ import (
 type Server struct {
 	StartTime time.Time
 
+	Svc *Service     // SFS service instance
 	Db  *sql.DB      // database connection
-	Srv *http.Server // server
+	Srv *http.Server // http server
 }
 
 // NOTE: no handler(s) attached!
 // Must be built and attached manually
-func NewServer() *Server {
+func NewServer(isAdmin bool) *Server {
 
 	// get http server configs
 	c := SrvConfig()
@@ -28,6 +29,7 @@ func NewServer() *Server {
 	rtr := NewRouter()
 
 	return &Server{
+		Svc: NewService(isAdmin),
 		Srv: &http.Server{
 			Handler:      rtr,
 			Addr:         c.Server.Addr,
