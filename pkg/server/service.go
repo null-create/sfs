@@ -25,28 +25,28 @@ All service configurations may end up living here.
 type Service struct {
 	InitTime time.Time `json:"init_time"`
 
-	// Drive directory path for Nimbus service on the server
-	ServicePath string `json:"service_Drive"`
+	// Drive directory path for sfs service on the server
+	ServiceRoot string `json:"service_root"`
 
 	// admin mode. allows for expanded permissions when working with
-	// the internal nimbus file systems.
+	// the internal sfs file systems.
 	AdminMode bool   `json:"admin_mode"`
 	Admin     string `json:"admin"`
 	AdminKey  string `json:"admin_key"`
 
 	// key: drive-id, val is user struct.
+	//
 	// user structs contain a pointer to the users Drive directory,
 	// so this can be used for measuring disc size and executing
 	// health checks
 	Users map[string]*auth.User `json:"users"`
 }
 
-// NOTE: http server is not instantiated with NewService()
-func NewService(name string, admin bool) *Service {
+func NewService(admin bool) *Service {
 	c := GetServiceConfig()
 	svc := &Service{
 		InitTime:    time.Now(),
-		ServicePath: c.ServiceRoot,
+		ServiceRoot: c.ServiceRoot,
 		AdminMode:   admin,
 		Users:       make(map[string]*auth.User),
 	}
@@ -72,6 +72,16 @@ func (s *Service) RunTime() float64 {
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
+
+// read in an external service state file (json) to
+// populate the internal data structures.
+//
+// reads internal service file system and populates internal data structures
+func (s *Service) Populate() error {
+	return nil
+}
+
+func (s *Service) SaveState() error { return nil }
 
 func (s *Service) GetUsers() map[string]*auth.User {
 	if len(s.Users) == 0 {
@@ -152,7 +162,7 @@ func (s *Service) TotalSize() float64 {
 
 // Build a new privilaged Drive directory for a client on a Nimbus server
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	drivePath := filepath.Join(s.ServicePath, name)
+	drivePath := filepath.Join(s.ServiceRoot, name)
 	newID := files.NewUUID()
 
 	newRoot := files.NewRootDirectory("root", owner, filepath.Join(drivePath, "root"))
@@ -170,28 +180,24 @@ func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
 // owner, init date, passwords, etc.
 func (s *Service) GenBaseFiles(DrivePath string) {
 	// create Drive directory
-	err := os.MkdirAll(DrivePath, 0666)
-	if err != nil {
+	if err := os.MkdirAll(DrivePath, 0666); err != nil {
 		log.Fatalf("[ERROR] failed to create Drive directory \n%v\n", err)
 	}
 	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
 	for i := 0; i < len(fileNames); i++ {
-		saveBaselineFile(DrivePath, fileNames[i], make(map[string]interface{}))
+		save(DrivePath, fileNames[i], make(map[string]interface{}))
 	}
 }
 
 // write out as a json file
-func saveBaselineFile(dir, filename string, data map[string]interface{}) {
+func save(dir, filename string, data map[string]interface{}) {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Fatalf("[ERROR] failed marshalling JSON data: %s\n", err)
-		return
 	}
 
-	err = ioutil.WriteFile(fmt.Sprintf("%s/%s", dir, filename), jsonData, 0644)
-	if err != nil {
+	if err = ioutil.WriteFile(filepath.Join(dir, filename), jsonData, 0666); err != nil {
 		log.Fatalf("[ERROR] unable to write JSON file %s: %s\n", filename, err)
-		return
 	}
 }
 
