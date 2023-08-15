@@ -50,7 +50,6 @@ func GetServiceConfig() *SFSConf {
 func (n *SFSConf) GetServiceRoot() string {
 	if n.ServiceRoot == "" {
 		log.Fatalf("[ERROR] no service root set!")
-		return ""
 	}
 	return n.ServiceRoot
 }
