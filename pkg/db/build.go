@@ -9,8 +9,39 @@ import (
 )
 
 const (
-	CreateUserTable = "CREATE TABLE IF NOT EXISTS users (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), user_name VARCHAR(255), email VARCHAR(255), password VARCHAR(255))"
-	CreateFileTable = "CREATE TABLE IF NOT EXISTS files (id VARCHAR(255) PRIMARY KEY, file_name VARCHAR(255), file_path VARCHAR(255), directory VARCHAR(255), last_sync VARCHAR(255))"
+	CreateUserTable = `
+	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users')
+	BEGIN
+			CREATE TABLE UserTable (
+					id VARCHAR(50) PRIMARY KEY,
+					name VARCHAR(255),
+					username VARCHAR(50),
+					email VARCHAR(255),
+					password VARCHAR(100),
+					last_login_date DATETIME,
+					is_admin BIT,
+					total_files INT,
+					total_directories INT
+			);
+	END`
+
+	CreateFileTable = `
+	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Files')
+	BEGIN
+			CREATE TABLE Files (
+					id VARCHAR(50) PRIMARY KEY,
+					name VARCHAR(255),
+					owner VARCHAR(50),
+					protected BIT,
+					key VARCHAR(100),
+					path VARCHAR(255),
+					server_path VARCHAR(255),
+					client_path VARCHAR(255),
+					checksum VARCHAR(255),
+					algorithm VARCHAR(50)
+			);
+	END
+	`
 )
 
 // MakeNewDatabase creates a new database during initial set up of
