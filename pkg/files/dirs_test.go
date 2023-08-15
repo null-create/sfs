@@ -325,14 +325,7 @@ func TestWalkS(t *testing.T) {
 	assert.NotEqual(t, 0, len(index.LastSync))
 
 	// clean up after testing
-	for _, td := range testDir5.Dirs {
-		if err := testDir5.RemoveSubDir(td.ID); err != nil {
-			t.Errorf("[ERROR] unable to remove test directory %v", err)
-		}
-	}
-
-	// // clean up after testing
-	// testDir5.Clean(testingDir)
+	testDir5.Clean(testingDir)
 }
 
 func TestWalkF(t *testing.T) {}

@@ -9,7 +9,7 @@ type SyncIndex struct {
 
 	// We will use the file path for each file to retrieve the pointer for the
 	// file object if it is to be queued for uploading or downloading
-	// key = file , value = last modified date
+	// key = file UUID, value = last modified date
 	LastSync map[string]time.Time
 
 	// map of files to be queued for uploading or downloading
