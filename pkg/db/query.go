@@ -1,57 +1,47 @@
 package db
 
-// "github.com/mattn/go-sqlite3"
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// baseline queries
-const (
-	InsertDataUser  = "INSERT INTO users (message) VALUES (?)"
-	InsertDataFile  = "INSERT INTO files (message) VALUES (?)"
-	GetUserMesssage = "SELECT message FROM users WHERE id = (?)"
-)
-
 type Query struct {
-	String  string
-	Results *sql.Rows
-	Conn    *sql.DB
+	DBPath string
+	Query  string
+
+	Conn *sql.DB
+	Stmt *sql.Stmt
 }
 
-func NewQuery() *Query {
-	return &Query{}
+// returns a new query struct
+// TODO: initialize prepared SQL statements?
+// see: https://go.dev/doc/database/prepared-statements
+func NewQuery(dbPath string) *Query {
+	return &Query{
+		DBPath: dbPath,
+		Query:  "",
+		Conn:   nil,
+	}
 }
 
-func (q *Query) ShowQuery() {
-	fmt.Printf("Query: %s", q.String)
-}
-
-func (q *Query) Connect(dbPath string) {
-	db, err := sql.Open("sqlite3", dbPath)
+// prepare a statement. must be followed by q.Stmt.Close() when called!
+func (q *Query) Prepare(query string) error {
+	stmt, err := q.Conn.Prepare(query)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	q.Stmt = stmt
+	return nil
+}
+
+func (q *Query) Connect() {
+	db, err := sql.Open("sqlite3", q.DBPath)
+	if err != nil {
+		log.Fatalf("[ERROR] failed to connect to database: %v", err)
 	}
 	q.Conn = db
-}
-
-// connect to database and send query. Query struct will
-// hold the last executed query, assuming it was successfull.
-func (q *Query) Ask(query string) {
-	rows, err := q.Conn.Query(query)
-	if err != nil {
-		log.Fatal(err)
-	}
-	q.String = query
-	q.Results = rows
-	rows.Close()
-}
-
-func (q *Query) Rows() *sql.Rows {
-	return q.Results
 }
 
 func (q *Query) Close() {
