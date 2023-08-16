@@ -52,6 +52,7 @@ const (
 					protected BIT,
 					key VARCHAR(100),
 					path VARCHAR(255),
+					last_sync DATETIME,
 					server_path VARCHAR(255),
 					client_path VARCHAR(255),
 					checksum VARCHAR(255),
