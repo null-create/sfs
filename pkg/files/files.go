@@ -44,8 +44,8 @@ type File struct {
 	m sync.Mutex
 
 	// metadata
-	Name  string
 	ID    string
+	Name  string
 	NMap  NameMap
 	Owner string
 
