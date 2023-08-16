@@ -1,9 +1,7 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -42,7 +40,7 @@ type Service struct {
 	Users map[string]*auth.User `json:"users"`
 }
 
-func NewService(admin bool) *Service {
+func Init(new bool, admin bool) *Service {
 	c := GetServiceConfig()
 	svc := &Service{
 		InitTime:    time.Now(),
@@ -57,6 +55,11 @@ func NewService(admin bool) *Service {
 		svc.Admin = s.Server.Admin
 		svc.AdminKey = s.Server.AdminKey
 	}
+	if !new {
+		svc.Load() // load from state file
+	} else {
+		svc.GenBaseFiles("path") // initialize a new service and db's
+	}
 	return svc
 }
 
@@ -69,19 +72,87 @@ func (s *Service) RunTime() float64 {
 	return time.Since(s.InitTime).Seconds()
 }
 
-func (s *Service) TotalUsers() int {
-	return len(s.Users)
-}
+// ------- init ---------------------------------------
 
 // read in an external service state file (json) to
 // populate the internal data structures.
 //
 // reads internal service file system and populates internal data structures
-func (s *Service) Populate() error {
+// through querying the users database
+func (s *Service) Load() error {
 	return nil
 }
 
-func (s *Service) SaveState() error { return nil }
+/*
+SaveState is meant to capture the current value of the following fields:
+
+	InitTime time.Time `json:"init_time"`
+
+	// Drive directory path for sfs service on the server
+	ServiceRoot string `json:"service_root"`
+
+	// admin mode. allows for expanded permissions when working with
+	// the internal sfs file systems.
+	AdminMode bool   `json:"admin_mode"`
+	Admin     string `json:"admin"`
+	AdminKey  string `json:"admin_key"`
+
+all information about user file metadata  are saved in the database.
+the above fields are saved as a json file.
+*/
+func (s *Service) SaveState() error {
+	return nil
+}
+
+// get total size (in kb!) of all active user drives
+func (s *Service) TotalSize() float64 {
+	if len(s.Users) == 0 {
+		log.Printf("[DEBUG] no drives to measure")
+		return 0.0
+	}
+	var total float64
+	for _, usr := range s.Users {
+		total += usr.Drive.DriveSize()
+	}
+	return total / 1000
+}
+
+// ------- new service set up --------------------------------
+
+// TODO: test!
+// generate some base line meta data for this service instance.
+// should generate a users.json file (which will keep track of active users),
+// and a drives.json, containing info about each drive, its total size, its location,
+// owner, init date, passwords, etc.
+func (s *Service) GenBaseFiles(DrivePath string) {
+	// create Drive directory
+	if err := os.MkdirAll(DrivePath, 0666); err != nil {
+		log.Fatalf("[ERROR] failed to create Drive directory \n%v\n", err)
+	}
+	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
+	for i := 0; i < len(fileNames); i++ {
+		save(DrivePath, fileNames[i], make(map[string]interface{}))
+	}
+}
+
+// Build a new privilaged Drive directory for a client on a Nimbus server
+func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
+	drivePath := filepath.Join(s.ServiceRoot, name)
+	newID := files.NewUUID()
+
+	newRoot := files.NewRootDirectory("root", owner, filepath.Join(drivePath, "root"))
+	drive := files.NewDrive(newID, name, owner, drivePath, newRoot)
+
+	s.GenBaseFiles(drivePath)
+
+	return drive
+}
+
+// ------- user methods --------------------------------
+
+func (s *Service) TotalUsers() int {
+	return len(s.Users)
+}
 
 func (s *Service) GetUsers() map[string]*auth.User {
 	if len(s.Users) == 0 {
@@ -145,64 +216,4 @@ func (s *Service) ClearAll(adminKey string) {
 	} else {
 		log.Print("[DEBUG] must be in admin mode to run s.ClearAll()")
 	}
-}
-
-// get total size (in kb!) of all active user drives
-func (s *Service) TotalSize() float64 {
-	if len(s.Users) == 0 {
-		log.Printf("[DEBUG] no drives to measure")
-		return 0.0
-	}
-	var total float64
-	for _, usr := range s.Users {
-		total += usr.Drive.DriveSize()
-	}
-	return total / 1000
-}
-
-// Build a new privilaged Drive directory for a client on a Nimbus server
-func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	drivePath := filepath.Join(s.ServiceRoot, name)
-	newID := files.NewUUID()
-
-	newRoot := files.NewRootDirectory("root", owner, filepath.Join(drivePath, "root"))
-	drive := files.NewDrive(newID, name, owner, drivePath, newRoot)
-
-	s.GenBaseFiles(drivePath)
-
-	return drive
-}
-
-// TODO: test!
-// generate some base line meta data for this service instance.
-// should generate a users.json file (which will keep track of active users),
-// and a drives.json, containing info about each drive, its total size, its location,
-// owner, init date, passwords, etc.
-func (s *Service) GenBaseFiles(DrivePath string) {
-	// create Drive directory
-	if err := os.MkdirAll(DrivePath, 0666); err != nil {
-		log.Fatalf("[ERROR] failed to create Drive directory \n%v\n", err)
-	}
-	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
-	for i := 0; i < len(fileNames); i++ {
-		save(DrivePath, fileNames[i], make(map[string]interface{}))
-	}
-}
-
-// write out as a json file
-func save(dir, filename string, data map[string]interface{}) {
-	jsonData, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		log.Fatalf("[ERROR] failed marshalling JSON data: %s\n", err)
-	}
-
-	if err = ioutil.WriteFile(filepath.Join(dir, filename), jsonData, 0666); err != nil {
-		log.Fatalf("[ERROR] unable to write JSON file %s: %s\n", filename, err)
-	}
-}
-
-// TODO:
-// get the size of a hard drive. Will be useful for real-time health checks
-func DiskSize(path string) (float64, error) {
-	return 0.0, nil
 }
