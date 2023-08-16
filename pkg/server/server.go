@@ -17,7 +17,7 @@ type Server struct {
 
 // NOTE: no handler(s) attached!
 // Must be built and attached manually
-func NewServer(isAdmin bool) *Server {
+func NewServer(newService bool, isAdmin bool) *Server {
 
 	// get http server configs
 	c := SrvConfig()
@@ -29,7 +29,7 @@ func NewServer(isAdmin bool) *Server {
 	rtr := NewRouter()
 
 	return &Server{
-		Svc: NewService(isAdmin),
+		Svc: Init(newService, isAdmin),
 		Srv: &http.Server{
 			Handler:      rtr,
 			Addr:         c.Server.Addr,
