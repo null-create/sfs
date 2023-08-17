@@ -2,6 +2,7 @@ package network
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 const (
 	MAX       = 100
 	URL       = "http://www.google.com"
-	TEST_DATA = "/test_files/shrek.txt"
+	TEST_DATA = "shrek.txt"
 )
 
 // We measure network resources by timing how long it takes to download a file of
@@ -21,12 +22,15 @@ const (
 // This function is used iteratively to measure the average upload and download times,
 // which helps the server determine file batch sizes
 type NetworkProfile struct {
-	HostName string  `json:"host"`
+	HostName string `json:"host"`
+
+	BatchMAX int64 `json:"batch_max"`
+
 	UpRate   float64 `json:"up_rate"`
 	DownRate float64 `json:"down_rate"`
 }
 
-func NetNetorkProfile() *NetworkProfile {
+func NewNetworkProfile() *NetworkProfile {
 	return &NetworkProfile{
 		HostName: GetHostName(),
 	}
@@ -46,11 +50,8 @@ func measureSpeed(url string, client *http.Client) (downloadSpeed, uploadSpeed f
 	downloadSpeed = float64(resp.ContentLength) / downloadDuration
 
 	//-----Measure upload speed with larger text file
-	here, err := os.Getwd()
-	if err != nil {
-		return 0, 0, fmt.Errorf("[ERROR] failed to get current directory: %v", err)
-	}
-	uploadData, err := os.ReadFile(filepath.Join(here, TEST_DATA))
+	testFolder := filepath.Join(GetCwd(), "test_files")
+	uploadData, err := os.ReadFile(filepath.Join(testFolder, TEST_DATA))
 	if err != nil {
 		return 0, 0, fmt.Errorf("[ERROR] could not open test data: %v", err)
 	}
@@ -94,15 +95,50 @@ func averageSpeeds(iterations int) (float64, float64) {
 	return upAvg, downAvg
 }
 
+// profile and save our average speeds as a network-profile.json file
+// under ../sfs/pkg/network/profile/
 func ProfileNetwork() *NetworkProfile {
-	profile := NetNetorkProfile()
+	profile := NewNetworkProfile()
 	upAvg, dwnAvg := averageSpeeds(MAX)
 
 	profile.UpRate = upAvg
 	profile.DownRate = dwnAvg
 
-	// save our average speeds as our network profile
-	SaveProfile(profile)
+	saveProfile(profile)
 
 	return profile
+}
+
+// saveProfile creates a simple .json file of our network speed averages
+func saveProfile(profile *NetworkProfile) error {
+	// Open the JSON file for writing
+	file, err := os.Create(filepath.Join(ProfileDirPath(), "network-profile.json"))
+	if err != nil {
+		log.Fatalf("[ERROR] error creating file \n%v\n ", err)
+	}
+	defer file.Close()
+
+	// Encode the data and write it to the file
+	encoder := json.NewEncoder(file)
+	jsonStr, err := json.Marshal(&profile)
+	if err != nil {
+		log.Fatalf("[ERROR] error marshalling data to JSON format \n%v\n ", err)
+	}
+	if err = encoder.Encode(jsonStr); err != nil {
+		log.Fatalf("[ERROR] error encoding network profile: %v", err)
+	}
+
+	return nil
+}
+
+/*
+picks MAX limit for batch sizes based on the newly generated network profile
+
+MAX = ((downrate * C) + (uprate * C)) / 2
+
+current value for C is 0.75, and is totally arbitrary.
+will probably fine tune/change equation as things develop.
+*/
+func PickMAX(p *NetworkProfile) int64 {
+	return int64(((p.DownRate * 0.75) + (p.UpRate * 0.75)) / 2)
 }
