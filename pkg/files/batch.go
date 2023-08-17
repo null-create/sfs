@@ -32,10 +32,15 @@ we're bound  by an upper size limit on our batch sizes (MAX) since
 we ideally don't want to clog a home network's resources when uploading
 or downloading batches of files. MAX is subject to change of course,
 but its in place as a mechanism for resource management.
-*/
 
-// NOTE this does not check whether there are any duplicate files in the
-// files []*File slice... probably should do that
+NOTE: this does not check whether there are any duplicate files in the
+files []*File slice... probably should do that
+
+NOTE: if each batch's files are to be uploaded in their own separate goroutines, and
+each thread is part of a waitgroup, and each batch is processed one at a time, then
+the runtime for each batch will be bound by the largest file in the batch
+(assuming consistent upload speed and no other external circumstances).
+*/
 func (b *Batch) AddFiles(files []*File) []*File {
 	// remember which ones we added so we don't have to modify the
 	// files slice in-place as we're iterating over it
@@ -56,7 +61,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the
 		// number of times we need to iterate over the list of files (and remaning subsets after
 		// each batch) and where k is the size of the *current* list we're iterating over and
-		// building a batch from (assuming shrinkage with each pass).
+		// building a batch from (assuming slice shrinkage with each pass).
 		//
 		// TODO: investigate this case
 		// individual files that exceed b.Cap won't be added to the batch ever.
