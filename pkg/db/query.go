@@ -22,8 +22,6 @@ type Query struct {
 func NewQuery(dbPath string) *Query {
 	return &Query{
 		DBPath: dbPath,
-		Query:  "",
-		Conn:   nil,
 	}
 }
 
