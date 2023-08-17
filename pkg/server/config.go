@@ -34,6 +34,7 @@ func SrvConfig() *Conf {
 }
 
 type SFSConf struct {
+	// location of the the sfs root service directory
 	ServiceRoot string `env:"SERVICE_ROOT,required"`
 }
 
