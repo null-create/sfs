@@ -42,6 +42,24 @@ const (
 	END
 	`
 
+	CreateDirectoryTable = `
+	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Storage')
+	BEGIN
+			CREATE TABLE Directories (
+					id VARCHAR(50) PRIMARY KEY,
+					name VARCHAR(255),
+					owner VARCHAR(50),
+					total_space DECIMAL(18, 2),
+					used_space DECIMAL(18, 2),
+					free_space DECIMAL(18, 2),
+					protected BIT,
+					key VARCHAR(100),
+					auth_type VARCHAR(50),
+					drive_root VARCHAR(255)
+			);
+	END
+	`
+
 	CreateFileTable = `
 	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Files')
 	BEGIN
@@ -65,10 +83,12 @@ const (
 func NewDB(dbName string, pathToNewDB string) {
 	if dbName == "files" {
 		new(pathToNewDB, CreateFileTable)
+	} else if dbName == "directories" {
+		new(pathToNewDB, CreateDirectoryTable)
 	} else if dbName == "users" {
 		new(pathToNewDB, CreateUserTable)
 	} else if dbName == "drives" {
-		new(pathToNewDB, CreateDriveTable)
+		new(pathToNewDB, CreateDirectoryTable)
 	} else {
 		log.Printf("[DEBUG] unknown database category: %s", dbName)
 	}
