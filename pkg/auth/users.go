@@ -26,10 +26,6 @@ type User struct {
 	TotalDirs  int `json:"total_dirs"`
 }
 
-func (u *User) IsAdmin() bool {
-	return u.Admin
-}
-
 func check(name string, userName string, email string, newDrive *files.Drive) bool {
 	if name == "" || userName == "" || email == "" || newDrive == nil {
 		return false
