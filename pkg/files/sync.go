@@ -37,7 +37,7 @@ func (s *SyncIndex) GetFilePaths() []string {
 
 	fp := make([]string, 0)
 	for _, file := range s.ToUpdate {
-		fp = append(fp, file.Path)
+		fp = append(fp, file.ServerPath)
 	}
 	return fp
 }
