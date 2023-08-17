@@ -38,13 +38,11 @@ type SFSConf struct {
 }
 
 func GetServiceConfig() *SFSConf {
-	var conf SFSConf
-	if err := envdecode.StrictDecode(&conf); err != nil {
+	var c SFSConf
+	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode service .env file: %s", err)
 	}
-	return &SFSConf{
-		ServiceRoot: conf.ServiceRoot,
-	}
+	return &c
 }
 
 func (n *SFSConf) GetServiceRoot() string {
