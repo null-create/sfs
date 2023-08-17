@@ -27,14 +27,13 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	defer q.Close()
 
 	var user *auth.User
-	if err := q.Conn.QueryRow("SELECT * FROM users WHERE id = ?", userID).Scan(
+	if err := q.Conn.QueryRow("SELECT * FROM Users WHERE id = ?", userID).Scan(
 		&user.ID,
 		&user.Name,
 		&user.UserName,
 		&user.Password,
 		&user.Email,
 		&user.LastLogin,
-		user.IsAdmin,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("[ERROR] no rows returned: %v", err)
@@ -49,7 +48,7 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query("SELECT * FROM users;")
+	rows, err := q.Conn.Query("SELECT * FROM Users;")
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
@@ -87,7 +86,7 @@ func (q *Query) GetFile(fileID string) (*files.File, error) {
 	defer q.Close()
 
 	var file *files.File
-	if err := q.Conn.QueryRow("SELECT * FROM files WHERE id = ?;", fileID).Scan(
+	if err := q.Conn.QueryRow("SELECT * FROM Files WHERE id = ?;", fileID).Scan(
 		&file.ID,
 		&file.Name,
 		&file.Owner,
@@ -115,7 +114,7 @@ func (q *Query) GetFiles(limit string) ([]*files.File, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query("SELECT * FROM files LIMIT ?;", limit)
+	rows, err := q.Conn.Query("SELECT * FROM Files LIMIT ?;", limit)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
@@ -155,7 +154,7 @@ func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query("SELECT * FROM directories LIMIT ?;")
+	rows, err := q.Conn.Query("SELECT * FROM Directories LIMIT ?;")
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
