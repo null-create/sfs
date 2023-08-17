@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	CreateUserTable = `
+	CreateUserTable string = `
 	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users')
 	BEGIN
 			CREATE TABLE Users (
@@ -24,7 +24,7 @@ const (
 			);
 	END`
 
-	CreateDriveTable = `
+	CreateDriveTable string = `
 	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Storage')
 	BEGIN
 			CREATE TABLE Drives (
@@ -42,7 +42,7 @@ const (
 	END
 	`
 
-	CreateDirectoryTable = `
+	CreateDirectoryTable string = `
 	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Storage')
 	BEGIN
 			CREATE TABLE Directories (
@@ -60,7 +60,7 @@ const (
 	END
 	`
 
-	CreateFileTable = `
+	CreateFileTable string = `
 	IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Files')
 	BEGIN
 			CREATE TABLE Files (
@@ -80,6 +80,7 @@ const (
 	`
 )
 
+// all database files must end with .db!
 func NewDB(dbName string, pathToNewDB string) {
 	if dbName == "files" {
 		new(pathToNewDB, CreateFileTable)
@@ -100,8 +101,9 @@ func new(path string, query string) {
 		log.Fatalf("[ERROR] unable to open database: \n%v\n", err)
 	}
 	defer db.Close()
+
 	_, err = db.Exec(query)
 	if err != nil {
-		log.Fatalf("[ERROR] failed to create file table: \n%v\n", err)
+		log.Fatalf("[ERROR] failed to create table: \n%v\n", err)
 	}
 }
