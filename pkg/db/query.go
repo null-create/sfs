@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -11,8 +12,8 @@ type Query struct {
 	DBPath string
 	Query  string
 
-	Conn *sql.DB
-	Stmt *sql.Stmt
+	Conn *sql.DB   // db connection
+	Stmt *sql.Stmt // SQL statement
 }
 
 // returns a new query struct
@@ -30,7 +31,7 @@ func NewQuery(dbPath string) *Query {
 func (q *Query) Prepare(query string) error {
 	stmt, err := q.Conn.Prepare(query)
 	if err != nil {
-		return err
+		return fmt.Errorf("[ERROR] unable to prepare statement: %v", err)
 	}
 	q.Stmt = stmt
 	return nil
