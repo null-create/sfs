@@ -23,11 +23,14 @@ All service configurations may end up living here.
 type Service struct {
 	InitTime time.Time `json:"init_time"`
 
-	// path to the service state file
-	StateFilePath string `json:"state_file"`
-
 	// Drive directory path for sfs service on the server
 	ServiceRoot string `json:"service_root"`
+
+	// file name for the sfs state file
+	StateFile string `json:"state_file"`
+
+	// path to the service state file
+	StateFileFolder string `json:"state_file_folder"`
 
 	// admin mode. allows for expanded permissions when working with
 	// the internal sfs file systems.
@@ -45,20 +48,20 @@ type Service struct {
 
 func Init(new bool, admin bool) *Service {
 	c := GetServiceConfig()
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("[ERROR] failed to get current directory: %v", err)
-	}
+
+	statFileFolder := filepath.Join(c.ServiceRoot, "state")
+	stateFile := filepath.Join(statFileFolder, "state.json")
 
 	svc := &Service{
-		InitTime:      time.Now(),
-		StateFilePath: filepath.Join(cwd, "state"),
-		ServiceRoot:   c.ServiceRoot,
-		AdminMode:     admin,
-		Users:         make(map[string]*auth.User),
+		InitTime:        time.Now(),
+		ServiceRoot:     c.ServiceRoot,
+		StateFile:       stateFile,
+		StateFileFolder: statFileFolder,
+		AdminMode:       admin,
+		Users:           make(map[string]*auth.User, 0),
 	}
 
-	// input admin mode and credentials, if necessary
+	// input server admin credentials if necessary
 	if admin {
 		s := SrvConfig()
 		svc.AdminMode = true
@@ -66,13 +69,13 @@ func Init(new bool, admin bool) *Service {
 		svc.AdminKey = s.Server.AdminKey
 	}
 	if !new {
-		// load from state file
+		// load from state file and dbs
 		if err := svc.Load(); err != nil {
 			log.Fatalf("[ERROR] failed to load state file: %v", err)
 		}
 	} else {
 		// initialize new sfs service
-		if err := sInit(c.ServiceRoot); err != nil {
+		if err := SvcInit(c.ServiceRoot); err != nil {
 			log.Fatalf("[ERROR] service init failed: %v", err)
 		}
 	}
@@ -93,7 +96,20 @@ root/
 |---state/
 |   |----sfs-state-date:hour:min:sec.json
 */
-func sInit(path string) error {
+func SvcInit(path string) error {
+	// make root service directory (wherever it should located)
+	if err := os.MkdirAll(path, 0666); err != nil {
+		log.Fatalf("[ERROR] failed to make service root directory: %v", err)
+	}
+
+	paths := []string{filepath.Join(path, "users"), filepath.Join(path, "state")}
+
+	// create user and state sub directories
+	for _, p := range paths {
+		if err := os.Mkdir(p, 0666); err != nil {
+			log.Fatalf("[ERROR] failed to make directory: %v", err)
+		}
+	}
 
 	return nil
 }
@@ -108,8 +124,7 @@ func (s *Service) RunTime() float64 {
 // read in an external service state file (json) to
 // populate the internal data structures.
 //
-// reads internal service file system and populates internal data structures
-// through querying the users database
+// populates users map through querying the users database
 func (s *Service) Load() error {
 	return nil
 }
@@ -168,6 +183,8 @@ func (s *Service) GenBaseFiles(DrivePath string) {
 }
 
 // Build a new privilaged Drive directory for a client on a Nimbus server
+//
+// Must be under /root/users/<username>
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
 	drivePath := filepath.Join(s.ServiceRoot, name)
 	newID := files.NewUUID()
