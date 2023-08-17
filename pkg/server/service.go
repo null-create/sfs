@@ -56,15 +56,35 @@ func Init(new bool, admin bool) *Service {
 		svc.AdminKey = s.Server.AdminKey
 	}
 	if !new {
-		svc.Load() // load from state file
+		// load from state file
+		if err := svc.Load(); err != nil {
+			log.Fatalf("[ERROR] failed to load state file: %v", err)
+		}
 	} else {
-		svc.GenBaseFiles("path") // initialize a new service and db's
+		if err := sInit(c.ServiceRoot); err != nil {
+			log.Fatalf("[ERROR] service init failed: %v", err)
+		}
 	}
 	return svc
 }
 
-func (s *Service) IsAdminMode() bool {
-	return s.AdminMode
+/*
+initialize a new service and db's
+
+generate a root directory for a new sfs service.
+the root sfs service directory should have the following structure:
+
+root/
+|---users/
+|   |---userA/
+|   |---userB/
+|   (etc)
+|---state/
+|   |----sfs-state-date:hour:min:sec.json
+*/
+func sInit(path string) error {
+
+	return nil
 }
 
 // returns the service run time in seconds
@@ -120,6 +140,7 @@ func (s *Service) TotalSize() float64 {
 // ------- new service set up --------------------------------
 
 // TODO: test!
+//
 // generate some base line meta data for this service instance.
 // should generate a users.json file (which will keep track of active users),
 // and a drives.json, containing info about each drive, its total size, its location,
@@ -154,6 +175,14 @@ func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
 
+func (s *Service) GetUser(id string) (*auth.User, error) {
+	if usr, ok := s.Users[id]; ok {
+		return usr, nil
+	} else {
+		return nil, fmt.Errorf("[ERROR] user %s not found", id)
+	}
+}
+
 func (s *Service) GetUsers() map[string]*auth.User {
 	if len(s.Users) == 0 {
 		log.Printf("[DEBUG] no users found")
@@ -186,17 +215,9 @@ func (s *Service) RemoveUser(id string) error {
 	return nil
 }
 
-func (s *Service) GetUser(id string) (*auth.User, error) {
-	if usr, ok := s.Users[id]; ok {
-		return usr, nil
-	} else {
-		return nil, fmt.Errorf("[ERROR] user %s not found", id)
-	}
-}
-
 // clear all active users drives and deletes all content within
 func (s *Service) ClearAll(adminKey string) {
-	if s.IsAdminMode() {
+	if s.AdminMode {
 		if adminKey == s.AdminKey {
 			if len(s.Users) == 0 {
 				log.Printf("[DEBUG] no drives to remove")
