@@ -23,6 +23,9 @@ All service configurations may end up living here.
 type Service struct {
 	InitTime time.Time `json:"init_time"`
 
+	// path to the service state file
+	StateFilePath string `json:"state_file"`
+
 	// Drive directory path for sfs service on the server
 	ServiceRoot string `json:"service_root"`
 
@@ -42,12 +45,19 @@ type Service struct {
 
 func Init(new bool, admin bool) *Service {
 	c := GetServiceConfig()
-	svc := &Service{
-		InitTime:    time.Now(),
-		ServiceRoot: c.ServiceRoot,
-		AdminMode:   admin,
-		Users:       make(map[string]*auth.User),
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("[ERROR] failed to get current directory: %v", err)
 	}
+
+	svc := &Service{
+		InitTime:      time.Now(),
+		StateFilePath: filepath.Join(cwd, "state"),
+		ServiceRoot:   c.ServiceRoot,
+		AdminMode:     admin,
+		Users:         make(map[string]*auth.User),
+	}
+
 	// input admin mode and credentials, if necessary
 	if admin {
 		s := SrvConfig()
@@ -61,6 +71,7 @@ func Init(new bool, admin bool) *Service {
 			log.Fatalf("[ERROR] failed to load state file: %v", err)
 		}
 	} else {
+		// initialize new sfs service
 		if err := sInit(c.ServiceRoot); err != nil {
 			log.Fatalf("[ERROR] service init failed: %v", err)
 		}
@@ -76,8 +87,8 @@ the root sfs service directory should have the following structure:
 
 root/
 |---users/
-|   |---userA/
-|   |---userB/
+|   |---userDriveA/
+|   |---userDriveB/
 |   (etc)
 |---state/
 |   |----sfs-state-date:hour:min:sec.json
