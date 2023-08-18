@@ -104,7 +104,11 @@ func SvcInit(path string) error {
 		log.Fatalf("[ERROR] failed to make service root directory: %v", err)
 	}
 
-	paths := []string{filepath.Join(path, "users"), filepath.Join(path, "state")}
+	paths := []string{
+		filepath.Join(path, "users"),
+		filepath.Join(path, "state"),
+		filepath.Join(path, "dbs"),
+	}
 
 	// create user and state sub directories
 	for _, p := range paths {
@@ -118,9 +122,10 @@ func SvcInit(path string) error {
 	dbs := []string{"files", "directories", "users", "drives"}
 
 	for _, d := range dbs {
-		newDB := fmt.Sprintf("%s.db", filepath.Join(dbDir, d))
-		db.NewDB(d, filepath.Join(dbDir, newDB))
+		db.NewDB(d, filepath.Join(dbDir, d))
 	}
+
+	// create initial databases
 
 	return nil
 }
