@@ -1,52 +1,8 @@
 package db
 
+// Insert query with ON CONFLICT IGNORE (SQLite equivalent of upsert)
+
 const (
-	// ------- file, user, directory, and drive additions ----------------
-
-	// Insert query with ON CONFLICT IGNORE (SQLite equivalent of upsert)
-	AddFileQuery string = `
-	INSERT OR IGNORE INTO Files (
-		id, 
-		name, 
-		owner, 
-		protected, 
-		key, 
-		path, 
-		server_path, 
-		client_path, 
-		checksum, 
-		algorithm
-	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
-
-	AddUserQuery string = `
-	INSERT OR IGNORE INTO Users (
-		id, 
-		name, 
-		username, 
-		email, 
-		password, 
-		last_login, 
-		is_admin, 
-		total_files, 
-		total_directories
-	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
-
-	AddDirQuery string = ``
-
-	AddDriverQuery string = ``
-
-	// ------- update file, user, directory, and drive entries -------
-
-	// remove a user or file iff they (or the file) already exists in the database
-	RemoveUserQuery string = `
-		DELETE FROM Users WHERE id = '?' 
-		AND EXISTS (SELECT 1 FROM Users WHERE id = '?');`
-
-	RemoveFileQuery string = `
-		DELETE FROM Files WHERE id = '?' 
-		AND EXISTS (SELECT 1 FROM Users WHERE id = '?');`
 
 	// --------general table creation --------------------------------------
 	CreateUserTable string = `
@@ -56,7 +12,7 @@ const (
 			username VARCHAR(50),
 			email VARCHAR(255),
 			password VARCHAR(100),
-			last_login_date DATETIME,
+			last_login DATETIME,
 			is_admin BIT,
 			total_files INT,
 			total_directories INT
@@ -107,5 +63,54 @@ const (
 			algorithm VARCHAR(50)
 		);
 	`
+
 	DropTableQuery string = `DROP TABLE IF EXISTS ?;`
+
+	// ------- file, user, directory, and drive additions ----------------
+	AddFileQuery string = `
+	INSERT OR IGNORE INTO Files (
+		id, 
+		name, 
+		owner, 
+		protected, 
+		key, 
+		path, 
+		server_path, 
+		client_path, 
+		checksum, 
+		algorithm
+	)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+
+	AddUserQuery string = `
+	INSERT OR IGNORE INTO Users (
+		id, 
+		name, 
+		username, 
+		email, 
+		password, 
+		last_login, 
+		is_admin, 
+		total_files, 
+		total_directories
+	)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
+
+	AddDirQuery string = ``
+
+	AddDriverQuery string = ``
+
+	// ------- update file, user, directory, and drive entries -------
+
+	// remove a user or file iff they (or the file) already exists in the database
+	RemoveUserQuery string = `
+		DELETE FROM Users WHERE id = '?' 
+		AND EXISTS (SELECT 1 FROM Users WHERE id = '?');`
+
+	RemoveFileQuery string = `
+		DELETE FROM Files WHERE id = '?' 
+		AND EXISTS (SELECT 1 FROM Users WHERE id = '?');`
+
+	// ---------- SELECT statements for searching -------------------------------
+
 )
