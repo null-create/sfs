@@ -4,42 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/files"
-)
-
-// NOTE: these are string literals.
-// may need to have all \t and \n characters
-// removed before processing?
-const (
-	// Insert query with ON CONFLICT IGNORE (SQLite equivalent of upsert)
-	AddFileQuery string = `
-	INSERT OR IGNORE INTO Files (
-		id, 
-		name, 
-		owner, 
-		protected, 
-		key, 
-		path, 
-		server_path, 
-		client_path, 
-		checksum, 
-		algorithm
-	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
-
-	InsertUserQuery string = `
-	INSERT OR IGNORE INTO Users (
-		id, 
-		name, 
-		username, 
-		email, 
-		password, 
-		last_login, 
-		is_admin, 
-		total_files, 
-		total_directories
-	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 func (q *Query) AddFile(f *files.File) error {
@@ -65,7 +31,7 @@ func (q *Query) AddFile(f *files.File) error {
 		&f.CheckSum,
 		&f.Algorithm,
 	); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
 	}
 	return nil
 }
@@ -100,3 +66,67 @@ func (q *Query) AddFiles(fs *[]files.File) error {
 
 	return nil
 }
+
+func (q *Query) AddUser(u *auth.User) error {
+	q.Connect()
+	defer q.Close()
+
+	// prepare query
+	if err := q.Prepare(AddUserQuery); err != nil {
+		return fmt.Errorf("[ERROR] failed to prepare statement: %v", err)
+	}
+	defer q.Stmt.Close()
+
+	if _, err := q.Stmt.Exec(
+		&u.ID,
+		&u.Name,
+		&u.UserName,
+		&u.Password,
+		&u.Email,
+		&u.LastLogin,
+		&u.Admin,
+		&u.TotalFiles,
+		&u.TotalDirs,
+	); err != nil {
+		return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
+	}
+
+	return nil
+}
+
+func (q *Query) AddUsers(usrs []*auth.User) error {
+	q.Connect()
+	defer q.Close()
+
+	// prepare query
+	if err := q.Prepare(AddUserQuery); err != nil {
+		return fmt.Errorf("[ERROR] failed to prepare statement: %v", err)
+	}
+	defer q.Stmt.Close()
+
+	for _, u := range usrs {
+		if _, err := q.Stmt.Exec(
+			&u.ID,
+			&u.Name,
+			&u.UserName,
+			&u.Password,
+			&u.Email,
+			&u.LastLogin,
+			&u.Admin,
+			&u.TotalFiles,
+			&u.TotalDirs,
+		); err != nil {
+			return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (q *Query) AddDir(d *files.Directory) error { return nil }
+
+func (q *Query) AddDirs(dirs []*files.Directory) error { return nil }
+
+func (q *Query) AddDrive(drv *files.Drive) error { return nil }
+
+func (q *Query) AddDrives(drvs []*files.Drive) error { return nil }
