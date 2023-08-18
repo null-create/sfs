@@ -9,8 +9,6 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-const ()
-
 // remove a table from the database
 func Drop(dbPath string, tableName string) {
 	db, err := sql.Open("sqlite3", dbPath)
