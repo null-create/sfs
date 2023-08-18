@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/files"
 )
 
 // build path to test file directory. creates testing directory if it doesn't exist.
@@ -39,4 +42,27 @@ func Clean(t *testing.T, dir string) error {
 	}
 
 	return nil
+}
+
+func MakeTestItems(t *testing.T, testDir string) (*files.Drive, *files.Directory, *auth.User) {
+	tempDir := files.NewDirectory(
+		"bill",
+		"bill stinkwater",
+		filepath.Join(testDir, "bill"),
+	)
+	tempDrive := files.NewDrive(
+		files.NewUUID(),
+		"bill",
+		"bill stinkwater",
+		filepath.Join(testDir, "bill"),
+		tempDir,
+	)
+	tmpUser := auth.NewUser(
+		"bill",
+		"bill123",
+		"bill@bill.com",
+		tempDrive,
+		false,
+	)
+	return tempDrive, tempDir, tmpUser
 }
