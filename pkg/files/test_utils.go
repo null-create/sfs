@@ -26,3 +26,25 @@ func GetTestingDir() string {
 	}
 	return filepath.Join(curDir, "test_files")
 }
+
+// clean all contents from the testing directory
+func Clean(t *testing.T, dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		t.Errorf("[ERROR] unable to read directory: %v", err)
+	}
+
+	for _, name := range names {
+		if err = os.RemoveAll(filepath.Join(dir, name)); err != nil {
+			t.Errorf("[ERROR] unable to remove file: %v", err)
+		}
+	}
+
+	return nil
+}

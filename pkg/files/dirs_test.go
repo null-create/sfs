@@ -138,12 +138,7 @@ func TestSecurityFeatures(t *testing.T) {
 	assert.NotEqual(t, 0, len(td.Dirs))
 	assert.NotEqual(t, 0, len(td.Files))
 
-	if err := RemoveTestDirs(t); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-	if err := RemoveTestFiles(t, 1); err != nil {
-		t.Errorf("[ERROR] unable to remove test files: %v", err)
-	}
+	Clean(t, GetTestingDir())
 }
 
 func TestAddFiles(t *testing.T) {
@@ -164,12 +159,7 @@ func TestAddFiles(t *testing.T) {
 	assert.NotEqual(t, 0, len(td.Files))
 	assert.Equal(t, total, len(td.Files))
 
-	if err := RemoveTestDirs(t); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-	if err := RemoveTestFiles(t, total); err != nil {
-		t.Errorf("[ERROR] unable to remove test files: %v", err)
-	}
+	Clean(t, GetTestingDir())
 }
 
 func TestRemoveFiles(t *testing.T) {
@@ -195,9 +185,7 @@ func TestRemoveFiles(t *testing.T) {
 	}
 	assert.Equal(t, 0, len(td.Files))
 
-	if err := RemoveTestDirs(t); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
+	Clean(t, GetTestingDir())
 }
 
 func TestAddSubDirs(t *testing.T) {
