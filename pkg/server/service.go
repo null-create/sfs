@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/db"
 	"github.com/sfs/pkg/files"
 )
 
@@ -95,6 +96,7 @@ root/
 |   (etc)
 |---state/
 |   |----sfs-state-date:hour:min:sec.json
+|---dbs/
 */
 func SvcInit(path string) error {
 	// make root service directory (wherever it should located)
@@ -111,6 +113,15 @@ func SvcInit(path string) error {
 		}
 	}
 
+	// create new service databases
+	dbDir := filepath.Join(path, "dbs")
+	dbs := []string{"files", "directories", "users", "drives"}
+
+	for _, d := range dbs {
+		newDB := fmt.Sprintf("%s.db", filepath.Join(dbDir, d))
+		db.NewDB(d, filepath.Join(dbDir, newDB))
+	}
+
 	return nil
 }
 
@@ -123,6 +134,8 @@ func (s *Service) RunTime() float64 {
 
 // read in an external service state file (json) to
 // populate the internal data structures.
+//
+// TODO: handle case where state file is missing.
 //
 // populates users map through querying the users database
 func (s *Service) Load() error {
