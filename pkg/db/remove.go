@@ -9,24 +9,17 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-const (
-	// drop table query
-	DropQuery string = "DROP TABLE IF EXISTS ?;"
-
-	// remove a user or file iff they (or the file) already exists in the database
-	RemoveUserQuery string = "DELETE FROM Users WHERE id = '?' AND EXISTS (SELECT 1 FROM Users WHERE id = '?');"
-	RemoveFileQuery string = "DELETE FROM Files WHERE id = '?' AND EXISTS (SELECT 1 FROM Users WHERE id = '?');"
-)
+const ()
 
 // remove a table from the database
-func drop(dbPath string, tableName string) {
+func Drop(dbPath string, tableName string) {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatalf("[ERROR] unable to open database: \n%v\n", err)
 	}
 	defer db.Close()
 
-	_, err = db.Exec(DropQuery, tableName)
+	_, err = db.Exec(DropTableQuery, tableName)
 	if err != nil {
 		log.Fatalf("[ERROR] failed to drop table: \n%v\n", err)
 	}
@@ -37,7 +30,7 @@ func (q *Query) DropTable(tableName string) error {
 	q.Connect()
 	defer q.Close()
 
-	_, err := q.Conn.Exec(DropQuery, tableName)
+	_, err := q.Conn.Exec(DropTableQuery, tableName)
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to drop table %s: %v", tableName, err)
 	}
