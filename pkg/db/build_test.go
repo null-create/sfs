@@ -12,10 +12,10 @@ func TestBuildDbs(t *testing.T) {
 	testDir := GetTestingDir(t)
 
 	// ------- create tmp databases
-	New("users", filepath.Join(testDir, "users"))
-	New("files", filepath.Join(testDir, "files"))
-	New("drives", filepath.Join(testDir, "drives"))
-	New("directories", filepath.Join(testDir, "directories"))
+	New(filepath.Join(testDir, "users"), CreateUserTable)
+	New(filepath.Join(testDir, "files"), CreateFileTable)
+	New(filepath.Join(testDir, "drives"), CreateDriveTable)
+	New(filepath.Join(testDir, "directories"), CreateDirectoryTable)
 
 	// make sure we created the database files
 	entries, err := os.ReadDir(testDir)
