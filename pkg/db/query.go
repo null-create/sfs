@@ -16,9 +16,12 @@ type Query struct {
 	Stmt *sql.Stmt // SQL statement
 }
 
-// returns a new query struct
-// TODO: initialize prepared SQL statements?
+// TODO: initialize a set of prepared SQL statements during NewQuery?
+// could have a set of operations prepared ahead of time.
+//
 // see: https://go.dev/doc/database/prepared-statements
+//
+// returns a new query struct
 func NewQuery(dbPath string) *Query {
 	return &Query{
 		DBPath: dbPath,
