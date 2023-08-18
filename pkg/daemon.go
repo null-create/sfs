@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-// start sfs listeer daemon
+// start sfs lister daemon
 func daemon() {
 	log.Printf("[DEBUG] starting sfs daemon...")
 
