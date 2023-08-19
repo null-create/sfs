@@ -10,20 +10,20 @@ import (
 // all database files must end with .db!
 func NewDB(dbName string, pathToNewDB string) {
 	if dbName == "users" {
-		New(pathToNewDB, CreateUserTable)
+		NewTable(pathToNewDB, CreateUserTable)
 	} else if dbName == "drives" {
-		New(pathToNewDB, CreateDriveTable)
+		NewTable(pathToNewDB, CreateDriveTable)
 	} else if dbName == "directories" {
-		New(pathToNewDB, CreateDirectoryTable)
+		NewTable(pathToNewDB, CreateDirectoryTable)
 	} else if dbName == "files" {
-		New(pathToNewDB, CreateFileTable)
+		NewTable(pathToNewDB, CreateFileTable)
 	} else {
 		log.Printf("[DEBUG] unknown database category: %s", dbName)
 	}
 }
 
 // create a new table with the given query
-func New(path string, query string) {
+func NewTable(path string, query string) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		log.Fatalf("[ERROR] unable to open database: \n%v\n", err)
