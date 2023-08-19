@@ -22,6 +22,9 @@ func GetTestingDir() string {
 }
 
 // handle test failures
+//
+// it's just a call to Clean() followed by
+// a call to t.Fatalf()
 func Fatal(t *testing.T, err error) {
 	Clean(t, GetTestingDir())
 	t.Fatalf("[ERROR] %v", err)
