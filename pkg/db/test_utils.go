@@ -32,7 +32,7 @@ func Clean(t *testing.T, dir string) error {
 
 	names, err := d.Readdirnames(-1)
 	if err != nil {
-		t.Errorf("[ERROR] unable to read directory: %v", err)
+		t.Errorf("[ERROR] unable to read directory (%s): \n%v\n", dir, err)
 	}
 
 	for _, name := range names {
