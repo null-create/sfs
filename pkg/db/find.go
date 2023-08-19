@@ -125,7 +125,7 @@ func (q *Query) GetFiles(limit string) ([]*files.File, error) {
 
 	var fs []*files.File
 	for rows.Next() {
-		var file *files.File
+		file := new(files.File)
 		if err := rows.Scan(
 			&file.ID,
 			&file.Name,
