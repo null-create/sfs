@@ -10,24 +10,27 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-func GetTestingDir() string {
-	curDir, err := os.Getwd()
-	if err != nil {
-		log.Printf("[ERROR] unable to get testing directory: %v\ncreating...", err)
-		if err := os.Mkdir(filepath.Join(curDir, "test_files"), 0666); err != nil {
-			log.Fatalf("[ERROR] unable to create test directory: %v", err)
-		}
-	}
-	return filepath.Join(curDir, "test_files")
-}
-
-// handle test failures
+// handle test failures.
+// supplies [ERROR] prefix to supplied messages
 //
 // it's just a call to Clean() followed by
 // a call to t.Fatalf()
 func Fatal(t *testing.T, err error) {
-	Clean(t, GetTestingDir())
+	if err2 := Clean(t, GetTestingDir()); err2 != nil {
+		log.Printf("[ERROR] failed to clean during recovery: %v", err2)
+	}
 	t.Fatalf("[ERROR] %v", err)
+}
+
+func GetTestingDir() string {
+	curDir, err := os.Getwd()
+	if err != nil {
+		log.Printf("[WARNING] unable to get testing directory: %v\ncreating...", err)
+		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0666); err != nil {
+			log.Fatalf("[ERROR] unable to create test directory: %v", err)
+		}
+	}
+	return filepath.Join(curDir, "testing")
 }
 
 // clean all contents from the testing directory
