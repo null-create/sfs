@@ -20,6 +20,7 @@ func TestBuildDbs(t *testing.T) {
 	// make sure we created the database files
 	entries, err := os.ReadDir(testDir)
 	if err != nil {
+		Clean(t, testDir)
 		t.Fatalf("[ERROR] failed to read testing directory: %v", err)
 	}
 	assert.NotEqual(t, 0, len(entries))

@@ -19,12 +19,14 @@ func TestAddFile(t *testing.T) {
 
 	// add temp file
 	if err := q.AddFile(tmpFile); err != nil {
+		Clean(t, testDir)
 		t.Fatalf("[ERROR] failed to add file: %v", err)
 	}
 
 	// search for temp file & verify ID
 	f, err := q.GetFile(tmpFile.ID)
 	if err != nil {
+		Clean(t, testDir)
 		t.Fatalf("[ERROR] failed to retrieve file: %v", err)
 	}
 	assert.Equal(t, tmpFile.ID, f.ID)
@@ -49,12 +51,14 @@ func TestAddUser(t *testing.T) {
 
 	// add test user
 	if err := q.AddUser(tmpUser); err != nil {
+		Clean(t, testDir)
 		t.Fatalf("[ERROR] failed to add user: %v", err)
 	}
 
 	// query for user we just added
 	u, err := q.GetUser(tmpUser.ID)
 	if err != nil {
+		Clean(t, testDir)
 		t.Fatalf("[ERROR] failed to get user: %v", err)
 	}
 
