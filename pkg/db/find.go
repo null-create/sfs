@@ -27,7 +27,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	defer q.Close()
 
 	user := new(auth.User)
-	if err := q.Conn.QueryRow("SELECT * FROM Users WHERE id = ?", userID).Scan(
+	if err := q.Conn.QueryRow(FindUserQuery, userID).Scan(
 		&user.ID,
 		&user.Name,
 		&user.UserName,
@@ -88,8 +88,8 @@ func (q *Query) GetFile(fileID string) (*files.File, error) {
 	q.Connect()
 	defer q.Close()
 
-	var file *files.File
-	if err := q.Conn.QueryRow("SELECT * FROM Files WHERE id = ?;", fileID).Scan(
+	file := new(files.File)
+	if err := q.Conn.QueryRow(FindFileQuery, fileID).Scan(
 		&file.ID,
 		&file.Name,
 		&file.Owner,
@@ -117,7 +117,7 @@ func (q *Query) GetFiles(limit string) ([]*files.File, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query("SELECT * FROM Files LIMIT ?;", limit)
+	rows, err := q.Conn.Query(FindFileQuery, limit)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
@@ -157,7 +157,7 @@ func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query("SELECT * FROM Directories LIMIT ?;")
+	rows, err := q.Conn.Query(FindDirQuery)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
