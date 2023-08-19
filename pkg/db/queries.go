@@ -73,14 +73,15 @@ const (
 		name, 
 		owner, 
 		protected, 
-		key, 
+		key,
+		last_sync, 
 		path, 
 		server_path, 
 		client_path, 
 		checksum, 
 		algorithm
 	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	AddUserQuery string = `
 	INSERT OR IGNORE INTO Users (
@@ -116,8 +117,12 @@ const (
 	// NOTE: no limits are set on these queries because the id's are UUIDs, so we assume
 	// there will only be one entry with this id in the database
 
-	FindFileQuery   string = `SELECT EXISTS * FROM Files WHERE id = '?'`
-	FindDirQuery    string = `SELECT EXISTS * FROM Directories WHERE id = '?'`
-	FindDriverQuery string = `SELECT EXISTS * FROM DRIVERS WHERE id = '?'`
-	FindUserQuery   string = `SELECT EXISTS * FROM Users WHERE id = '?'`
+	FindFileQuery   string = `SELECT * FROM Files  WHERE id = '?';`
+	FindDirQuery    string = `SELECT * FROM Directories WHERE id = '?'`
+	FindDriverQuery string = `SELECT * FROM Drives WHERE id = '?'`
+	FindUserQuery   string = `SELECT * FROM Users WHERE id = '?'`
+
+	// ---------- SELECT statements for confirming existance -------------------
+
+	UserExistsQuery string = `SELECT EXISTS(SELECT 1 FROM Users WHERE id = ?)`
 )
