@@ -12,7 +12,7 @@ import (
 func TestBuildDbs(t *testing.T) {
 	testDir := GetTestingDir()
 
-	// ------- create tmp databases
+	// create tmp databases
 	NewTable(filepath.Join(testDir, "users"), CreateUserTable)
 	NewTable(filepath.Join(testDir, "files"), CreateFileTable)
 	NewTable(filepath.Join(testDir, "drives"), CreateDriveTable)
@@ -25,6 +25,18 @@ func TestBuildDbs(t *testing.T) {
 	}
 	assert.NotEqual(t, 0, len(entries))
 
-	// ------- clean up temporary databases
+	// get a list of created tables
+	files := []string{}
+	for _, e := range entries {
+		files = append(files, e.Name())
+	}
+
+	// check that each DB is present.
+	dbs := []string{"users", "files", "drives", "directories"}
+	if !AreEqualSlices(files, dbs) {
+		Fatal(t, fmt.Errorf("missing entries"))
+	}
+
+	// clean up temporary databases
 	Clean(t, testDir)
 }
