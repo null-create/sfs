@@ -5,9 +5,33 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/files"
 )
 
-func TestAddFile(t *testing.T) {}
+func TestAddFile(t *testing.T) {
+	testDir := GetTestingDir(t)
+
+	// test db and query
+	NewTable(filepath.Join(testDir, "tmp"), CreateFileTable)
+	q := NewQuery(filepath.Join(testDir, "tmp"))
+
+	tmpFile := files.NewFile("temp.txt", "bill", filepath.Join(testDir, "tmp"))
+
+	// add temp file
+	if err := q.AddFile(tmpFile); err != nil {
+		t.Fatalf("[ERROR] failed to add file: %v", err)
+	}
+
+	// search for temp file & verify ID
+	f, err := q.GetFile(tmpFile.ID)
+	if err != nil {
+		t.Fatalf("[ERROR] failed to retrieve file: %v", err)
+	}
+	assert.Equal(t, tmpFile.ID, f.ID)
+
+	// clean up
+	Clean(t, testDir)
+}
 
 func TestAddDirectory(t *testing.T) {}
 
@@ -18,9 +42,9 @@ func TestAddUser(t *testing.T) {
 
 	// make testing objects
 	_, _, tmpUser := MakeTestItems(t, testDir)
-	New(filepath.Join(testDir, "tmp"), CreateUserTable)
+	NewTable(filepath.Join(testDir, "tmp"), CreateUserTable)
 
-	// ------- try to make simple queries to each
+	// test query
 	q := NewQuery(filepath.Join(testDir, "tmp"))
 
 	// add test user
