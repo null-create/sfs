@@ -10,16 +10,21 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-// build path to test file directory. creates testing directory if it doesn't exist.
-func GetTestingDir(t *testing.T) string {
+func GetTestingDir() string {
 	curDir, err := os.Getwd()
 	if err != nil {
 		log.Printf("[ERROR] unable to get testing directory: %v\ncreating...", err)
-		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0666); err != nil {
-			t.Fatalf("[ERROR] unable to create test directory: %v", err)
+		if err := os.Mkdir(filepath.Join(curDir, "test_files"), 0666); err != nil {
+			log.Fatalf("[ERROR] unable to create test directory: %v", err)
 		}
 	}
-	return filepath.Join(curDir, "testing")
+	return filepath.Join(curDir, "test_files")
+}
+
+// handle test failures
+func Fatal(t *testing.T, err error) {
+	Clean(t, GetTestingDir())
+	t.Fatalf("[ERROR] %v", err)
 }
 
 // clean all contents from the testing directory

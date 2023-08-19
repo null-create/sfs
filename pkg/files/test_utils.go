@@ -27,6 +27,12 @@ func GetTestingDir() string {
 	return filepath.Join(curDir, "test_files")
 }
 
+// handle test failures
+func Fatal(t *testing.T, err error) {
+	Clean(t, GetTestingDir())
+	t.Fatalf("[ERROR] %v", err)
+}
+
 // clean all contents from the testing directory
 func Clean(t *testing.T, dir string) error {
 	d, err := os.Open(dir)

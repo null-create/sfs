@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func TestAddFile(t *testing.T) {
-	testDir := GetTestingDir(t)
+	testDir := GetTestingDir()
 
 	// test db and query
 	NewTable(filepath.Join(testDir, "tmp"), CreateFileTable)
@@ -19,15 +20,13 @@ func TestAddFile(t *testing.T) {
 
 	// add temp file
 	if err := q.AddFile(tmpFile); err != nil {
-		Clean(t, testDir)
-		t.Fatalf("[ERROR] failed to add file: %v", err)
+		Fatal(t, fmt.Errorf("failed to add file: %v", err))
 	}
 
 	// search for temp file & verify ID
 	f, err := q.GetFile(tmpFile.ID)
 	if err != nil {
-		Clean(t, testDir)
-		t.Fatalf("[ERROR] failed to retrieve file: %v", err)
+		Fatal(t, fmt.Errorf("failed to get file: %v", err))
 	}
 	assert.Equal(t, tmpFile.ID, f.ID)
 
@@ -40,7 +39,7 @@ func TestAddDirectory(t *testing.T) {}
 func TestAddDrive(t *testing.T) {}
 
 func TestAddUser(t *testing.T) {
-	testDir := GetTestingDir(t)
+	testDir := GetTestingDir()
 
 	// make testing objects
 	_, _, tmpUser := MakeTestItems(t, testDir)

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestBuildDbs(t *testing.T) {
-	testDir := GetTestingDir(t)
+	testDir := GetTestingDir()
 
 	// ------- create tmp databases
 	NewTable(filepath.Join(testDir, "users"), CreateUserTable)
@@ -20,8 +21,7 @@ func TestBuildDbs(t *testing.T) {
 	// make sure we created the database files
 	entries, err := os.ReadDir(testDir)
 	if err != nil {
-		Clean(t, testDir)
-		t.Fatalf("[ERROR] failed to read testing directory: %v", err)
+		Fatal(t, fmt.Errorf("failed to read testing directory: %v", err))
 	}
 	assert.NotEqual(t, 0, len(entries))
 
