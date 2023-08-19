@@ -113,4 +113,11 @@ const (
 
 	// ---------- SELECT statements for searching -------------------------------
 
+	// NOTE: no limits are set on these queries because the id's are UUIDs, so we assume
+	// there will only be one entry with this id in the database
+
+	FindFileQuery   string = `SELECT EXISTS * FROM Files WHERE id = '?'`
+	FindDirQuery    string = `SELECT EXISTS * FROM Directories WHERE id = '?'`
+	FindDriverQuery string = `SELECT EXISTS * FROM DRIVERS WHERE id = '?'`
+	FindUserQuery   string = `SELECT EXISTS * FROM Users WHERE id = '?'`
 )
