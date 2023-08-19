@@ -3,33 +3,39 @@ package db
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/alecthomas/assert/v2"
 )
-
-func TestAddUser(t *testing.T) {
-	testDir := GetTestingDir(t)
-
-	// make testing objects
-	_, _, tmpUser := MakeTestItems(t, testDir)
-
-	// ------- try to make simple queries to each
-	q1 := NewQuery(filepath.Join(testDir, "users"))
-
-	// add test user
-	q1.Connect()
-	if err := q1.AddUser(tmpUser); err != nil {
-		t.Fatalf("[ERROR] failed to add user: %v", err)
-	}
-	q1.Close()
-
-	// add test drive
-
-	// add test directory
-
-	// query for each item in each db to make sure they were added successfully
-}
 
 func TestAddFile(t *testing.T) {}
 
 func TestAddDirectory(t *testing.T) {}
 
 func TestAddDrive(t *testing.T) {}
+
+func TestAddUser(t *testing.T) {
+	testDir := GetTestingDir(t)
+
+	// make testing objects
+	_, _, tmpUser := MakeTestItems(t, testDir)
+	New(filepath.Join(testDir, "tmp"), CreateUserTable)
+
+	// ------- try to make simple queries to each
+	q := NewQuery(filepath.Join(testDir, "tmp"))
+
+	// add test user
+	if err := q.AddUser(tmpUser); err != nil {
+		t.Fatalf("[ERROR] failed to add user: %v", err)
+	}
+
+	// query for user we just added
+	u, err := q.GetUser(tmpUser.ID)
+	if err != nil {
+		t.Fatalf("[ERROR] failed to get user: %v", err)
+	}
+
+	assert.Equal(t, tmpUser.ID, u.ID)
+
+	// clean up
+	Clean(t, testDir)
+}
