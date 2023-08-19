@@ -25,6 +25,7 @@ func (q *Query) AddFile(f *files.File) error {
 		&f.Owner,
 		&f.Protected,
 		&f.Key,
+		&f.LastSync,
 		&f.Path,
 		&f.ServerPath,
 		&f.ClientPath,

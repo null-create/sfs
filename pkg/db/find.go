@@ -95,10 +95,10 @@ func (q *Query) GetFile(fileID string) (*files.File, error) {
 		&file.Owner,
 		&file.Protected,
 		&file.Key,
+		&file.LastSync,
 		&file.Path,
 		&file.ClientPath,
 		&file.ServerPath,
-		&file.LastSync,
 		&file.CheckSum,
 		&file.Algorithm,
 	); err != nil {
