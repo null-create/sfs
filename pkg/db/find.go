@@ -26,7 +26,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	q.Connect()
 	defer q.Close()
 
-	var user *auth.User
+	user := new(auth.User)
 	if err := q.Conn.QueryRow("SELECT * FROM Users WHERE id = ?", userID).Scan(
 		&user.ID,
 		&user.Name,
@@ -34,6 +34,9 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 		&user.Password,
 		&user.Email,
 		&user.LastLogin,
+		&user.Admin,
+		&user.TotalFiles,
+		&user.TotalDirs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("[ERROR] no rows returned: %v", err)
