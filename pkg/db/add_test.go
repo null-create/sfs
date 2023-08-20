@@ -9,7 +9,7 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-func TestAddFile(t *testing.T) {
+func TestAddAndFindFile(t *testing.T) {
 	testDir := GetTestingDir()
 
 	// test db and query
@@ -34,7 +34,7 @@ func TestAddFile(t *testing.T) {
 	Clean(t, testDir)
 }
 
-func TestAddDirectory(t *testing.T) {
+func TestAddAndFindDirectory(t *testing.T) {
 	testDir := GetTestingDir()
 
 	// test db and query
@@ -54,10 +54,10 @@ func TestAddDirectory(t *testing.T) {
 		Fatal(t, fmt.Errorf("failed to get directory: %v", err))
 	}
 	// NOTE: d being nil isn't necessarily a problem. if we have a
-	// functional table and the directory simply doesn't exist, then
-	// its not necearily a fault of the program. here we just want to
-	// test for the existence of a file so we can ensure the database
-	// is working properly.
+	// functional table and the directory entry simply doesn't exist,
+	// then its not necearily a fault of the program.
+	// here we just want to test for the existence of a file so we
+	// can ensure the database is working properly.
 	assert.NotEqual(t, nil, d)
 	assert.Equal(t, tmpDir.ID, d.ID)
 
@@ -65,9 +65,9 @@ func TestAddDirectory(t *testing.T) {
 	Clean(t, GetTestingDir())
 }
 
-func TestAddDrive(t *testing.T) {}
+func TestAddAndFindDrive(t *testing.T) {}
 
-func TestAddUser(t *testing.T) {
+func TestAddAndFindUser(t *testing.T) {
 	testDir := GetTestingDir()
 
 	// make testing objects
