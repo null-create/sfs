@@ -34,6 +34,7 @@ func (q *Query) Prepare(query string) error {
 	if err != nil {
 		return fmt.Errorf("[ERROR] unable to prepare statement: %v", err)
 	}
+	q.Query = query
 	q.Stmt = stmt
 	return nil
 }
