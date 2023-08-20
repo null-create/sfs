@@ -136,37 +136,22 @@ func (d *Directory) Clear(password string) {
 	}
 }
 
-/*
-recursively cleans all contents from a directory and its subdirectories
-
-***VERY DANGEROUS AND SHOULD ONLY BE USED IN A SECURE CONTEXT***
-
-mainly just want to make sure dirPath is what we *actually* want to clean,
-not a system/OS path or anything vital of any kind :(
-*/
-func (d *Directory) clean(dirPath string) error {
-	entries, err := os.ReadDir(dirPath)
+// clean all files and subdirectories from the top-level directory
+func clean(dirPath string) error {
+	d, err := os.Open(dirPath)
 	if err != nil {
 		return err
 	}
+	defer d.Close()
 
-	for _, entry := range entries {
-		path := filepath.Join(dirPath, entry.Name())
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return fmt.Errorf("[ERROR] unable to read directory: %v", err)
+	}
 
-		if entry.IsDir() {
-			// keep going if we find a subdirectory
-			if err = d.clean(path); err != nil {
-				return err
-			}
-			// remove the directory
-			if err = os.Remove(path); err != nil {
-				return err
-			}
-		} else {
-			// remove the file
-			if err = os.Remove(path); err != nil {
-				return err
-			}
+	for _, name := range names {
+		if err = os.RemoveAll(filepath.Join(dirPath, name)); err != nil {
+			return fmt.Errorf("[ERROR] unable to remove file: %v", err)
 		}
 	}
 
@@ -177,7 +162,7 @@ func (d *Directory) clean(dirPath string) error {
 // subdirectories from a drive starting at the given path
 func (d *Directory) Clean(dirPath string) error {
 	if !d.Protected {
-		if err := d.clean(dirPath); err != nil {
+		if err := clean(dirPath); err != nil {
 			return err
 		}
 		return nil
