@@ -25,13 +25,13 @@ type Service struct {
 	InitTime time.Time `json:"init_time"`
 
 	// Drive directory path for sfs service on the server
-	ServiceRoot string `json:"service_root"`
-
-	// file name for the sfs state file
+	SvcRoot string `json:"service_root"`
+	// path to state file directory
 	StateFile string `json:"state_file"`
-
-	// path to the service state file
-	StateFileFolder string `json:"state_file_folder"`
+	// path to user file directory
+	UserDir string `json:"user_dir"`
+	// path to data directory
+	DbDir string `json:"db_dir"`
 
 	// admin mode. allows for expanded permissions when working with
 	// the internal sfs file systems.
@@ -47,19 +47,19 @@ type Service struct {
 	Users map[string]*auth.User `json:"users"`
 }
 
+// ------- init ---------------------------------------
+
 func Init(new bool, admin bool) *Service {
 	c := GetServiceConfig()
 
-	statFileFolder := filepath.Join(c.ServiceRoot, "state")
-	stateFile := filepath.Join(statFileFolder, "state.json")
-
 	svc := &Service{
-		InitTime:        time.Now(),
-		ServiceRoot:     c.ServiceRoot,
-		StateFile:       stateFile,
-		StateFileFolder: statFileFolder,
-		AdminMode:       admin,
-		Users:           make(map[string]*auth.User, 0),
+		InitTime:  time.Now(),
+		SvcRoot:   c.ServiceRoot,
+		StateFile: filepath.Join(c.ServiceRoot, "state"),
+		UserDir:   filepath.Join(c.ServiceRoot, "users"),
+		DbDir:     filepath.Join(c.ServiceRoot, "dbs"),
+		AdminMode: admin,
+		Users:     make(map[string]*auth.User, 0),
 	}
 
 	// input server admin credentials if necessary
@@ -97,45 +97,52 @@ root/
 |---state/
 |   |----sfs-state-date:hour:min:sec.json
 |---dbs/
+|   |---users
+|   |---drives
+|   |---directories
+|   |---files
 */
 func SvcInit(path string) error {
 	// make root service directory (wherever it should located)
 	if err := os.MkdirAll(path, 0666); err != nil {
-		log.Fatalf("[ERROR] failed to make service root directory: %v", err)
+		return fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
 	}
 
+	// create top-level service directories
 	paths := []string{
 		filepath.Join(path, "users"),
 		filepath.Join(path, "state"),
 		filepath.Join(path, "dbs"),
 	}
-
-	// create user and state sub directories
 	for _, p := range paths {
 		if err := os.Mkdir(p, 0666); err != nil {
-			log.Fatalf("[ERROR] failed to make directory: %v", err)
+			return fmt.Errorf("[ERROR] failed to make service directory: %v", err)
 		}
 	}
 
 	// create new service databases
-	dbDir := filepath.Join(path, "dbs")
-	dbs := []string{"files", "directories", "users", "drives"}
-
+	dbDir := paths[2]
+	dbs := []string{"Files", "Directories", "Users", "Drives"}
 	for _, d := range dbs {
 		db.NewDB(d, filepath.Join(dbDir, d))
 	}
 
 	// create initial databases
 
+	// save internal service, user, and database paths
+	// to external state file
+
+	// TODO: specify json schema to store service state between sessions.
+
 	return nil
 }
+
+// ------ utils --------------------------------
 
 // returns the service run time in seconds
 func (s *Service) RunTime() float64 {
 	return time.Since(s.InitTime).Seconds()
 }
-
-// ------- init ---------------------------------------
 
 // read in an external service state file (json) to
 // populate the internal data structures.
@@ -148,12 +155,15 @@ func (s *Service) Load() error {
 }
 
 /*
-SaveState is meant to capture the current value of the following fields:
+SaveState is meant to capture the current value of
+the following fields when saving service state to disk:
 
 	InitTime time.Time `json:"init_time"`
 
-	// Drive directory path for sfs service on the server
-	ServiceRoot string `json:"service_root"`
+	SvcRoot string `json:"service_root"`  // Drive directory path for sfs service on the server
+	StateFile string `json:"state_file"`  // path to state file directory
+	UserDir string `json:"user_dir"`      // path to user file directory
+	DbDir string `json:"db_dir"`          // path to data directory
 
 	// admin mode. allows for expanded permissions when working with
 	// the internal sfs file systems.
@@ -181,7 +191,7 @@ func (s *Service) TotalSize() float64 {
 	return total / 1000
 }
 
-// ------- new service set up --------------------------------
+// ------- new user service set up --------------------------------
 
 // TODO: test!
 //
@@ -204,7 +214,7 @@ func (s *Service) GenBaseFiles(DrivePath string) {
 //
 // Must be under /root/users/<username>
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	drivePath := filepath.Join(s.ServiceRoot, name)
+	drivePath := filepath.Join(s.SvcRoot, name)
 	newID := files.NewUUID()
 
 	newRoot := files.NewRootDirectory("root", owner, filepath.Join(drivePath, "root"))
