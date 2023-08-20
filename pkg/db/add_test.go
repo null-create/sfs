@@ -34,7 +34,36 @@ func TestAddFile(t *testing.T) {
 	Clean(t, testDir)
 }
 
-func TestAddDirectory(t *testing.T) {}
+func TestAddDirectory(t *testing.T) {
+	testDir := GetTestingDir()
+
+	// test db and query
+	NewTable(filepath.Join(testDir, "directories"), CreateDirectoryTable)
+	q := NewQuery(filepath.Join(testDir, "directories"))
+
+	_, tmpDir, _ := MakeTestItems(t, GetTestingDir())
+
+	// add tmp directory
+	if err := q.AddDir(tmpDir); err != nil {
+		Fatal(t, fmt.Errorf("failed to add dir: %v", err))
+	}
+
+	// search for temp dir to ensure it was added correctly
+	d, err := q.GetDirectory(tmpDir.ID)
+	if err != nil {
+		Fatal(t, fmt.Errorf("failed to get directory: %v", err))
+	}
+	// NOTE: d being nil isn't necessarily a problem. if we have a
+	// functional table and the directory simply doesn't exist, then
+	// its not necearily a fault of the program. here we just want to
+	// test for the existence of a file so we can ensure the database
+	// is working properly.
+	assert.NotEqual(t, nil, d)
+	assert.Equal(t, tmpDir.ID, d.ID)
+
+	// clean up temporary dir
+	Clean(t, GetTestingDir())
+}
 
 func TestAddDrive(t *testing.T) {}
 
