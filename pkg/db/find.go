@@ -165,6 +165,7 @@ func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 		&d.Owner,
 		&d.Size,
 		&d.Path,
+		&d.Protected,
 		&d.AuthType,
 		&d.Key,
 		&d.Overwrite,
@@ -176,7 +177,7 @@ func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 			log.Printf("[DEBUG] no rows found with dir id: %s", dirID)
 			return nil, nil
 		}
-		return nil, fmt.Errorf("[ERROR] %v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 
 	return d, nil
