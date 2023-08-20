@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/files"
@@ -157,11 +158,26 @@ func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query(FindDirQuery)
-	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+	d := new(files.Directory)
+	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
+		&d.ID,
+		&d.Name,
+		&d.Owner,
+		&d.Size,
+		&d.Path,
+		&d.AuthType,
+		&d.Key,
+		&d.Overwrite,
+		&d.LastSync,
+		&d.Root,
+		&d.RootPath,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows found with dir id: %s", dirID)
+			return nil, nil
+		}
+		return nil, fmt.Errorf("[ERROR] %v", err)
 	}
-	defer rows.Close()
 
-	return nil, nil
+	return d, nil
 }
