@@ -86,6 +86,31 @@ func (q *Query) AddUsers(usrs []*auth.User) error {
 }
 
 func (q *Query) AddDir(d *files.Directory) error {
+	q.Connect()
+	defer q.Close()
+
+	// prepare query
+	if err := q.Prepare(AddDirQuery); err != nil {
+		return fmt.Errorf("failed to prepare statement: %v", err)
+	}
+	defer q.Stmt.Close()
+
+	if _, err := q.Stmt.Exec(
+		&d.ID,
+		&d.Name,
+		&d.Owner,
+		&d.Size,
+		&d.Path,
+		&d.Protected,
+		&d.AuthType,
+		&d.Key,
+		&d.Overwrite,
+		&d.LastSync,
+		&d.Root,
+		&d.RootPath,
+	); err != nil {
+		return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
+	}
 
 	return nil
 }
