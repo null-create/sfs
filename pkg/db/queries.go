@@ -69,7 +69,7 @@ const (
 
 	// ------- file, user, directory, and drive additions ----------------
 	AddFileQuery string = `
-		INSERT OR IGNORE INTO Files (
+		INSERT INTO Files (
 			id, 
 			name, 
 			owner, 
@@ -85,7 +85,7 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	AddDirQuery string = `
-		INSERT OR IGNORE INTO Directories (
+		INSERT INTO Directories (
 			id,
 			name,
 			owner,
@@ -102,7 +102,7 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
-		INSERT OR IGNORE INTO Drives (
+		INSERT INTO Drives (
 			id,
 			name,
 			owner,
@@ -117,7 +117,7 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddUserQuery string = `
-		INSERT OR IGNORE INTO Users (
+		INSERT INTO Users (
 			id, 
 			name, 
 			username, 
@@ -135,23 +135,23 @@ const (
 	// remove a user or file iff they (or the file) already exists in the database
 	RemoveUserQuery string = `
 		DELETE FROM Users WHERE id = '?' 
-		AND EXISTS (SELECT 1 FROM Users WHERE id = '?');`
+		AND EXISTS (SELECT 1 FROM Users WHERE id='?');`
 
 	RemoveFileQuery string = `
 		DELETE FROM Files WHERE id = '?' 
-		AND EXISTS (SELECT 1 FROM Users WHERE id = '?');`
+		AND EXISTS (SELECT 1 FROM Users WHERE id='?');`
 
 	// ---------- SELECT statements for searching -------------------------------
 
 	// NOTE: no limits are set on these queries because the id's are UUIDs, so we assume
 	// there will only be one entry with this id in the database
 
-	FindFileQuery   string = `SELECT * FROM Files  WHERE id = '?';`
-	FindDirQuery    string = `SELECT * FROM Directories WHERE id = '?'`
-	FindDriverQuery string = `SELECT * FROM Drives WHERE id = '?'`
-	FindUserQuery   string = `SELECT * FROM Users WHERE id = '?'`
+	FindFileQuery   string = `SELECT * FROM Files WHERE id=?;`
+	FindDirQuery    string = `SELECT * FROM Directories WHERE id=?`
+	FindDriverQuery string = `SELECT * FROM Drives WHERE id=?`
+	FindUserQuery   string = `SELECT * FROM Users WHERE id=?`
 
 	// ---------- SELECT statements for confirming existance -------------------
 
-	UserExistsQuery string = `SELECT EXISTS(SELECT 1 FROM Users WHERE id = ?)`
+	UserExistsQuery string = `SELECT EXISTS(SELECT 1 FROM Users WHERE id='?')`
 )
