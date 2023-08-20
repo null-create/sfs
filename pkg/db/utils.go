@@ -1,6 +1,6 @@
 package db
 
-// compare two unordered slices of equal length and compare
+// compare two unordered slices of equal length and determine
 // whether they contain the same elements
 
 // assumming go's implementation of maps has ~O(1) access time,
