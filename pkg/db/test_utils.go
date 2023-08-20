@@ -10,14 +10,14 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-// handle test failures.
+// handles test failures
 // supplies [ERROR] prefix to supplied messages
 //
 // it's just a call to Clean() followed by
 // a call to t.Fatalf()
 func Fatal(t *testing.T, err error) {
 	if err2 := Clean(t, GetTestingDir()); err2 != nil {
-		log.Printf("[ERROR] failed to clean during recovery: %v", err2)
+		log.Printf("[ERROR] failed to clean testing directory during recovery: %v", err2)
 	}
 	t.Fatalf("[ERROR] %v", err)
 }
