@@ -2,32 +2,37 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"testing"
 
-	"github.com/alecthomas/assert/v2"
 	"github.com/sfs/pkg/files"
+
+	"github.com/alecthomas/assert/v2"
 )
 
 func TestAddAndFindFile(t *testing.T) {
 	testDir := GetTestingDir()
 
 	// test db and query
-	NewTable(filepath.Join(testDir, "tmp"), CreateFileTable)
-	q := NewQuery(filepath.Join(testDir, "tmp"))
+	NewTable(filepath.Join(testDir, "Files"), CreateFileTable)
+	q := NewQuery(filepath.Join(testDir, "Files"))
+	q.Debug = true
 
-	tmpFile := files.NewFile("temp.txt", "bill", filepath.Join(testDir, "tmp"))
+	tmpFile := files.NewFile("temp.txt", "bill", filepath.Join(testDir, "Files"))
 
 	// add temp file
 	if err := q.AddFile(tmpFile); err != nil {
 		Fatal(t, fmt.Errorf("failed to add file: %v", err))
 	}
+	log.Printf("added file: %s", tmpFile.ID)
 
 	// search for temp file & verify ID
 	f, err := q.GetFile(tmpFile.ID)
 	if err != nil {
 		Fatal(t, fmt.Errorf("failed to get file: %v", err))
 	}
+	assert.NotEqual(t, nil, f)
 	assert.Equal(t, tmpFile.ID, f.ID)
 
 	// clean up
@@ -65,7 +70,29 @@ func TestAddAndFindDirectory(t *testing.T) {
 	Clean(t, GetTestingDir())
 }
 
-func TestAddAndFindDrive(t *testing.T) {}
+func TestAddAndFindDrive(t *testing.T) {
+	testDir := GetTestingDir()
+
+	// make testing objects
+	tmpDrive, _, _ := MakeTestItems(t, testDir)
+	NewTable(filepath.Join(testDir, "tmp"), CreateDriveTable)
+
+	// test query
+	q := NewQuery(filepath.Join(testDir, "tmp"))
+	if err := q.AddDrive(tmpDrive); err != nil {
+		Fatal(t, err)
+	}
+
+	// add test drive
+	d, err := q.GetDrive(tmpDrive.ID)
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, nil, d)
+	assert.Equal(t, tmpDrive.ID, d.ID)
+
+	Clean(t, GetTestingDir())
+}
 
 func TestAddAndFindUser(t *testing.T) {
 	testDir := GetTestingDir()
@@ -79,15 +106,13 @@ func TestAddAndFindUser(t *testing.T) {
 
 	// add test user
 	if err := q.AddUser(tmpUser); err != nil {
-		Clean(t, testDir)
-		t.Fatalf("[ERROR] failed to add user: %v", err)
+		Fatal(t, err)
 	}
 
 	// query for user we just added
 	u, err := q.GetUser(tmpUser.ID)
 	if err != nil {
-		Clean(t, testDir)
-		t.Fatalf("[ERROR] failed to get user: %v", err)
+		Fatal(t, err)
 	}
 
 	assert.Equal(t, tmpUser.ID, u.ID)
@@ -95,3 +120,5 @@ func TestAddAndFindUser(t *testing.T) {
 	// clean up
 	Clean(t, testDir)
 }
+
+func TestUserExists(t *testing.T) {}
