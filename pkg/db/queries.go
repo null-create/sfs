@@ -50,8 +50,8 @@ const (
 			key VARCHAR(100),
 			auth_type VARCHAR(50),
 			drive_root VARCHAR(255)
-		);
-`
+		);`
+
 	CreateUserTable string = `
 		CREATE TABLE IF NOT EXISTS Users (
 			id VARCHAR(50) PRIMARY KEY,
@@ -82,7 +82,7 @@ const (
 			checksum, 
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT INTO Directories (
@@ -133,25 +133,22 @@ const (
 	// ------- update file, user, directory, and drive entries -------
 
 	// remove a user or file iff they (or the file) already exists in the database
-	RemoveUserQuery string = `
-		DELETE FROM Users WHERE id = '?' 
-		AND EXISTS (SELECT 1 FROM Users WHERE id='?');`
-
-	RemoveFileQuery string = `
-		DELETE FROM Files WHERE id = '?' 
-		AND EXISTS (SELECT 1 FROM Users WHERE id='?');`
+	RemoveQuery string = `
+		DELETE FROM ? WHERE id = ?; 
+		AND EXISTS (SELECT 1 FROM ? WHERE id=?);`
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	// NOTE: no limits are set on these queries because the id's are UUIDs, so we assume
-	// there will only be one entry with this id in the database
+	FindAllQuery       string = `SELECT * FROM ?;`
+	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?;`
+	FindQuery          string = `SELECT * FROM ? WHERE id = '?';`
 
-	FindFileQuery   string = `SELECT * FROM Files WHERE id=?;`
-	FindDirQuery    string = `SELECT * FROM Directories WHERE id=?`
-	FindDriverQuery string = `SELECT * FROM Drives WHERE id=?`
-	FindUserQuery   string = `SELECT * FROM Users WHERE id=?`
+	FindFileQuery  string = `SELECT * FROM Files WHERE id = ?;`
+	FindDirQuery   string = `SELECT * FROM Directories WHERE id = ?;`
+	FindDriveQuery string = `SELECT * FROM Drives WHERE id = ?;`
+	FindUserQuery  string = `SELECT * FROM Users WHERE id = ?;`
 
 	// ---------- SELECT statements for confirming existance -------------------
 
-	UserExistsQuery string = `SELECT EXISTS(SELECT 1 FROM Users WHERE id='?')`
+	ExistsQuery string = `SELECT EXISTS (SELECT 1 FROM ? WHERE id = '?');`
 )
