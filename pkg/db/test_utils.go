@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 )
 
 // handles test failures
-// supplies [ERROR] prefix to supplied messages
+// supplies [ERROR] prefix to supplied error messages
 //
 // it's just a call to Clean() followed by
 // a call to t.Fatalf()
@@ -37,7 +38,7 @@ func GetTestingDir() string {
 func Clean(t *testing.T, dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
-		return err
+		return fmt.Errorf("[ERROR] could not open test directory: %v", err)
 	}
 	defer d.Close()
 
