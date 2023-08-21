@@ -11,6 +11,7 @@ import (
 type Query struct {
 	DBPath string
 	Query  string
+	Debug  bool
 
 	Conn *sql.DB   // db connection
 	Stmt *sql.Stmt // SQL statement
