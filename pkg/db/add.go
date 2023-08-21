@@ -14,7 +14,7 @@ func (q *Query) AddFile(f *files.File) error {
 
 	// prepare query
 	if err := q.Prepare(AddFileQuery); err != nil {
-		return fmt.Errorf("[ERROR] failed to prepare statement: %v", err)
+		return fmt.Errorf("failed to prepare statement: %v", err)
 	}
 	defer q.Stmt.Close()
 
@@ -32,7 +32,7 @@ func (q *Query) AddFile(f *files.File) error {
 		&f.CheckSum,
 		&f.Algorithm,
 	); err != nil {
-		return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
+		return fmt.Errorf("failed to execute statement: %v", err)
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func (q *Query) AddFile(f *files.File) error {
 func (q *Query) AddFiles(fs []*files.File) error {
 	for _, file := range fs {
 		if err := q.AddFile(file); err != nil {
-			log.Fatalf("[ERROR] failed to add file: %v", err)
+			return fmt.Errorf("[ERROR] : %v", err)
 		}
 	}
 	return nil
@@ -54,9 +54,13 @@ func (q *Query) AddUser(u *auth.User) error {
 
 	// prepare query
 	if err := q.Prepare(AddUserQuery); err != nil {
-		return fmt.Errorf("[ERROR] failed to prepare statement: %v", err)
+		return fmt.Errorf("failed to prepare statement: %v", err)
 	}
 	defer q.Stmt.Close()
+
+	if q.Debug {
+		log.Printf("[DEBUG] querying user: %s ", u.ID)
+	}
 
 	if _, err := q.Stmt.Exec(
 		&u.ID,
@@ -69,7 +73,7 @@ func (q *Query) AddUser(u *auth.User) error {
 		&u.TotalFiles,
 		&u.TotalDirs,
 	); err != nil {
-		return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
+		return fmt.Errorf("failed to execute statement: %v", err)
 	}
 
 	return nil
@@ -79,7 +83,7 @@ func (q *Query) AddUser(u *auth.User) error {
 func (q *Query) AddUsers(usrs []*auth.User) error {
 	for _, u := range usrs {
 		if err := q.AddUser(u); err != nil {
-			log.Fatalf("[ERROR] failed to add user: %v", err)
+			return fmt.Errorf("[ERROR] failed to add user: %v", err)
 		}
 	}
 	return nil
@@ -109,7 +113,7 @@ func (q *Query) AddDir(d *files.Directory) error {
 		&d.Root,
 		&d.RootPath,
 	); err != nil {
-		return fmt.Errorf("[ERROR] failed to execute statement: %v", err)
+		return fmt.Errorf("failed to add directory: %v", err)
 	}
 
 	return nil
