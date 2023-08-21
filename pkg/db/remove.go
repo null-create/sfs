@@ -30,7 +30,7 @@ func (q *Query) DropTable(tableName string) error {
 
 	_, err := q.Conn.Exec(DropTableQuery, tableName)
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to drop table %s: %v", tableName, err)
+		return fmt.Errorf("failed to drop table %s: %v", tableName, err)
 	}
 
 	return nil
@@ -40,9 +40,9 @@ func (q *Query) RemoveUser(userID string) error {
 	q.Connect()
 	defer q.Close()
 
-	_, err := q.Conn.Exec(RemoveUserQuery, userID)
+	_, err := q.Conn.Exec(RemoveQuery, "Users", userID)
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to remove user: %v", err)
+		return fmt.Errorf("failed to remove user: %v", err)
 	}
 
 	return nil
@@ -53,9 +53,9 @@ func (q *Query) RemoveUsers(u []*auth.User) error {
 	defer q.Close()
 
 	for _, user := range u {
-		_, err := q.Conn.Exec(RemoveUserQuery, user.ID)
+		_, err := q.Conn.Exec(RemoveQuery, "Users", user.ID)
 		if err != nil {
-			return fmt.Errorf("[ERROR] failed to remove user: %v", err)
+			return fmt.Errorf("failed to remove user: %v", err)
 		}
 	}
 
@@ -66,9 +66,9 @@ func (q *Query) RemoveFile(fileID string) error {
 	q.Connect()
 	defer q.Close()
 
-	_, err := q.Conn.Exec(RemoveFileQuery, fileID)
+	_, err := q.Conn.Exec(RemoveQuery, "Files", fileID)
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to remove file (id=%s): %v", fileID, err)
+		return fmt.Errorf("failed to remove file (id=%s): %v", fileID, err)
 	}
 
 	return nil
@@ -79,9 +79,9 @@ func (q *Query) RemoveFiles(fs []*files.File) error {
 	defer q.Close()
 
 	for _, f := range fs {
-		_, err := q.Conn.Exec(RemoveFileQuery, f.ID)
+		_, err := q.Conn.Exec(RemoveQuery, "Files", f.ID)
 		if err != nil {
-			return fmt.Errorf("[ERROR] failed to remove user: %v", err)
+			return fmt.Errorf("failed to remove user: %v", err)
 		}
 	}
 
