@@ -113,7 +113,7 @@ const (
 			key,
 			auth_type,
 			drive_root
-		);
+		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddUserQuery string = `
@@ -141,7 +141,7 @@ const (
 
 	FindAllQuery       string = `SELECT * FROM ?;`
 	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?;`
-	FindQuery          string = `SELECT * FROM ? WHERE id = '?';`
+	FindQuery          string = `SELECT * FROM ? WHERE id = ?;`
 
 	FindFileQuery  string = `SELECT * FROM Files WHERE id = ?;`
 	FindDirQuery   string = `SELECT * FROM Directories WHERE id = ?;`
