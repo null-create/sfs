@@ -120,12 +120,38 @@ func (q *Query) AddDir(d *files.Directory) error {
 }
 
 func (q *Query) AddDirs(dirs []*files.Directory) error {
-
+	for _, dir := range dirs {
+		if err := q.AddDir(dir); err != nil {
+			return fmt.Errorf("[ERROR] failed to add dir (%s) to database: %v", dir.ID, err)
+		}
+	}
 	return nil
 }
 
 func (q *Query) AddDrive(drv *files.Drive) error {
+	q.Connect()
+	defer q.Close()
 
+	// prepare query
+	if err := q.Prepare(AddDriveQuery); err != nil {
+		return fmt.Errorf("failed to prepare statement: %v", err)
+	}
+	defer q.Stmt.Close()
+
+	if _, err := q.Stmt.Exec(
+		&drv.ID,
+		&drv.Name,
+		&drv.Owner,
+		&drv.TotalSize,
+		&drv.UsedSpace,
+		&drv.FreeSpace,
+		&drv.Protected,
+		&drv.Key,
+		&drv.AuthType,
+		&drv.DriveRoot,
+	); err != nil {
+		return fmt.Errorf("failed to execute query: %v", err)
+	}
 	return nil
 }
 
