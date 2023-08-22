@@ -32,6 +32,11 @@ func TestAddAndFindFile(t *testing.T) {
 	if err != nil {
 		Fatal(t, fmt.Errorf("failed to get file: %v", err))
 	}
+	// NOTE: f being nil isn't necessarily a problem. if we have a
+	// functional table and the entry simply doesn't exist,
+	// then its not necessarily a failure -- the item may simply not exist.
+	// here we just want to test for the existence of a file so we
+	// can ensure database I/O is working properly.
 	assert.NotEqual(t, nil, f)
 	assert.Equal(t, tmpFile.ID, f.ID)
 
@@ -58,11 +63,6 @@ func TestAddAndFindDirectory(t *testing.T) {
 	if err != nil {
 		Fatal(t, fmt.Errorf("failed to get directory: %v", err))
 	}
-	// NOTE: d being nil isn't necessarily a problem. if we have a
-	// functional table and the directory entry simply doesn't exist,
-	// then its not necearily a fault of the program.
-	// here we just want to test for the existence of a file so we
-	// can ensure the database is working properly.
 	assert.NotEqual(t, nil, d)
 	assert.Equal(t, tmpDir.ID, d.ID)
 
