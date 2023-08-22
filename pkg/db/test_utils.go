@@ -11,7 +11,7 @@ import (
 	"github.com/sfs/pkg/files"
 )
 
-// handles test failures
+// handles test failures,
 // supplies [ERROR] prefix to supplied error messages
 //
 // it's just a call to Clean() followed by
