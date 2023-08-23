@@ -128,25 +128,25 @@ const (
 			total_files, 
 			total_directories
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// ------- update file, user, directory, and drive entries -------
 
 	// remove a user or file iff they (or the file) already exists in the database
 	RemoveQuery string = `
 		DELETE FROM ? WHERE id = ?; 
-		AND EXISTS (SELECT 1 FROM ? WHERE id=?);`
+		AND EXISTS (SELECT 1 FROM ? WHERE id=?)`
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	FindAllQuery       string = `SELECT * FROM ?;`
-	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?;`
-	FindQuery          string = `SELECT * FROM ? WHERE id = ?;`
+	FindAllQuery       string = `SELECT * FROM ?`
+	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?`
+	FindQuery          string = `SELECT * FROM ? WHERE id = ?`
 
-	FindFileQuery  string = `SELECT * FROM Files WHERE id = ?;`
-	FindDirQuery   string = `SELECT * FROM Directories WHERE id = ?;`
-	FindDriveQuery string = `SELECT * FROM Drives WHERE id = ?;`
-	FindUserQuery  string = `SELECT * FROM Users WHERE id = ?;`
+	FindFileQuery  string = `SELECT * FROM Files WHERE id = ?`
+	FindDirQuery   string = `SELECT * FROM Directories WHERE id = ?`
+	FindDriveQuery string = `SELECT * FROM Drives WHERE id = ?`
+	FindUserQuery  string = `SELECT * FROM Users WHERE id = ?`
 
 	// ---------- SELECT statements for confirming existance -------------------
 
