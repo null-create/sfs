@@ -11,6 +11,7 @@ import (
 
 // TODO: handle null columns in all methods below
 
+// TODO: test this!
 // Query to check user existence
 func (q *Query) UserExists(userID string) (bool, error) {
 	var exists bool
@@ -30,7 +31,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	}
 
 	user := new(auth.User)
-	if err := q.Conn.QueryRow(FindQuery, "Users", userID).Scan(
+	if err := q.Conn.QueryRow(FindUserQuery, userID).Scan(
 		&user.ID,
 		&user.Name,
 		&user.UserName,
