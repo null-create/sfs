@@ -6,24 +6,32 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-func TestBatchAddFiles(t *testing.T) {
-	totalFiles := RandInt(50)
-	testFiles, err := MakeABunchOfTxtFiles(totalFiles)
-	if err != nil {
-		Fatal(t, err)
-	}
+func TestBatchLimit(t *testing.T) {
+	defer RunTestStage("clean up", func() {
+		Clean(t, GetTestingDir())
+	})
 
-	// get total size of testFiles in testing dir
-	b := NewBatch()
-	b.Cap = 1000 // 1 kb batch capacity for testing
+	RunTestStage("batch limit", func() {
+		totalFiles := RandInt(50)
+		testFiles, err := MakeABunchOfTxtFiles(totalFiles)
+		if err != nil {
+			Fatal(t, err)
+		}
 
-	var totalSize int64
-	for _, testFile := range testFiles {
-		totalSize += testFile.Size()
-	}
-	assert.True(t, totalSize > b.Cap)
+		// get total size of testFiles in testing dir
+		b := NewBatch()
+		b.Cap = 25000 // 25 kb batch capacity for testing
 
-	Clean(t, GetTestingDir())
+		var totalSize int64
+		for _, testFile := range testFiles {
+			totalSize += testFile.Size()
+		}
+		// make sure our test file content size is greater than our
+		// established capacity. we want to check for left over files
+		assert.True(t, totalSize > b.Cap)
+
+		// add test files
+		remTestFiles := b.AddFiles(testFiles)
+		assert.True(t, len(remTestFiles) < len(testFiles))
+	})
 }
-
-func TestBatchLimit(t *testing.T) {}
