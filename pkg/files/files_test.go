@@ -16,6 +16,19 @@ const (
 
 //---------- test fixtures --------------------------------
 
+func MakeDummyFiles(t *testing.T, total int) []*File {
+	testDir := GetTestingDir()
+
+	// build dummy file objects + test files
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("tmp-%d.txt", i)
+		testFiles = append(testFiles, NewFile(tfName, "me", filepath.Join(testDir, tfName)))
+	}
+
+	return testFiles
+}
+
 // makes temp files and file objects for testing purposes
 func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 	testDir := GetTestingDir()

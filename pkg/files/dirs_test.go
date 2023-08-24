@@ -55,6 +55,7 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 		tdName := fmt.Sprintf("%s%d", TestDirName, i)
 		tmpDirPath := filepath.Join(testingDir, tdName)
 
+		// NOTE: none of these test directories have a non-nil parent pointer
 		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDirPath))
 	}
 	return testDirs
@@ -63,29 +64,6 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 func RemoveTmpDir(t *testing.T, path string) error {
 	if err := os.Remove(path); err != nil {
 		t.Errorf("[ERROR] unable to remove temp directory: %v", err)
-	}
-	return nil
-}
-
-// currently a no-op until the access issue is resolved
-func RemoveTestDirs(t *testing.T) error {
-	testingDir := GetTestingDir()
-
-	entries, err := os.ReadDir(testingDir)
-	if err != nil {
-		t.Errorf("[ERROR] failed to read testing directory: %v", err)
-	}
-
-	for _, entry := range entries {
-		path := filepath.Join(testingDir, entry.Name())
-		if entry.IsDir() {
-			// remove the directory
-			// NOTE: currently getting "access denied" errors when
-			// removing temp directories
-			if err = os.Remove(path); err != nil {
-				t.Errorf("[ERROR] failed to remove temp directory: %v", err)
-			}
-		}
 	}
 	return nil
 }
@@ -200,7 +178,7 @@ func TestAddSubDirs(t *testing.T) {
 	}
 	assert.Equal(t, total, len(td.Dirs))
 
-	if err := RemoveTestDirs(t); err != nil {
+	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
