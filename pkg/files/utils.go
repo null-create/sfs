@@ -40,9 +40,9 @@ func NewUUID() string {
 //
 // https://stackoverflow.com/questions/19374219/how-to-find-the-difference-between-two-slices-of-strings
 func Diff(f, g []*File) []*File {
-	tmp := make(map[*File]string, len(g))
+	tmp := make(map[*File]int)
 	for _, file := range g {
-		tmp[file] = "hi"
+		tmp[file] = 1
 	}
 	var diff []*File
 	for _, file := range f {
