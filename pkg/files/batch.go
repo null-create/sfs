@@ -94,12 +94,14 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	// if we reach capacity before we finish with files,
 	// return a list of the remaining files
 	if b.Cap == MAX && len(added) < len(files) {
+		log.Printf("[DEBUG] reached capacity before we could finish with the remaining files. \nreturning remaining files\n")
 		return Diff(added, files)
 	}
 	// if b.Cap < MAX and we have left over files that were passed over for
 	// being to large for the current batch.
 	// use AddFiles() again over notAdded list until no more files remain.
 	if len(notAdded) > 0 && b.Cap < MAX {
+		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
 		return notAdded
 	}
 	return nil
