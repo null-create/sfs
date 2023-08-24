@@ -6,14 +6,15 @@ import (
 
 // max batch size
 //
-// (1,000,000,000 / 1,073,741,824 / 2^30 bytes)
+// (1,000,000,000 / 2^30 bytes/ 1 Gb)
 const MAX int64 = 1e+9
 
 // batch represents a collection of files to be uploaded or downloaded
 // Batch.limit is set by the network profiler
 type Batch struct {
-	ID    string  // batch ID (UUID)
-	Cap   int64   // remaining capacity (in bytes)
+	ID  string // batch ID (UUID)
+	Cap int64  // remaining capacity (in bytes)
+
 	Files []*File // files to be uploaded or downloaded
 }
 
