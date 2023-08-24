@@ -184,21 +184,22 @@ func TestAddSubDirs(t *testing.T) {
 }
 
 func TestRemoveSubDirs(t *testing.T) {
-	total := RandInt(100)                // root test subdir
-	testDirs := MakeTestDirs(t, total+1) // subdirs to add + 1 for a test root
+	total := RandInt(100)
+	// root test subdir
+	testRoot := NewRootDirectory("tmp", "me", GetTestingDir())
+	// subdirs to add
+	testDirs := MakeTestDirs(t, total)
 
-	td := testDirs[0]
-	testDirs = append(testDirs[:0], testDirs[1:]...) // remove test dir from original slice
-
-	if err := td.AddSubDirs(testDirs); err != nil {
-		t.Errorf("[ERROR] unable to add subdirs to test directory: %v", err)
+	if err := testRoot.AddSubDirs(testDirs); err != nil {
+		Fatal(t, err)
 	}
-	assert.Equal(t, total, len(td.Dirs))
+	assert.Equal(t, total, len(testRoot.Dirs))
 
-	if err := td.RemoveSubDir(td.ID); err != nil {
-		t.Errorf("[ERROR] unable to remove test subdir: %v", err)
+	if err := testRoot.RemoveSubDirs(); err != nil {
+		Fatal(t, err)
 	}
-	assert.Equal(t, 0, len(td.Dirs))
+	assert.NotEqual(t, total, len(testRoot.Dirs))
+	assert.Equal(t, 0, len(testRoot.Dirs))
 }
 
 func TestGetDirSize(t *testing.T) {
@@ -294,4 +295,4 @@ func TestWalkS(t *testing.T) {
 	testDir5.Clean(testingDir)
 }
 
-func TestWalkF(t *testing.T) {}
+// func TestWalkF(t *testing.T) {}
