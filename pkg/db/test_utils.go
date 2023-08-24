@@ -59,13 +59,13 @@ func Clean(t *testing.T, dir string) error {
 func MakeTestItems(t *testing.T, testDir string) (*files.Drive, *files.Directory, *auth.User) {
 	tempDir := files.NewDirectory(
 		"bill",
-		"bill stinkwater",
+		"bill buttlicker",
 		filepath.Join(testDir, "bill"),
 	)
 	tempDrive := files.NewDrive(
 		files.NewUUID(),
 		"bill",
-		"bill stinkwater",
+		"bill buttlicker",
 		filepath.Join(testDir, "bill"),
 		tempDir,
 	)
