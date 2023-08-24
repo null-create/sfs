@@ -15,9 +15,9 @@ import (
 const txtData string = "all work and no play makes jack a dull boy"
 
 // run an individual test as part of a series of larger tests
-func RunTestStage(t *testing.T, stageName string, test func(t *testing.T)) {
+func RunTestStage(stageName string, test func()) {
 	log.Print(fmt.Sprintf("=============== %s Testing Stage ===============", stageName))
-	test(t)
+	test()
 	log.Print("================================================")
 }
 
