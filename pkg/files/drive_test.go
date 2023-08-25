@@ -15,7 +15,7 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	driveRoot := filepath.Join(testingDir, "testDrive")
 
 	// make a tmp directory and add with some test files
-	if err := MakeTmpDir(t, driveRoot); err != nil {
+	if _, err := MakeTmpDir(t, driveRoot); err != nil {
 		t.Errorf("[ERROR] failed to create temporary directory: %v", err)
 	}
 
@@ -27,7 +27,7 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 
 	// create a subdirectory with dummy files
 	sdPath := filepath.Join(driveRoot, "testSubDir")
-	if err := MakeTmpDir(t, sdPath); err != nil {
+	if _, err := MakeTmpDir(t, sdPath); err != nil {
 		t.Errorf("[ERROR] unable to create temporary subdirectory: %v", err)
 	}
 
