@@ -84,6 +84,7 @@ func NewFile(fileName string, owner string, path string) *File {
 		Protected: false,
 		Key:       "default",
 
+		LastSync:   time.Now().UTC(),
 		Path:       path,
 		ServerPath: path, // temporary
 		ClientPath: path, // temporary
@@ -91,10 +92,6 @@ func NewFile(fileName string, owner string, path string) *File {
 		CheckSum:  cs,
 		Algorithm: "sha256",
 	}
-}
-
-func (f *File) HasContent() bool {
-	return len(f.Content) == 0
 }
 
 // returns file size in bytes

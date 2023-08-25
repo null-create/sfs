@@ -76,6 +76,7 @@ func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 		Protected: false,
 		Key:       "default",
 		Overwrite: false,
+		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
 		Parent:    nil,
@@ -99,6 +100,7 @@ func NewDirectory(name string, owner string, path string) *Directory {
 		Protected: false,
 		Key:       "default",
 		Overwrite: false,
+		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
 		Root:      false,
@@ -297,9 +299,17 @@ func (d *Directory) RemoveFile(fileID string) error {
 	return nil
 }
 
+// return a copy of the files map
+func (d *Directory) GetFiles() map[string]*File {
+	if len(d.Files) == 0 {
+		log.Printf("[DEBUG] dir (%s) has no files", d.ID)
+	}
+	return d.Files
+}
+
 // returns a slice of NameMap objects representing files and their UUIDs
 // from a given directory. does not return info about files in any subdirectories
-func (d *Directory) GetFileList() []NameMap {
+func (d *Directory) GetFileMaps() []NameMap {
 	if len(d.Files) == 0 {
 		log.Print("[DEBUG] file list is empty")
 		return nil
@@ -443,13 +453,6 @@ func (d *Directory) DirSize() (float64, error) {
 }
 
 /*
-Walk functions:
-
-
-
-*/
-
-/*
 Walk() recursively traverses sub directories starting at a given directory (or root),
 attempting to find the directory with the matching ID.
 */
@@ -477,7 +480,7 @@ func walk(dir *Directory, dirID string) *Directory {
 }
 
 /*
-WalkS recursively traverses each subdirectory starting from
+WalkS() recursively traverses each subdirectory starting from
 the given directory and returns a *SyncIndex pointer containing
 the last sync times for each file in each directory and subdirectories.
 */
