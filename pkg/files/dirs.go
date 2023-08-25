@@ -517,6 +517,43 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
+func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
+	if len(d.Files) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
+	}
+	if len(d.Dirs) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
+		return nil // nothing to search
+	}
+	return walkU(d, idx)
+}
+
+func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
+	// check files
+	if len(dir.Files) > 0 {
+		for _, file := range dir.Files {
+			// check if the time difference between most recent sync and last sync
+			// is greater than zero.
+			if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
+				idx.ToUpdate[file.ID] = file
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
+	}
+	// check sub directories
+	if len(dir.Dirs) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		return idx
+	}
+	for _, subDirs := range dir.Dirs {
+		if uIndx := walkU(subDirs, idx); uIndx != nil {
+			return uIndx
+		}
+	}
+	return nil
+}
+
 // TODO: test!
 
 // Walkf() searches each subdirectory recursively and performes
