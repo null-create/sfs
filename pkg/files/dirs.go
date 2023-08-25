@@ -526,7 +526,7 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
-		return nil // nothing to search
+		return idx // nothing to search with this directory
 	}
 	return walkU(d, idx)
 }
