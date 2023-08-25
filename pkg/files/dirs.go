@@ -517,6 +517,9 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
+// TODO: test!
+
+// d.WalkU() populates the ToUpdate map of a given SyncIndex
 func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
@@ -528,6 +531,9 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 	return walkU(d, idx)
 }
 
+// walkU recursively walks the directory tree and checks the last sync time
+// of each file in each subdirectory, populating the ToUpdate map of a given SyncIndex
+// as needed.
 func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	// check files
 	if len(dir.Files) > 0 {
