@@ -2,6 +2,7 @@ package files
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -308,4 +309,51 @@ func TestWalkS(t *testing.T) {
 	}
 }
 
-// func TestWalkF(t *testing.T) {}
+func TestWalkU(t *testing.T) {
+	tmpDir := MakeTmpDirs(t)
+
+	idx := tmpDir.WalkS()
+
+	assert.NotEqual(t, nil, idx)
+	assert.NotEqual(t, 0, len(idx.LastSync))
+	assert.Equal(t, 20, len(idx.LastSync)) // this is how many test files were generated
+
+	// make sure there's actual times and not uninstantiated time.Time objects
+	for _, lastSync := range idx.LastSync {
+		assert.NotEqual(t, 0, lastSync.Second())
+	}
+
+	// TODO: update a few files at random (remember tatalUpdate amount), using
+	// their built in f.Save() method.
+	// this should update that specific file's LastSync field, and therefore should
+	// make it eligible for a sync event.
+	// we should check that len(idx.ToUpdate) == tatalUpdate
+	// totalUpdate := RandInt(9)
+
+	// var updated int
+
+	// clean up after testing
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestWalkF(t *testing.T) {
+	tmpDir := MakeTmpDirs(t)
+
+	// create a test function to pass to WalkF()
+	if err := tmpDir.WalkF(func(file *File) error {
+		if file == nil {
+			return fmt.Errorf("test file pointer is nil")
+		}
+		log.Printf("[TEST] this is a test file (id=%s)", file.ID)
+		return nil
+	}); err != nil {
+		Fatal(t, err)
+	}
+
+	// clean up after testing
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
