@@ -22,8 +22,8 @@ func MakeTmpDir(t *testing.T, path string) (*Directory, error) {
 	return dir, nil
 }
 
-// create a temporary root directory with files
-// and a subdirectory, also with files
+// create a temporary root directory with files and a subdirectory,
+// also with files, under pkg/files/testing/tmp
 func MakeTmpDirs(t *testing.T) *Directory {
 	// make our temporary directory
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
@@ -62,7 +62,7 @@ func MakeTmpDirs(t *testing.T) *Directory {
 	return tmpRoot
 }
 
-// make test files within a testing/tmp directory
+// make test files within a specified directory
 func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 	testFiles := make([]*File, 0)
 
@@ -296,47 +296,15 @@ func TestWalk(t *testing.T) {
 }
 
 func TestWalkS(t *testing.T) {
-	testingDir := GetTestingDir()
-	testDir1 := NewDirectory("testDir1", "me", filepath.Join(testingDir, "testDir1"))
-	testDir2 := NewDirectory("testDir2", "me", filepath.Join(testingDir, "testDir2"))
-	testDir3 := NewDirectory("testDir3", "me", filepath.Join(testingDir, "testDir3"))
-	testDir4 := NewDirectory("testDir4", "me", filepath.Join(testingDir, "testDir4"))
-	testDir5 := NewDirectory("testDir5", "me", filepath.Join(testingDir, "testDir5"))
+	tmpDir := MakeTmpDirs(t)
 
-	testDirs := []*Directory{testDir1, testDir2, testDir3, testDir4, testDir5}
+	idx := tmpDir.WalkS()
 
-	// add a bunch of dummy directories with test files in each one
-	var totalFiles int
-	for _, td := range testDirs {
-		tdirs := MakeTestDirs(t, RandInt(50))
-		for _, dir := range tdirs {
-			if testFiles, err := MakeTestFiles(t, 5); err == nil {
-				totalFiles += len(testFiles)
-				dir.AddFiles(testFiles)
-			} else {
-				t.Errorf("[ERROR] unable to make test files: %v", err)
-			}
-		}
-		if err := td.AddSubDirs(tdirs); err != nil {
-			t.Errorf("[ERROR] unable to add test directories %v", err)
-		}
-	}
-
-	// make layered file system
-	testDir5.AddSubDir(testDir4)
-	testDir4.AddSubDir(testDir3)
-	testDir3.AddSubDir(testDir2)
-	testDir2.AddSubDir(testDir1)
-
-	// run WalkS to get a SyncIndex pointer
-	index := testDir5.WalkS()
-
-	assert.NotEqual(t, nil, index)
-	assert.NotEqual(t, 0, len(index.LastSync))
-	assert.Equal(t, totalFiles, len(index.LastSync))
+	assert.NotEqual(t, nil, idx)
+	assert.NotEqual(t, 0, len(idx.LastSync))
 
 	// make sure there's actual times and not uninstantiated time.Time objects
-	for _, lastSync := range index.LastSync {
+	for _, lastSync := range idx.LastSync {
 		assert.NotEqual(t, 0, lastSync.Second())
 	}
 
