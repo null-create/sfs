@@ -91,8 +91,5 @@ func TestGetDriveSize(t *testing.T) {
 	// TODO: figure out actual expected size to compare to
 
 	// clean up
-	// TODO: doesn't remove test_files/testDrive. need to fix.
-	if err := testDrive.Root.Clean(testDrive.Root.Path); err != nil {
-		t.Errorf("[ERROR] unable to remove test drive: %v", err)
-	}
+	Clean(t, GetTestingDir())
 }
