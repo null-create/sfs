@@ -45,6 +45,8 @@ func Fatal(t *testing.T, err error) {
 //
 // n is determined by textReps since that will be how
 // many times testData is written to the text file
+//
+// returns a file pointer to the new temp file
 func MakeTmpTxtFile(filePath string, textReps int) (*File, error) {
 	file, err := os.Create(filePath)
 	if err != nil {
