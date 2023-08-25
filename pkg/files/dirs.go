@@ -565,23 +565,26 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 // Walkf() searches each subdirectory recursively and performes
 // a supplied function on each file in the directory, returning
 // an error if the function fails
-func (d *Directory) WalkF(op func(file *File) error) {
+func (d *Directory) WalkF(op func(file *File) error) error {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
 	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.Name, d.ID)
-		return
+		return nil
 	}
-	walkf(d, op)
+	return walkf(d, op)
 }
 
-func walkf(dir *Directory, op func(f *File) error) {
+func walkf(dir *Directory, op func(f *File) error) error {
 	// run operation on each file, if possible
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
 			if err := op(file); err != nil {
+				// we don't exit right away because this exception may only apply
+				// to a single file.
 				log.Printf("[DEBUG] unable to run operation on %s \n%v\n continuing...", dir.Name, err)
+				continue
 			}
 		}
 	} else {
@@ -589,9 +592,13 @@ func walkf(dir *Directory, op func(f *File) error) {
 	}
 	// search subdirectories
 	if len(dir.Dirs) == 0 {
-		return
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		return nil
 	}
 	for _, subDirs := range dir.Dirs {
-		walkf(subDirs, op)
+		if err := walkf(subDirs, op); err != nil {
+			return fmt.Errorf("failed to walk: %v", err)
+		}
 	}
+	return nil
 }
