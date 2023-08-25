@@ -454,11 +454,11 @@ func (d *Directory) DirSize() (float64, error) {
 
 /*
 Walk() recursively traverses sub directories starting at a given directory (or root),
-attempting to find the directory with the matching ID.
+attempting to find the desired sub directory with the given directory ID.
 */
 func (d *Directory) Walk(dirID string) *Directory {
 	if len(d.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.Name, d.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
 	}
 	return walk(d, dirID)
@@ -489,7 +489,7 @@ func (d *Directory) WalkS() *SyncIndex {
 		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
 	}
 	if len(d.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.Name, d.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
 		return nil // nothing to search
 	}
 	return walkS(d, NewSyncIndex())
