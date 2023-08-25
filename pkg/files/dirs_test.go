@@ -306,12 +306,12 @@ func TestWalkS(t *testing.T) {
 	testDirs := []*Directory{testDir1, testDir2, testDir3, testDir4, testDir5}
 
 	// add a bunch of dummy directories with test files in each one
-	var total int
+	var totalFiles int
 	for _, td := range testDirs {
 		tdirs := MakeTestDirs(t, RandInt(50))
 		for _, dir := range tdirs {
 			if testFiles, err := MakeTestFiles(t, 5); err == nil {
-				total += len(testFiles)
+				totalFiles += len(testFiles)
 				dir.AddFiles(testFiles)
 			} else {
 				t.Errorf("[ERROR] unable to make test files: %v", err)
@@ -333,6 +333,12 @@ func TestWalkS(t *testing.T) {
 
 	assert.NotEqual(t, nil, index)
 	assert.NotEqual(t, 0, len(index.LastSync))
+	assert.Equal(t, totalFiles, len(index.LastSync))
+
+	// make sure there's actual times and not uninstantiated time.Time objects
+	for _, lastSync := range index.LastSync {
+		assert.NotEqual(t, 0, lastSync.Second())
+	}
 
 	// clean up after testing
 	if err := Clean(t, GetTestingDir()); err != nil {
