@@ -29,6 +29,11 @@ func TestToUpdate(t *testing.T) {
 	assert.NotEqual(t, nil, toUpdate)
 	assert.NotEqual(t, 0, len(toUpdate.LastSync))
 
+	// make sure all new sync times are valid
+	for _, f := range toUpdate.ToUpdate {
+		assert.NotEqual(t, 0, f.LastSync.Second())
+	}
+
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Fatal(err)
 	}
