@@ -102,13 +102,6 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 	return testDirs
 }
 
-func RemoveTmpDir(t *testing.T, path string) error {
-	if err := os.Remove(path); err != nil {
-		t.Errorf("[ERROR] unable to remove temp directory: %v", err)
-	}
-	return nil
-}
-
 // ----------------------------------------------------------------
 
 func TestSecurityFeatures(t *testing.T) {
@@ -302,6 +295,7 @@ func TestWalkS(t *testing.T) {
 
 	assert.NotEqual(t, nil, idx)
 	assert.NotEqual(t, 0, len(idx.LastSync))
+	assert.Equal(t, 20, len(idx.LastSync)) // this is how many test files were generated
 
 	// make sure there's actual times and not uninstantiated time.Time objects
 	for _, lastSync := range idx.LastSync {
