@@ -34,6 +34,8 @@ func GetTestingDir() string {
 }
 
 // handle test failures
+//
+// calls Clean() followed by t.Fatalf()
 func Fatal(t *testing.T, err error) {
 	Clean(t, GetTestingDir())
 	t.Fatalf("[ERROR] %v", err)
@@ -61,15 +63,19 @@ func MakeTmpTxtFile(filePath string, textReps int) (*File, error) {
 }
 
 // make a bunch of temp .txt files of varying sizes.
+// under pkg/files/testing/tmp
 func MakeABunchOfTxtFiles(total int) ([]*File, error) {
+	tmpDir := filepath.Join(GetTestingDir(), "tmp")
+
 	files := make([]*File, 0)
 	for i := 0; i < total; i++ {
 		fileName := fmt.Sprintf("tmp-%d.txt", i)
-		filePath := filepath.Join(GetTestingDir(), fileName)
+		filePath := filepath.Join(tmpDir, fileName)
 		f, err := MakeTmpTxtFile(filePath, RandInt(1000))
 		if err != nil {
 			return nil, fmt.Errorf("error creating temporary file: %v", err)
 		}
+
 		files = append(files, f)
 	}
 	return files, nil
