@@ -204,7 +204,9 @@ func TestRemoveFiles(t *testing.T) {
 	}
 	assert.Equal(t, 0, len(td.Files))
 
-	Clean(t, GetTestingDir())
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 func TestAddSubDirs(t *testing.T) {
@@ -257,8 +259,8 @@ func TestGetDirSize(t *testing.T) {
 	}
 	assert.NotEqual(t, 0, tdSize)
 
-	if err := RemoveTestFiles(t, 1); err != nil {
-		t.Errorf("[ERROR] unable to remove test file %v", err)
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
 
@@ -333,7 +335,9 @@ func TestWalkS(t *testing.T) {
 	assert.NotEqual(t, 0, len(index.LastSync))
 
 	// clean up after testing
-	testDir5.Clean(testingDir)
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 // func TestWalkF(t *testing.T) {}
