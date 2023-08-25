@@ -13,12 +13,53 @@ const TestDirName string = "testDir"
 
 //---------- test fixtures --------------------------------
 
-// creates an empty directory under ../nimbus/pkg/files/test_files
-func MakeTmpDir(t *testing.T, path string) error {
+// creates an empty directory under ../nimbus/pkg/files/testing
+func MakeTmpDir(t *testing.T, path string) (*Directory, error) {
 	if err := os.Mkdir(path, 0666); err != nil {
-		return fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
+		return nil, fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
 	}
-	return nil
+	dir := NewDirectory("tmp", "me", path)
+	return dir, nil
+}
+
+// create a temporary root directory with files
+// and a subdirectory, also with files
+func MakeTmpDirs(t *testing.T) *Directory {
+	// make our temporary directory
+	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// create some temp files and associated file pointers
+	files, err := MakeABunchOfTxtFiles(10)
+	if err != nil {
+		Fatal(t, err)
+	}
+	tmpRoot := NewRootDirectory("root", "me", filepath.Join(GetTestingDir(), "tmp"))
+	tmpRoot.AddFiles(files)
+
+	// add a subdirectory with files so we can test traversal
+	sd, err := MakeTmpDir(t, filepath.Join(tmpRoot.Path, "tmpSubDir"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	moreFiles := make([]*File, 0)
+	for i := 0; i < 10; i++ {
+		fname := fmt.Sprintf("tmp-%d.txt", i)
+		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(100))
+		if err != nil {
+			Fatal(t, err)
+		}
+		moreFiles = append(moreFiles, f)
+	}
+
+	sd.AddFiles(moreFiles)
+	d.addSubDir(sd)
+	tmpRoot.addSubDir(d)
+
+	return tmpRoot
 }
 
 // make test files within a testing/tmp directory
