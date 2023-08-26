@@ -27,12 +27,23 @@ func RunTestStage(stageName string, test func()) {
 func GetTestingDir() string {
 	curDir, err := os.Getwd()
 	if err != nil {
-		log.Printf("[ERROR] unable to get testing directory: %v\ncreating...", err)
+		log.Printf("[WARNING] unable to get testing directory: %v\ncreating...", err)
 		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0666); err != nil {
 			log.Fatalf("[ERROR] unable to create test directory: %v", err)
 		}
 	}
 	return filepath.Join(curDir, "testing")
+}
+
+func GetStateDir() string {
+	curDir, err := os.Getwd()
+	if err != nil {
+		log.Printf("[WARNING] unable to find state file testing directory: %v\ncreating...", err)
+		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0666); err != nil {
+			log.Fatalf("[ERROR] unable to create state file testing directoryy: %v", err)
+		}
+	}
+	return filepath.Join(curDir, "state")
 }
 
 // handle test failures
