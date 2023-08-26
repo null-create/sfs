@@ -96,12 +96,13 @@ root/
 */
 func SvcInit(svcPath string) (*Service, error) {
 	// ------- make root service directory (wherever it should located)
-	log.Printf("creating root service directory...")
+	log.Print("creating root service directory...")
 	if err := os.Mkdir(svcPath, 0666); err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
 	}
 
 	//-------- create top-level service directories
+	log.Print("creating service subdirectories...")
 	svcPaths := []string{
 		filepath.Join(svcPath, "users"),
 		filepath.Join(svcPath, "state"),
@@ -114,6 +115,7 @@ func SvcInit(svcPath string) (*Service, error) {
 	}
 
 	// -------- create new service databases
+	log.Print("creating service databases...")
 	entries, err := os.ReadDir(svcPaths[2])
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to read service database directory: %v", err)
@@ -171,9 +173,9 @@ func loadStateFile(sfPath string) (*Service, error) {
 	// load state file and unmarshal into service struct
 	file, err := ioutil.ReadFile(sfPath)
 	if err != nil {
+		// TODO: make new state file or exit as a failure?
 		return nil, fmt.Errorf("failed to read state file: %v", err)
 	}
-
 	svc := &Service{}
 	if err := json.Unmarshal([]byte(file), svc); err != nil {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
@@ -200,7 +202,7 @@ func loadUsers(svc *Service) (*Service, error) {
 // populates users map through querying the users database
 func SvcLoad(sfPath string) (*Service, error) {
 
-	// TODO: add some pre-checks"
+	// TODO: add some "pre-checks"
 	// are the databases present?
 	// is the statefile present
 
@@ -245,7 +247,7 @@ func (s *Service) SaveState() error {
 		return fmt.Errorf("[ERROR] unable to marshal service state: %v", err)
 	}
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format(time.RFC3339))
-	return ioutil.WriteFile(filepath.Join(s.SfDir, sfName), file, 0666)
+	return os.WriteFile(filepath.Join(s.SfDir, sfName), file, 0666)
 }
 
 // get total size (in kb!) of all active user drives
@@ -302,6 +304,8 @@ func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
 }
 
 // ------- user methods --------------------------------
+
+// these will likely work with handlers
 
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
