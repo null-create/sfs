@@ -40,7 +40,13 @@ func (q *Query) Prepare(query string) error {
 	return nil
 }
 
+// connect to a database given the assigned dbPath when query was initialized
+//
+// must be followed by a defer q.Conn.Close() statement when called!
 func (q *Query) Connect() {
+	if q.DBPath == "" {
+		log.Fatalf("[ERROR] no DB path specified")
+	}
 	db, err := sql.Open("sqlite3", q.DBPath)
 	if err != nil {
 		log.Fatalf("[ERROR] failed to connect to database: %v", err)
