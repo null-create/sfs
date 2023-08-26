@@ -1,35 +1,40 @@
 package server
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/sfs/pkg/db"
 )
 
 type Server struct {
 	StartTime time.Time
 
 	Svc *Service     // SFS service instance
-	Db  *sql.DB      // database connection
+	Db  *db.Query    // database connection
 	Srv *http.Server // http server
 }
 
-// NOTE: no handler(s) attached!
-// Must be built and attached manually
+// Instantiate a new HTTP server with an sfs service instance
 func NewServer(newService bool, isAdmin bool) *Server {
 
-	// get http server configs
+	// get http server and service configs
 	c := SrvConfig()
+	srvConf := GetServiceConfig()
 
-	// TODO:
-	// instantiate db
+	// instantiate service
+	svc, err := Init(newService, isAdmin)
+	if err != nil {
+		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
+	}
 
 	// instantiate router
 	rtr := NewRouter()
 
 	return &Server{
-		Svc: Init(newService, isAdmin),
+		Svc: svc,
+		Db:  db.NewQuery(srvConf.ServiceRoot),
 		Srv: &http.Server{
 			Handler:      rtr,
 			Addr:         c.Server.Addr,
