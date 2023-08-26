@@ -55,14 +55,23 @@ type Service struct {
 
 // ------- init ---------------------------------------
 
+func setAdmin(svc *Service) {
+	cfg := ServerConfig()
+	svc.AdminMode = true
+	svc.Admin = cfg.Server.Admin
+	svc.AdminKey = cfg.Server.AdminKey
+}
+
 func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
-
 	if !new {
 		// load from state file and dbs
-		svc, err := SvcLoad(c.ServiceRoot)
+		svc, err := SvcLoad(c.ServiceRoot, false)
 		if err != nil {
 			return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
+		}
+		if admin {
+			setAdmin(svc)
 		}
 		return svc, nil
 	} else {
@@ -70,6 +79,9 @@ func Init(new bool, admin bool) (*Service, error) {
 		svc, err := SvcInit(c.ServiceRoot)
 		if err != nil {
 			return nil, fmt.Errorf("[ERROR] failed to initialize sfs service: %v", err)
+		}
+		if admin {
+			setAdmin(svc)
 		}
 		return svc, nil
 	}
