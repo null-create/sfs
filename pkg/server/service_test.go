@@ -66,19 +66,24 @@ func TestLoadFromStateFile(t *testing.T) {
 	assert.NotEqual(t, nil, svc2)
 }
 
+func TestGenBaseUserFiles(t *testing.T) {
+	svc := &Service{}
+	svc.SvcRoot = fakeServiceRoot()
+	svc.StateFile = GetStateDir()
+	svc.UserDir = filepath.Join(svc.SvcRoot, "users")
+
+	if err := Clean(t, filepath.Join(fakeServiceRoot(), "users")); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+
+}
+
+// func TestAllocateDrive(t *testing.T) {}
+
 // func TestCreateNewService(t *testing.T) {
 // 	// use service.SvcInit(path string)
 
 // }
-
-// func TestLoadServiceFromStateFile(t *testing.T) {
-// 	// use service.SvcLoad
-
-// }
-
-// func TestGenBaseUserFiles(t *testing.T) {}
-
-// func TestAllocateDrive(t *testing.T) {}
 
 // func TestSvcUserGets(t *testing.T) {}
 
