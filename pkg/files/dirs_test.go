@@ -172,7 +172,9 @@ func TestAddFiles(t *testing.T) {
 	assert.NotEqual(t, 0, len(td.Files))
 	assert.Equal(t, total, len(td.Files))
 
-	Clean(t, GetTestingDir())
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 func TestRemoveFiles(t *testing.T) {
