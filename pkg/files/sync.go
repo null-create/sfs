@@ -64,19 +64,8 @@ if the sync time in the last sync map is less recent than whats in the current d
 which will be used to create a file upload or download queue
 */
 func BuildToUpdate(dir *Directory, idx *SyncIndex) *SyncIndex {
-	if idx == nil {
-		log.Fatalf("[ERROR] could not build ToUpdate index; idx was nil")
+	if idx := dir.WalkU(idx); idx != nil {
+		return idx
 	}
-	for _, f := range dir.Files {
-		// check if the time difference between most recent sync and last sync
-		// is greater than zero.
-		if f.LastSync.Sub(idx.LastSync[f.ID]) > 0 {
-			idx.ToUpdate[f.ID] = f
-		}
-	}
-	if len(idx.ToUpdate) == 0 {
-		log.Printf("[DEBUG] no files matched for syncing")
-		return nil
-	}
-	return idx
+	return nil
 }
