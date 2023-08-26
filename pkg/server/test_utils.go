@@ -50,6 +50,7 @@ func GetStateDir() string {
 //
 // calls Clean() followed by t.Fatalf()
 func Fatal(t *testing.T, err error) {
+	Clean(t, GetStateDir())
 	Clean(t, GetTestingDir())
 	t.Fatalf("[ERROR] %v", err)
 }
