@@ -121,4 +121,4 @@ func TestAddAndFindUser(t *testing.T) {
 	Clean(t, testDir)
 }
 
-func TestUserExists(t *testing.T) {}
+// func TestUserExists(t *testing.T) {}
