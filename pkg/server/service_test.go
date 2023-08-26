@@ -2,6 +2,7 @@ package server
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -21,19 +22,20 @@ func MakeABunchOfDummyUsers(total int) []*auth.User {
 
 func TestSaveStateFile(t *testing.T) {
 	svc := &Service{}
-	svc.StateFile = GetTestingDir()
+	svc.StateFile = GetStateDir()
 	if err := svc.SaveState(); err != nil {
-		t.Fatalf("%v", err)
+		Fatal(t, err)
 	}
 
-	entries, err := os.ReadDir(svc.StateFile)
+	entries, err := os.ReadDir(GetStateDir())
 	if err != nil {
-		t.Fatalf("%v", err)
+		Fatal(t, err)
 	}
 	assert.NotEqual(t, 0, len(entries))
+	assert.Equal(t, 1, len(entries))
 	assert.True(t, strings.Contains(entries[0].Name(), "sfs-state") && strings.Contains(entries[0].Name(), ".json"))
 
-	if err := Clean(t, GetTestingDir()); err != nil {
+	if err := Clean(t, GetStateDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -54,8 +56,8 @@ func TestLoadFromStateFile(t *testing.T) {
 	}
 
 	// remove temp state file prior to checking so we don't accidentally
-	// leave tmp files
-	if err := Clean(t, GetTestingDir()); err != nil {
+	// leave tmp files behind
+	if err := Clean(t, filepath.Join(GetTestingDir(), "state")); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 
