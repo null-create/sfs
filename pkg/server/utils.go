@@ -8,7 +8,7 @@ import (
 )
 
 // write out as a json file
-func save(dir, filename string, data map[string]interface{}) {
+func saveJSON(dir, filename string, data map[string]interface{}) {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Fatalf("[ERROR] failed marshalling JSON data: %s\n", err)
