@@ -152,7 +152,7 @@ func SvcInit(svcPath string) (*Service, error) {
 
 // determine whether we have a sfs-state-date:hour:min:sec.json file
 // under svcroot/state
-func SvcHasStateFile(path string) bool {
+func hasStateFile(path string) bool {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		log.Printf("[DEBUG] unable to find %s \n%v\n", path, err)
