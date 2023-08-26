@@ -36,7 +36,7 @@ type Service struct {
 	// path to user file directory
 	UserDir string `json:"user_dir"`
 
-	// path to data directory
+	// path to database directory
 	DbDir string `json:"db_dir"`
 
 	// admin mode. allows for expanded permissions when working with
@@ -56,7 +56,7 @@ type Service struct {
 // ------- init ---------------------------------------
 
 func Init(new bool, admin bool) (*Service, error) {
-	c := GetServiceConfig()
+	c := ServiceConfig()
 
 	if !new {
 		// load from state file and dbs
