@@ -59,8 +59,8 @@ func NewService(svcRoot string) *Service {
 		InitTime: time.Now().UTC(),
 		SvcRoot:  svcRoot,
 
-		// we don't set StateFile because we
-		// assume it doesn't exist when NewService is called
+		// we don't set StateFile because we assume it
+		// doesn't exist when NewService is called
 		StateFile: "",
 
 		UserDir: filepath.Join(svcRoot, "users"),
