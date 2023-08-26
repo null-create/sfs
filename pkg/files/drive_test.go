@@ -1,7 +1,6 @@
 package files
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -38,19 +37,6 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	testRoot.AddSubDir(testDirectory)
 
 	return testDrive, testRoot
-}
-
-// removes only the actual test files, directories and subdirectories directly
-// under ../nimbus/pkg/files/test_files
-func RemoveDummySystem(t *testing.T) (err error) {
-	testingDir := GetTestingDir()
-	driveRoot := filepath.Join(testingDir, "testDir")
-
-	if err := os.Remove(driveRoot); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // ----------------------------------------------------------------
@@ -91,5 +77,7 @@ func TestGetDriveSize(t *testing.T) {
 	// TODO: figure out actual expected size to compare to
 
 	// clean up
-	Clean(t, GetTestingDir())
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
