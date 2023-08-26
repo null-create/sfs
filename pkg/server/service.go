@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -65,19 +66,24 @@ func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
 		// load from state file and dbs
-		svc, err := SvcLoad(c.ServiceRoot, false)
-		if err != nil {
-			return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
+		if ok, entry := hasStateFile(filepath.Join(c.ServiceRoot, "state")); ok {
+			svc, err := SvcLoad(entry.Name(), false)
+			if err != nil {
+				return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
+			}
+			if admin {
+				setAdmin(svc)
+			}
+			return svc, nil
+			// no state file found!
+		} else {
+			return nil, fmt.Errorf("[ERROR] unable to load service config")
 		}
-		if admin {
-			setAdmin(svc)
-		}
-		return svc, nil
 	} else {
 		// initialize new sfs service
 		svc, err := SvcInit(c.ServiceRoot, false)
 		if err != nil {
-			return nil, fmt.Errorf("[ERROR] failed to initialize sfs service: %v", err)
+			return nil, fmt.Errorf("[ERROR] %v", err)
 		}
 		if admin {
 			setAdmin(svc)
@@ -126,55 +132,49 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 	}
 
 	// -------- create new service databases
+	log.Print("creating service databases...")
 	if err := db.InitDBs(svcPaths[2]); err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to initialize service databases: %v", err)
 	}
 
-	// --------- create initial service and save initial state
-
-	// create initial state file
-	if !hasStateFile(svcPaths[0]) {
-		svc := &Service{
-			InitTime:  time.Now().UTC(),
-			SvcRoot:   svcPath,
-			StateFile: "",
-			UserDir:   svcPaths[0],
-			DbDir:     svcPaths[2],
-			AdminMode: false,
-		}
-		if err := svc.SaveState(); err != nil {
-			return nil, fmt.Errorf("[ERROR] %v", err)
-		}
-		return svc, nil
-
-	} else {
-		svc, err := loadStateFile(svcPaths[1])
-		if err != nil {
-			return nil, fmt.Errorf("[ERROR] %v", err)
-		}
-		return svc, nil
+	// --------- create new service instance and save initial state
+	log.Print("initializng new service instance...")
+	svc := &Service{
+		InitTime:  time.Now().UTC(),
+		SvcRoot:   svcPath,
+		StateFile: "",
+		UserDir:   svcPaths[0],
+		DbDir:     svcPaths[2],
+		AdminMode: false,
 	}
+	if err := svc.SaveState(); err != nil {
+		return nil, fmt.Errorf("[ERROR] %v", err)
+	}
+	return svc, nil
+
 }
 
 // determine whether we have a sfs-state-date:hour:min:sec.json file
 // under svcroot/state
-func hasStateFile(path string) bool {
+func hasStateFile(path string) (bool, fs.DirEntry) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		log.Printf("[DEBUG] unable to find %s \n%v\n", path, err)
-		return false
+		return false, nil
 	}
 	for _, entry := range entries {
 		// NOTE: this might not be the most *current* version,
 		// just the one that's present at the moment.
 		if strings.Contains(entry.Name(), "sfs-state") {
-			return true
+			return true, entry
 		}
 	}
-	return false
+	return false, nil
 }
 
-// load service state file
+// load service state file.
+//
+// does not instatiate svc, db, or user paths. must be set elsewhere
 func loadStateFile(sfPath string) (*Service, error) {
 	// load state file and unmarshal into service struct
 	file, err := os.ReadFile(sfPath)
@@ -186,6 +186,7 @@ func loadStateFile(sfPath string) (*Service, error) {
 	if err := json.Unmarshal([]byte(file), svc); err != nil {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
 	}
+	svc.StateFile = sfPath
 	svc.InitTime = time.Now().UTC()
 
 	return svc, nil
@@ -258,7 +259,7 @@ func (s *Service) SaveState() error {
 	}
 
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
-	s.StateFile = filepath.Join(filepath.Join(s.SvcRoot, "state"), sfName)
+	s.StateFile = filepath.Join(s.StateFile, sfName)
 
 	return os.WriteFile(s.StateFile, file, 0644)
 }
