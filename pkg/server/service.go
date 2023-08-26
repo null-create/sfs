@@ -246,8 +246,8 @@ func (s *Service) SaveState() error {
 	if err != nil {
 		return fmt.Errorf("[ERROR] unable to marshal service state: %v", err)
 	}
-	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format(time.RFC3339))
-	return os.WriteFile(filepath.Join(s.SfDir, sfName), file, 0666)
+	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
+	return os.WriteFile(filepath.Join(s.SfDir, sfName), file, 0644)
 }
 
 // get total size (in kb!) of all active user drives
