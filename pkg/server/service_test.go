@@ -68,14 +68,23 @@ func TestLoadFromStateFile(t *testing.T) {
 
 func TestGenBaseUserFiles(t *testing.T) {
 	svc := &Service{}
-	svc.SvcRoot = fakeServiceRoot()
-	svc.StateFile = GetStateDir()
+	svc.SvcRoot = GetTestingDir()
 	svc.UserDir = filepath.Join(svc.SvcRoot, "users")
 
-	if err := Clean(t, filepath.Join(fakeServiceRoot(), "users")); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	svc.GenBaseUserFiles(svc.UserDir)
+
+	entries, err := os.ReadDir(svc.UserDir)
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+	for _, e := range entries {
+		assert.True(t, strings.Contains(e.Name(), ".json"))
 	}
 
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 // func TestAllocateDrive(t *testing.T) {}
