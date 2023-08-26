@@ -61,13 +61,6 @@ func NewDrive(id string, name string, owner string, rootPath string, root *Direc
 	if !check(id, name, owner, rootPath, root) {
 		return nil
 	}
-
-	// TODO: create new folder on specified hard drive and create
-	// some baseline metadata files (probably json), used to
-	// track the root directory's total size with all the user's files.
-
-	// the 'dryRun' parameter will skip baseline file creating during testing
-
 	return &Drive{
 		ID:    id,
 		Name:  name,
