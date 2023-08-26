@@ -9,14 +9,13 @@ import (
 )
 
 func TestSaveStateFile(t *testing.T) {
-	// use Service.SaveState()
 	svc := &Service{}
 	svc.SfDir = GetTestingDir()
 	if err := svc.SaveState(); err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	entries, err := os.ReadDir(GetTestingDir())
+	entries, err := os.ReadDir(svc.SfDir)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -28,24 +27,37 @@ func TestSaveStateFile(t *testing.T) {
 	}
 }
 
-func TestLoadStateFile(t *testing.T) {}
+func TestLoadFromStateFile(t *testing.T) {
+	svc := &Service{}
+	svc.SfDir = GetTestingDir()
+	if err := svc.SaveState(); err != nil {
+		t.Fatalf("%v", err)
+	}
 
-func TestCreateNewService(t *testing.T) {
-	// use service.SvcInit(path string)
+	svc2, err := SvcLoad(svc.SfDir, true)
+	if err != nil {
+		Fatal(t, err)
+	}
 
+	assert.Equal(t, svc, svc2)
 }
 
-func TestLoadServiceFromStateFile(t *testing.T) {
-	// use service.SvcLoad
+// func TestCreateNewService(t *testing.T) {
+// 	// use service.SvcInit(path string)
 
-}
+// }
 
-func TestGenBaseUserFiles(t *testing.T) {}
+// func TestLoadServiceFromStateFile(t *testing.T) {
+// 	// use service.SvcLoad
 
-func TestAllocateDrive(t *testing.T) {}
+// }
 
-func TestSvcUserGets(t *testing.T) {}
+// func TestGenBaseUserFiles(t *testing.T) {}
 
-func TestSvcUserRemoves(t *testing.T) {}
+// func TestAllocateDrive(t *testing.T) {}
 
-func TestSvcClearAll(t *testing.T) {}
+// func TestSvcUserGets(t *testing.T) {}
+
+// func TestSvcUserRemoves(t *testing.T) {}
+
+// func TestSvcClearAll(t *testing.T) {}
