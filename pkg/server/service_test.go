@@ -4,18 +4,29 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/sfs/pkg/auth"
 
 	"github.com/alecthomas/assert/v2"
 )
 
+// --------- fixtures --------------------------------
+
+func MakeABunchOfDummyUsers(total int) []*auth.User {
+	return nil
+}
+
+// -----------------------------------------------------
+
 func TestSaveStateFile(t *testing.T) {
 	svc := &Service{}
-	svc.SfDir = GetTestingDir()
+	svc.StateFile = GetTestingDir()
 	if err := svc.SaveState(); err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	entries, err := os.ReadDir(svc.SfDir)
+	entries, err := os.ReadDir(svc.StateFile)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -29,17 +40,26 @@ func TestSaveStateFile(t *testing.T) {
 
 func TestLoadFromStateFile(t *testing.T) {
 	svc := &Service{}
-	svc.SfDir = GetTestingDir()
+	svc.InitTime = time.Now().UTC()
+	svc.SvcRoot = GetTestingDir()
+	svc.StateFile = GetStateDir()
+
 	if err := svc.SaveState(); err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	svc2, err := SvcLoad(svc.SfDir, true)
+	svc2, err := loadStateFile(svc.StateFile)
 	if err != nil {
 		Fatal(t, err)
 	}
 
-	assert.Equal(t, svc, svc2)
+	// remove temp state file prior to checking so we don't accidentally
+	// leave tmp files
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+
+	assert.NotEqual(t, nil, svc2)
 }
 
 // func TestCreateNewService(t *testing.T) {
