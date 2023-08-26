@@ -71,7 +71,7 @@ func TestGenBaseUserFiles(t *testing.T) {
 	svc.SvcRoot = GetTestingDir()
 	svc.UserDir = filepath.Join(svc.SvcRoot, "users")
 
-	svc.GenBaseUserFiles(svc.UserDir)
+	GenBaseUserFiles(svc.UserDir)
 
 	entries, err := os.ReadDir(svc.UserDir)
 	if err != nil {
@@ -87,7 +87,32 @@ func TestGenBaseUserFiles(t *testing.T) {
 	}
 }
 
-// func TestAllocateDrive(t *testing.T) {}
+func TestAllocateDrive(t *testing.T) {
+	svc := &Service{}
+	svc.SvcRoot = GetTestingDir()
+
+	// create a temp "users" directory
+	if err := os.Mkdir(filepath.Join(svc.SvcRoot, "users"), 0644); err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	// allocate a new tmp drive
+	d := AllocateDrive("test", "me", GetTestingDir())
+	assert.NotEqual(t, nil, d)
+
+	// make sure all the basic user files are present
+	u := filepath.Join(svc.SvcRoot, "users")
+	drivePath := filepath.Join(u, "test")
+	entries, err := os.ReadDir(drivePath)
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
 
 // func TestCreateNewService(t *testing.T) {
 // 	// use service.SvcInit(path string)
