@@ -160,8 +160,8 @@ func clean(dirPath string) error {
 	return nil
 }
 
-// calls d.clean(), which recursively removes all files and
-// subdirectories from a drive starting at the given path
+// calls d.clean() which removes all files and subdirectories
+// from a drive starting at the given path
 func (d *Directory) Clean(dirPath string) error {
 	if !d.Protected {
 		if err := clean(dirPath); err != nil {
