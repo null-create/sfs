@@ -187,7 +187,7 @@ root/
 func SvcInit(svcPath string, debug bool) (*Service, error) {
 	// ------- make root service directory (wherever it should located)
 	log.Print("creating root service directory...")
-	if err := os.Mkdir(svcPath, 0666); err != nil {
+	if err := os.Mkdir(svcPath, 0644); err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
 	}
 
@@ -199,7 +199,7 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 		filepath.Join(svcPath, "dbs"),
 	}
 	for _, p := range svcPaths {
-		if err := os.Mkdir(p, 0666); err != nil {
+		if err := os.Mkdir(p, 0644); err != nil {
 			return nil, fmt.Errorf("[ERROR] failed to make service directory: %v", err)
 		}
 	}
