@@ -260,8 +260,9 @@ func (s *Service) SaveState() error {
 		return fmt.Errorf("unable to marshal service state: %v", err)
 	}
 
+	sfPath := filepath.Join(filepath.Join(s.SvcRoot, "state"))
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
-	s.StateFile = filepath.Join(s.StateFile, sfName)
+	s.StateFile = filepath.Join(sfPath, sfName)
 
 	return os.WriteFile(s.StateFile, file, 0644)
 }
