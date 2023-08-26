@@ -45,7 +45,7 @@ func TestSaveStateFile(t *testing.T) {
 
 func TestLoadFromStateFile(t *testing.T) {
 	svc := &Service{}
-	svc.SvcRoot = GetTestingDir()
+	svc.SvcRoot = fakeServiceRoot()
 	svc.StateFile = GetStateDir()
 
 	if err := svc.SaveState(); err != nil {
@@ -59,7 +59,7 @@ func TestLoadFromStateFile(t *testing.T) {
 
 	// remove temp state file prior to checking so we don't accidentally
 	// leave tmp files behind
-	if err := Clean(t, filepath.Join(GetTestingDir(), "state")); err != nil {
+	if err := Clean(t, filepath.Join(fakeServiceRoot(), "state")); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 
