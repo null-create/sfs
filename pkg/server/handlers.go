@@ -10,9 +10,11 @@ import (
 // NOTE: handlers will likely need to be connected to the internal db package
 
 // hanlder for file downloads
-func (s *Server) DownloadHandler(fileID string) http.HandlerFunc {
+func (s *Server) DownloadFileHandler(fileID string) http.HandlerFunc {
 	// TODO: use servers db connection to pull metadata (filepath to download to)
 	// about the file using the supplied fileID
+	//
+	// fileID should be parsed from the URL as a parameter
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Open the file to be downloaded
 		filePath := "example.txt" // TODO: Replace with the path to the file you want to download to
@@ -35,9 +37,11 @@ func (s *Server) DownloadHandler(fileID string) http.HandlerFunc {
 }
 
 // hanlder for file uploads
-func (s *Server) UploadHandler(fileID string) http.HandlerFunc {
-	// TODO: use servers db connection to pull filename
-	// of file to upload from fileID
+func (s *Server) UploadFileHandler(fileID string) http.HandlerFunc {
+	// TODO: use servers db connection to pull metadata (filepath to upload from)
+	// about the file using the supplied fileID
+	//
+	// fileID should be parsed from the URL as a parameter
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			// Get the uploaded file from the request
@@ -48,7 +52,7 @@ func (s *Server) UploadHandler(fileID string) http.HandlerFunc {
 			}
 			defer file.Close()
 
-			// Create a new file on the server to save the uploaded content
+			// Create or truncate a new file on the server to save the uploaded content
 			uploadedFilePath := handler.Filename
 			newFile, err := os.Create(uploadedFilePath)
 			if err != nil {

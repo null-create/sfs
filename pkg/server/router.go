@@ -20,7 +20,8 @@ GET    /v1/u/{userID}                // "home". return a root directory listing
 GET    /v1/u/{userID}/f/files       // get list of user files and directories
 POST   /v1/u/{userID}/f/files       // send a file to the server
 
-GET    /v1/u/{userID}/f/{fileID}    // get info about a file
+GET    /v1/u/{userID}/f/i/{fileID}  // get info about a file
+GET    /v1/u/{userID}/f/{fileID}    // download a file from the server
 POST   /v1/u/{userID}/f/{fileID}    // send a new file to the server
 UPDATE /v1/u/{userID}/f/{fileID}    // update a file on the server
 DELETE /v1/u/{userID}/f/{fileID}    // delete a file on the server
@@ -29,7 +30,8 @@ DELETE /v1/u/{userID}/f/{fileID}    // delete a file on the server
 
 GET    /v1/u/{userID}/d/dirs        // get list of user directories
 
-GET    /v1/u/{userID}/d/{dirID}     // get list of subdirectories
+GET    /v1/u/{userID}/d/i/{dirID}   // get list of files and subdirectories for this directory
+GET    /v1/u/{userID}/d/{dirID}     // download a .zip file from the server of this directory
 POST   /v1/u/{userID}/d/{dirID}     // create a directory to the server
 UPDATE /v1/u/{userID}/d/{dirID}     // update a directory on the server
 DELETE /v1/u/{userID}/d/{dirID}     // delete a directory
@@ -37,8 +39,10 @@ DELETE /v1/u/{userID}/d/{dirID}     // delete a directory
 // ----- sync operations
 
 GET    /v1/u/{userID}/sync      // fetch file last sync times from server
-POST   /v1/u/{userID}/sync      // send a last sync index to the server to
-                                // initiate a client/server file sync.
+
+POST   /v1/u/{userID}/sync      // send a last sync index object to the server
+                                // generated from the local client directories to
+																// initiate a client/server file sync.
 */
 
 // add json header to requests
@@ -54,7 +58,7 @@ func GetParam(req *http.Request, param string) string {
 	return chi.URLParam(req, param)
 }
 
-// based off example from: https://github.com/go-chi/chi/blob/master/README.md
+// instantiate a new chi router
 func NewRouter() *chi.Mux {
 
 	// instantiate router
@@ -86,7 +90,8 @@ func NewRouter() *chi.Mux {
 
 		r.Get("/u/{userID}/f/files", nil) // get list of user files and directories
 
-		r.Get("/u/{userID}/f/{fileID}", nil)    // get info about a file
+		r.Get("/u/{userID}/f/i/{fileID}", nil)  // get info about a file
+		r.Get("/u/{userID}/f/{fileID}", nil)    // download a file from the server
 		r.Post("/u/{userID}/f/{fileID}", nil)   // add a new file to the server
 		r.Put("/u/{userID}/f/{fileID}", nil)    // update a file on the server
 		r.Delete("/u/{userID}/f/{fileID}", nil) // delete a file on the server
@@ -96,15 +101,21 @@ func NewRouter() *chi.Mux {
 		r.Get("/u/{userID}/d/dirs/", nil)    // get list of user directories
 		r.Delete("/u/{userID}/d/dirs/", nil) // delete all user directories
 
-		r.Get("/u/{userID}/d/{dirID}", nil)    // get list of subdirectories
+		r.Get("/u/{userID}/d/i/{dirID}", nil)  // get info (file list) about a directory
+		r.Get("/u/{userID}/d/{dirID}", nil)    // download a .zip file of the directory from the server
 		r.Post("/u/{userID}/d/{dirID}", nil)   // create a (empty) directory to the server
 		r.Put("/u/{userID}/d/{dirID}", nil)    // update a directory on the server
 		r.Delete("/u/{userID}/d/{dirID}", nil) // delete a directory
 
 		// ----- sync operations
 
-		r.Get("/u/{userID}/sync", nil)  // fetch file last sync times from server
-		r.Post("/u/{userID}/sync", nil) // send a last sync index to the server to initiate a client/server file sync.
+		// fetch file last sync times for all
+		// user files (in all directories) from server
+		r.Get("/u/{userID}/sync", nil)
+
+		// send a last sync index to the server to
+		// initiate a client/server file sync.
+		r.Post("/u/{userID}/sync", nil)
 	})
 
 	// Mount the admin sub-router
