@@ -65,7 +65,7 @@ func setAdmin(svc *Service) {
 func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
-		// load from state file and dbs
+		// ---- load from state file and dbs
 		if ok, entry := hasStateFile(filepath.Join(c.ServiceRoot, "state")); ok {
 			svc, err := SvcLoad(entry.Name(), false)
 			if err != nil {
@@ -80,7 +80,7 @@ func Init(new bool, admin bool) (*Service, error) {
 			return nil, fmt.Errorf("[ERROR] unable to load service config")
 		}
 	} else {
-		// initialize new sfs service
+		// ----- initialize new sfs service
 		svc, err := SvcInit(c.ServiceRoot, false)
 		if err != nil {
 			return nil, fmt.Errorf("[ERROR] %v", err)
@@ -162,6 +162,9 @@ func hasStateFile(path string) (bool, fs.DirEntry) {
 		log.Printf("[DEBUG] unable to find %s \n%v\n", path, err)
 		return false, nil
 	}
+	if len(entries) > 1 {
+		log.Printf("[WARNING] multiple state files found under %s", path)
+	}
 	for _, entry := range entries {
 		// NOTE: this might not be the most *current* version,
 		// just the one that's present at the moment.
@@ -205,8 +208,7 @@ func loadUsers(svc *Service) (*Service, error) {
 	return svc, nil
 }
 
-// read in an external service state file (json) to
-// populate the internal data structures.
+// read in an external service state file
 //
 // populates users map through querying the users database
 func SvcLoad(sfPath string, debug bool) (*Service, error) {
