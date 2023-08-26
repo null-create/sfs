@@ -53,6 +53,22 @@ type Service struct {
 	Users map[string]*auth.User `json:"users"`
 }
 
+// intialize a new empty service struct
+func NewService(svcRoot string) *Service {
+	return &Service{
+		InitTime: time.Now().UTC(),
+		SvcRoot:  svcRoot,
+
+		// we don't set StateFile because we
+		// assume it doesn't exist when NewService is called
+		StateFile: "",
+
+		UserDir: filepath.Join(svcRoot, "users"),
+		DbDir:   filepath.Join(svcRoot, "dbs"),
+		Users:   make(map[string]*auth.User),
+	}
+}
+
 // ------- init ---------------------------------------
 
 func setAdmin(svc *Service) {
@@ -60,6 +76,63 @@ func setAdmin(svc *Service) {
 	svc.AdminMode = true
 	svc.Admin = cfg.Server.Admin
 	svc.AdminKey = cfg.Server.AdminKey
+}
+
+// determine whether we have a sfs-state-date:hour:min:sec.json file
+// under svcroot/state
+func hasStateFile(path string) (bool, fs.DirEntry) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		log.Printf("[ERROR] unable to find %s \n%v\n", path, err)
+		return false, nil
+	}
+	if len(entries) > 1 {
+		log.Printf("[WARNING] multiple state files found under %s", path)
+		for _, e := range entries {
+			log.Printf("	-%s\n", e.Name())
+		}
+	}
+	for _, entry := range entries {
+		// NOTE: this might not be the most *current* version,
+		// just the one that's present at the moment.
+		if strings.Contains(entry.Name(), "sfs-state") {
+			return true, entry
+		}
+	}
+	return false, nil
+}
+
+// load service state file.
+//
+// does not instatiate svc, db, or user paths. must be set elsewhere
+func loadStateFile(sfPath string) (*Service, error) {
+	// load state file and unmarshal into service struct
+	file, err := os.ReadFile(sfPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state file: %v", err)
+	}
+
+	svc := &Service{}
+	if err := json.Unmarshal([]byte(file), svc); err != nil {
+		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
+	}
+	svc.StateFile = sfPath
+	svc.InitTime = time.Now().UTC()
+
+	return svc, nil
+}
+
+// populate svc.Users map from users database
+func loadUsers(svc *Service) (*Service, error) {
+	q := db.NewQuery(svc.DbDir)
+	usrs, err := q.GetUsers()
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] failed to retrieve user data from Users database: %v", err)
+	}
+	for _, u := range usrs {
+		svc.AddUser(u)
+	}
+	return svc, nil
 }
 
 func Init(new bool, admin bool) (*Service, error) {
@@ -154,60 +227,6 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 
 }
 
-// determine whether we have a sfs-state-date:hour:min:sec.json file
-// under svcroot/state
-func hasStateFile(path string) (bool, fs.DirEntry) {
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		log.Printf("[DEBUG] unable to find %s \n%v\n", path, err)
-		return false, nil
-	}
-	if len(entries) > 1 {
-		log.Printf("[WARNING] multiple state files found under %s", path)
-	}
-	for _, entry := range entries {
-		// NOTE: this might not be the most *current* version,
-		// just the one that's present at the moment.
-		if strings.Contains(entry.Name(), "sfs-state") {
-			return true, entry
-		}
-	}
-	return false, nil
-}
-
-// load service state file.
-//
-// does not instatiate svc, db, or user paths. must be set elsewhere
-func loadStateFile(sfPath string) (*Service, error) {
-	// load state file and unmarshal into service struct
-	file, err := os.ReadFile(sfPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read state file: %v", err)
-	}
-
-	svc := &Service{}
-	if err := json.Unmarshal([]byte(file), svc); err != nil {
-		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
-	}
-	svc.StateFile = sfPath
-	svc.InitTime = time.Now().UTC()
-
-	return svc, nil
-}
-
-// populate svc.Users map from users database
-func loadUsers(svc *Service) (*Service, error) {
-	q := db.NewQuery(svc.DbDir)
-	usrs, err := q.GetUsers()
-	if err != nil {
-		return nil, fmt.Errorf("[ERROR] failed to retrieve user data from Users database: %v", err)
-	}
-	for _, u := range usrs {
-		svc.AddUser(u)
-	}
-	return svc, nil
-}
-
 // read in an external service state file
 //
 // populates users map through querying the users database
@@ -260,24 +279,12 @@ func (s *Service) SaveState() error {
 		return fmt.Errorf("unable to marshal service state: %v", err)
 	}
 
-	sfPath := filepath.Join(filepath.Join(s.SvcRoot, "state"))
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
+
+	sfPath := filepath.Join(filepath.Join(s.SvcRoot, "state"))
 	s.StateFile = filepath.Join(sfPath, sfName)
 
 	return os.WriteFile(s.StateFile, file, 0644)
-}
-
-// get total size (in kb!) of all active user drives
-func (s *Service) TotalSize() float64 {
-	if len(s.Users) == 0 {
-		log.Printf("[DEBUG] no drives to measure")
-		return 0.0
-	}
-	var total float64
-	for _, usr := range s.Users {
-		total += usr.Drive.DriveSize()
-	}
-	return total / 1000
 }
 
 // returns the service run time in seconds
@@ -309,15 +316,18 @@ func (s *Service) GenBaseUserFiles(DrivePath string) {
 //
 // Must be under /root/users/<username>
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	newID := files.NewUUID()
-	drivePath := filepath.Join(filepath.Join(s.SvcRoot, "users"), name)
+	usrs := filepath.Join(s.SvcRoot, "users")
+	drivePath := filepath.Join(usrs, name)
 
-	newRoot := files.NewRootDirectory("root", owner, drivePath)
-	drive := files.NewDrive(newID, name, owner, drivePath, newRoot)
-
+	// generate service files
 	s.GenBaseUserFiles(drivePath)
 
-	return drive
+	// create new drive struct and save to DB
+	// new drive id
+	newRoot := files.NewRootDirectory(name, owner, drivePath)
+	newDrive := files.NewDrive(files.NewUUID(), name, owner, drivePath, newRoot)
+
+	return newDrive
 }
 
 // ------- user methods --------------------------------
