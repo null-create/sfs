@@ -1,10 +1,13 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -26,10 +29,13 @@ type Service struct {
 
 	// Drive directory path for sfs service on the server
 	SvcRoot string `json:"service_root"`
+
 	// path to state file directory
-	StateFile string `json:"state_file"`
+	SfDir string `json:"state_file"`
+
 	// path to user file directory
 	UserDir string `json:"user_dir"`
+
 	// path to data directory
 	DbDir string `json:"db_dir"`
 
@@ -49,38 +55,24 @@ type Service struct {
 
 // ------- init ---------------------------------------
 
-func Init(new bool, admin bool) *Service {
+func Init(new bool, admin bool) (*Service, error) {
 	c := GetServiceConfig()
 
-	svc := &Service{
-		InitTime:  time.Now(),
-		SvcRoot:   c.ServiceRoot,
-		StateFile: filepath.Join(c.ServiceRoot, "state"),
-		UserDir:   filepath.Join(c.ServiceRoot, "users"),
-		DbDir:     filepath.Join(c.ServiceRoot, "dbs"),
-		AdminMode: admin,
-		Users:     make(map[string]*auth.User, 0),
-	}
-
-	// input server admin credentials if necessary
-	if admin {
-		s := SrvConfig()
-		svc.AdminMode = true
-		svc.Admin = s.Server.Admin
-		svc.AdminKey = s.Server.AdminKey
-	}
 	if !new {
 		// load from state file and dbs
-		if err := svc.Load(); err != nil {
-			log.Fatalf("[ERROR] failed to load state file: %v", err)
+		svc, err := SvcLoad(c.ServiceRoot)
+		if err != nil {
+			return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
 		}
+		return svc, nil
 	} else {
 		// initialize new sfs service
-		if err := SvcInit(c.ServiceRoot); err != nil {
-			log.Fatalf("[ERROR] service init failed: %v", err)
+		svc, err := SvcInit(c.ServiceRoot)
+		if err != nil {
+			return nil, fmt.Errorf("[ERROR] failed to initialize sfs service: %v", err)
 		}
+		return svc, nil
 	}
-	return svc
 }
 
 /*
@@ -102,56 +94,128 @@ root/
 |   |---directories
 |   |---files
 */
-func SvcInit(path string) error {
-	// make root service directory (wherever it should located)
-	if err := os.MkdirAll(path, 0666); err != nil {
-		return fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
+func SvcInit(svcPath string) (*Service, error) {
+	// ------- make root service directory (wherever it should located)
+	log.Printf("creating root service directory...")
+	if err := os.Mkdir(svcPath, 0666); err != nil {
+		return nil, fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
 	}
 
-	// create top-level service directories
-	paths := []string{
-		filepath.Join(path, "users"),
-		filepath.Join(path, "state"),
-		filepath.Join(path, "dbs"),
+	//-------- create top-level service directories
+	svcPaths := []string{
+		filepath.Join(svcPath, "users"),
+		filepath.Join(svcPath, "state"),
+		filepath.Join(svcPath, "dbs"),
 	}
-	for _, p := range paths {
+	for _, p := range svcPaths {
 		if err := os.Mkdir(p, 0666); err != nil {
-			return fmt.Errorf("[ERROR] failed to make service directory: %v", err)
+			return nil, fmt.Errorf("[ERROR] failed to make service directory: %v", err)
 		}
 	}
 
-	// create new service databases
-	dbDir := paths[2]
-	dbs := []string{"Files", "Directories", "Users", "Drives"}
+	// -------- create new service databases
+	entries, err := os.ReadDir(svcPaths[2])
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] failed to read service database directory: %v", err)
+	}
+	if len(entries) != 0 {
+		return nil, fmt.Errorf("[ERROR] service database directory not empty! %v", entries)
+	}
+
+	dbDir := svcPaths[2]
+	dbs := []string{"files", "directories", "users", "drives"}
 	for _, d := range dbs {
 		db.NewDB(d, filepath.Join(dbDir, d))
 	}
 
-	// create initial databases
+	// --------- create and save initial state file
 
 	// save internal service, user, and database paths
 	// to external state file
+	entries, err = os.ReadDir(svcPaths[1])
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] failed to read state file directory: %v", err)
+	}
 
-	// TODO: specify json schema to store service state between sessions.
+	if len(entries) == 0 {
+		// create a new initial state file
+	} else {
+		// try to read in the present state file
+	}
 
-	return nil
+	return nil, nil
 }
 
 // ------ utils --------------------------------
 
-// returns the service run time in seconds
-func (s *Service) RunTime() float64 {
-	return time.Since(s.InitTime).Seconds()
+// determine whether we have a sfs-state-date:hour:min:sec.json file
+// under svcroot/state
+func SvcHasStateFile(path string) bool {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		log.Printf("[DEBUG] unable to find %s \n%v\n", path, err)
+		return false
+	}
+	for _, entry := range entries {
+		// NOTE: this might not be the most *current* version,
+		// just the one that's present at the moment.
+		if strings.Contains(entry.Name(), "sfs-state") {
+			return true
+		}
+	}
+	return false
+}
+
+// load service state file
+func loadStateFile(sfPath string) (*Service, error) {
+	// load state file and unmarshal into service struct
+	file, err := ioutil.ReadFile(sfPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state file: %v", err)
+	}
+
+	svc := &Service{}
+	if err := json.Unmarshal([]byte(file), svc); err != nil {
+		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
+	}
+	return svc, nil
+}
+
+// populate svc.Users map from users database
+func loadUsers(svc *Service) (*Service, error) {
+	q := db.NewQuery(svc.DbDir)
+	usrs, err := q.GetUsers()
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] failed to retrieve user data from Users database: %v", err)
+	}
+	for _, u := range usrs {
+		svc.AddUser(u)
+	}
+	return svc, nil
 }
 
 // read in an external service state file (json) to
 // populate the internal data structures.
 //
-// TODO: handle case where state file is missing.
-//
 // populates users map through querying the users database
-func (s *Service) Load() error {
-	return nil
+func SvcLoad(sfPath string) (*Service, error) {
+
+	// TODO: add some pre-checks"
+	// are the databases present?
+	// is the statefile present
+
+	svc, err := loadStateFile(sfPath)
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] %v", err)
+	}
+
+	// populate user map via user database
+	svc, err = loadUsers(svc)
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] %v", err)
+	}
+
+	return svc, nil
 }
 
 /*
@@ -160,10 +224,11 @@ the following fields when saving service state to disk:
 
 	InitTime time.Time `json:"init_time"`
 
-	SvcRoot string `json:"service_root"`  // Drive directory path for sfs service on the server
+	SvcRoot string `json:"service_root"`  // directory path for sfs service on the server
 	StateFile string `json:"state_file"`  // path to state file directory
-	UserDir string `json:"user_dir"`      // path to user file directory
-	DbDir string `json:"db_dir"`          // path to data directory
+
+	UserDir string `json:"user_dir"` // path to user drives directory
+	DbDir string `json:"db_dir"`     // path to data directory
 
 	// admin mode. allows for expanded permissions when working with
 	// the internal sfs file systems.
@@ -175,7 +240,12 @@ all information about user file metadata  are saved in the database.
 the above fields are saved as a json file.
 */
 func (s *Service) SaveState() error {
-	return nil
+	file, err := json.MarshalIndent(s, "", " ")
+	if err != nil {
+		return fmt.Errorf("[ERROR] unable to marshal service state: %v", err)
+	}
+	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format(time.RFC3339))
+	return ioutil.WriteFile(filepath.Join(s.SfDir, sfName), file, 0666)
 }
 
 // get total size (in kb!) of all active user drives
@@ -191,6 +261,11 @@ func (s *Service) TotalSize() float64 {
 	return total / 1000
 }
 
+// returns the service run time in seconds
+func (s *Service) RunTime() float64 {
+	return time.Since(s.InitTime).Seconds()
+}
+
 // ------- new user service set up --------------------------------
 
 // TODO: test!
@@ -199,14 +274,15 @@ func (s *Service) TotalSize() float64 {
 // should generate a users.json file (which will keep track of active users),
 // and a drives.json, containing info about each drive, its total size, its location,
 // owner, init date, passwords, etc.
-func (s *Service) GenBaseFiles(DrivePath string) {
+func (s *Service) GenBaseUserFiles(DrivePath string) {
 	// create Drive directory
-	if err := os.MkdirAll(DrivePath, 0666); err != nil {
+	if err := os.Mkdir(DrivePath, 0666); err != nil {
 		log.Fatalf("[ERROR] failed to create Drive directory \n%v\n", err)
 	}
+
 	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
 	for i := 0; i < len(fileNames); i++ {
-		save(DrivePath, fileNames[i], make(map[string]interface{}))
+		saveJSON(DrivePath, fileNames[i], make(map[string]interface{}))
 	}
 }
 
@@ -214,13 +290,13 @@ func (s *Service) GenBaseFiles(DrivePath string) {
 //
 // Must be under /root/users/<username>
 func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	drivePath := filepath.Join(s.SvcRoot, name)
 	newID := files.NewUUID()
+	drivePath := filepath.Join(s.SvcRoot, name)
 
 	newRoot := files.NewRootDirectory("root", owner, filepath.Join(drivePath, "root"))
 	drive := files.NewDrive(newID, name, owner, drivePath, newRoot)
 
-	s.GenBaseFiles(drivePath)
+	s.GenBaseUserFiles(drivePath)
 
 	return drive
 }
