@@ -200,11 +200,11 @@ func loadUsers(svc *Service) (*Service, error) {
 // populate the internal data structures.
 //
 // populates users map through querying the users database
-func SvcLoad(sfPath string) (*Service, error) {
+func SvcLoad(sfPath string, debug bool) (*Service, error) {
 
 	// TODO: add some "pre-checks"
-	// are the databases present?
-	// is the statefile present
+	// 	- are the databases present?
+	// 	- is the statefile present?
 
 	svc, err := loadStateFile(sfPath)
 	if err != nil {
