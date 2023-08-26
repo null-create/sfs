@@ -4,43 +4,34 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/sfs/pkg/db"
 )
 
 type Server struct {
 	StartTime time.Time
 
 	Svc *Service     // SFS service instance
-	Db  *db.Query    // database connection
-	Srv *http.Server // http server
+	Svr *http.Server // http server
 }
 
 // Instantiate a new HTTP server with an sfs service instance
 func NewServer(newService bool, isAdmin bool) *Server {
+	svr := ServerConfig() // get http server and service configs
+	rtr := NewRouter()    // instantiate router
 
-	// get http server and service configs
-	c := SrvConfig()
-	srvConf := GetServiceConfig()
-
-	// instantiate service
+	// initialize sfs service
 	svc, err := Init(newService, isAdmin)
 	if err != nil {
 		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
 	}
 
-	// instantiate router
-	rtr := NewRouter()
-
 	return &Server{
 		Svc: svc,
-		Db:  db.NewQuery(srvConf.ServiceRoot),
-		Srv: &http.Server{
+		Svr: &http.Server{
 			Handler:      rtr,
-			Addr:         c.Server.Addr,
-			ReadTimeout:  c.Server.TimeoutRead,
-			WriteTimeout: c.Server.TimeoutWrite,
-			IdleTimeout:  c.Server.TimeoutIdle,
+			Addr:         svr.Server.Addr,
+			ReadTimeout:  svr.Server.TimeoutRead,
+			WriteTimeout: svr.Server.TimeoutWrite,
+			IdleTimeout:  svr.Server.TimeoutIdle,
 		},
 	}
 }
@@ -48,14 +39,14 @@ func NewServer(newService bool, isAdmin bool) *Server {
 // start the server
 func (s *Server) Start() {
 	s.StartTime = time.Now()
-	if err := s.Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("[ERROR] server startup failed: %v", err)
 	}
 }
 
 // shuts down server and returns the total run time
 func (s *Server) Shutdown() float64 {
-	if err := s.Srv.Close(); err != nil && err != http.ErrServerClosed {
+	if err := s.Svr.Close(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("[ERROR] server shutdown failed: %v", err)
 	}
 	return s.RunTime()
