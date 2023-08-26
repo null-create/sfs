@@ -40,8 +40,6 @@ func NewTable(path string, query string) {
 }
 
 func InitDBs(dbPath string) error {
-	log.Print("creating service databases...")
-
 	entries, err := os.ReadDir(dbPath)
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to read service database directory: %v", err)
