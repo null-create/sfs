@@ -1,17 +1,23 @@
 package files
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
 )
 
 func TestBatchLimit(t *testing.T) {
-	totalFiles := RandInt(50)
-	testFiles, err := MakeABunchOfTxtFiles(totalFiles)
+	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)
 	}
+
+	testFiles, err := MakeABunchOfTxtFiles(20)
+	if err != nil {
+		Fatal(t, err)
+	}
+	d.AddFiles(testFiles)
 
 	// get total size of testFiles in testing dir
 	b := NewBatch()
