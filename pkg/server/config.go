@@ -24,7 +24,7 @@ type serverConf struct {
 	TimeoutIdle  time.Duration `env:"SERVER_TIMEOUT_IDLE,required"`
 }
 
-func SrvConfig() *Conf {
+func ServerConfig() *Conf {
 	var c Conf
 	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode server config .env file: %s", err)
@@ -38,7 +38,7 @@ type SFSConf struct {
 	ServiceRoot string `env:"SERVICE_ROOT,required"`
 }
 
-func GetServiceConfig() *SFSConf {
+func ServiceConfig() *SFSConf {
 	var c SFSConf
 	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode service .env file: %s", err)
