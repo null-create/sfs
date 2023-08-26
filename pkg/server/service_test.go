@@ -1,27 +1,30 @@
 package server
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/sfs/pkg/auth"
 
 	"github.com/alecthomas/assert/v2"
 )
 
 // --------- fixtures --------------------------------
 
-func MakeABunchOfDummyUsers(total int) []*auth.User {
-	return nil
+func fakeServiceRoot() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("[ERROR] failed to get current working directory: %v", err)
+	}
+	return cwd
 }
 
 // -----------------------------------------------------
 
 func TestSaveStateFile(t *testing.T) {
 	svc := &Service{}
+	svc.SvcRoot = fakeServiceRoot()
 	svc.StateFile = GetStateDir()
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
@@ -42,12 +45,11 @@ func TestSaveStateFile(t *testing.T) {
 
 func TestLoadFromStateFile(t *testing.T) {
 	svc := &Service{}
-	svc.InitTime = time.Now().UTC()
 	svc.SvcRoot = GetTestingDir()
 	svc.StateFile = GetStateDir()
 
 	if err := svc.SaveState(); err != nil {
-		t.Fatalf("%v", err)
+		Fatal(t, err)
 	}
 
 	svc2, err := loadStateFile(svc.StateFile)
