@@ -80,6 +80,8 @@ func setAdmin(svc *Service) {
 
 // determine whether we have a sfs-state-date:hour:min:sec.json file
 // under svcroot/state
+//
+// returns true and a path to the file if it exists
 func hasStateFile(path string) (bool, fs.DirEntry) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -128,7 +130,7 @@ func loadUsers(svc *Service) (*Service, error) {
 	q := db.NewQuery(filepath.Join(svc.DbDir, "users"))
 	usrs, err := q.GetUsers()
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] failed to retrieve user data from Users database: %v", err)
+		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
 	for _, u := range usrs {
 		svc.AddUser(u)
@@ -140,30 +142,28 @@ func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
 		// ---- load from state file and dbs
-		if ok, entry := hasStateFile(filepath.Join(c.ServiceRoot, "state")); ok {
-			svc, err := SvcLoad(entry.Name(), false)
-			if err != nil {
-				return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
-			}
-			if admin {
-				setAdmin(svc)
-			}
-			return svc, nil
-			// no state file found!
-		} else {
-			return nil, fmt.Errorf("[ERROR] unable to load service config")
-		}
-	} else {
-		// ----- initialize new sfs service
-		svc, err := SvcInit(c.ServiceRoot, false)
+		svc, err := SvcLoad(c.ServiceRoot, false)
 		if err != nil {
-			return nil, fmt.Errorf("[ERROR] %v", err)
+			return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
 		}
 		if admin {
 			setAdmin(svc)
 		}
 		return svc, nil
+
+	} else {
+
 	}
+	// ----- initialize new sfs service
+	svc, err := SvcInit(c.ServiceRoot, false)
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] %v", err)
+	}
+	if admin {
+		setAdmin(svc)
+	}
+	return svc, nil
+
 }
 
 /*
@@ -228,27 +228,60 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 	return svc, nil
 }
 
-// read in an external service state file
+//   - are the databases present?
+//   - is the statefile present?
 //
-// populates users map through querying the users database
-func SvcLoad(sfPath string, debug bool) (*Service, error) {
+// if not, raise an error
+func preChecks(svcRoot string) error {
+	entries, err := os.ReadDir(svcRoot)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+	if len(entries) == 0 {
+		return fmt.Errorf("no statefile, user, or database directories found! \n%v", err)
+	}
+	for _, entry := range entries {
+		if entry.Name() == "state" || entry.Name() == "dbs" {
+			if isEmpty(filepath.Join(svcRoot, entry.Name())) {
+				return fmt.Errorf("%s directory is empty \n%v", entry.Name(), err)
+			}
+		}
+	}
+	return nil
+}
 
-	// TODO: add some "pre-checks"
-	// 	- are the databases present?
-	// 	- is the statefile present?
-
+func svcLoad(sfPath string) (*Service, error) {
 	svc, err := loadStateFile(sfPath)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] %v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
-
 	// populate user map via user database
 	svc, err = loadUsers(svc)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] %v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
-
 	return svc, nil
+}
+
+// read in an external service state file
+//
+// populates users map through querying the users database
+func SvcLoad(svcPath string, debug bool) (*Service, error) {
+	// ensure (at least) the necessary dbs
+	// and state files are present
+	if err := preChecks(svcPath); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	sfDir := filepath.Join(svcPath, "state")
+	if ok, entry := hasStateFile(sfDir); ok {
+		svc, err := svcLoad(filepath.Join(sfDir, entry.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize service: %v", err)
+		}
+		return svc, nil
+	} else {
+		return nil, fmt.Errorf("no statefile found")
+	}
 }
 
 // ------ utils --------------------------------
