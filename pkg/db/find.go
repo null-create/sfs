@@ -56,7 +56,7 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query(FindAllQuery, "Users", 100)
+	rows, err := q.Conn.Query(FindAllUsersQuery)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
