@@ -44,7 +44,7 @@ func TestSaveStateFile(t *testing.T) {
 	}
 }
 
-func TestLoadFromStateFile(t *testing.T) {
+func TestLoadServiceFromStateFile(t *testing.T) {
 	svc := &Service{
 		SvcRoot:   fakeServiceRoot(),
 		StateFile: GetStateDir(),
@@ -59,12 +59,75 @@ func TestLoadFromStateFile(t *testing.T) {
 	}
 
 	// remove temp state file prior to checking so we don't accidentally
-	// leave tmp files behind
+	// leave tmp files behind if an assert fails.
 	if err := Clean(t, filepath.Join(fakeServiceRoot(), "state")); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 
 	assert.NotEqual(t, nil, svc2)
+	assert.Equal(t, svc.SvcRoot, svc2.SvcRoot)
+	assert.Equal(t, svc.StateFile, svc2.StateFile)
+	assert.Equal(t, svc.UserDir, svc2.UserDir)
+	assert.Equal(t, svc.DbDir, svc2.DbDir)
+	assert.Equal(t, svc.Users, svc2.Users)
+}
+
+func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
+	testRoot := filepath.Join(GetTestingDir(), "tmp")
+	testSvc, err := SvcInit(testRoot, true)
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// read service entries
+	entries, err := os.ReadDir(testSvc.SvcRoot)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+
+	// load a new service instance from these resources
+	svc, err := SvcLoad(testSvc.SvcRoot, true)
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, nil, svc)
+	assert.Equal(t, testSvc.SvcRoot, svc.SvcRoot)
+	assert.Equal(t, testSvc.StateFile, svc.StateFile)
+	assert.Equal(t, testSvc.UserDir, svc.UserDir)
+	assert.Equal(t, testSvc.DbDir, svc.DbDir)
+	assert.Equal(t, testSvc.Users, svc.Users)
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestCreateNewService(t *testing.T) {
+	testRoot := filepath.Join(GetTestingDir(), "tmp")
+	testSvc, err := SvcInit(testRoot, true)
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	entries, err := os.ReadDir(testSvc.SvcRoot)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+
+	// check that dbs and state subdirectores aren't empty and
+	// the expected files exist. users can be empty since we don't
+	// have any yet.
+	for _, e := range entries {
+		if e.Name() == "state" || e.Name() == "dbs" {
+
+		}
+	}
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 func TestGenBaseUserFiles(t *testing.T) {
@@ -111,28 +174,6 @@ func TestAllocateDrive(t *testing.T) {
 		Fatal(t, err)
 	}
 	assert.NotEqual(t, 0, len(entries))
-
-	if err := Clean(t, GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-}
-
-func TestCreateNewService(t *testing.T) {
-	testRoot := filepath.Join(GetTestingDir(), "tmp")
-	testSvc, err := SvcInit(testRoot, true)
-	if err != nil {
-		Fatal(t, err)
-	}
-
-	entries, err := os.ReadDir(testSvc.SvcRoot)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	assert.NotEqual(t, 0, len(entries))
-
-	// check that dbs and state subdirectores aren't empty and
-	// the expected files exist. users can be empty since we don't
-	// have any yet.
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
