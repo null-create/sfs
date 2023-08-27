@@ -139,9 +139,14 @@ const (
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	FindAllQuery       string = `SELECT * FROM ?`
+	FindAllQuery       string = `SELECT * FROM ?;`
 	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?`
 	FindQuery          string = `SELECT * FROM ? WHERE id = ?`
+
+	FindAllUsersQuery  string = `SELECT * FROM Users;`
+	FindAllDrivesQuery string = `SELECT * FROM Drives;`
+	FindAllDirsQuery   string = `SELECT * FROM Directories;`
+	FindAllFilesQuery  string = `SELECT * FROM Files;`
 
 	FindFileQuery  string = `SELECT * FROM Files WHERE id = ?`
 	FindDirQuery   string = `SELECT * FROM Directories WHERE id = ?`
