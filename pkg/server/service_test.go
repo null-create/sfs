@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -120,11 +121,20 @@ func TestCreateNewService(t *testing.T) {
 	// the expected files exist. users can be empty since we don't
 	// have any yet.
 	for _, e := range entries {
-		if e.Name() == "state" || e.Name() == "dbs" {
-
+		switch e.Name() {
+		case "state":
+			if isEmpty(filepath.Join(testRoot, "state")) {
+				Fatal(t, fmt.Errorf("missing state file"))
+			}
+		case "dbs":
+			if isEmpty(filepath.Join(testRoot, "dbs")) {
+				Fatal(t, fmt.Errorf("missing state file"))
+			}
+		default: // skip anything else for now
+			continue
 		}
 	}
-
+	// clean up
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
