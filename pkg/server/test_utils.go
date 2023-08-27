@@ -28,7 +28,7 @@ func GetTestingDir() string {
 	curDir, err := os.Getwd()
 	if err != nil {
 		log.Printf("[WARNING] unable to get testing directory: %v\ncreating...", err)
-		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0666); err != nil {
+		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0644); err != nil {
 			log.Fatalf("[ERROR] unable to create test directory: %v", err)
 		}
 	}
@@ -39,7 +39,7 @@ func GetStateDir() string {
 	curDir, err := os.Getwd()
 	if err != nil {
 		log.Printf("[WARNING] unable to find state file testing directory: %v\ncreating...", err)
-		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0666); err != nil {
+		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0644); err != nil {
 			log.Fatalf("[ERROR] unable to create state file testing directoryy: %v", err)
 		}
 	}
