@@ -62,10 +62,10 @@ func NewService(svcRoot string) *Service {
 		// we don't set StateFile because we assume it
 		// doesn't exist when NewService is called
 		StateFile: "",
+		UserDir:   filepath.Join(svcRoot, "users"),
+		DbDir:     filepath.Join(svcRoot, "dbs"),
 
-		UserDir: filepath.Join(svcRoot, "users"),
-		DbDir:   filepath.Join(svcRoot, "dbs"),
-		Users:   make(map[string]*auth.User),
+		Users: make(map[string]*auth.User),
 	}
 }
 
@@ -83,11 +83,12 @@ func setAdmin(svc *Service) {
 func hasStateFile(path string) (bool, fs.DirEntry) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		log.Printf("[ERROR] unable to find %s \n%v\n", path, err)
+		log.Printf("[ERROR] unable to read state file directory: %s \n%v\n", path, err)
 		return false, nil
 	}
+	// should only ever be one state file at a time
 	if len(entries) > 1 {
-		log.Printf("[WARNING] multiple state files found under %s", path)
+		log.Printf("[WARNING] multiple state files found under: %s", path)
 		for _, e := range entries {
 			log.Printf("	-%s\n", e.Name())
 		}
@@ -124,7 +125,7 @@ func loadStateFile(sfPath string) (*Service, error) {
 
 // populate svc.Users map from users database
 func loadUsers(svc *Service) (*Service, error) {
-	q := db.NewQuery(svc.DbDir)
+	q := db.NewQuery(filepath.Join(svc.DbDir, "users"))
 	usrs, err := q.GetUsers()
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to retrieve user data from Users database: %v", err)
@@ -219,12 +220,12 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 		UserDir:   svcPaths[0],
 		DbDir:     svcPaths[2],
 		AdminMode: false,
+		Users:     make(map[string]*auth.User),
 	}
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("[ERROR] %v", err)
 	}
 	return svc, nil
-
 }
 
 // read in an external service state file
@@ -287,12 +288,7 @@ func (s *Service) SaveState() error {
 	return os.WriteFile(s.StateFile, file, 0644)
 }
 
-// returns the service run time in seconds
-func (s *Service) RunTime() float64 {
-	return time.Since(s.InitTime).Seconds()
-}
-
-// ------- new user service set up --------------------------------
+// ------- user methods --------------------------------
 
 // TODO: test!
 //
@@ -300,9 +296,9 @@ func (s *Service) RunTime() float64 {
 // should generate a users.json file (which will keep track of active users),
 // and a drives.json, containing info about each drive, its total size, its location,
 // owner, init date, passwords, etc.
-func (s *Service) GenBaseUserFiles(DrivePath string) {
+func GenBaseUserFiles(DrivePath string) {
 	// create Drive directory
-	if err := os.Mkdir(DrivePath, 0666); err != nil {
+	if err := os.Mkdir(DrivePath, 0644); err != nil {
 		log.Fatalf("[ERROR] failed to create Drive directory \n%v\n", err)
 	}
 
@@ -315,12 +311,12 @@ func (s *Service) GenBaseUserFiles(DrivePath string) {
 // Build a new privilaged Drive directory for a client on a Nimbus server
 //
 // Must be under /root/users/<username>
-func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
-	usrs := filepath.Join(s.SvcRoot, "users")
+func AllocateDrive(name string, owner string, svcRoot string) *files.Drive {
+	usrs := filepath.Join(svcRoot, "users")
 	drivePath := filepath.Join(usrs, name)
 
 	// generate service files
-	s.GenBaseUserFiles(drivePath)
+	GenBaseUserFiles(drivePath)
 
 	// create new drive struct and save to DB
 	// new drive id
@@ -330,12 +326,17 @@ func (s *Service) AllocateDrive(name string, owner string) *files.Drive {
 	return newDrive
 }
 
-// ------- user methods --------------------------------
+// --------- service methods --------------------------------
 
-// these will likely work with handlers
+// NOTE: these will likely work with handlers
 
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
+}
+
+// returns the service run time in seconds
+func (s *Service) RunTime() float64 {
+	return time.Since(s.InitTime).Seconds()
 }
 
 func (s *Service) GetUser(id string) (*auth.User, error) {
