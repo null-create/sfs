@@ -23,9 +23,10 @@ func fakeServiceRoot() string {
 // -----------------------------------------------------
 
 func TestSaveStateFile(t *testing.T) {
-	svc := &Service{}
-	svc.SvcRoot = fakeServiceRoot()
-	svc.StateFile = GetStateDir()
+	svc := &Service{
+		SvcRoot:   fakeServiceRoot(),
+		StateFile: GetStateDir(),
+	}
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
 	}
@@ -44,10 +45,10 @@ func TestSaveStateFile(t *testing.T) {
 }
 
 func TestLoadFromStateFile(t *testing.T) {
-	svc := &Service{}
-	svc.SvcRoot = fakeServiceRoot()
-	svc.StateFile = GetStateDir()
-
+	svc := &Service{
+		SvcRoot:   fakeServiceRoot(),
+		StateFile: GetStateDir(),
+	}
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
 	}
@@ -67,9 +68,10 @@ func TestLoadFromStateFile(t *testing.T) {
 }
 
 func TestGenBaseUserFiles(t *testing.T) {
-	svc := &Service{}
-	svc.SvcRoot = GetTestingDir()
-	svc.UserDir = filepath.Join(svc.SvcRoot, "users")
+	svc := &Service{
+		SvcRoot: GetTestingDir(),
+		UserDir: filepath.Join(GetTestingDir(), "users"),
+	}
 
 	GenBaseUserFiles(svc.UserDir)
 
@@ -88,8 +90,9 @@ func TestGenBaseUserFiles(t *testing.T) {
 }
 
 func TestAllocateDrive(t *testing.T) {
-	svc := &Service{}
-	svc.SvcRoot = GetTestingDir()
+	svc := &Service{
+		SvcRoot: GetTestingDir(),
+	}
 
 	// create a temp "users" directory
 	if err := os.Mkdir(filepath.Join(svc.SvcRoot, "users"), 0644); err != nil {
@@ -114,10 +117,27 @@ func TestAllocateDrive(t *testing.T) {
 	}
 }
 
-// func TestCreateNewService(t *testing.T) {
-// 	// use service.SvcInit(path string)
+func TestCreateNewService(t *testing.T) {
+	testRoot := filepath.Join(GetTestingDir(), "tmp")
+	testSvc, err := SvcInit(testRoot, true)
+	if err != nil {
+		Fatal(t, err)
+	}
 
-// }
+	entries, err := os.ReadDir(testSvc.SvcRoot)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+
+	// check that dbs and state subdirectores aren't empty and
+	// the expected files exist. users can be empty since we don't
+	// have any yet.
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
 
 // func TestSvcUserGets(t *testing.T) {}
 
