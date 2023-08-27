@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -19,6 +20,17 @@ func RandInt(limit int) int {
 		return 1
 	}
 	return num
+}
+
+func isEmpty(path string) bool {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
+	}
+	if len(entries) == 0 {
+		return true
+	}
+	return false
 }
 
 // write out as a json file
