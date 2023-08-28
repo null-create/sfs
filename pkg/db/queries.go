@@ -139,7 +139,7 @@ const (
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	FindAllQuery       string = `SELECT * FROM ?;`
+	FindAllQuery       string = `SELECT * FROM ?`
 	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?`
 	FindQuery          string = `SELECT * FROM ? WHERE id = ?`
 

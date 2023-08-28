@@ -123,7 +123,7 @@ func (q *Query) GetFiles() ([]*files.File, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query(FindAllQuery, "Files")
+	rows, err := q.Conn.Query(FindAllFilesQuery)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
