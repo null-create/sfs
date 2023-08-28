@@ -152,18 +152,16 @@ func Init(new bool, admin bool) (*Service, error) {
 		return svc, nil
 
 	} else {
-
+		// ----- initialize new sfs service
+		svc, err := SvcInit(c.ServiceRoot, false)
+		if err != nil {
+			return nil, fmt.Errorf("[ERROR] %v", err)
+		}
+		if admin {
+			setAdmin(svc)
+		}
+		return svc, nil
 	}
-	// ----- initialize new sfs service
-	svc, err := SvcInit(c.ServiceRoot, false)
-	if err != nil {
-		return nil, fmt.Errorf("[ERROR] %v", err)
-	}
-	if admin {
-		setAdmin(svc)
-	}
-	return svc, nil
-
 }
 
 /*
