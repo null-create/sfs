@@ -40,8 +40,48 @@ func TestAddAndFindFile(t *testing.T) {
 	assert.NotEqual(t, nil, f)
 	assert.Equal(t, tmpFile.ID, f.ID)
 
-	// clean up
-	Clean(t, testDir)
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestAddAndFindMultipleFiles(t *testing.T) {
+	testDir := GetTestingDir()
+
+	// test db and query
+	NewTable(filepath.Join(testDir, "Files"), CreateFileTable)
+	q := NewQuery(filepath.Join(testDir, "Files"))
+	q.Debug = true
+
+	// make a bunch of dummy files
+	total := files.RandInt(100)
+	testFiles := make([]*files.File, 0)
+	for i := 0; i < total; i++ {
+		fn := fmt.Sprintf("test-%d.txt", i)
+		f := files.NewFile(fn, "me", filepath.Join(testDir, fn))
+		testFiles = append(testFiles, f)
+	}
+
+	// add files to db
+	if err := q.AddFiles(testFiles); err != nil {
+		Fatal(t, err)
+	}
+
+	// attempt to retrieve all the test files we just added
+	results, err := q.GetFiles()
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, nil, results)
+	assert.Equal(t, total, len(results))
+	assert.Equal(t, len(testFiles), len(results))
+	for i, testFile := range results {
+		assert.Equal(t, testFiles[i], testFile)
+	}
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 func TestAddAndFindDirectory(t *testing.T) {
@@ -66,8 +106,9 @@ func TestAddAndFindDirectory(t *testing.T) {
 	assert.NotEqual(t, nil, d)
 	assert.Equal(t, tmpDir.ID, d.ID)
 
-	// clean up temporary dir
-	Clean(t, GetTestingDir())
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 func TestAddAndFindDrive(t *testing.T) {
@@ -91,7 +132,9 @@ func TestAddAndFindDrive(t *testing.T) {
 	assert.NotEqual(t, nil, d)
 	assert.Equal(t, tmpDrive.ID, d.ID)
 
-	Clean(t, GetTestingDir())
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 func TestAddAndFindUser(t *testing.T) {
@@ -117,8 +160,9 @@ func TestAddAndFindUser(t *testing.T) {
 
 	assert.Equal(t, tmpUser.ID, u.ID)
 
-	// clean up
-	Clean(t, testDir)
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
 }
 
 // func TestUserExists(t *testing.T) {}
