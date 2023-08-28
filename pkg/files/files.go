@@ -91,6 +91,7 @@ func NewFile(fileName string, owner string, path string) *File {
 
 		CheckSum:  cs,
 		Algorithm: "sha256",
+		Content:   make([]byte, 0),
 	}
 }
 
