@@ -124,11 +124,11 @@ func TestCreateNewService(t *testing.T) {
 		switch e.Name() {
 		case "state":
 			if isEmpty(filepath.Join(testRoot, "state")) {
-				Fatal(t, fmt.Errorf("missing state file"))
+				Fatal(t, fmt.Errorf("missing state file directory"))
 			}
 		case "dbs":
 			if isEmpty(filepath.Join(testRoot, "dbs")) {
-				Fatal(t, fmt.Errorf("missing state file"))
+				Fatal(t, fmt.Errorf("missing database directory"))
 			}
 		default: // skip anything else for now
 			continue
