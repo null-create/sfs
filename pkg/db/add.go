@@ -156,6 +156,13 @@ func (q *Query) AddDrive(drv *files.Drive) error {
 }
 
 func (q *Query) AddDrives(drvs []*files.Drive) error {
-
+	if len(drvs) == 0 {
+		return fmt.Errorf("no drives inputted")
+	}
+	for _, d := range drvs {
+		if err := q.AddDrive(d); err != nil {
+			return fmt.Errorf("failed to add drive: %v", err)
+		}
+	}
 	return nil
 }
