@@ -321,8 +321,6 @@ func (s *Service) SaveState() error {
 
 // ------- user methods --------------------------------
 
-// TODO: test!
-//
 // generate some base line meta data for this service instance.
 // should generate a users.json file (which will keep track of active users),
 // and a drives.json, containing info about each drive, its total size, its location,
@@ -349,8 +347,7 @@ func AllocateDrive(name string, owner string, svcRoot string) *files.Drive {
 	// generate service files
 	GenBaseUserFiles(drivePath)
 
-	// create new drive struct and save to DB
-	// new drive id
+	// allocate drive struct
 	newRoot := files.NewRootDirectory(name, owner, drivePath)
 	newDrive := files.NewDrive(files.NewUUID(), name, owner, drivePath, newRoot)
 
