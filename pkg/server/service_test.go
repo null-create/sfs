@@ -40,7 +40,7 @@ func TestSaveStateFile(t *testing.T) {
 	assert.Equal(t, 1, len(entries))
 	assert.True(t, strings.Contains(entries[0].Name(), "sfs-state") && strings.Contains(entries[0].Name(), ".json"))
 
-	if err := Clean(t, GetStateDir()); err != nil {
+	if err := Clean(GetStateDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -61,7 +61,7 @@ func TestLoadServiceFromStateFile(t *testing.T) {
 
 	// remove temp state file prior to checking so we don't accidentally
 	// leave tmp files behind if an assert fails.
-	if err := Clean(t, filepath.Join(fakeServiceRoot(), "state")); err != nil {
+	if err := Clean(filepath.Join(fakeServiceRoot(), "state")); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 
@@ -99,7 +99,7 @@ func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
 	assert.Equal(t, testSvc.DbDir, svc.DbDir)
 	assert.Equal(t, testSvc.Users, svc.Users)
 
-	if err := Clean(t, GetTestingDir()); err != nil {
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -135,7 +135,7 @@ func TestCreateNewService(t *testing.T) {
 		}
 	}
 	// clean up
-	if err := Clean(t, GetTestingDir()); err != nil {
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -157,7 +157,7 @@ func TestGenBaseUserFiles(t *testing.T) {
 		assert.True(t, strings.Contains(e.Name(), ".json"))
 	}
 
-	if err := Clean(t, GetTestingDir()); err != nil {
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -165,33 +165,57 @@ func TestGenBaseUserFiles(t *testing.T) {
 func TestAllocateDrive(t *testing.T) {
 	svc := &Service{
 		SvcRoot: GetTestingDir(),
+		UserDir: filepath.Join(GetTestingDir(), "users"),
 	}
 
 	// create a temp "users" directory
-	if err := os.Mkdir(filepath.Join(svc.SvcRoot, "users"), 0644); err != nil {
+	if err := os.Mkdir(svc.UserDir, 0644); err != nil {
 		t.Fatalf("%v", err)
 	}
 
 	// allocate a new tmp drive
-	d := AllocateDrive("test", "me", GetTestingDir())
+	d, err := AllocateDrive("test", "me", svc.SvcRoot)
+	if err != nil {
+		Fatal(t, err)
+	}
 	assert.NotEqual(t, nil, d)
 
 	// make sure all the basic user files are present
-	u := filepath.Join(svc.SvcRoot, "users")
-	drivePath := filepath.Join(u, "test")
-	entries, err := os.ReadDir(drivePath)
+	entries, err := os.ReadDir(d.DriveRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
 	assert.NotEqual(t, 0, len(entries))
+	for _, e := range entries {
+		assert.True(t, strings.Contains(e.Name(), ".json"))
+	}
 
-	if err := Clean(t, GetTestingDir()); err != nil {
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
 
-// func TestSvcUserGets(t *testing.T) {}
+func TestSvcClearAll(t *testing.T) {
+	svc := NewService(filepath.Join(GetTestingDir(), "tmp"))
 
-// func TestSvcUserRemoves(t *testing.T) {}
+	// TODO: create a bunch of dummy user subdirectories
+	// under svcRoot/users
 
-// func TestSvcClearAll(t *testing.T) {}
+	// total := RandInt(100)
+	// usrs := make([]*auth.User, 0)
+	// for i := 0; i < total; i++ {
+
+	// }
+
+	svc.ClearAll("")
+
+	entries, err := os.ReadDir(svc.SvcRoot)
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.Equal(t, 0, len(entries))
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
