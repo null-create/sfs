@@ -34,7 +34,8 @@ func ServerConfig() *Conf {
 }
 
 type SFSConf struct {
-	// location of the the sfs root service directory
+	// physical location of the the sfs root
+	// service directory on the server
 	ServiceRoot string `env:"SERVICE_ROOT,required"`
 }
 
@@ -44,11 +45,4 @@ func ServiceConfig() *SFSConf {
 		log.Fatalf("[ERROR] failed to decode service .env file: %s", err)
 	}
 	return &c
-}
-
-func (n *SFSConf) GetServiceRoot() string {
-	if n.ServiceRoot == "" {
-		log.Fatalf("[ERROR] no service root set!")
-	}
-	return n.ServiceRoot
 }
