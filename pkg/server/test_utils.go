@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/files"
 )
 
@@ -18,8 +19,11 @@ const txtData string = "all work and no play makes jack a dull boy"
 
 // run an individual test as part of a series of larger tests
 func RunTestStage(stageName string, test func()) {
-	log.Print(fmt.Sprintf("=============== %s Testing Stage ===============", stageName))
+	banner := fmt.Sprintf("=============== %s Testing Stage ===============", stageName)
+	log.Print(banner)
+
 	test()
+
 	log.Print("================================================")
 }
 
@@ -50,8 +54,8 @@ func GetStateDir() string {
 //
 // calls Clean() followed by t.Fatalf()
 func Fatal(t *testing.T, err error) {
-	Clean(t, GetStateDir())
-	Clean(t, GetTestingDir())
+	Clean(GetStateDir())
+	Clean(GetTestingDir())
 	t.Fatalf("[ERROR] %v", err)
 }
 
@@ -80,13 +84,13 @@ func MakeTmpTxtFile(filePath string, textReps int) (*files.File, error) {
 
 // make a bunch of temp .txt files of varying sizes.
 // under pkg/files/testing/tmp
-func MakeABunchOfTxtFiles(total int) ([]*files.File, error) {
-	tmpDir := filepath.Join(GetTestingDir(), "tmp")
+func MakeABunchOfTxtFiles(total int, loc string) ([]*files.File, error) {
 
 	files := make([]*files.File, 0)
 	for i := 0; i < total; i++ {
 		fileName := fmt.Sprintf("tmp-%d.txt", i)
-		filePath := filepath.Join(tmpDir, fileName)
+		filePath := filepath.Join(loc, fileName)
+
 		f, err := MakeTmpTxtFile(filePath, RandInt(1000))
 		if err != nil {
 			return nil, fmt.Errorf("error creating temporary file: %v", err)
@@ -97,8 +101,48 @@ func MakeABunchOfTxtFiles(total int) ([]*files.File, error) {
 	return files, nil
 }
 
+// make a temporary directory under ../testing/tmp/users (usrsPath)
+func MakeDummyUser(usrsPath string, i int) (*auth.User, error) {
+	// new user
+	svcName := fmt.Sprintf("billbuttlicker-%d", i)
+	svcDir := filepath.Join(usrsPath, svcName)
+	usrRoot := filepath.Join(svcDir, "root")
+
+	if err := os.Mkdir(svcDir, 0644); err != nil {
+		return nil, err
+	}
+
+	rt := files.NewRootDirectory(svcName, "bill buttlicker", usrRoot)
+	drv := files.NewDrive(files.NewUUID(), svcName, "bill buttlicker", svcDir, rt)
+
+	// gen base files for this user
+	GenBaseUserFiles(drv.DriveRoot)
+
+	// create dummy files for this user
+	fs, err := MakeABunchOfTxtFiles(RandInt(25), rt.RootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dummy files: %v", err)
+	}
+	drv.Root.AddFiles(fs)
+
+	// return user struct
+	return auth.NewUser("bill buttlicker", "bill", "bill@bill.com", drv, false), nil
+}
+
+func MakeABunchOfUsers(total int, usrsPath string) ([]*auth.User, error) {
+	usrs := make([]*auth.User, 0)
+	for i := 0; i < total; i++ {
+		u, err := MakeDummyUser(usrsPath, i)
+		if err != nil {
+			return nil, err
+		}
+		usrs = append(usrs, u)
+	}
+	return usrs, nil
+}
+
 // clean all contents from the testing directory
-func Clean(t *testing.T, dir string) error {
+func Clean(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
 		return err
@@ -107,12 +151,12 @@ func Clean(t *testing.T, dir string) error {
 
 	names, err := d.Readdirnames(-1)
 	if err != nil {
-		t.Errorf("[ERROR] unable to read directory: %v", err)
+		return err
 	}
 
 	for _, name := range names {
 		if err = os.RemoveAll(filepath.Join(dir, name)); err != nil {
-			t.Errorf("[ERROR] unable to remove file: %v", err)
+			return err
 		}
 	}
 
