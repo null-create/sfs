@@ -65,6 +65,12 @@ func NewService(svcRoot string) *Service {
 		UserDir:   filepath.Join(svcRoot, "users"),
 		DbDir:     filepath.Join(svcRoot, "dbs"),
 
+		// admin mode is optional.
+		// these are standard default values
+		AdminMode: false,
+		Admin:     "admin",
+		AdminKey:  "default",
+
 		Users: make(map[string]*auth.User),
 	}
 }
@@ -150,7 +156,6 @@ func Init(new bool, admin bool) (*Service, error) {
 			setAdmin(svc)
 		}
 		return svc, nil
-
 	} else {
 		// ----- initialize new sfs service
 		svc, err := SvcInit(c.ServiceRoot, false)
@@ -211,15 +216,7 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 
 	// --------- create new service instance and save initial state
 	log.Print("initializng new service instance...")
-	svc := &Service{
-		InitTime:  time.Now().UTC(),
-		SvcRoot:   svcPath,
-		StateFile: "",
-		UserDir:   svcPaths[0],
-		DbDir:     svcPaths[2],
-		AdminMode: false,
-		Users:     make(map[string]*auth.User),
-	}
+	svc := NewService(svcPath)
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("[ERROR] %v", err)
 	}
@@ -253,11 +250,6 @@ func svcLoad(sfPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
-	// populate user map via user database
-	svc, err = loadUsers(svc)
-	if err != nil {
-		return nil, fmt.Errorf("%v", err)
-	}
 	return svc, nil
 }
 
@@ -272,9 +264,20 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	}
 	sfDir := filepath.Join(svcPath, "state")
 	if ok, entry := hasStateFile(sfDir); ok {
+		// NOTE: may already be populated from json file!
+		// maybe add a check that if the json file contains user data
+		// if the json file has NO user data, attempt to populate from db
 		svc, err := svcLoad(filepath.Join(sfDir, entry.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize service: %v", err)
+		}
+		// attempt to populate from users database
+		if len(svc.Users) == 0 {
+			log.Printf("[DEBUG] state file had no user data. attempting to populate from users database...")
+			_, err := loadUsers(svc)
+			if err != nil {
+				log.Fatalf("[ERROR] failed to retrieve user data: %v", err)
+			}
 		}
 		return svc, nil
 	} else {
@@ -283,6 +286,42 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 }
 
 // ------ utils --------------------------------
+
+// generate some base line meta data for this service instance.
+// should generate a users.json file (which will keep track of active users),
+// and a drives.json, containing info about each drive, its total size, its location,
+// owner, init date, passwords, etc.
+func GenBaseUserFiles(DrivePath string) {
+	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
+	for i := 0; i < len(fileNames); i++ {
+		saveJSON(DrivePath, fileNames[i], make(map[string]interface{}))
+	}
+}
+
+// Build a new privilaged Drive directory for a client on the sfs server
+//
+// Must be under /root/users/<username>
+func AllocateDrive(name string, owner string, svcRoot string) (*files.Drive, error) {
+	// new user service file paths
+	usrsDir := filepath.Join(svcRoot, "users")
+	svcDir := filepath.Join(usrsDir, name)
+	usrRoot := filepath.Join(svcDir, "root")
+
+	// make a new user directory under svcRoot/users
+	if err := os.Mkdir(svcDir, 0644); err != nil {
+		return nil, err
+	}
+
+	rt := files.NewRootDirectory(name, owner, usrRoot)
+	drv := files.NewDrive(files.NewUUID(), name, owner, svcDir, rt)
+
+	// gen base files for this user
+	GenBaseUserFiles(drv.DriveRoot)
+
+	return drv, nil
+}
+
+// --------- service methods --------------------------------
 
 /*
 SaveState is meant to capture the current value of
@@ -318,43 +357,6 @@ func (s *Service) SaveState() error {
 
 	return os.WriteFile(s.StateFile, file, 0644)
 }
-
-// ------- user methods --------------------------------
-
-// generate some base line meta data for this service instance.
-// should generate a users.json file (which will keep track of active users),
-// and a drives.json, containing info about each drive, its total size, its location,
-// owner, init date, passwords, etc.
-func GenBaseUserFiles(DrivePath string) {
-	// create Drive directory
-	if err := os.Mkdir(DrivePath, 0644); err != nil {
-		log.Fatalf("[ERROR] failed to create Drive directory \n%v\n", err)
-	}
-
-	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
-	for i := 0; i < len(fileNames); i++ {
-		saveJSON(DrivePath, fileNames[i], make(map[string]interface{}))
-	}
-}
-
-// Build a new privilaged Drive directory for a client on a Nimbus server
-//
-// Must be under /root/users/<username>
-func AllocateDrive(name string, owner string, svcRoot string) *files.Drive {
-	usrs := filepath.Join(svcRoot, "users")
-	drivePath := filepath.Join(usrs, name)
-
-	// generate service files
-	GenBaseUserFiles(drivePath)
-
-	// allocate drive struct
-	newRoot := files.NewRootDirectory(name, owner, drivePath)
-	newDrive := files.NewDrive(files.NewUUID(), name, owner, drivePath, newRoot)
-
-	return newDrive
-}
-
-// --------- service methods --------------------------------
 
 // NOTE: these will likely work with handlers
 
