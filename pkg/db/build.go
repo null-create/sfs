@@ -11,18 +11,20 @@ import (
 )
 
 // all database files must end with .db!
-func NewDB(dbName string, pathToNewDB string) {
-	if dbName == "users" {
+func NewDB(dbName string, pathToNewDB string) error {
+	switch dbName {
+	case "users":
 		NewTable(pathToNewDB, CreateUserTable)
-	} else if dbName == "drives" {
+	case "drives":
 		NewTable(pathToNewDB, CreateDriveTable)
-	} else if dbName == "directories" {
+	case "directories":
 		NewTable(pathToNewDB, CreateDirectoryTable)
-	} else if dbName == "files" {
+	case "files":
 		NewTable(pathToNewDB, CreateFileTable)
-	} else {
-		log.Printf("[DEBUG] unknown database category: %s", dbName)
+	default:
+		return fmt.Errorf("unsupported database name: %v", dbName)
 	}
+	return nil
 }
 
 // create a new table with the given query
@@ -40,6 +42,7 @@ func NewTable(path string, query string) {
 }
 
 func InitDBs(dbPath string) error {
+	// make sure there's no databases where we want to create in
 	entries, err := os.ReadDir(dbPath)
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to read service database directory: %v", err)
@@ -50,7 +53,9 @@ func InitDBs(dbPath string) error {
 
 	dbs := []string{"files", "directories", "users", "drives"}
 	for _, d := range dbs {
-		NewDB(d, filepath.Join(dbPath, d))
+		if err := NewDB(d, filepath.Join(dbPath, d)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
