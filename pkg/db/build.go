@@ -22,7 +22,7 @@ func NewDB(dbName string, pathToNewDB string) error {
 	case "files":
 		NewTable(pathToNewDB, CreateFileTable)
 	default:
-		return fmt.Errorf("unsupported database name: %v", dbName)
+		return fmt.Errorf("unsupported database: %v", dbName)
 	}
 	return nil
 }
