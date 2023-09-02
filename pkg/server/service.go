@@ -111,9 +111,9 @@ func hasStateFile(path string) (bool, fs.DirEntry) {
 	return false, nil
 }
 
-// load service state file.
+// load from a service state file. returns a new empty service struct.
 //
-// does not instatiate svc, db, or user paths. must be set elsewhere
+// *does not instatiate svc, db, or user paths.* must be set elsewhere
 func loadStateFile(sfPath string) (*Service, error) {
 	// load state file and unmarshal into service struct
 	file, err := os.ReadFile(sfPath)
@@ -264,19 +264,16 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	}
 	sfDir := filepath.Join(svcPath, "state")
 	if ok, entry := hasStateFile(sfDir); ok {
-		// NOTE: may already be populated from json file!
-		// maybe add a check that if the json file contains user data
-		// if the json file has NO user data, attempt to populate from db
 		svc, err := svcLoad(filepath.Join(sfDir, entry.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize service: %v", err)
 		}
-		// attempt to populate from users database
+		// attempt to populate from users database if state file had no user data
 		if len(svc.Users) == 0 {
 			log.Printf("[DEBUG] state file had no user data. attempting to populate from users database...")
 			_, err := loadUsers(svc)
 			if err != nil {
-				log.Fatalf("[ERROR] failed to retrieve user data: %v", err)
+				log.Fatalf("[DEBUG] failed to retrieve user data: %v", err)
 			}
 		}
 		return svc, nil
@@ -385,17 +382,24 @@ func (s *Service) GetUsers() map[string]*auth.User {
 	return s.Users
 }
 
-func (s *Service) AddUser(u *auth.User) {
+// allocate a new service drive for a new user
+func (s *Service) AddUser(u *auth.User) error {
 	if _, ok := s.Users[u.ID]; !ok {
+		d, err := AllocateDrive(u.Name, u.Name, s.SvcRoot)
+		if err != nil {
+			return fmt.Errorf("[ERROR] failed to allocate new drive for user %s \n%v", u.ID, err)
+		}
+		u.Drive = d
 		s.Users[u.ID] = u
 	} else {
 		log.Printf("[DEBUG] user (id=%s) already present", u.ID)
 	}
+	return nil
 }
 
+// remove a user and all their files and directories
 func (s *Service) RemoveUser(id string) error {
 	if usr, ok := s.Users[id]; ok {
-		// remove all user directory and file contents if necessary
 		if len(usr.Drive.Root.Dirs) != 0 {
 			if err := usr.Drive.Root.Clean(usr.Drive.Root.RootPath); err != nil {
 				return fmt.Errorf("[ERROR] unable to remove user and drive contents: %v", err)
