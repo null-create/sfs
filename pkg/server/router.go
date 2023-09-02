@@ -53,11 +53,6 @@ func ContentTypeJson(next http.Handler) http.Handler {
 	})
 }
 
-// get a URL parameter value from a request
-func GetParam(req *http.Request, param string) string {
-	return chi.URLParam(req, param)
-}
-
 // instantiate a new chi router
 func NewRouter() *chi.Mux {
 
