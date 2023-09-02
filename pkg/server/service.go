@@ -188,19 +188,19 @@ root/
 |   |---directories
 |   |---files
 */
-func SvcInit(svcPath string, debug bool) (*Service, error) {
+func SvcInit(svcRoot string, debug bool) (*Service, error) {
 	// ------- make root service directory (wherever it should located)
 	log.Print("creating root service directory...")
-	if err := os.Mkdir(svcPath, 0644); err != nil {
+	if err := os.Mkdir(svcRoot, 0644); err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
 	}
 
 	//-------- create top-level service directories
 	log.Print("creating service subdirectories...")
 	svcPaths := []string{
-		filepath.Join(svcPath, "users"),
-		filepath.Join(svcPath, "state"),
-		filepath.Join(svcPath, "dbs"),
+		filepath.Join(svcRoot, "users"),
+		filepath.Join(svcRoot, "state"),
+		filepath.Join(svcRoot, "dbs"),
 	}
 	for _, p := range svcPaths {
 		if err := os.Mkdir(p, 0644); err != nil {
@@ -216,7 +216,7 @@ func SvcInit(svcPath string, debug bool) (*Service, error) {
 
 	// --------- create new service instance and save initial state
 	log.Print("initializng new service instance...")
-	svc := NewService(svcPath)
+	svc := NewService(svcRoot)
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("[ERROR] %v", err)
 	}
