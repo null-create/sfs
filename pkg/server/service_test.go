@@ -146,9 +146,17 @@ func TestGenBaseUserFiles(t *testing.T) {
 		UserDir: filepath.Join(GetTestingDir(), "users"),
 	}
 
-	GenBaseUserFiles(svc.UserDir)
+	if err := os.Mkdir(svc.UserDir, 0644); err != nil {
+		t.Fatal(err)
+	}
+	usrDir := filepath.Join(svc.UserDir, "bill")
+	if err := os.Mkdir(usrDir, 0644); err != nil {
+		t.Fatal(err)
+	}
 
-	entries, err := os.ReadDir(svc.UserDir)
+	GenBaseUserFiles(usrDir)
+
+	entries, err := os.ReadDir(usrDir)
 	if err != nil {
 		Fatal(t, err)
 	}
