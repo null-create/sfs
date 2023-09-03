@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -17,11 +16,6 @@ type Query struct {
 	Stmt *sql.Stmt // SQL statement
 }
 
-// TODO: initialize a set of prepared SQL statements during NewQuery?
-// could have a set of operations prepared ahead of time.
-//
-// see: https://go.dev/doc/database/prepared-statements
-//
 // returns a new query struct
 func NewQuery(dbPath string) *Query {
 	return &Query{
@@ -43,19 +37,21 @@ func (q *Query) Prepare(query string) error {
 // connect to a database given the assigned dbPath when query was initialized
 //
 // must be followed by a defer q.Conn.Close() statement when called!
-func (q *Query) Connect() {
+func (q *Query) Connect() error {
 	if q.DBPath == "" {
-		log.Fatalf("[ERROR] no DB path specified")
+		return fmt.Errorf("no DB path specified")
 	}
 	db, err := sql.Open("sqlite3", q.DBPath)
 	if err != nil {
-		log.Fatalf("[ERROR] failed to connect to database: %v", err)
+		return fmt.Errorf("failed to connect to database: %v", err)
 	}
 	q.Conn = db
+	return nil
 }
 
-func (q *Query) Close() {
+func (q *Query) Close() error {
 	if err := q.Conn.Close(); err != nil {
-		log.Fatalf("[ERROR] unable to close database connection: %v", err)
+		return fmt.Errorf("unable to close database connection: %v", err)
 	}
+	return nil
 }
