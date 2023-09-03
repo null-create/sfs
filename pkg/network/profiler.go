@@ -73,13 +73,14 @@ func measureSpeed(url string, client *http.Client) (downloadSpeed, uploadSpeed f
 func averageSpeeds(iterations int) (float64, float64) {
 	var upTotal float64
 	var downTotal float64
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 
 	log.Print("[DEBUG] starting network profiling...")
 
 	for i := 0; i < iterations; i++ {
-		up, down, err := measureSpeed(URL, &http.Client{
-			Timeout: 10 * time.Second,
-		})
+		up, down, err := measureSpeed(URL, client)
 		if err != nil {
 			log.Fatalf("[ERROR] error measuring average download and upload speed \n%v\n ", err)
 		}
