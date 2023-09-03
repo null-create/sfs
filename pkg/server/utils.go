@@ -14,9 +14,8 @@ import (
 func RandInt(limit int) int {
 	// Seed the random number generator with the current time
 	rand.Seed(time.Now().UnixNano())
-
 	num := rand.Intn(limit)
-	if num == 0 {
+	if num == 0 { // don't want zero so we just autocorrect to 1 if that happens
 		return 1
 	}
 	return num
