@@ -16,7 +16,7 @@ func TestAddAndFindFile(t *testing.T) {
 
 	// test db and query
 	NewTable(filepath.Join(testDir, "Files"), CreateFileTable)
-	q := NewQuery(filepath.Join(testDir, "Files"))
+	q := NewQuery(filepath.Join(testDir, "Files"), false)
 	q.Debug = true
 
 	tmpFile := files.NewFile("temp.txt", "bill", filepath.Join(testDir, "Files"))
@@ -50,7 +50,7 @@ func TestAddAndFindMultipleFiles(t *testing.T) {
 
 	// test db and query
 	NewTable(filepath.Join(testDir, "Files"), CreateFileTable)
-	q := NewQuery(filepath.Join(testDir, "Files"))
+	q := NewQuery(filepath.Join(testDir, "Files"), false)
 	q.Debug = true
 
 	// make a bunch of dummy files
@@ -93,7 +93,7 @@ func TestAddAndFindDirectory(t *testing.T) {
 
 	// test db and query
 	NewTable(filepath.Join(testDir, "directories"), CreateDirectoryTable)
-	q := NewQuery(filepath.Join(testDir, "directories"))
+	q := NewQuery(filepath.Join(testDir, "directories"), false)
 
 	_, tmpDir, _ := MakeTestItems(t, GetTestingDir())
 
@@ -123,7 +123,7 @@ func TestAddAndFindDrive(t *testing.T) {
 	NewTable(filepath.Join(testDir, "tmp"), CreateDriveTable)
 
 	// test query
-	q := NewQuery(filepath.Join(testDir, "tmp"))
+	q := NewQuery(filepath.Join(testDir, "tmp"), false)
 	if err := q.AddDrive(tmpDrive); err != nil {
 		Fatal(t, err)
 	}
@@ -149,7 +149,7 @@ func TestAddAndFindUser(t *testing.T) {
 	NewTable(filepath.Join(testDir, "tmp"), CreateUserTable)
 
 	// test query
-	q := NewQuery(filepath.Join(testDir, "tmp"))
+	q := NewQuery(filepath.Join(testDir, "tmp"), false)
 
 	// add test user
 	if err := q.AddUser(tmpUser); err != nil {

@@ -133,7 +133,7 @@ func loadStateFile(sfPath string) (*Service, error) {
 
 // populate svc.Users map from users database
 func loadUsers(svc *Service) (*Service, error) {
-	q := db.NewQuery(filepath.Join(svc.DbDir, "users"))
+	q := db.NewQuery(filepath.Join(svc.DbDir, "users"), false)
 	usrs, err := q.GetUsers()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
