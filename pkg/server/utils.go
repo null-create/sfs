@@ -8,6 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/files"
 )
 
 // Generate a random integer in the range [1, n)
@@ -42,4 +46,43 @@ func saveJSON(dir, filename string, data map[string]interface{}) {
 	if err = ioutil.WriteFile(filepath.Join(dir, filename), jsonData, 0666); err != nil {
 		log.Fatalf("[ERROR] unable to write JSON file %s: %s\n", filename, err)
 	}
+}
+
+// ----- db utils --------------------------------
+
+// get file info from db
+func findFile(fileID string, dbDir string) (*files.File, error) {
+	q := db.NewQuery(dbDir, false)
+	f, err := q.GetFile(fileID)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+func findUser(userID string, dbDir string) (*auth.User, error) {
+	q := db.NewQuery(dbDir, false)
+	u, err := q.GetUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func findDir(dirID string, dbDir string) (*files.Directory, error) {
+	q := db.NewQuery(dbDir, false)
+	d, err := q.GetDirectory(dirID)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func findDrive(driveID string, dbDir string) (*files.Drive, error) {
+	q := db.NewQuery(dbDir, false)
+	d, err := q.GetDrive(driveID)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
 }
