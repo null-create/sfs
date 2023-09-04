@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -27,7 +26,7 @@ All service configurations may end up living here.
 type Service struct {
 	InitTime time.Time `json:"init_time"`
 
-	// Drive directory path for sfs service on the server
+	// path for sfs service on the server
 	SvcRoot string `json:"service_root"`
 
 	// path to state file
@@ -84,31 +83,28 @@ func setAdmin(svc *Service) {
 	svc.AdminKey = cfg.Server.AdminKey
 }
 
-// determine whether we have a sfs-state-date:hour:min:sec.json file
-// under svcroot/state
-//
-// returns true and a path to the file if it exists
-func hasStateFile(path string) (bool, fs.DirEntry) {
-	entries, err := os.ReadDir(path)
+func findStateFile(svcRoot string) (string, error) {
+	sfPath := filepath.Join(svcRoot, "state")
+	entries, err := os.ReadDir(sfPath)
 	if err != nil {
-		log.Printf("[ERROR] unable to read state file directory: %s \n%v\n", path, err)
-		return false, nil
+		log.Printf("unable to read state file directory: %s \n%v\n", sfPath, err)
+		return "", nil
 	}
 	// should only ever be one state file at a time
 	if len(entries) > 1 {
-		log.Printf("[WARNING] multiple state files found under: %s", path)
-		for _, e := range entries {
-			log.Printf("	-%s\n", e.Name())
+		log.Printf("[WARNING] multiple state files found under: %s", sfPath)
+		for i, e := range entries {
+			log.Printf("%d	-%s\n", i+1, e.Name())
 		}
 	}
 	for _, entry := range entries {
 		// NOTE: this might not be the most *current* version,
 		// just the one that's present at the moment.
 		if strings.Contains(entry.Name(), "sfs-state") {
-			return true, entry
+			return entry.Name(), nil
 		}
 	}
-	return false, nil
+	return "", nil
 }
 
 // load from a service state file. returns a new empty service struct.
@@ -138,8 +134,15 @@ func loadUsers(svc *Service) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
+	// NOTE: this assumes the physical files for each
+	// user being loaded are already present. calling svc.AddUser()
+	// will allocate a new drive service with new base files.
 	for _, u := range usrs {
-		svc.AddUser(u)
+		if _, exists := svc.Users[u.ID]; !exists {
+			svc.Users[u.ID] = u
+		} else {
+			log.Printf("[DEBUG] user %v already exists", u.ID)
+		}
 	}
 	return svc, nil
 }
@@ -262,24 +265,26 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	if err := preChecks(svcPath); err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
-	sfDir := filepath.Join(svcPath, "state")
-	if ok, entry := hasStateFile(sfDir); ok {
-		svc, err := svcLoad(filepath.Join(sfDir, entry.Name()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize service: %v", err)
-		}
-		// attempt to populate from users database if state file had no user data
-		if len(svc.Users) == 0 {
-			log.Printf("[DEBUG] state file had no user data. attempting to populate from users database...")
-			_, err := loadUsers(svc)
-			if err != nil {
-				log.Fatalf("[DEBUG] failed to retrieve user data: %v", err)
-			}
-		}
-		return svc, nil
-	} else {
-		return nil, fmt.Errorf("no statefile found")
+
+	sfPath, err := findStateFile(svcPath)
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
 	}
+	svc, err := svcLoad(sfPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize service: %v", err)
+	}
+
+	// attempt to populate from users database if state file had no user data
+	if len(svc.Users) == 0 {
+		log.Printf("[DEBUG] state file had no user data. attempting to populate from users database...")
+		_, err := loadUsers(svc)
+		if err != nil {
+			log.Fatalf("[DEBUG] failed to retrieve user data: %v", err)
+		}
+	}
+
+	return svc, nil
 }
 
 // ------ utils --------------------------------
@@ -349,7 +354,7 @@ func (s *Service) SaveState() error {
 
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
 
-	sfPath := filepath.Join(filepath.Join(s.SvcRoot, "state"))
+	sfPath := filepath.Join(s.SvcRoot, "state")
 	s.StateFile = filepath.Join(sfPath, sfName)
 
 	return os.WriteFile(s.StateFile, file, 0644)
