@@ -2,140 +2,133 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 )
 
-// NOTE: handlers will likely need to be connected to the internal db package
+/*
+Handlers for directly working with sfs service instance.
 
-// hanlder for file downloads
-func (s *Server) DownloadFileHandler(fileID string) http.HandlerFunc {
-	// TODO: use servers db connection to pull metadata (filepath to download to)
-	// about the file using the supplied fileID
-	//
-	// fileID should be parsed from the URL as a parameter
+These will likely be called by middleware, which will themselves
+be passed to the router when it is instantiated.
+
+We want to add some middleware above these calls to handle user au
+and other such business to validate requests to the server.
+*/
+
+func (s *Server) GetFileInfo(fileID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Open the file to be downloaded
-		filePath := "example.txt" // TODO: Replace with the path to the file you want to download to
-		file, err := os.Open(filePath)
-		if err != nil {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		defer file.Close()
-
-		// Set the response header for the download
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name()))
-		w.Header().Set("Content-Type", "application/octet-stream")
-
-		// Copy the file's content to the response writer
-		if _, err := io.Copy(w, file); err != nil {
-			http.Error(w, "[ERROR] file not found", http.StatusNotFound)
+		if r.Method == http.MethodGet {
+			f, err := findFile(fileID, s.Svc.DbDir)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			data, err := f.ToJSON()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			w.Write(data)
 		}
 	}
 }
 
-// hanlder for file uploads
-func (s *Server) UploadFileHandler(fileID string) http.HandlerFunc {
-	// TODO: use servers db connection to pull metadata (filepath to upload from)
-	// about the file using the supplied fileID
-	//
-	// fileID should be parsed from the URL as a parameter
+// retrieve a file from server.
+//
+// fileID should be parsed from the URL as a parameter
+func (s *Server) GetFile(fileID string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			f, err := findFile(fileID, s.Svc.DbDir)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			// Set the response header for the download
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", f.Name))
+			w.Header().Set("Content-Type", "application/octet-stream")
+
+			http.ServeFile(w, r, f.ServerPath)
+		}
+	}
+}
+
+// send a file to server
+//
+// fileID should be parsed from the URL as a parameter
+func (s *Server) PutFile(fileID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			// Get the uploaded file from the request
-			file, handler, err := r.FormFile("file")
+			// get file metadata from server, if it exists
+			f, err := findFile(fileID, s.Svc.DbDir)
 			if err != nil {
-				http.Error(w, "[ERROR] error uploading file", http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			// FormFile returns the first file for the given key `myFile`
+			// it also returns the FileHeader so we can get the Filename,
+			// the Header and the size of the file
+			formFile, header, err := r.FormFile("myFile")
+			if err != nil {
+				ServerErr(w, fmt.Sprintf("failed to retrive form file data: %v", err))
 				return
 			}
-			defer file.Close()
+			defer formFile.Close()
 
-			// Create or truncate a new file on the server to save the uploaded content
-			uploadedFilePath := handler.Filename
-			newFile, err := os.Create(uploadedFilePath)
+			// open (or create) the servers file for this user
+			serverFile, err := os.Create(f.ServerPath)
 			if err != nil {
-				http.Error(w, "[ERROR] error creating file", http.StatusInternalServerError)
+				ServerErr(w, fmt.Sprintf("failed to create or truncate file: %v", err))
 				return
 			}
-			defer newFile.Close()
+			defer serverFile.Close()
 
-			// Copy the uploaded content to the new file
-			if _, err := io.Copy(newFile, file); err != nil {
-				http.Error(w, "[ERROR] error copying uploaded file", http.StatusInternalServerError)
+			// write file contents to server's pysical file
+			data := make([]byte, header.Size)
+			_, err = formFile.Read(data)
+			if err != nil {
+				ServerErr(w, fmt.Sprintf("failed to read file contents: %v", err))
+				return
 			}
-			fmt.Fprint(w, fmt.Sprintf("file (id=%s) uploaded successfully", fileID))
+			_, err = serverFile.Write(data)
+			if err != nil {
+				ServerErr(w, fmt.Sprintf("failed to save file to server: %v", err))
+				return
+			}
 		}
 	}
 }
 
-func (s *Server) GetFile() http.HandlerFunc {
+// attempts to read data from the user database.
+//
+// if found, it will attempt to prepare it as json data and return it
+func (s *Service) getUser(userID string) ([]byte, error) {
+	u, err := findUser(userID, s.DbDir)
+	if err != nil {
+		return nil, err
+	}
+	jsonData, err := u.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+	return jsonData, nil
+}
+
+func (s *Server) GetUser(userID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-
+		// attempt to get user from user map.
+		// if unsuccessful, attempt to read from user database
+		if u, exist := s.Svc.Users[userID]; !exist {
+			userData, err := s.Svc.getUser(userID)
+			if err != nil {
+				ServerErr(w, "failed to retrieve user data")
+			}
+			w.Write(userData)
+		} else {
+			jsonData, err := u.ToJSON()
+			if err != nil {
+				ServerErr(w, "failed to retrieve user data")
+			}
+			w.Write(jsonData)
 		}
 	}
 }
-
-func (s *Server) PutFile() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPut {
-
-		}
-	}
-}
-
-func (s *Server) GetFiles() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-
-		}
-	}
-}
-
-func (s *Server) GetDir() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-
-		}
-	}
-}
-
-func (s *Server) GetDirs() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-
-		}
-	}
-}
-
-// func (s *Server) handleTemplate(files string ...) http.HandlerFunc {
-// 	var (
-//        // a one time use initialization controller. used for optimization purposes. see: https://pkg.go.dev/sync#example-Once
-// 			init    sync.Once
-// 			tpl     *template.Template
-// 			tplerr  error
-// 	)
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 			init.Do(func(){
-// 					tpl, tplerr = template.ParseFiles(files...)
-// 			})
-// 			if tplerr != nil {
-// 					http.Error(w, tplerr.Error(), http.StatusInternalServerError)
-// 					return
-// 			}
-// 			// use tpl
-// 	}
-// }
-
-// middleware stuff
-// func (s *Server) adminOnly(h http.HandlerFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		if !currentUser(r).IsAdmin {
-// 			http.NotFound(w, r)
-// 			return
-// 		}
-// 		h(w, r)
-// 	}
-// }
