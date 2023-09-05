@@ -51,14 +51,14 @@ type File struct {
 	Owner string  `json:"owner"`
 
 	// security stuff
-	Protected bool   `json: "protected"`
-	Key       string `json: "key"`
+	Protected bool   `json:"protected"`
+	Key       string `json:"key"`
 
 	// synchronization and file integrity fields
-	LastSync   time.Time `json: "last_sync"`
-	Path       string    `json: "path"`
-	ServerPath string    `json: "server_path"`
-	ClientPath string    `json: "client_path"`
+	LastSync   time.Time `json:"last_sync"`
+	Path       string    `json:"path"`
+	ServerPath string    `json:"server_path"`
+	ClientPath string    `json:"client_path"`
 
 	CheckSum  string `json:"checksum"`
 	Algorithm string `json:"algorithm"`
