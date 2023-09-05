@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
@@ -44,23 +45,23 @@ type File struct {
 	m sync.Mutex
 
 	// metadata
-	ID    string
-	Name  string
-	NMap  NameMap
-	Owner string
+	ID    string  `json:"id"`
+	Name  string  `json:"name"`
+	NMap  NameMap `json:"name_map"`
+	Owner string  `json:"owner"`
 
 	// security stuff
-	Protected bool
-	Key       string
+	Protected bool   `json: "protected"`
+	Key       string `json: "key"`
 
 	// synchronization and file integrity fields
-	LastSync   time.Time
-	Path       string
-	ServerPath string
-	ClientPath string
+	LastSync   time.Time `json: "last_sync"`
+	Path       string    `json: "path"`
+	ServerPath string    `json: "server_path"`
+	ClientPath string    `json: "client_path"`
 
-	CheckSum  string
-	Algorithm string
+	CheckSum  string `json:"checksum"`
+	Algorithm string `json:"algorithm"`
 
 	// file content/bytes
 	Content []byte
@@ -104,6 +105,15 @@ func (f *File) Size() int64 {
 		log.Fatalf("[ERROR] unable to determine file size: %v", err)
 	}
 	return info.Size()
+}
+
+// convert file object to json byte slice
+func (f *File) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 // ----------- simple security features
