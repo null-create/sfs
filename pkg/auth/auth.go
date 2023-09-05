@@ -16,7 +16,7 @@ var (
 	nonceStore         = openid.NewSimpleNonceStore()
 	discoveryCache     = openid.NewSimpleDiscoveryCache()
 	store              = sessions.NewCookieStore([]byte("something-very-secret"))
-	defaultSessionName = "ghs-session"
+	defaultSessionName = "sfs-session"
 )
 
 type UserInfo struct {

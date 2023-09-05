@@ -13,7 +13,7 @@ func AreEqualSlices(a, b []string) bool {
 	// make a temp map to hash original slice (a) into keys to check for
 	tmp := make(map[string]int, len(a))
 	for _, s := range a {
-		tmp[s] += 1
+		tmp[s] = 1
 	}
 
 	// iterate over b to check for existence of any of its elements

@@ -87,14 +87,13 @@ func findStateFile(svcRoot string) (string, error) {
 	sfPath := filepath.Join(svcRoot, "state")
 	entries, err := os.ReadDir(sfPath)
 	if err != nil {
-		log.Printf("unable to read state file directory: %s \n%v\n", sfPath, err)
-		return "", nil
+		return "", fmt.Errorf("unable to read state file directory: %s \n%v", sfPath, err)
 	}
 	// should only ever be one state file at a time
 	if len(entries) > 1 {
 		log.Printf("[WARNING] multiple state files found under: %s", sfPath)
 		for i, e := range entries {
-			log.Printf("%d	-%s\n", i+1, e.Name())
+			log.Printf("%d.	%s\n", i+1, e.Name())
 		}
 	}
 	for _, entry := range entries {
@@ -223,6 +222,7 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("[ERROR] %v", err)
 	}
+	log.Print("all set :)")
 	return svc, nil
 }
 
@@ -248,6 +248,7 @@ func preChecks(svcRoot string) error {
 	return nil
 }
 
+// intialize sfs service from a state file
 func svcLoad(sfPath string) (*Service, error) {
 	svc, err := loadStateFile(sfPath)
 	if err != nil {
@@ -274,8 +275,8 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
-
-	// attempt to populate from users database if state file had no user data
+	// attempt to populate from users database
+	// if state file had no user data
 	if len(svc.Users) == 0 {
 		log.Printf("[DEBUG] state file had no user data. attempting to populate from users database...")
 		_, err := loadUsers(svc)
@@ -284,6 +285,10 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 		}
 	}
 
+	// make sure we have a path to the db dir
+	// and current state file for this session
+	svc.DbDir = filepath.Join(svcPath, "dbs")
+	svc.StateFile = sfPath
 	return svc, nil
 }
 
@@ -300,9 +305,10 @@ func GenBaseUserFiles(DrivePath string) {
 	}
 }
 
-// Build a new privilaged Drive directory for a client on the sfs server
+// build a new privilaged drive directory for a client on the sfs server
+// with base state file info for user, drive, and user credentials json files
 //
-// Must be under /root/users/<username>
+// must be under ../svcroot/users/<username>
 func AllocateDrive(name string, owner string, svcRoot string) (*files.Drive, error) {
 	// new user service file paths
 	usrsDir := filepath.Join(svcRoot, "users")
@@ -352,8 +358,9 @@ func (s *Service) SaveState() error {
 		return fmt.Errorf("unable to marshal service state: %v", err)
 	}
 
+	// TODO: find a better way to add hour:min:sec to state file name.
+	// keeps raising errors
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
-
 	sfPath := filepath.Join(s.SvcRoot, "state")
 	s.StateFile = filepath.Join(sfPath, sfName)
 

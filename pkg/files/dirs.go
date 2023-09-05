@@ -66,6 +66,7 @@ type Directory struct {
 	RootPath string `json:"rootPath,omitempty"`
 }
 
+// create a new root directory object. does not create physical directory.
 func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 	uuid := NewUUID()
 	return &Directory{
@@ -559,8 +560,6 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	}
 	return nil
 }
-
-// TODO: test!
 
 // Walkf() searches each subdirectory recursively and performes
 // a supplied function on each file in the directory, returning

@@ -56,7 +56,7 @@ func check(id string, name string, owner string, rootPath string, root *Director
 	return true
 }
 
-// Creates a new Drive service for a user.
+// creates a new drive service for a user. does not create new physical files
 func NewDrive(id string, name string, owner string, rootPath string, root *Directory) *Drive {
 	if !check(id, name, owner, rootPath, root) {
 		return nil
