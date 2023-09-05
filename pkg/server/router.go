@@ -45,19 +45,13 @@ POST   /v1/u/{userID}/sync      // send a last sync index object to the server
 																// initiate a client/server file sync.
 */
 
-// add json header to requests
-func ContentTypeJson(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json;charset=utf8")
-		next.ServeHTTP(w, r)
-	})
-}
-
 // instantiate a new chi router
 func NewRouter() *chi.Mux {
 
 	// instantiate router
 	r := chi.NewRouter()
+
+	// add middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
@@ -69,7 +63,8 @@ func NewRouter() *chi.Mux {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// placeholder for homepage
+	// placeholder for sfs "homepage"
+	// this will eventually display a simple service index page
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hi"))
 	})
@@ -106,36 +101,16 @@ func NewRouter() *chi.Mux {
 
 		// fetch file last sync times for all
 		// user files (in all directories) from server
+		// to start a client side sync operation
 		r.Get("/u/{userID}/sync", nil)
 
-		// send a last sync index to the server to
-		// initiate a client/server file sync.
+		// send a newly generated last sync index to the
+		// server to initiate a client/server file sync.
 		r.Post("/u/{userID}/sync", nil)
 	})
 
 	// Mount the admin sub-router
-	r.Mount("/admin", adminRouter())
+	// r.Mount("/admin", adminRouter())
 
 	return r
-}
-
-// A completely separate router for administrator routes
-func adminRouter() http.Handler {
-	r := chi.NewRouter()
-	r.Use(AdminOnly)
-	// r.Get("/", adminIndex)
-	// r.Get("/accounts", adminListAccounts)
-	return r
-}
-
-func AdminOnly(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		_, ok := ctx.Value("acl.permission").(float64)
-		if !ok {
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
