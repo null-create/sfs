@@ -2,3 +2,5 @@
 vendor
 docs
 old-files
+pkg/run
+pkg/.env
