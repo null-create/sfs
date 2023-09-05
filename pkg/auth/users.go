@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
@@ -49,4 +50,13 @@ func NewUser(name string, userName string, email string, newDrive *files.Drive, 
 
 		Drive: newDrive,
 	}
+}
+
+// convert the curent user state to a json-formatted byte slice
+func (u *User) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(u, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
