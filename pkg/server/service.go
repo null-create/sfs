@@ -117,7 +117,7 @@ func loadStateFile(sfPath string) (*Service, error) {
 	}
 
 	svc := &Service{}
-	if err := json.Unmarshal([]byte(file), svc); err != nil {
+	if err := json.Unmarshal(file, svc); err != nil {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
 	}
 	svc.StateFile = sfPath
@@ -146,6 +146,8 @@ func loadUsers(svc *Service) (*Service, error) {
 	return svc, nil
 }
 
+// initialize a new sfs service from either a state file/dbs or
+// create a new service from scratch.
 func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
@@ -278,10 +280,10 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	// attempt to populate from users database
 	// if state file had no user data
 	if len(svc.Users) == 0 {
-		log.Printf("[DEBUG] state file had no user data. attempting to populate from users database...")
+		log.Printf("[WARNING] state file had no user data. attempting to populate from users database...")
 		_, err := loadUsers(svc)
 		if err != nil {
-			log.Fatalf("[DEBUG] failed to retrieve user data: %v", err)
+			log.Fatalf("[ERROR] failed to retrieve user data: %v", err)
 		}
 	}
 
@@ -317,6 +319,12 @@ func AllocateDrive(name string, owner string, svcRoot string) (*files.Drive, err
 
 	// make a new user directory under svcRoot/users
 	if err := os.Mkdir(svcDir, 0644); err != nil {
+		return nil, err
+	}
+
+	// make an empty root directory (svcRoot/users/root)
+	// for the user to store files
+	if err := os.Mkdir(usrRoot, 0644); err != nil {
 		return nil, err
 	}
 
