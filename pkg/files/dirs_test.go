@@ -262,7 +262,22 @@ func TestGetDirSize(t *testing.T) {
 	}
 }
 
-func TestWalk(t *testing.T) {
+func TestWalkF(t *testing.T) {
+	d := MakeTmpDirs(t)
+	fileToFind := NewFile("findMe", "bill", filepath.Join(d.Path, "findMe"))
+	d.addFile(fileToFind)
+
+	found := d.WalkF(fileToFind.ID)
+
+	assert.NotEqual(t, nil, found)
+	assert.Equal(t, fileToFind.ID, found.ID)
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestWalkD(t *testing.T) {
 	testingDir := GetTestingDir()
 	testDir1 := NewDirectory("testDir1", "me", filepath.Join(testingDir, "testDir1"))
 	testDir2 := NewDirectory("testDir2", "me", filepath.Join(testingDir, "testDir2"))
@@ -288,7 +303,7 @@ func TestWalk(t *testing.T) {
 	testDir2.AddSubDir(testDir1)
 
 	// run Walk and check result
-	dir := testDir5.Walk(idToFind)
+	dir := testDir5.WalkD(idToFind)
 	assert.NotEqual(t, nil, dir)
 	assert.Equal(t, idToFind, dir.ID)
 }
@@ -342,11 +357,11 @@ func TestWalkU(t *testing.T) {
 	}
 }
 
-func TestWalkF(t *testing.T) {
+func TestWalkO(t *testing.T) {
 	tmpDir := MakeTmpDirs(t)
 
 	// create a test function to pass to WalkF()
-	if err := tmpDir.WalkF(func(file *File) error {
+	if err := tmpDir.WalkO(func(file *File) error {
 		if file == nil {
 			return fmt.Errorf("test file pointer is nil")
 		}

@@ -455,17 +455,44 @@ func (d *Directory) DirSize() (float64, error) {
 
 /*
 Walk() recursively traverses sub directories starting at a given directory (or root),
-attempting to find the desired sub directory with the given directory ID.
+attempting to find the desired file with the given file ID.
 */
-func (d *Directory) Walk(dirID string) *Directory {
+func (d *Directory) WalkF(fileID string) *File {
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
 	}
-	return walk(d, dirID)
+	return walkF(d, fileID)
 }
 
-func walk(dir *Directory, dirID string) *Directory {
+func walkF(dir *Directory, fileID string) *File {
+	if len(dir.Dirs) == 0 {
+		return nil
+	}
+	if f, found := dir.Files[fileID]; found {
+		return f
+	}
+	for _, subDirs := range dir.Dirs {
+		if sd := walkF(subDirs, fileID); sd != nil {
+			return sd
+		}
+	}
+	return nil
+}
+
+/*
+Walk() recursively traverses sub directories starting at a given directory (or root),
+attempting to find the desired sub directory with the given directory ID.
+*/
+func (d *Directory) WalkD(dirID string) *Directory {
+	if len(d.Dirs) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
+		return nil
+	}
+	return walkD(d, dirID)
+}
+
+func walkD(dir *Directory, dirID string) *Directory {
 	if len(dir.Dirs) == 0 {
 		return nil
 	}
@@ -473,7 +500,7 @@ func walk(dir *Directory, dirID string) *Directory {
 		return dir
 	}
 	for _, subDirs := range dir.Dirs {
-		if sd := walk(subDirs, dirID); sd != nil {
+		if sd := walkD(subDirs, dirID); sd != nil {
 			return sd
 		}
 	}
@@ -564,7 +591,7 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 // Walkf() searches each subdirectory recursively and performes
 // a supplied function on each file in the directory, returning
 // an error if the function fails
-func (d *Directory) WalkF(op func(file *File) error) error {
+func (d *Directory) WalkO(op func(file *File) error) error {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
 	}
@@ -572,10 +599,10 @@ func (d *Directory) WalkF(op func(file *File) error) error {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.Name, d.ID)
 		return nil
 	}
-	return walkf(d, op)
+	return walkO(d, op)
 }
 
-func walkf(dir *Directory, op func(f *File) error) error {
+func walkO(dir *Directory, op func(f *File) error) error {
 	// run operation on each file, if possible
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
@@ -595,7 +622,7 @@ func walkf(dir *Directory, op func(f *File) error) error {
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
-		if err := walkf(subDirs, op); err != nil {
+		if err := walkO(subDirs, op); err != nil {
 			return fmt.Errorf("failed to walk: %v", err)
 		}
 	}
