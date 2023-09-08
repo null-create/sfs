@@ -12,11 +12,11 @@ func GetTestingDir() string {
 	curDir, err := os.Getwd()
 	if err != nil {
 		log.Printf("[WARNING] unable to get testing directory: %v\ncreating...", err)
-		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0644); err != nil {
+		if err := os.Mkdir(filepath.Join(curDir, "test_files"), 0644); err != nil {
 			log.Fatalf("[ERROR] unable to create test directory: %v", err)
 		}
 	}
-	return filepath.Join(curDir, "testing")
+	return filepath.Join(curDir, "test_files")
 }
 
 // handle test failures
