@@ -11,11 +11,8 @@ import (
 	"time"
 )
 
-const (
-	MAX       = 100
-	URL       = "http://www.google.com"
-	TEST_DATA = "shrek.txt"
-)
+// max number of iterations for measureSpeed()
+const MAX = 100
 
 // We measure network resources by timing how long it takes to download a file of
 // size N to URL, then how long it takes to upload data of the same size to said URL.
@@ -40,9 +37,9 @@ func measureSpeed(url string, client *http.Client) (downloadSpeed, uploadSpeed f
 	//------Measure download speed
 	start := time.Now()
 
-	resp, err := client.Get(URL)
+	resp, err := client.Get(url)
 	if err != nil {
-		return 0, 0, fmt.Errorf("[ERROR] failed to get URL: %v", err)
+		return 0, 0, fmt.Errorf("failed to get URL: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -51,36 +48,37 @@ func measureSpeed(url string, client *http.Client) (downloadSpeed, uploadSpeed f
 
 	//-----Measure upload speed with larger text file
 	testFolder := filepath.Join(GetCwd(), "test_files")
-	uploadData, err := os.ReadFile(filepath.Join(testFolder, TEST_DATA))
+	uploadData, err := os.ReadFile(filepath.Join(testFolder, "shrek.txt"))
 	if err != nil {
-		return 0, 0, fmt.Errorf("[ERROR] could not open test data: %v", err)
+		return 0, 0, fmt.Errorf("could not open test data: %v", err)
 	}
 
-	start = time.Now()
+	start2 := time.Now()
 
-	_, err = client.Post(URL, "application/octet-stream", bytes.NewReader(uploadData))
+	_, err = client.Post(url, "application/octet-stream", bytes.NewReader(uploadData))
 	if err != nil {
-		return 0, 0, fmt.Errorf("[ERROR] could not upload test data: %v", err)
+		return 0, 0, fmt.Errorf("could not upload test data: %v", err)
 	}
 
-	uploadDuration := time.Since(start).Seconds()
+	uploadDuration := time.Since(start2).Seconds()
 	uploadSpeed = float64(len(uploadData)) / uploadDuration
 
 	return downloadSpeed, uploadSpeed, nil
 }
 
 // This could be slow, depending on the users network. may also clog the network.
-func averageSpeeds(iterations int) (float64, float64) {
+func averageSpeeds(iterations int, url string) (float64, float64) {
 	var upTotal float64
 	var downTotal float64
+
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: time.Second * 30,
 	}
 
-	log.Print("[DEBUG] starting network profiling...")
+	log.Print("[INFO] starting network profiling...")
 
 	for i := 0; i < iterations; i++ {
-		up, down, err := measureSpeed(URL, client)
+		up, down, err := measureSpeed(url, client)
 		if err != nil {
 			log.Fatalf("[ERROR] error measuring average download and upload speed \n%v\n ", err)
 		}
@@ -91,7 +89,7 @@ func averageSpeeds(iterations int) (float64, float64) {
 	upAvg := upTotal / float64(iterations)
 	downAvg := downTotal / float64(iterations)
 
-	log.Printf("[DEBUG] up average: %f down average: %f\n", upAvg, downAvg)
+	log.Printf("[INFO] up average: %f down average: %f\n", upAvg, downAvg)
 
 	return upAvg, downAvg
 }
@@ -99,9 +97,9 @@ func averageSpeeds(iterations int) (float64, float64) {
 // profile and save our average speeds as a network-profile.json file
 // under ../sfs/pkg/network/profile/
 func ProfileNetwork() *NetworkProfile {
-	profile := NewNetworkProfile()
-	upAvg, dwnAvg := averageSpeeds(MAX)
+	upAvg, dwnAvg := averageSpeeds(MAX, "www.google.com")
 
+	profile := NewNetworkProfile()
 	profile.UpRate = upAvg
 	profile.DownRate = dwnAvg
 
