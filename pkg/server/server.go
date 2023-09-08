@@ -13,7 +13,7 @@ type Server struct {
 	Svr *http.Server // http server
 }
 
-// Instantiate a new HTTP server with an sfs service instance
+// instantiate a new HTTP server with an sfs service instance
 func NewServer(newService bool, isAdmin bool) *Server {
 	svr := ServerConfig() // get http server and service configs
 	rtr := NewRouter()    // instantiate router
