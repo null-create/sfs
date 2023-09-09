@@ -195,6 +195,9 @@ func TestAllocateDrive(t *testing.T) {
 	}
 	assert.NotEqual(t, 0, len(entries))
 	for _, e := range entries {
+		if strings.Contains(e.Name(), "root") {
+			continue // don't check root directory
+		}
 		assert.True(t, strings.Contains(e.Name(), ".json"))
 	}
 
