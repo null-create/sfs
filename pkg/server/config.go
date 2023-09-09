@@ -29,7 +29,6 @@ func ServerConfig() *Conf {
 	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode server config .env file: %s", err)
 	}
-
 	return &c
 }
 
