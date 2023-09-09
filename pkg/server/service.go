@@ -100,7 +100,7 @@ func findStateFile(svcRoot string) (string, error) {
 		// NOTE: this might not be the most *current* version,
 		// just the one that's present at the moment.
 		if strings.Contains(entry.Name(), "sfs-state") {
-			return entry.Name(), nil
+			return filepath.Join(sfPath, entry.Name()), nil
 		}
 	}
 	return "", nil
@@ -235,7 +235,7 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 func preChecks(svcRoot string) error {
 	entries, err := os.ReadDir(svcRoot)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return err
 	}
 	if len(entries) == 0 {
 		return fmt.Errorf("no statefile, user, or database directories found! \n%v", err)
@@ -254,7 +254,7 @@ func preChecks(svcRoot string) error {
 func svcLoad(sfPath string) (*Service, error) {
 	svc, err := loadStateFile(sfPath)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, err
 	}
 	return svc, nil
 }
@@ -266,13 +266,17 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	// ensure (at least) the necessary dbs
 	// and state files are present
 	if err := preChecks(svcPath); err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, err
 	}
 
 	sfPath, err := findStateFile(svcPath)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, err
 	}
+	if sfPath == "" {
+		return nil, fmt.Errorf("no state file found")
+	}
+
 	svc, err := svcLoad(sfPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
