@@ -51,7 +51,7 @@ func NewRouter() *chi.Mux {
 	// instantiate router
 	r := chi.NewRouter()
 
-	// add middleware
+	// add default middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
@@ -61,7 +61,7 @@ func NewRouter() *chi.Mux {
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
-	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(middleware.Timeout(time.Minute))
 
 	// placeholder for sfs "homepage"
 	// this will eventually display a simple service index page
@@ -73,29 +73,41 @@ func NewRouter() *chi.Mux {
 
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
-		// "home". return a root directory listing
+		//  get user info
 		r.Get("/u/{userID}", nil)
 
 		// ----- files
 
-		r.Get("/u/{userID}/f/files", nil) // get list of user files and directories
-
-		r.Get("/u/{userID}/f/{fileID}/i", nil)  // get info about a file
-		r.Get("/u/{userID}/f/{fileID}", nil)    // download a file from the server
-		r.Post("/u/{userID}/f/{fileID}", nil)   // add a new file to the server
-		r.Put("/u/{userID}/f/{fileID}", nil)    // update a file on the server
-		r.Delete("/u/{userID}/f/{fileID}", nil) // delete a file on the server
+		// get list of user files and directories
+		r.Get("/u/{userID}/f/files", nil)
+		// get info about a file
+		r.Get("/u/{userID}/f/{fileID}/i", nil)
+		// download a file from the server
+		r.Get("/u/{userID}/f/{fileID}", nil)
+		// add a new file to the server
+		r.Post("/u/{userID}/f/{fileID}", nil)
+		// update a file on the server
+		r.Put("/u/{userID}/f/{fileID}", nil)
+		// delete a file on the server
+		r.Delete("/u/{userID}/f/{fileID}", nil)
 
 		// ----- directories
 
-		r.Get("/u/{userID}/d/dirs/", nil)    // get list of user directories
-		r.Delete("/u/{userID}/d/dirs/", nil) // delete all user directories
+		// get list of user directories
+		r.Get("/u/{userID}/d/dirs/", nil)
+		// delete all user directories
+		r.Delete("/u/{userID}/d/dirs/", nil)
 
-		r.Get("/u/{userID}/d/{dirID}/i", nil)  // get info (file list) about a directory
-		r.Get("/u/{userID}/d/{dirID}", nil)    // download a .zip file of the directory from the server
-		r.Post("/u/{userID}/d/{dirID}", nil)   // create a (empty) directory to the server
-		r.Put("/u/{userID}/d/{dirID}", nil)    // update a directory on the server
-		r.Delete("/u/{userID}/d/{dirID}", nil) // delete a directory
+		// get info (file list) about a directory
+		r.Get("/u/{userID}/d/{dirID}/i", nil)
+		// download a .zip file of the directory from the server
+		r.Get("/u/{userID}/d/{dirID}", nil)
+		// create a (empty) directory to the server
+		r.Post("/u/{userID}/d/{dirID}", nil)
+		// update a directory on the server
+		r.Put("/u/{userID}/d/{dirID}", nil)
+		// delete a directory
+		r.Delete("/u/{userID}/d/{dirID}", nil)
 
 		// ----- sync operations
 
