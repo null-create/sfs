@@ -89,6 +89,8 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 }
 
 // retrieve file metadata from the database
+//
+// file returns nil if no result is available
 func (q *Query) GetFile(fileID string) (*files.File, error) {
 	q.Connect()
 	defer q.Close()
@@ -159,6 +161,9 @@ func (q *Query) GetFiles() ([]*files.File, error) {
 	return fs, nil
 }
 
+// retrieve information about a users directory from the database
+//
+// dir returns nil if no information is available
 func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 	q.Connect()
 	defer q.Close()
@@ -228,6 +233,9 @@ func (q *Query) GetDirectories(limit int) ([]*files.Directory, error) {
 	return dirs, nil
 }
 
+// get information about a user drive from the database
+//
+// drive returns nil if no information is available
 func (q *Query) GetDrive(driveID string) (*files.Drive, error) {
 	q.Connect()
 	defer q.Close()
