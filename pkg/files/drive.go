@@ -1,6 +1,7 @@
 package files
 
 import (
+	"encoding/json"
 	"log"
 )
 
@@ -141,4 +142,13 @@ func (d *Drive) DriveSize() float64 {
 		total += size
 	}
 	return total
+}
+
+// save drive state to JSON format
+func (d *Drive) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(d, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
