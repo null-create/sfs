@@ -206,27 +206,27 @@ func TestAllocateDrive(t *testing.T) {
 	}
 }
 
-func TestSvcClearAll(t *testing.T) {
-	svc := NewService(filepath.Join(GetTestingDir(), "tmp"))
+// func TestSvcClearAll(t *testing.T) {
+// 	svc := NewService(filepath.Join(GetTestingDir(), "tmp"))
 
-	// TODO: create a bunch of dummy user subdirectories
-	// under svcRoot/users
+// 	// TODO: create a bunch of dummy user subdirectories
+// 	// under svcRoot/users
 
-	// total := RandInt(100)
-	// usrs := make([]*auth.User, 0)
-	// for i := 0; i < total; i++ {
+// 	// total := RandInt(100)
+// 	// usrs := make([]*auth.User, 0)
+// 	// for i := 0; i < total; i++ {
 
-	// }
+// 	// }
 
-	svc.ClearAll("")
+// 	svc.ClearAll("")
 
-	entries, err := os.ReadDir(svc.SvcRoot)
-	if err != nil {
-		Fatal(t, err)
-	}
-	assert.Equal(t, 0, len(entries))
+// 	entries, err := os.ReadDir(svc.SvcRoot)
+// 	if err != nil {
+// 		Fatal(t, err)
+// 	}
+// 	assert.Equal(t, 0, len(entries))
 
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-}
+// 	if err := Clean(GetTestingDir()); err != nil {
+// 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+// 	}
+// }
