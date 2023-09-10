@@ -2,17 +2,11 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/files"
 )
 
 // Generate a random integer in the range [1, n)
@@ -44,55 +38,7 @@ func saveJSON(dir, filename string, data map[string]interface{}) {
 		log.Fatalf("[ERROR] failed marshalling JSON data: %s\n", err)
 	}
 
-	if err = ioutil.WriteFile(filepath.Join(dir, filename), jsonData, 0666); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, filename), jsonData, 0666); err != nil {
 		log.Fatalf("[ERROR] unable to write JSON file %s: %s\n", filename, err)
 	}
-}
-
-// ----- db utils --------------------------------
-
-// get file info from db
-func findFile(fileID string, dbDir string) (*files.File, error) {
-	q := db.NewQuery(dbDir, false)
-	f, err := q.GetFile(fileID)
-	if err != nil {
-		return nil, err
-	}
-	if f == nil {
-		return nil, fmt.Errorf("no file found with ID %s", fileID)
-	}
-	return f, nil
-}
-
-func findUser(userID string, dbDir string) (*auth.User, error) {
-	q := db.NewQuery(dbDir, false)
-	u, err := q.GetUser(userID)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
-
-func findDir(dirID string, dbDir string) (*files.Directory, error) {
-	q := db.NewQuery(dbDir, false)
-	d, err := q.GetDirectory(dirID)
-	if err != nil {
-		return nil, err
-	}
-	if d == nil {
-		return nil, fmt.Errorf("no directory found with id %s", dirID)
-	}
-	return d, nil
-}
-
-func findDrive(driveID string, dbDir string) (*files.Drive, error) {
-	q := db.NewQuery(dbDir, false)
-	d, err := q.GetDrive(driveID)
-	if err != nil {
-		return nil, err
-	}
-	if d == nil {
-		return nil, fmt.Errorf("no drive found with id %s", driveID)
-	}
-	return d, nil
 }
