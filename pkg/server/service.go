@@ -174,8 +174,6 @@ func Init(new bool, admin bool) (*Service, error) {
 }
 
 /*
-initialize a new service and db's
-
 generate a root directory for a new sfs service.
 the root sfs service directory should have the following structure:
 
@@ -192,6 +190,8 @@ root/
 |   |---directories
 |   |---files
 */
+
+// initialize a new service and corresponding databases
 func SvcInit(svcRoot string, debug bool) (*Service, error) {
 	// ------- make root service directory (wherever it should located)
 	log.Print("creating root service directory...")
@@ -371,7 +371,6 @@ func (s *Service) SaveState() error {
 	}
 
 	// TODO: find a better way to add hour:min:sec to state file name.
-	// keeps raising errors
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
 	sfPath := filepath.Join(s.SvcRoot, "state")
 	s.StateFile = filepath.Join(sfPath, sfName)
@@ -385,16 +384,11 @@ func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
 
-// returns the service run time in seconds
-func (s *Service) RunTime() float64 {
-	return time.Since(s.InitTime).Seconds()
-}
-
 func (s *Service) GetUser(id string) (*auth.User, error) {
 	if usr, ok := s.Users[id]; ok {
 		return usr, nil
 	} else {
-		return nil, fmt.Errorf("[ERROR] user %s not found", id)
+		return nil, fmt.Errorf("user %s not found", id)
 	}
 }
 
@@ -406,15 +400,29 @@ func (s *Service) GetUsers() map[string]*auth.User {
 	return s.Users
 }
 
+// save to service instance and db
+func (s *Service) addUser(u *auth.User, d *files.Drive) error {
+	q := db.NewQuery(s.DbDir, false)
+	if err := q.AddUser(u); err != nil {
+		return fmt.Errorf("failed to add user to database: %v", err)
+	}
+	u.Drive = d
+	s.Users[u.ID] = u
+	return nil
+}
+
 // allocate a new service drive for a new user
 func (s *Service) AddUser(u *auth.User) error {
-	if _, ok := s.Users[u.ID]; !ok {
+	if _, exists := s.Users[u.ID]; !exists {
+		// allocate new drive and base service files
 		d, err := AllocateDrive(u.Name, u.Name, s.SvcRoot)
 		if err != nil {
-			return fmt.Errorf("[ERROR] failed to allocate new drive for user %s \n%v", u.ID, err)
+			return fmt.Errorf("failed to allocate new drive for user %s \n%v", u.ID, err)
 		}
-		u.Drive = d
-		s.Users[u.ID] = u
+		// save to service instance and db
+		if err := s.addUser(u, d); err != nil {
+			return err
+		}
 	} else {
 		log.Printf("[DEBUG] user (id=%s) already present", u.ID)
 	}
@@ -426,37 +434,13 @@ func (s *Service) RemoveUser(id string) error {
 	if usr, ok := s.Users[id]; ok {
 		if len(usr.Drive.Root.Dirs) != 0 {
 			if err := usr.Drive.Root.Clean(usr.Drive.Root.RootPath); err != nil {
-				return fmt.Errorf("[ERROR] unable to remove user and drive contents: %v", err)
+				return fmt.Errorf(" unable to remove user and drive contents: %v", err)
 			}
 		}
 		// remove from User directory map
 		delete(s.Users, usr.Drive.ID)
 	} else {
-		return fmt.Errorf("[ERROR] user (id=%s) not found", id)
+		return fmt.Errorf("user (id=%s) not found", id)
 	}
 	return nil
-}
-
-// clear all active users drives and deletes all content within
-func (s *Service) ClearAll(adminKey string) {
-	if s.AdminMode {
-		if adminKey == s.AdminKey {
-			if len(s.Users) == 0 {
-				log.Printf("[DEBUG] no drives to remove")
-				return
-			}
-			// remove all files and directories for this user
-			log.Print("[DEBUG] cleaning...")
-			for _, usr := range s.Users {
-				usr.Drive.Root.Clean(usr.Drive.Root.RootPath)
-				delete(s.Users, usr.Drive.ID)
-				log.Printf("[DEBUG] user %s was removed", usr.UserName)
-			}
-			log.Print("[DEBUG] ...done")
-		} else {
-			log.Print("[DEBUG] enter admin password to clear all user drives")
-		}
-	} else {
-		log.Print("[DEBUG] must be in admin mode to run s.ClearAll()")
-	}
 }
