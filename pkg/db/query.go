@@ -23,12 +23,16 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 	if isSingleton {
 		stmts := prepQueries(dbPath)
 		return &Query{
-			Stmts:  stmts,
 			DBPath: dbPath,
+			Debug:  false,
+			Query:  "",
+			Stmts:  stmts,
 		}
 	}
 	return &Query{
 		DBPath: dbPath,
+		Query:  "",
+		Debug:  false,
 	}
 }
 
