@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -57,6 +58,9 @@ func findFile(fileID string, dbDir string) (*files.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	if f == nil {
+		return nil, fmt.Errorf("no file found with ID %s", fileID)
+	}
 	return f, nil
 }
 
@@ -75,6 +79,9 @@ func findDir(dirID string, dbDir string) (*files.Directory, error) {
 	if err != nil {
 		return nil, err
 	}
+	if d == nil {
+		return nil, fmt.Errorf("no directory found with id %s", dirID)
+	}
 	return d, nil
 }
 
@@ -83,6 +90,9 @@ func findDrive(driveID string, dbDir string) (*files.Drive, error) {
 	d, err := q.GetDrive(driveID)
 	if err != nil {
 		return nil, err
+	}
+	if d == nil {
+		return nil, fmt.Errorf("no drive found with id %s", driveID)
 	}
 	return d, nil
 }
