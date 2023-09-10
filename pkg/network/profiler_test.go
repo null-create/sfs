@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -66,8 +67,10 @@ func TestMeasureSpeed(t *testing.T) {
 		WriteTimeout: time.Second * 30,
 		IdleTimeout:  time.Second * 30,
 	}
+	wg := &sync.WaitGroup{}
 	go func() {
-		if err := srv.ListenAndServe(); err != nil {
+		defer wg.Done()
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			Fatal(t, err)
 		}
 	}()
