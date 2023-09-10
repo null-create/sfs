@@ -435,6 +435,7 @@ func (d *Directory) GetSubDirs() map[string]*Directory {
 }
 
 // Returns the size of a directory with all its contents.
+//
 // TODO: implement our own version of Walk for this function
 func (d *Directory) DirSize() (float64, error) {
 	var size float64
@@ -545,8 +546,6 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
-// TODO: test!
-
 // d.WalkU() populates the ToUpdate map of a given SyncIndex
 func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 	if len(d.Files) == 0 {
@@ -588,9 +587,11 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
-// Walkf() searches each subdirectory recursively and performes
+// WalkO() searches each subdirectory recursively and performes
 // a supplied function on each file in the directory, returning
 // an error if the function fails
+//
+// functions should have the following signature: func(file *File) error
 func (d *Directory) WalkO(op func(file *File) error) error {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
