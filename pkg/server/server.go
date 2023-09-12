@@ -16,7 +16,7 @@ type Server struct {
 }
 
 // instantiate a new HTTP server with an sfs service instance
-func NewServer(newService bool, isAdmin bool) *Server {
+func InitServer(newService bool, isAdmin bool) *Server {
 	// load env variables from .env file
 	BuildEnv()
 
