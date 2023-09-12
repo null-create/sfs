@@ -133,6 +133,9 @@ func loadUsers(svc *Service) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
+	if len(usrs) == 0 {
+		return nil, fmt.Errorf("no users found in Users database")
+	}
 	// NOTE: this assumes the physical files for each
 	// user being loaded are already present. calling svc.AddUser()
 	// will allocate a new drive service with new base files.
@@ -196,7 +199,7 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 	// ------- make root service directory (wherever it should located)
 	log.Print("creating root service directory...")
 	if err := os.Mkdir(svcRoot, 0644); err != nil {
-		return nil, fmt.Errorf("[ERROR] failed to make service root directory: %v", err)
+		return nil, fmt.Errorf("failed to make service root directory: %v", err)
 	}
 
 	//-------- create top-level service directories
@@ -208,21 +211,21 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 	}
 	for _, p := range svcPaths {
 		if err := os.Mkdir(p, 0644); err != nil {
-			return nil, fmt.Errorf("[ERROR] failed to make service directory: %v", err)
+			return nil, fmt.Errorf("failed to make service directory: %v", err)
 		}
 	}
 
 	// -------- create new service databases
 	log.Print("creating service databases...")
 	if err := db.InitDBs(svcPaths[2]); err != nil {
-		return nil, fmt.Errorf("[ERROR] failed to initialize service databases: %v", err)
+		return nil, fmt.Errorf("failed to initialize service databases: %v", err)
 	}
 
 	// --------- create new service instance and save initial state
 	log.Print("initializng new service instance...")
 	svc := NewService(svcRoot)
 	if err := svc.SaveState(); err != nil {
-		return nil, fmt.Errorf("[ERROR] %v", err)
+		return nil, fmt.Errorf("failed to save service state: %v", err)
 	}
 	log.Print("all set :)")
 	return svc, nil
@@ -382,22 +385,6 @@ func (s *Service) SaveState() error {
 
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
-}
-
-func (s *Service) GetUser(id string) (*auth.User, error) {
-	if usr, ok := s.Users[id]; ok {
-		return usr, nil
-	} else {
-		return nil, fmt.Errorf("user %s not found", id)
-	}
-}
-
-func (s *Service) GetUsers() map[string]*auth.User {
-	if len(s.Users) == 0 {
-		log.Printf("[DEBUG] no users found")
-		return nil
-	}
-	return s.Users
 }
 
 // save to service instance and db
