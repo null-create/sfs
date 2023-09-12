@@ -20,20 +20,15 @@ type Query struct {
 
 // returns a new query struct
 func NewQuery(dbPath string, isSingleton bool) *Query {
-	if isSingleton {
-		stmts := prepQueries(dbPath)
-		return &Query{
-			DBPath: dbPath,
-			Debug:  false,
-			Query:  "",
-			Stmts:  stmts,
-		}
-	}
-	return &Query{
+	q := &Query{
 		DBPath: dbPath,
-		Query:  "",
 		Debug:  false,
+		Query:  "",
 	}
+	if isSingleton {
+		q.Stmts = prepQueries(dbPath)
+	}
+	return q
 }
 
 func prepQueries(dbPath string) []*sql.Stmt {
@@ -63,7 +58,10 @@ func prepQueries(dbPath string) []*sql.Stmt {
 		FindUserQuery,
 	}
 
-	stmts := make([]*sql.Stmt, 0)
+	// TODO: need a better way to organize prepared statements.
+	// having just a list of statements doesn't help us remember which is which.
+	// probably want to use a map of some kind but not sure how to generate keys
+	stmts := make([]*sql.Stmt, len(queries))
 	for _, query := range queries {
 		s, err := conn.Prepare(query)
 		if err != nil {
