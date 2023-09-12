@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,6 +23,7 @@ type API struct {
 	dbRoot string
 }
 
+// TODO: init with query singleton
 func NewAPI() *API {
 	c := ServiceConfig()
 	return &API{
@@ -101,25 +101,21 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// retrieve file from the request
-	formFile, _, err := r.FormFile("myFile")
+	formFile, header, err := r.FormFile("myFile")
 	if err != nil {
 		ServerErr(w, fmt.Sprintf("failed to retrive form file data: %v", err))
 		return
 	}
 	defer formFile.Close()
 
-	// open (or create) the servers file for this user
-	serverFile, err := os.Create(f.ServerPath)
+	data := make([]byte, header.Size)
+	_, err = formFile.Read(data)
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("failed to create or truncate file: %v", err))
+		ServerErr(w, err.Error())
 		return
 	}
-	defer serverFile.Close()
-
-	// write file contents to server's pysical file
-	_, err = io.Copy(serverFile, formFile)
-	if err != nil {
-		ServerErr(w, fmt.Sprintf("failed to create or truncate file: %v", err))
+	if err := f.Save(data); err != nil {
+		ServerErr(w, err.Error())
 		return
 	}
 }
