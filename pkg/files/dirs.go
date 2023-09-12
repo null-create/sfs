@@ -521,7 +521,8 @@ func (d *Directory) WalkS() *SyncIndex {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
 		return nil // nothing to search
 	}
-	return walkS(d, NewSyncIndex())
+	// TODO: get user and userID to pass to NewSyncIndex
+	return walkS(d, NewSyncIndex(d.ID, d.ID))
 }
 
 func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
@@ -565,10 +566,14 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	// check files
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
-			// check if the time difference between most recent sync and last sync
-			// is greater than zero.
-			if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
-				idx.ToUpdate[file.ID] = file
+			if _, exists := idx.LastSync[file.ID]; exists {
+				// check if the time difference between most recent sync and last sync
+				// is greater than zero.
+				if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
+					idx.ToUpdate[file.ID] = file
+				}
+			} else {
+				continue // this wasn't found previously, ignore
 			}
 		}
 	} else {
