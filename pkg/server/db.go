@@ -11,25 +11,9 @@ import (
 
 // ----- db utils --------------------------------
 
-// NOTE uses the service root as defined in the .env file.
-//
-// will need a way to update that when svc.SaveState() is called ?
-func GetDbDir() string {
-	c := ServiceConfig()
-	return filepath.Join(c.ServiceRoot, "dbs")
-}
-
-func GetUserDb() string {
-	return filepath.Join(GetDbDir(), "users")
-}
-
-func GetFilesDb() string {
-	return filepath.Join(GetDbDir(), "files")
-}
-
 // get file info from db
 func findFile(fileID string, dbDir string) (*files.File, error) {
-	q := db.NewQuery(dbDir, false)
+	q := db.NewQuery(filepath.Join(dbDir, "files"), false)
 	f, err := q.GetFile(fileID)
 	if err != nil {
 		return nil, err
@@ -52,7 +36,7 @@ func findUser(userID string, dbDir string) (*auth.User, error) {
 
 // get directory data from db
 func findDir(dirID string, dbDir string) (*files.Directory, error) {
-	q := db.NewQuery(dbDir, false)
+	q := db.NewQuery(filepath.Join(dbDir, "directories"), false)
 	d, err := q.GetDirectory(dirID)
 	if err != nil {
 		return nil, err
@@ -65,7 +49,7 @@ func findDir(dirID string, dbDir string) (*files.Directory, error) {
 
 // get drive data from db
 func findDrive(driveID string, dbDir string) (*files.Drive, error) {
-	q := db.NewQuery(dbDir, false)
+	q := db.NewQuery(filepath.Join(dbDir, "drives"), false)
 	d, err := q.GetDrive(driveID)
 	if err != nil {
 		return nil, err
