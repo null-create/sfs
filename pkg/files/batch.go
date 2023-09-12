@@ -102,6 +102,9 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	// use AddFiles() again over notAdded list until no more files remain.
 	if len(notAdded) > 0 && b.Cap < MAX {
 		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
+		if len(added) == 0 {
+			log.Printf("[DEBUG] no files were added")
+		}
 		return notAdded
 	}
 	return nil
