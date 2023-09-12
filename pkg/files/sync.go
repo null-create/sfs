@@ -1,20 +1,28 @@
 package files
 
 import (
+	"encoding/json"
 	"log"
+	"os"
 	"time"
 )
 
 type SyncIndex struct {
+	// user this sync index belongs to
+	User   string `json:"user"`
+	UserID string `json:"user_id"`
+
+	// filename to save sync-index.json to
+	IdxFn string `json:"file_name"`
 
 	// We will use the file path for each file to retrieve the pointer for the
 	// file object if it is to be queued for uploading or downloading
 	// key = file UUID, value = last modified date
-	LastSync map[string]time.Time
+	LastSync map[string]time.Time `json:"last_sync"`
 
 	// map of files to be queued for uploading or downloading
 	// key = file UUID, value = file pointer
-	ToUpdate map[string]*File
+	ToUpdate map[string]*File `json:"to_update"`
 }
 
 func NewSyncIndex() *SyncIndex {
@@ -22,6 +30,15 @@ func NewSyncIndex() *SyncIndex {
 		LastSync: make(map[string]time.Time, 0),
 		ToUpdate: make(map[string]*File, 0),
 	}
+}
+
+func (s *SyncIndex) SaveToJSON() error {
+	data, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	// TODO: better file naming/location determination
+	return os.WriteFile("sync_index.json", data, 0644)
 }
 
 /*
@@ -68,4 +85,11 @@ func BuildToUpdate(dir *Directory, idx *SyncIndex) *SyncIndex {
 		return idx
 	}
 	return nil
+}
+
+// prepare a slice of batches to be queued for uploading or downloading
+//
+// populates from idx.ToUpdate
+func Sync(idx *SyncIndex) ([]*Batch, error) {
+	return nil, nil
 }
