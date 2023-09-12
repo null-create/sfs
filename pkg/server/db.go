@@ -26,10 +26,13 @@ func findFile(fileID string, dbDir string) (*files.File, error) {
 
 // get user data from db
 func findUser(userID string, dbDir string) (*auth.User, error) {
-	q := db.NewQuery(dbDir, false)
+	q := db.NewQuery(filepath.Join(dbDir, "users"), false)
 	u, err := q.GetUser(userID)
 	if err != nil {
 		return nil, err
+	}
+	if u == nil {
+		return nil, fmt.Errorf("no user found with ID %s", userID)
 	}
 	return u, nil
 }
@@ -42,7 +45,7 @@ func findDir(dirID string, dbDir string) (*files.Directory, error) {
 		return nil, err
 	}
 	if d == nil {
-		return nil, fmt.Errorf("no directory found with id %s", dirID)
+		return nil, fmt.Errorf("no directory found with ID %s", dirID)
 	}
 	return d, nil
 }
@@ -55,7 +58,7 @@ func findDrive(driveID string, dbDir string) (*files.Drive, error) {
 		return nil, err
 	}
 	if d == nil {
-		return nil, fmt.Errorf("no drive found with id %s", driveID)
+		return nil, fmt.Errorf("no drive found with ID %s", driveID)
 	}
 	return d, nil
 }
