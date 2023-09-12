@@ -23,6 +23,13 @@ func fakeServiceRoot() string {
 
 // -----------------------------------------------------
 
+func TestServiceConfig(t *testing.T) {
+	BuildEnv()
+	c := ServiceConfig()
+	assert.NotEqual(t, nil, c)
+	assert.True(t, strings.Contains(c.ServiceRoot, "C:"))
+}
+
 func TestSaveStateFile(t *testing.T) {
 	svc := &Service{
 		SvcRoot:   fakeServiceRoot(),
