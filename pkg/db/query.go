@@ -73,7 +73,7 @@ func prepQueries(dbPath string) []*sql.Stmt {
 	return stmts
 }
 
-// prepare a statement. must be followed by q.Stmt.Close() when called!
+// prepare an SQL statement.
 func (q *Query) Prepare(query string) error {
 	stmt, err := q.Conn.Prepare(query)
 	if err != nil {
