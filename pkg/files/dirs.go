@@ -308,20 +308,6 @@ func (d *Directory) GetFiles() map[string]*File {
 	return d.Files
 }
 
-// returns a slice of NameMap objects representing files and their UUIDs
-// from a given directory. does not return info about files in any subdirectories
-func (d *Directory) GetFileMaps() []NameMap {
-	if len(d.Files) == 0 {
-		log.Print("[DEBUG] file list is empty")
-		return nil
-	}
-	fileIDs := make([]NameMap, len(d.Files))
-	for _, f := range d.Files {
-		fileIDs = append(fileIDs, newNameMap(f.Name, f.ID))
-	}
-	return fileIDs
-}
-
 // -------- sub directory methods
 
 // creates the directory and updates internal data structures
@@ -445,7 +431,8 @@ func (d *Directory) DirSize() (float64, error) {
 			return err
 		}
 		if !info.IsDir() {
-			// TODO: investigate how the conversion of int64 to float64 can effect results.
+			// TODO: investigate how the conversion of
+			// int64 to float64 can effect results.
 			size += float64(info.Size())
 		}
 		return nil
@@ -554,7 +541,7 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
-		return idx // nothing to search with this directory
+		return idx
 	}
 	return walkU(d, idx)
 }
@@ -567,8 +554,8 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
 			if _, exists := idx.LastSync[file.ID]; exists {
-				// check if the time difference between most recent sync and last sync
-				// is greater than zero.
+				// check if the time difference between most recent sync
+				// and last sync is greater than zero.
 				if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
 					idx.ToUpdate[file.ID] = file
 				}
