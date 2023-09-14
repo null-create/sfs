@@ -27,12 +27,12 @@ func NewBatch() *Batch {
 }
 
 /*
-TODO: look at the knapsack problem for guidance here.
-
 we're bound  by an upper size limit on our batch sizes (MAX) since
 we ideally don't want to clog a home network's resources when uploading
 or downloading batches of files. MAX is subject to change of course,
 but its in place as a mechanism for resource management.
+
+TODO: look at the knapsack problem for guidance here.
 
 NOTE: this does not check whether there are any duplicate files in the
 files []*File slice... probably should do that
@@ -65,7 +65,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		// building a batch from (assuming slice shrinkage with each pass).
 		//
 		// TODO: investigate this case
-		// individual files that exceed b.Cap won't be added to the batch ever.
+		// 	- individual files that exceed b.Cap won't be added to the batch ever.
 		if b.Cap-f.Size() >= 0 {
 			b.Files = append(b.Files, f)
 			b.Cap -= f.Size()        // decrement remaning file capacity
@@ -103,7 +103,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	if len(notAdded) > 0 && b.Cap < MAX {
 		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
 		if len(added) == 0 {
-			log.Printf("[DEBUG] no files were added")
+			log.Printf("[WARNING] no files were added!")
 		}
 		return notAdded
 	}
