@@ -2,7 +2,6 @@ package files
 
 import (
 	"fmt"
-	"log"
 )
 
 // Queue represents a set of file batches that are to be uploaded or downloaded
@@ -19,16 +18,6 @@ func NewQ() *Queue {
 	}
 }
 
-func (q *Queue) FindBatch(batchID string) *Batch {
-	for _, batch := range q.Queue {
-		if batch.ID == batchID {
-			return batch
-		}
-	}
-	log.Printf("[DEBUG] batch %v not found", batchID)
-	return nil
-}
-
 // NOTE: thes does NOT ensure there are no duplicate batches!
 //
 // this will need to be done elsewhere
@@ -41,10 +30,8 @@ func (q *Queue) Dequeue() (*Batch, error) {
 	if len(q.Queue) == 0 {
 		return nil, fmt.Errorf("[ERROR] Queue is empty")
 	}
-
 	item := q.Queue[0]
 	q.Queue = q.Queue[1:]
 	q.Total -= 1
-
 	return item, nil
 }

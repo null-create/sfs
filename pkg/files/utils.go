@@ -52,3 +52,18 @@ func Diff(f, g []*File) []*File {
 	}
 	return diff
 }
+
+/*
+
+get keys from the map -- faster than using append()
+see: https://stackoverflow.com/questions/21362950/getting-a-slice-of-keys-from-a-map
+func GetKeys(mymap map[T]T) []T {
+	keys := make([]T, len(mymap))
+	i := 0
+	for k := range mymap {
+    keys[i] = k
+    i++
+	}
+	return keys
+}
+*/
