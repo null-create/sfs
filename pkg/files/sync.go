@@ -106,27 +106,22 @@ func (s *SyncIndex) GetFilePaths() []string {
 // if all files are above MAX, then none of these files
 // be able to be added to a batch
 func tooBig(files []*File) bool {
-	if len(files) == 0 {
-		return false
-	}
 	var total int
 	for _, f := range files {
 		if f.Size() > MAX {
 			total += 1
 		}
 	}
-	// if all files are above MAX,
-	// then none will be added to a batch
 	return total == len(files)
 }
 
 // if all files in the given slice are greater than
 // the current capacity of this batch, then none of them
 // will be able to be added to a batch
-func wontFit(files []*File, b *Batch) bool {
+func wontFit(files []*File, limit int64) bool {
 	var total int
 	for _, f := range files {
-		if f.Size() > b.Cap {
+		if f.Size() > limit {
 			total += 1
 		}
 	}
@@ -188,7 +183,7 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 		q.Enqueue(b)
 		// create a new batch if we've maxed this one out,
 		// or all the remaining files wont fit in the current batch
-		if b.Cap == 0 || wontFit(f, b) {
+		if b.Cap == 0 || wontFit(f, b.Cap) {
 			b = NewBatch()
 		}
 	}
