@@ -112,7 +112,6 @@ func (b *Batch) AddFiles(files []*File) []*File {
 
 	// success
 	if len(added) == len(files) {
-		// if all files were successfully added
 		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
 		return added
 	}
@@ -134,6 +133,7 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	return nil
 }
 
+// used for adding single large files to a custom batch (doesn't care about MAX)
 func (b *Batch) AddLgFiles(files []*File) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no files were added")
