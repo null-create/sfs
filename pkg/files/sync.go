@@ -11,8 +11,7 @@ import (
 
 type SyncIndex struct {
 	// user this sync index belongs to
-	User   string `json:"user"`
-	UserID string `json:"user_id"`
+	User string `json:"user"`
 
 	// filepath to save sync-index.json to, i.e.
 	// path/to/userID-sync-index-date.json, where <date>
@@ -30,10 +29,9 @@ type SyncIndex struct {
 }
 
 // create a new sync-index object
-func NewSyncIndex(user, userID string) *SyncIndex {
+func NewSyncIndex(user string) *SyncIndex {
 	return &SyncIndex{
 		User:     user,
-		UserID:   userID,
 		LastSync: make(map[string]time.Time, 0),
 		ToUpdate: make(map[string]*File, 0),
 	}
@@ -45,7 +43,7 @@ func (s *SyncIndex) SaveToJSON() error {
 	if err != nil {
 		return err
 	}
-	fn := fmt.Sprintf("%s-sync-index-%s.json", s.UserID, time.Now().Format("00-00-00-01-02-2006"))
+	fn := fmt.Sprintf("%s-sync-index-%s.json", s.User, time.Now().Format("00-00-00-01-02-2006"))
 	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
 }
 
@@ -78,15 +76,16 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 }
 
 // get a slice of files to sync
-func (s *SyncIndex) GetFiles() ([]*File, error) {
+func (s *SyncIndex) GetFiles() []*File {
 	if len(s.ToUpdate) == 0 {
-		return nil, fmt.Errorf("no files matched for syncing")
+		log.Print("no files matched for syncing")
+		return nil
 	}
 	syncFiles := make([]*File, 0, len(s.ToUpdate))
 	for _, f := range s.ToUpdate {
 		syncFiles = append(syncFiles, f)
 	}
-	return syncFiles, nil
+	return syncFiles
 }
 
 // get a slice of file paths from the SyncIndex.ToUpdate map
@@ -105,7 +104,8 @@ func (s *SyncIndex) GetFilePaths() []string {
 }
 
 // if all files are above MAX, then none of these files
-// be able to be added to a batch
+// be able to be added to a batch and may cause a stack overflow
+// in buildFileQ()
 func willOverflow(files []*File) bool {
 	if len(files) == 0 {
 		return false
@@ -121,6 +121,30 @@ func willOverflow(files []*File) bool {
 	return total == len(files)
 }
 
+// generates a slice of files that are all under MAX,
+// from a raw list of files
+func prune(files []*File) []*File {
+	lgf := getLargeFiles(files)
+	return Diff(files, lgf)
+}
+
+// build a slice of file objects that exceed batch.MAX.
+//
+// these can be added to a custom batch to be uploaded/downloaded
+// after the ordinary batch queue is done processing
+func getLargeFiles(files []*File) []*File {
+	if len(files) == 0 {
+		return []*File{}
+	}
+	f := make([]*File, 0, len(files))
+	for _, file := range files {
+		if file.Size() > MAX {
+			f = append(f, file)
+		}
+	}
+	return f
+}
+
 // TODO: remove any files from the queue that individually exceed MAX?
 // create a separate queue for single large files?
 
@@ -131,35 +155,52 @@ func Sync(root *Directory, idx *SyncIndex) (*Queue, error) {
 	if len(idx.ToUpdate) == 0 {
 		return nil, fmt.Errorf("no files found to sync for root %s", root.ID)
 	}
-	files, err := idx.GetFiles()
-	if err != nil {
-		return nil, err
+	files := idx.GetFiles()
+	if files == nil {
+		return nil, fmt.Errorf("no files found to sync for syncing %s", root.ID)
 	}
 	// if every individual file exceeds b.MAX, none will able to be added,
-	// so we want to avoid infinite recursive calls/stack overflows
+	// and we like to avoid infinite loops
 	if willOverflow(files) {
 		return nil, fmt.Errorf("all files exceeded max batch size limit. none can be added to queue")
 	}
 	queue := NewQ()
-	return buildFileQ(files, queue)
+	return BuildQ(files, queue)
 }
 
-// recursively builds a batch queue from a list of files.
-//
-// the queue will be used to upload/download files to the server
-func buildFileQ(files []*File, q *Queue) (*Queue, error) {
+// keep adding the left over files to new batches until
+// have none left over from each b.AddFiles() call
+func buildQ(f []*File, b *Batch, q *Queue) *Queue {
+	for len(f) > 0 {
+		g := b.AddFiles(f)
+		f = g
+		q.Enqueue(b)
+		// create a new batch if we've maxed this one out
+		if b.Cap == 0 {
+			b = NewBatch()
+		}
+	}
+	return q
+}
+
+func BuildQ(files []*File, q *Queue) (*Queue, error) {
 	if len(files) == 0 {
+		log.Printf("[DEBUG] no files to upload or download")
 		return q, nil
 	}
+	// create new batch, add as many files as we can,
+	// then add to the queue. handle any left over files below.
 	b := NewBatch()
 	f := b.AddFiles(files)
 	q.Enqueue(b)
-	// there were left over files that
-	// didn't make it into this batch
-	if len(f) > 0 && len(f) < len(files) {
-		return buildFileQ(f, q)
-		// all files were added to the batch
-	} else if len(f) == len(files) {
+	// are there left over files?
+	if len(f) > 0 {
+		// create a new batch if we've reached
+		// capacity with our current one
+		if b.Cap == 0 {
+			b = NewBatch()
+		}
+		q := buildQ(f, b, q)
 		return q, nil
 	}
 	return q, nil
