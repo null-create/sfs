@@ -53,6 +53,21 @@ func Diff(f, g []*File) []*File {
 	return diff
 }
 
+// remove duplicate file pointers from a slice
+//
+// based off of: https://stackoverflow.com/questions/66643946/how-to-remove-duplicates-strings-or-int-from-slice-in-go
+func RemDup(f []*File) []*File {
+	tmp := make(map[*File]bool)
+	res := make([]*File, 0)
+	for _, file := range f {
+		if _, found := tmp[file]; !found {
+			tmp[file] = true
+			res = append(res, file)
+		}
+	}
+	return res
+}
+
 /*
 
 get keys from the map -- faster than using append()
