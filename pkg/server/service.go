@@ -373,8 +373,7 @@ func (s *Service) SaveState() error {
 		return fmt.Errorf("unable to marshal service state: %v", err)
 	}
 
-	// TODO: find a better way to add hour:min:sec to state file name.
-	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("01-02-2006"))
+	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("00-00-00-01-02-2006"))
 	sfPath := filepath.Join(s.SvcRoot, "state")
 	s.StateFile = filepath.Join(sfPath, sfName)
 
@@ -429,5 +428,13 @@ func (s *Service) RemoveUser(id string) error {
 	} else {
 		return fmt.Errorf("user (id=%s) not found", id)
 	}
+	return nil
+}
+
+// run a sync operation for a user. uses the supplied index,
+// which should have ToUpdate already populated, and builds a
+// batch of files to be either uploaded to or downloaded from
+// a given client
+func (s *Service) StartSync(userID string, up bool, down bool, idx *files.SyncIndex) error {
 	return nil
 }
