@@ -61,10 +61,10 @@ the runtime for each batch will be bound by the largest file in the batch
 func (b *Batch) AddFiles(files []*File) []*File {
 	// remember which ones we added so we don't have to modify the
 	// files slice in-place as we're iterating over it
+	//
+	// remember which files weren't added or were ignored
 	added := make([]*File, 0)
-	// remember which files that were passed over for this batch
 	notAdded := make([]*File, 0)
-	// remember which files that were ignored because they were already present
 	ignored := make([]*File, 0)
 
 	for _, f := range files {
@@ -82,9 +82,6 @@ func (b *Batch) AddFiles(files []*File) []*File {
 			// number of times we need to iterate over the list of files (and remaning subsets after
 			// each batch) and where k is the size of the *current* list we're iterating over and
 			// building a batch from (assuming slice shrinkage with each pass).
-			//
-			// TODO: investigate this case
-			// 	- individual files that exceed b.Cap won't be added to the batch ever.
 			if b.Cap-f.Size() >= 0 {
 				b.Files = append(b.Files, f)
 				b.Cap -= f.Size()        // decrement remaning file capacity
@@ -106,12 +103,12 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		}
 	}
 
-	// TODO: figure out how to communicate which of these scenarious
-	// was the case to the caller of this function.
-
 	if len(ignored) > 0 {
 		log.Print("[DEBUG] there were duplicates in supplied file list.")
 	}
+
+	// TODO: figure out how to communicate which of these scenarious
+	// was the case to the caller of this function.
 
 	// success
 	if len(added) == len(files) {
@@ -127,11 +124,10 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	}
 	// if b.Cap < MAX and we have left over files that were passed over for
 	// being to large for the current batch.
-	// use AddFiles() again over notAdded list until no more files remain.
 	if len(notAdded) > 0 && b.Cap < MAX {
 		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
 		if len(added) == 0 {
-			log.Printf("[WARNING] no files were added!")
+			log.Printf("[WARNING] *no* files were added!")
 		}
 		return notAdded
 	}
