@@ -47,34 +47,6 @@ func (s *SyncIndex) SaveToJSON() error {
 	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
 }
 
-/*
-build a new sync index starting with a given directory which
-is treated as the "root" of our inquiry. all subdirectories will be checked,
-but we assume this is the root, and that there is no parent directory!
-
-utilizes the directory's d.WalkS() function
-*/
-func BuildSyncIndex(root *Directory) *SyncIndex {
-	if idx := root.WalkS(); idx != nil {
-		return idx
-	}
-	return nil
-}
-
-/*
-takes a given directory pointer and compares it against against a sync index's
-internal LastSync map. it's assumed the index was created before this function was called.
-
-if the sync time in the last sync map is less recent than whats in the current directory, then we add that file to the ToUpdate map,
-which will be used to create a file upload or download queue
-*/
-func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
-	if idx := root.WalkU(idx); idx != nil {
-		return idx
-	}
-	return nil
-}
-
 // get a slice of files to sync
 func (s *SyncIndex) GetFiles() []*File {
 	if len(s.ToUpdate) == 0 {
@@ -101,6 +73,34 @@ func (s *SyncIndex) GetFilePaths() []string {
 		fp = append(fp, file.ServerPath)
 	}
 	return fp
+}
+
+/*
+build a new sync index starting with a given directory which
+is treated as the "root" of our inquiry. all subdirectories will be checked,
+but we assume this is the root, and that there is no parent directory!
+
+utilizes the directory's d.WalkS() function
+*/
+func BuildSyncIndex(root *Directory) *SyncIndex {
+	if idx := root.WalkS(); idx != nil {
+		return idx
+	}
+	return nil
+}
+
+/*
+takes a given directory pointer and compares it against against a sync index's
+internal LastSync map. it's assumed the index was created before this function was called.
+
+if the sync time in the last sync map is less recent than whats in the current directory, then we add that file to the ToUpdate map,
+which will be used to create a file upload or download queue
+*/
+func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
+	if idx := root.WalkU(idx); idx != nil {
+		return idx
+	}
+	return nil
 }
 
 // if all files are above MAX, then none of these files
