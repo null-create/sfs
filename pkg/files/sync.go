@@ -10,7 +10,7 @@ import (
 )
 
 type SyncIndex struct {
-	// user this sync index belongs to
+	// userID of of the user this sync index belongs to
 	User string `json:"user"`
 
 	// filepath to save sync-index.json to, i.e.
@@ -20,10 +20,12 @@ type SyncIndex struct {
 
 	// We will use the file path for each file to retrieve the pointer for the
 	// file object if it is to be queued for uploading or downloading
+	//
 	// key = file UUID, value = last modified date
 	LastSync map[string]time.Time `json:"last_sync"`
 
 	// map of files to be queued for uploading or downloading
+	//
 	// key = file UUID, value = file pointer
 	ToUpdate map[string]*File `json:"to_update"`
 }
@@ -47,7 +49,7 @@ func (s *SyncIndex) SaveToJSON() error {
 	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
 }
 
-// get a slice of files to sync
+// get a slice of files to sync from the index.ToUpdate map
 func (s *SyncIndex) GetFiles() []*File {
 	if len(s.ToUpdate) == 0 {
 		log.Print("no files matched for syncing")
@@ -75,6 +77,8 @@ func (s *SyncIndex) GetFilePaths() []string {
 	return fp
 }
 
+// ----------------------------------------------------------------
+
 /*
 build a new sync index starting with a given directory which
 is treated as the "root" of our inquiry. all subdirectories will be checked,
@@ -101,18 +105,6 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 		return idx
 	}
 	return nil
-}
-
-// if all files are above MAX, then none of these files
-// be able to be added to a batch
-func tooBig(files []*File) bool {
-	var total int
-	for _, f := range files {
-		if f.Size() > MAX {
-			total += 1
-		}
-	}
-	return total == len(files)
 }
 
 // if all files in the given slice are greater than
@@ -152,23 +144,13 @@ func getLargeFiles(files []*File) []*File {
 	return f
 }
 
-// prepare a slice of batches to be queued for uploading or downloading
-//
-// populates from idx.ToUpdate
-func Sync(root *Directory, idx *SyncIndex) (*Queue, error) {
-	if len(idx.ToUpdate) == 0 {
-		return nil, fmt.Errorf("no files found to sync for root %s", root.ID)
-	}
-	files := idx.GetFiles()
-	if files == nil {
-		return nil, fmt.Errorf("no files found to sync for syncing %s", root.ID)
-	}
-	// if every individual file exceeds b.MAX, none will able to be added,
-	// and we like to avoid infinite loops
-	if tooBig(files) {
-		return nil, fmt.Errorf("all files exceeded max batch size limit. none can be added to queue")
-	}
-	return BuildQ(files, NewQ())
+// create a custom file queue for files that exceed batch.MAX
+func lgfileQ(files []*File) *Queue {
+	b := NewBatch()
+	b.AddLgFiles(files)
+	q := NewQ()
+	q.Enqueue(b)
+	return q
 }
 
 // keep adding the left over files to new batches until
@@ -176,10 +158,11 @@ func Sync(root *Directory, idx *SyncIndex) (*Queue, error) {
 func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 	for len(f) > 0 {
 		g := b.AddFiles(f)
-		q.Enqueue(b)
 		// create a new batch if we've maxed this one out,
-		// or if all the remaining files wont fit in the current batch
+		// or if all the remaining files wont fit in the current batch,
+		// and add it to the queue
 		if b.Cap == 0 || wontFit(g, b.Cap) {
+			q.Enqueue(b)
 			nb := NewBatch()
 			b = nb
 		}
@@ -188,25 +171,18 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 	return q
 }
 
-func BuildQ(files []*File, q *Queue) (*Queue, error) {
-	if len(files) == 0 {
-		log.Printf("[DEBUG] no files to upload or download")
-		return q, nil
+// build the queue for file uploads or downloads during a Sync event
+func BuildQ(idx *SyncIndex, q *Queue) (*Queue, error) {
+	files := idx.GetFiles()
+	if files == nil {
+		return nil, fmt.Errorf("no files found to sync for syncing")
 	}
-	// create new batch, add as many files as we can,
-	// then add to the queue. handle any left over files below.
-	b := NewBatch()
-	f := b.AddFiles(files)
-	q.Enqueue(b)
-	// are there left over files?
-	if len(f) > 0 {
-		// create a new batch if we've reached
-		// capacity with our current one
-		if b.Cap == 0 || wontFit(f, b.Cap) {
-			b = NewBatch()
-		}
-		q := buildQ(f, b, q)
-		return q, nil
+	// if every individual file exceeds b.MAX, none will able to
+	// be added to the standard batch queue, and we like to avoid infinite loops,
+	// so we need to create a custom large file queue
+	if wontFit(files, MAX) {
+		log.Print("[WARNING] all files exceeded b.MAX. creating custom large file queue")
+		return lgfileQ(files), nil
 	}
-	return q, nil
+	return buildQ(files, NewBatch(), NewQ()), nil
 }
