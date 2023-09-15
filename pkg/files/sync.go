@@ -202,7 +202,7 @@ func BuildQ(files []*File, q *Queue) (*Queue, error) {
 	if len(f) > 0 {
 		// create a new batch if we've reached
 		// capacity with our current one
-		if b.Cap == 0 {
+		if b.Cap == 0 || wontFit(f, b.Cap) {
 			b = NewBatch()
 		}
 		q := buildQ(f, b, q)
