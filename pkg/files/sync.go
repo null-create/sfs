@@ -152,9 +152,6 @@ func getLargeFiles(files []*File) []*File {
 	return f
 }
 
-// TODO: remove any files from the queue that individually exceed MAX?
-// create a separate queue for single large files?
-
 // prepare a slice of batches to be queued for uploading or downloading
 //
 // populates from idx.ToUpdate
@@ -179,13 +176,14 @@ func Sync(root *Directory, idx *SyncIndex) (*Queue, error) {
 func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 	for len(f) > 0 {
 		g := b.AddFiles(f)
-		f = g
 		q.Enqueue(b)
 		// create a new batch if we've maxed this one out,
-		// or all the remaining files wont fit in the current batch
-		if b.Cap == 0 || wontFit(f, b.Cap) {
-			b = NewBatch()
+		// or if all the remaining files wont fit in the current batch
+		if b.Cap == 0 || wontFit(g, b.Cap) {
+			nb := NewBatch()
+			b = nb
 		}
+		f = g
 	}
 	return q
 }
