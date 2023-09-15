@@ -104,9 +104,8 @@ func (s *SyncIndex) GetFilePaths() []string {
 }
 
 // if all files are above MAX, then none of these files
-// be able to be added to a batch and may cause a stack overflow
-// in buildFileQ()
-func willOverflow(files []*File) bool {
+// be able to be added to a batch
+func tooBig(files []*File) bool {
 	if len(files) == 0 {
 		return false
 	}
@@ -118,6 +117,19 @@ func willOverflow(files []*File) bool {
 	}
 	// if all files are above MAX,
 	// then none will be added to a batch
+	return total == len(files)
+}
+
+// if all files in the given slice are greater than
+// the current capacity of this batch, then none of them
+// will be able to be added to a batch
+func wontFit(files []*File, b *Batch) bool {
+	var total int
+	for _, f := range files {
+		if f.Size() > b.Cap {
+			total += 1
+		}
+	}
 	return total == len(files)
 }
 
@@ -161,11 +173,10 @@ func Sync(root *Directory, idx *SyncIndex) (*Queue, error) {
 	}
 	// if every individual file exceeds b.MAX, none will able to be added,
 	// and we like to avoid infinite loops
-	if willOverflow(files) {
+	if tooBig(files) {
 		return nil, fmt.Errorf("all files exceeded max batch size limit. none can be added to queue")
 	}
-	queue := NewQ()
-	return BuildQ(files, queue)
+	return BuildQ(files, NewQ())
 }
 
 // keep adding the left over files to new batches until
@@ -175,8 +186,9 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 		g := b.AddFiles(f)
 		f = g
 		q.Enqueue(b)
-		// create a new batch if we've maxed this one out
-		if b.Cap == 0 {
+		// create a new batch if we've maxed this one out,
+		// or all the remaining files wont fit in the current batch
+		if b.Cap == 0 || wontFit(f, b) {
 			b = NewBatch()
 		}
 	}
