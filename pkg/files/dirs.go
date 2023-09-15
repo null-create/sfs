@@ -315,7 +315,6 @@ func (d *Directory) addSubDir(dir *Directory) error {
 	if err := os.MkdirAll(dir.Path, PERMS); err != nil {
 		return fmt.Errorf("[ERROR] could not create directory: %v", err)
 	}
-
 	dir.Parent = d
 	d.Dirs[dir.ID] = dir
 	d.Dirs[dir.ID].LastSync = time.Now().UTC()
@@ -509,7 +508,7 @@ func (d *Directory) WalkS() *SyncIndex {
 		return nil // nothing to search
 	}
 	// TODO: get user and userID to pass to NewSyncIndex
-	return walkS(d, NewSyncIndex(d.ID, d.ID))
+	return walkS(d, NewSyncIndex(d.Owner))
 }
 
 func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
