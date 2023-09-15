@@ -1,6 +1,7 @@
 package files
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -12,18 +13,33 @@ const MAX int64 = 1e+9
 // batch represents a collection of files to be uploaded or downloaded
 // Batch.limit is set by the network profiler
 type Batch struct {
-	ID  string // batch ID (UUID)
-	Cap int64  // remaining capacity (in bytes)
+	ID      string // batch ID (UUID)
+	Cap     int64  // remaining capacity (in bytes)
+	AllowLg bool   // used for custom batches with files greater than MAX
 
 	Files []*File // files to be uploaded or downloaded
 }
 
 func NewBatch() *Batch {
 	return &Batch{
-		ID:    NewUUID(),
-		Cap:   MAX,
-		Files: make([]*File, 0),
+		ID:      NewUUID(),
+		Cap:     MAX,
+		AllowLg: false,
+		Files:   make([]*File, 0),
 	}
+}
+
+// used to prevent duplicate files from appearing in a batch
+func (b *Batch) HasFile(id string) bool {
+	if len(b.Files) == 0 {
+		return false
+	}
+	for _, f := range b.Files {
+		if f.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 /*
@@ -48,42 +64,54 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	added := make([]*File, 0)
 	// remember which files that were passed over for this batch
 	notAdded := make([]*File, 0)
+	// remember which files that were ignored because they were already present
+	ignored := make([]*File, 0)
 
 	for _, f := range files {
-		// "if a current file's size doesn't cause us to exceed the remaining batch capacity, add it."
-		//
-		// this is basically a greedy approach, but that may change.
-		//
-		// since lists are unsorted, a file that is much larger than its neighbors may cause
-		// batches to not contain as many possible files since one files weight may greatly tip
-		// the scales, as it were. NP problems are hard.
-		//
-		// pre-sorting the list of files will introduce a lower O(nlogn) bound on any possible
-		// resulting solution, so our current approach, roughly O(nk) (i think), where n is the
-		// number of times we need to iterate over the list of files (and remaning subsets after
-		// each batch) and where k is the size of the *current* list we're iterating over and
-		// building a batch from (assuming slice shrinkage with each pass).
-		//
-		// TODO: investigate this case
-		// 	- individual files that exceed b.Cap won't be added to the batch ever.
-		if b.Cap-f.Size() >= 0 {
-			b.Files = append(b.Files, f)
-			b.Cap -= f.Size()        // decrement remaning file capacity
-			added = append(added, f) // save to added files list
-			if b.Cap == 0 {          // don't bother checking the rest
-				break
+		if !b.HasFile(f.ID) {
+			// "if a current file's size doesn't cause us to exceed the remaining batch capacity, add it."
+			//
+			// this is basically a greedy approach, but that may change.
+			//
+			// since lists are unsorted, a file that is much larger than its neighbors may cause
+			// batches to not contain as many possible files since one files weight may greatly tip
+			// the scales, as it were. NP problems are hard.
+			//
+			// pre-sorting the list of files will introduce a lower O(nlogn) bound on any possible
+			// resulting solution, so our current approach, roughly O(nk) (i think), where n is the
+			// number of times we need to iterate over the list of files (and remaning subsets after
+			// each batch) and where k is the size of the *current* list we're iterating over and
+			// building a batch from (assuming slice shrinkage with each pass).
+			//
+			// TODO: investigate this case
+			// 	- individual files that exceed b.Cap won't be added to the batch ever.
+			if b.Cap-f.Size() >= 0 {
+				b.Files = append(b.Files, f)
+				b.Cap -= f.Size()        // decrement remaning file capacity
+				added = append(added, f) // save to added files list
+				if b.Cap == 0 {          // don't bother checking the rest
+					break
+				}
+			} else {
+				// we want to check the other files in this list
+				// since they may be small enough to add onto this batch.
+				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.Size(), b.Cap)
+				notAdded = append(notAdded, f)
+				continue
 			}
 		} else {
-			// we want to check the other files in this list
-			// since they may be small enough to add onto this batch.
-			log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.Size(), b.Cap)
-			notAdded = append(notAdded, f)
+			log.Printf("[DEBUG] file (id=%s) already present. skipping...", f.ID)
+			ignored = append(ignored, f)
 			continue
 		}
 	}
 
 	// TODO: figure out how to communicate which of these scenarious
 	// was the case to the caller of this function.
+
+	if len(ignored) > 0 {
+		log.Print("[DEBUG] there were duplicates in supplied file list.")
+	}
 
 	// success
 	if len(added) == len(files) {
@@ -106,6 +134,16 @@ func (b *Batch) AddFiles(files []*File) []*File {
 			log.Printf("[WARNING] no files were added!")
 		}
 		return notAdded
+	}
+	return nil
+}
+
+func (b *Batch) AddLgFiles(files []*File) error {
+	if len(files) == 0 {
+		return fmt.Errorf("no files were added")
+	}
+	for i, f := range files {
+		b.Files[i] = f
 	}
 	return nil
 }
