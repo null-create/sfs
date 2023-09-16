@@ -187,10 +187,10 @@ func BuildQ(idx *SyncIndex, q *Queue) (*Queue, error) {
 		return nil, fmt.Errorf("no files found to sync for syncing")
 	}
 	// if every individual file exceeds b.MAX, none will able to
-	// be added to the standard batch queue, and we like to avoid infinite loops,
-	// so we need to create a custom large file queue
+	// be added to the standard batch queue and we like to avoid infinite loops,
+	// so we need to create a large file queue
 	if wontFit(files, MAX) {
-		log.Print("[WARNING] all files exceeded b.MAX. creating custom large file queue")
+		log.Print("[WARNING] all files exceeded b.MAX. creating large file queue")
 		return LargeFileQ(files), nil
 	}
 	return buildQ(files, NewBatch(), NewQ()), nil
