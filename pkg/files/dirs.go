@@ -315,7 +315,7 @@ func (d *Directory) GetFiles() map[string]*File {
 // creates the directory and updates internal data structures
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
-		if err := os.MkdirAll(dir.Path, PERMS); err != nil {
+		if err := os.Mkdir(dir.Path, PERMS); err != nil {
 			return fmt.Errorf("[ERROR] could not create directory: %v", err)
 		}
 		dir.Parent = d
