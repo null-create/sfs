@@ -46,13 +46,7 @@ func TestBuildQueue(t *testing.T) {
 	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
 	files := tmpRoot.GetFiles()
-	for _, f := range files {
-		if RandInt(2) == 1 {
-			if err := f.Save([]byte(txtData)); err != nil {
-				Fatal(t, err)
-			}
-		}
-	}
+	MutateFiles(t, files)
 
 	// check new index, make sure some of the times are different
 	toUpdate := BuildToUpdate(tmpRoot, idx)
@@ -91,13 +85,7 @@ func TestBuildQueueWithLargeFiles(t *testing.T) {
 	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
 	files := d.GetFiles()
-	for _, f := range files {
-		if RandInt(2) == 1 {
-			if err := f.Save([]byte(testData)); err != nil {
-				Fatal(t, err)
-			}
-		}
-	}
+	MutateFiles(t, files)
 
 	// check new index, make sure some of the times are different
 	toUpdate := BuildToUpdate(d, idx)
