@@ -300,7 +300,9 @@ func (d *Directory) RemoveFile(fileID string) error {
 	return nil
 }
 
-// return a copy of the files map
+// return a copy of the files map *for this directory*
+//
+// does not return files from subdirectories
 func (d *Directory) GetFiles() map[string]*File {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir (%s) has no files", d.ID)
