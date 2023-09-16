@@ -25,10 +25,10 @@ NOTE:
 */
 
 type Directory struct {
-	ID    string  `json:"id"`
-	NMap  NameMap `json:"name_map"`
-	Name  string  `json:"name"`
-	Owner string  `json:"owner"`
+	ID    string  `json:"id"` // dir UUID
+	NMap  NameMap `json:"nmap"`
+	Name  string  `json:"name"`  // dir name
+	Owner string  `json:"owner"` // owner UUID
 
 	// size in MB
 	Size float64 `json:"size"`
@@ -507,7 +507,6 @@ func (d *Directory) WalkS() *SyncIndex {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
 		return nil // nothing to search
 	}
-	// TODO: get user and userID to pass to NewSyncIndex
 	return walkS(d, NewSyncIndex(d.Owner))
 }
 
