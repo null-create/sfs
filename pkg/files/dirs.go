@@ -314,14 +314,17 @@ func (d *Directory) GetFiles() map[string]*File {
 
 // creates the directory and updates internal data structures
 func (d *Directory) addSubDir(dir *Directory) error {
-	if err := os.MkdirAll(dir.Path, PERMS); err != nil {
-		return fmt.Errorf("[ERROR] could not create directory: %v", err)
+	if _, exists := d.Dirs[dir.ID]; !exists {
+		if err := os.MkdirAll(dir.Path, PERMS); err != nil {
+			return fmt.Errorf("[ERROR] could not create directory: %v", err)
+		}
+		dir.Parent = d
+		d.Dirs[dir.ID] = dir
+		d.Dirs[dir.ID].LastSync = time.Now().UTC()
+		log.Printf("[DEBUG] dir %s (%s) added", dir.Name, dir.ID)
+	} else {
+		log.Printf("[DEBUG] dir %s (%s) already exists", dir.Name, dir.ID)
 	}
-	dir.Parent = d
-	d.Dirs[dir.ID] = dir
-	d.Dirs[dir.ID].LastSync = time.Now().UTC()
-
-	log.Printf("[DEBUG] dir %s (%s) added", dir.Name, dir.ID)
 	return nil
 }
 
