@@ -46,13 +46,6 @@ func NewBatch() *Batch {
 	}
 }
 
-// create a test batch with a given batch capacity (in bytes)
-func NewTestBatch(cap int64) *Batch {
-	b := NewBatch()
-	b.Cap = cap
-	return b
-}
-
 // used to prevent duplicate files from appearing in a batch
 func (b *Batch) HasFile(id string) bool {
 	if _, exists := b.Files[id]; exists {
@@ -160,7 +153,10 @@ func (b *Batch) AddLgFiles(files []*File) error {
 		return fmt.Errorf("no files were added")
 	}
 	for _, f := range files {
-		b.Files[f.ID] = f
+		if !b.HasFile(f.ID) {
+			b.Files[f.ID] = f
+			b.Total += 1
+		}
 	}
 	return nil
 }
