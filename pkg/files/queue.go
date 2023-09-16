@@ -18,6 +18,18 @@ func NewQ() *Queue {
 	}
 }
 
+// total files in the queue
+func (q *Queue) TotalFiles() int {
+	if len(q.Queue) == 0 {
+		return 0
+	}
+	var total int
+	for _, batch := range q.Queue {
+		total += batch.Total
+	}
+	return total
+}
+
 // NOTE: thes does NOT ensure there are no duplicate batches!
 //
 // this will need to be done elsewhere
