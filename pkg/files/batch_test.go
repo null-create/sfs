@@ -32,7 +32,7 @@ func TestBatchLimit(t *testing.T) {
 	assert.True(t, totalSize > b.Cap)
 
 	// add test files
-	remTestFiles := b.AddFiles(testFiles)
+	remTestFiles, _ := b.AddFiles(testFiles)
 	assert.True(t, len(remTestFiles) < len(testFiles))
 
 	if err := Clean(t, GetTestingDir()); err != nil {

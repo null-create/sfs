@@ -10,22 +10,47 @@ import (
 // (1,000,000,000 / 2^30 bytes/ 1 Gb)
 const MAX int64 = 1e+9
 
+/*
+used to communicate the result of b.AddFiles() to the caller
+
+	1 = successful
+	2 = left over files && b.Cap < 0
+	3 = left over files && b.Cap == MAX
+*/
+type BatchStatus int
+
+// status enums
+const (
+	Success  BatchStatus = 1
+	UnderCap BatchStatus = 2
+	CapMaxed BatchStatus = 3
+)
+
 // batch represents a collection of files to be uploaded or downloaded
 // Batch.limit is set by the network profiler
 type Batch struct {
 	ID    string // batch ID (UUID)
 	Cap   int64  // remaining capacity (in bytes)
 	Total int    // total files in this batch
+	Full  bool   // whether this batch is maxed out
 
 	Files map[string]*File // files to be uploaded or downloaded
 }
 
+// create a new batch with capacity of MAX
 func NewBatch() *Batch {
 	return &Batch{
 		ID:    NewUUID(),
 		Cap:   MAX,
 		Files: make(map[string]*File, 0),
 	}
+}
+
+// create a test batch with a given batch capacity (in bytes)
+func NewTestBatch(cap int64) *Batch {
+	b := NewBatch()
+	b.Cap = cap
+	return b
 }
 
 // used to prevent duplicate files from appearing in a batch
@@ -52,7 +77,7 @@ each thread is part of a waitgroup, and each batch is processed one at a time, t
 the runtime for each batch will be bound by the largest file in the batch
 (assuming consistent upload speed and no other external circumstances).
 */
-func (b *Batch) AddFiles(files []*File) []*File {
+func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// remember which ones we added so we don't have to modify the
 	// files slice in-place as we're iterating over it
 	//
@@ -108,13 +133,14 @@ func (b *Batch) AddFiles(files []*File) []*File {
 	// success
 	if len(added) == len(files) {
 		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
-		return added
+		return added, Success
 	}
 	// if we reach capacity before we finish with files,
 	// return a list of the remaining files
 	if b.Cap == MAX && len(added) < len(files) {
+		b.Full = true
 		log.Printf("[DEBUG] reached capacity before we could finish with the remaining files. \nreturning remaining files\n")
-		return Diff(added, files)
+		return Diff(added, files), CapMaxed
 	}
 	// if b.Cap < MAX and we have left over files that were passed over for
 	// being to large for the current batch.
@@ -123,9 +149,9 @@ func (b *Batch) AddFiles(files []*File) []*File {
 		if len(added) == 0 {
 			log.Printf("[WARNING] *no* files were added!")
 		}
-		return notAdded
+		return notAdded, UnderCap
 	}
-	return nil
+	return nil, 0
 }
 
 // used for adding single large files to a custom batch (doesn't care about MAX)
