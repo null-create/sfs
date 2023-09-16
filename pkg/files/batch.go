@@ -120,9 +120,6 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 		log.Print("[DEBUG] there were duplicates in supplied file list.")
 	}
 
-	// TODO: figure out how to communicate which of these scenarious
-	// was the case to the caller of this function.
-
 	// success
 	if len(added) == len(files) {
 		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
