@@ -303,6 +303,9 @@ func (d *Directory) RemoveFile(fileID string) error {
 	return nil
 }
 
+// TODO: get a list of *all* files
+// starting at the given directory (treated as root)
+//
 // return a copy of the files map *for this directory*
 //
 // does not return files from subdirectories
@@ -584,6 +587,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	}
 	return nil
 }
+
+// TODO: look into how to make this generic. this way
+// we can loosen the requirements of the type for the argument
+// to op(), and possibly the return type(s)
 
 // WalkO() searches each subdirectory recursively and performes
 // a supplied function on each file in the directory, returning
