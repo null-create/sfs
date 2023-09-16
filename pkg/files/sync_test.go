@@ -15,12 +15,14 @@ func TestToUpdate(t *testing.T) {
 	assert.NotEqual(t, 0, len(idx.LastSync))
 	assert.Equal(t, 20, len(idx.LastSync))
 
-	// update some of the files with additional content, causing their
+	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
 	files := d.GetFiles()
 	for _, f := range files {
-		if err := f.Save([]byte(testData)); err != nil {
-			Fatal(t, err)
+		if RandInt(2) == 1 {
+			if err := f.Save([]byte(testData)); err != nil {
+				Fatal(t, err)
+			}
 		}
 	}
 
