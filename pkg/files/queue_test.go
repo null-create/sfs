@@ -36,3 +36,91 @@ func TestQueueOrder(t *testing.T) {
 	}
 	assert.Equal(t, testBatch3.ID, t3.ID)
 }
+
+func TestBuildQueue(t *testing.T) {
+	tmpRoot := MakeTmpDirs(t)
+
+	// get initial index
+	idx := tmpRoot.WalkS()
+
+	// randomly update some of the files with additional content, causing their
+	// last sync times to be updated
+	files := tmpRoot.GetFiles()
+	for _, f := range files {
+		if RandInt(2) == 1 {
+			if err := f.Save([]byte(txtData)); err != nil {
+				Fatal(t, err)
+			}
+		}
+	}
+
+	// check new index, make sure some of the times are different
+	toUpdate := BuildToUpdate(tmpRoot, idx)
+
+	// build and inspect file queue
+	q, err := BuildQ(toUpdate, NewQ())
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, 0, len(q.Queue))
+
+	var total int
+	for _, batch := range q.Queue {
+		total += batch.Total
+	}
+	assert.Equal(t, total, len(toUpdate.ToUpdate))
+	assert.Equal(t, total, q.Queue[0].Total)
+
+	// clean up
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBuildQueueWithLargeFiles(t *testing.T) {
+	d := MakeTmpDirs(t)
+	f, err := MakeABunchOfTxtFiles(10)
+	if err != nil {
+		Fatal(t, err)
+	}
+	d.AddFiles(f)
+
+	// get initial index
+	idx := d.WalkS()
+
+	// randomly update some of the files with additional content, causing their
+	// last sync times to be updated
+	files := d.GetFiles()
+	for _, f := range files {
+		if RandInt(2) == 1 {
+			if err := f.Save([]byte(testData)); err != nil {
+				Fatal(t, err)
+			}
+		}
+	}
+
+	// check new index, make sure some of the times are different
+	toUpdate := BuildToUpdate(d, idx)
+
+	// build and inspect file queue
+	q, err := BuildQ(toUpdate, NewQ())
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, 0, len(q.Queue))
+
+	var total int
+	for _, batch := range q.Queue {
+		total += batch.Total
+	}
+	assert.Equal(t, total, len(toUpdate.ToUpdate))
+
+	// clean up
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// func TestQueueWithLotsOfBatches(t *testing.T) {
+
+// }
