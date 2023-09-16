@@ -121,6 +121,24 @@ func MakeTmpDirs(t *testing.T) *Directory {
 
 // ---- files
 
+// randomly append test data to give each
+// file a roughly unique size
+func MutateFiles(t *testing.T, files map[string]*File) map[string]*File {
+	for _, f := range files {
+		if RandInt(2) == 1 {
+			var data string
+			total := RandInt(1000)
+			for i := 0; i < total; i++ {
+				data += txtData
+			}
+			if err := f.Save([]byte(data)); err != nil {
+				Fatal(t, err)
+			}
+		}
+	}
+	return files
+}
+
 func MakeDummyFiles(t *testing.T, total int) []*File {
 	testDir := GetTestingDir()
 
