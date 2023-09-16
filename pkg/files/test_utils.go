@@ -121,6 +121,55 @@ func MakeTmpDirs(t *testing.T) *Directory {
 
 // ---- files
 
+func MakeDummyFiles(t *testing.T, total int) []*File {
+	testDir := GetTestingDir()
+
+	// build dummy file objects + test files
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("tmp-%d.txt", i)
+		testFiles = append(testFiles, NewFile(tfName, "me", filepath.Join(testDir, tfName)))
+	}
+
+	return testFiles
+}
+
+// makes temp files and file objects for testing purposes
+func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
+	testDir := GetTestingDir()
+
+	// build dummy file objects + test files
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("testdoc-%d.txt", i)
+		tfPath := filepath.Join(testDir, tfName)
+
+		file, err := os.Create(tfPath)
+		if err != nil {
+			t.Fatalf("[ERROR] failed to create test file: %v", err)
+		}
+		file.Write([]byte(txtData))
+		file.Close()
+
+		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
+	}
+	return testFiles, nil
+}
+
+func RemoveTestFiles(t *testing.T, total int) error {
+	testDir := GetTestingDir()
+
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("testdoc-%d.txt", i)
+		tfPath := filepath.Join(testDir, tfName)
+
+		if err := os.Remove(tfPath); err != nil {
+			return fmt.Errorf("[ERROR] unable to remove test file: %v", err)
+		}
+	}
+	return nil
+}
+
 // make test files within a specified directory
 func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 	testFiles := make([]*File, 0)

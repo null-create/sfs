@@ -1,9 +1,6 @@
 package files
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -13,59 +10,6 @@ const (
 	testData  = "hello, I love you won't you tell me your name?"
 	testData2 = "hello, I love you, let me jump in your game"
 )
-
-//---------- test fixtures --------------------------------
-
-func MakeDummyFiles(t *testing.T, total int) []*File {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmp-%d.txt", i)
-		testFiles = append(testFiles, NewFile(tfName, "me", filepath.Join(testDir, tfName)))
-	}
-
-	return testFiles
-}
-
-// makes temp files and file objects for testing purposes
-func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("testdoc-%d.txt", i)
-		tfPath := filepath.Join(testDir, tfName)
-
-		file, err := os.Create(tfPath)
-		if err != nil {
-			t.Fatalf("[ERROR] failed to create test file: %v", err)
-		}
-		file.Write([]byte(testData))
-		file.Close()
-
-		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
-	}
-	return testFiles, nil
-}
-
-func RemoveTestFiles(t *testing.T, total int) error {
-	testDir := GetTestingDir()
-
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("testdoc-%d.txt", i)
-		tfPath := filepath.Join(testDir, tfName)
-
-		if err := os.Remove(tfPath); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove test file: %v", err)
-		}
-	}
-	return nil
-}
-
-// ----------------------------------------------------------------
 
 func TestFileIO(t *testing.T) {
 	total := RandInt(5)
