@@ -109,7 +109,7 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 
 // if all files in the given slice are greater than
 // the current capacity of this batch, then none of them
-// will be able to be added to a batch
+// will be able to be added
 func wontFit(files []*File, limit int64) bool {
 	var total int
 	for _, f := range files {
@@ -157,14 +157,23 @@ func lgfileQ(files []*File) *Queue {
 // have none left over from each b.AddFiles() call
 func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 	for len(f) > 0 {
-		g := b.AddFiles(f)
-		// create a new batch if we've maxed this one out,
-		// or if all the remaining files wont fit in the current batch,
-		// and add it to the queue
-		if b.Cap == 0 || wontFit(g, b.Cap) {
+		g, status := b.AddFiles(f)
+		switch status {
+		case Success:
+			q.Enqueue(b)
+			return q
+		case CapMaxed:
 			q.Enqueue(b)
 			nb := NewBatch()
 			b = nb
+		case UnderCap:
+			// if none of the left over files will fit in the
+			// current batch, create a new one and move on
+			if wontFit(g, b.Cap) {
+				q.Enqueue(b)
+				nb := NewBatch()
+				b = nb
+			}
 		}
 		f = g
 	}
