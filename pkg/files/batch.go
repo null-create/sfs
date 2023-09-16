@@ -13,31 +13,25 @@ const MAX int64 = 1e+9
 // batch represents a collection of files to be uploaded or downloaded
 // Batch.limit is set by the network profiler
 type Batch struct {
-	ID      string // batch ID (UUID)
-	Cap     int64  // remaining capacity (in bytes)
-	AllowLg bool   // used for custom batches with files greater than MAX
+	ID    string // batch ID (UUID)
+	Cap   int64  // remaining capacity (in bytes)
+	Total int    // total files in this batch
 
-	Files []*File // files to be uploaded or downloaded
+	Files map[string]*File // files to be uploaded or downloaded
 }
 
 func NewBatch() *Batch {
 	return &Batch{
-		ID:      NewUUID(),
-		Cap:     MAX,
-		AllowLg: false,
-		Files:   make([]*File, 0),
+		ID:    NewUUID(),
+		Cap:   MAX,
+		Files: make(map[string]*File, 0),
 	}
 }
 
 // used to prevent duplicate files from appearing in a batch
 func (b *Batch) HasFile(id string) bool {
-	if len(b.Files) == 0 {
-		return false
-	}
-	for _, f := range b.Files {
-		if f.ID == id {
-			return true
-		}
+	if _, exists := b.Files[id]; exists {
+		return true
 	}
 	return false
 }
@@ -83,8 +77,9 @@ func (b *Batch) AddFiles(files []*File) []*File {
 			// each batch) and where k is the size of the *current* list we're iterating over and
 			// building a batch from (assuming slice shrinkage with each pass).
 			if b.Cap-f.Size() >= 0 {
-				b.Files = append(b.Files, f)
-				b.Cap -= f.Size()        // decrement remaning file capacity
+				b.Files[f.ID] = f
+				b.Cap -= f.Size() // decrement remaining batch capacity
+				b.Total += 1
 				added = append(added, f) // save to added files list
 				if b.Cap == 0 {          // don't bother checking the rest
 					break
@@ -138,8 +133,8 @@ func (b *Batch) AddLgFiles(files []*File) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no files were added")
 	}
-	for i, f := range files {
-		b.Files[i] = f
+	for _, f := range files {
+		b.Files[f.ID] = f
 	}
 	return nil
 }
