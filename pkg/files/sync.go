@@ -145,7 +145,7 @@ func getLargeFiles(files []*File) []*File {
 }
 
 // create a custom file queue for files that exceed batch.MAX
-func lgfileQ(files []*File) *Queue {
+func LargeFileQ(files []*File) *Queue {
 	b := NewBatch()
 	b.AddLgFiles(files)
 	q := NewQ()
@@ -157,7 +157,7 @@ func lgfileQ(files []*File) *Queue {
 // have none left over from each b.AddFiles() call
 func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 	for len(f) > 0 {
-		g, status := b.AddFiles(f)
+		lo, status := b.AddFiles(f)
 		switch status {
 		case Success:
 			q.Enqueue(b)
@@ -169,13 +169,13 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 		case UnderCap:
 			// if none of the left over files will fit in the
 			// current batch, create a new one and move on
-			if wontFit(g, b.Cap) {
+			if wontFit(lo, b.Cap) {
 				q.Enqueue(b)
 				nb := NewBatch()
 				b = nb
 			}
 		}
-		f = g
+		f = lo
 	}
 	return q
 }
@@ -191,7 +191,7 @@ func BuildQ(idx *SyncIndex, q *Queue) (*Queue, error) {
 	// so we need to create a custom large file queue
 	if wontFit(files, MAX) {
 		log.Print("[WARNING] all files exceeded b.MAX. creating custom large file queue")
-		return lgfileQ(files), nil
+		return LargeFileQ(files), nil
 	}
 	return buildQ(files, NewBatch(), NewQ()), nil
 }
