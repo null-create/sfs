@@ -171,3 +171,17 @@ func (b *Batch) AddLgFiles(files []*File) error {
 	}
 	return nil
 }
+
+// retrieves all files in the batch.
+//
+// should be used when multiplexing file uploads or downloads
+func (b *Batch) GetFiles() ([]*File, error) {
+	if len(b.Files) == 0 {
+		return nil, fmt.Errorf("no files were in the batch")
+	}
+	f := make([]*File, 0, len(b.Files))
+	for _, file := range b.Files {
+		f = append(f, file)
+	}
+	return f, nil
+}
