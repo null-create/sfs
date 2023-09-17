@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/files"
+	svc "github.com/sfs/pkg/service"
 )
 
 // TODO: handle null columns in all methods below
@@ -97,11 +97,11 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 // retrieve file metadata from the database
 //
 // file returns nil if no result is available
-func (q *Query) GetFile(fileID string) (*files.File, error) {
+func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	q.Connect()
 	defer q.Close()
 
-	file := new(files.File)
+	file := new(svc.File)
 	if err := q.Conn.QueryRow(FindFileQuery, fileID).Scan(
 		&file.ID,
 		&file.Name,
@@ -127,7 +127,7 @@ func (q *Query) GetFile(fileID string) (*files.File, error) {
 // populate a slice of *file.File structs from the database
 //
 // assign a limit with a string such as "100"
-func (q *Query) GetFiles() ([]*files.File, error) {
+func (q *Query) GetFiles() ([]*svc.File, error) {
 	q.Connect()
 	defer q.Close()
 
@@ -137,9 +137,9 @@ func (q *Query) GetFiles() ([]*files.File, error) {
 	}
 	defer rows.Close()
 
-	var fs []*files.File
+	var fs []*svc.File
 	for rows.Next() {
-		file := new(files.File)
+		file := new(svc.File)
 		if err := rows.Scan(
 			&file.ID,
 			&file.Name,
@@ -170,11 +170,11 @@ func (q *Query) GetFiles() ([]*files.File, error) {
 // retrieve information about a users directory from the database
 //
 // dir returns nil if no information is available
-func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
+func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(files.Directory)
+	d := new(svc.Directory)
 	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
 		&d.ID,
 		&d.Name,
@@ -198,7 +198,7 @@ func (q *Query) GetDirectory(dirID string) (*files.Directory, error) {
 	return d, nil
 }
 
-func (q *Query) GetDirectories(limit int) ([]*files.Directory, error) {
+func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
@@ -208,9 +208,9 @@ func (q *Query) GetDirectories(limit int) ([]*files.Directory, error) {
 	}
 	defer rows.Close()
 
-	dirs := make([]*files.Directory, 0)
+	dirs := make([]*svc.Directory, 0)
 	for rows.Next() {
-		dir := new(files.Directory)
+		dir := new(svc.Directory)
 		if err := q.Conn.QueryRow(FindAllQuery, "Directories").Scan(
 			&dir.ID,
 			&dir.Name,
@@ -242,11 +242,11 @@ func (q *Query) GetDirectories(limit int) ([]*files.Directory, error) {
 // get information about a user drive from the database
 //
 // drive returns nil if no information is available
-func (q *Query) GetDrive(driveID string) (*files.Drive, error) {
+func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(files.Drive)
+	d := new(svc.Drive)
 	if err := q.Conn.QueryRow(FindDriveQuery, driveID).Scan(
 		&d.ID,
 		&d.Name,
@@ -269,4 +269,4 @@ func (q *Query) GetDrive(driveID string) (*files.Drive, error) {
 	return d, nil
 }
 
-func (q *Query) GetDrives() ([]*files.Drive, error) { return nil, nil }
+func (q *Query) GetDrives() ([]*svc.Drive, error) { return nil, nil }

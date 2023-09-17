@@ -6,13 +6,13 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/files"
+	svc "github.com/sfs/pkg/service"
 )
 
 // ----- db utils --------------------------------
 
 // get file info from db
-func findFile(fileID string, dbDir string) (*files.File, error) {
+func findFile(fileID string, dbDir string) (*svc.File, error) {
 	q := db.NewQuery(filepath.Join(dbDir, "files"), false)
 	f, err := q.GetFile(fileID)
 	if err != nil {
@@ -38,7 +38,7 @@ func findUser(userID string, dbDir string) (*auth.User, error) {
 }
 
 // get directory data from db
-func findDir(dirID string, dbDir string) (*files.Directory, error) {
+func findDir(dirID string, dbDir string) (*svc.Directory, error) {
 	q := db.NewQuery(filepath.Join(dbDir, "directories"), false)
 	d, err := q.GetDirectory(dirID)
 	if err != nil {
@@ -51,7 +51,7 @@ func findDir(dirID string, dbDir string) (*files.Directory, error) {
 }
 
 // get drive data from db
-func findDrive(driveID string, dbDir string) (*files.Drive, error) {
+func findDrive(driveID string, dbDir string) (*svc.Drive, error) {
 	q := db.NewQuery(filepath.Join(dbDir, "drives"), false)
 	d, err := q.GetDrive(driveID)
 	if err != nil {

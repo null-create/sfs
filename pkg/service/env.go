@@ -1,4 +1,4 @@
-package server
+package service
 
 import (
 	"fmt"
@@ -60,12 +60,10 @@ func (e *Env) Set(k, v string) error {
 	if val, exists := env[k]; exists {
 		if val != v {
 			env[k] = v
-			if err := set(k, v, env); err != nil {
-				return err
-			}
+			set(k, v, env)
 		}
 	} else {
-		log.Printf("%v does not exist", k)
+		log.Printf("%v does not exist")
 	}
 	return nil
 }

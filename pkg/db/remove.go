@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/files"
+	svc "github.com/sfs/pkg/service"
 )
 
 // remove a table from the database
@@ -74,7 +74,7 @@ func (q *Query) RemoveFile(fileID string) error {
 	return nil
 }
 
-func (q *Query) RemoveFiles(fs []*files.File) error {
+func (q *Query) RemoveFiles(fs []*svc.File) error {
 	q.Connect()
 	defer q.Close()
 
@@ -90,4 +90,4 @@ func (q *Query) RemoveFiles(fs []*files.File) error {
 
 func (q *Query) RemoveDirectory(dirID string) error { return nil }
 
-func (q *Query) RemoveDirectories(d []*files.Directory) error { return nil }
+func (q *Query) RemoveDirectories(d []*svc.Directory) error { return nil }

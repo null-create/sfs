@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/go-chi/chi"
+
+	"github.com/sfs/pkg/db"
+	svc "github.com/sfs/pkg/service"
 )
 
 /*
@@ -21,14 +24,16 @@ and other such business to validate requests to the server.
 */
 
 type API struct {
-	dbs string
+	dbs string    // path to db dir root
+	Db  *db.Query // db connection
 
 	Svc *Service // SFS service instance
 }
 
 // TODO: init with query singleton
 func NewAPI(newService bool, isAdmin bool) *API {
-	c := ServiceConfig()
+	c := svc.ServiceConfig()
+	db := db.NewQuery(filepath.Join(c.S.SvcRoot, "dbs"), true)
 
 	// initialize sfs service
 	svc, err := Init(newService, isAdmin)
@@ -36,8 +41,9 @@ func NewAPI(newService bool, isAdmin bool) *API {
 		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
 	}
 	return &API{
+		dbs: filepath.Join(c.S.SvcRoot, "dbs"),
+		Db:  db,
 		Svc: svc,
-		dbs: filepath.Join(c.ServiceRoot, "dbs"),
 	}
 }
 
@@ -50,7 +56,7 @@ func NewAPI(newService bool, isAdmin bool) *API {
 //
 // if found, it will attempt to prepare it as json data and return it
 func (a *API) getUser(userID string) ([]byte, error) {
-	u, err := findUser(userID, a.dbs)
+	u, err := a.Svc.FindUser(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +151,6 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		ServerErr(w, err.Error())
 		return
 	}
-	// TODO: remove from svc instance... somehow
 }
 
 // ------- directories --------------------------------

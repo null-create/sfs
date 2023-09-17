@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/files"
+	svc "github.com/sfs/pkg/service"
 )
 
 // at ~1 byte per character, and at 49 characters (inlcuding spaces),
@@ -65,14 +65,14 @@ func Fatal(t *testing.T, err error) {
 // many times testData is written to the text file
 //
 // returns a file pointer to the new temp file
-func MakeTmpTxtFile(filePath string, textReps int) (*files.File, error) {
+func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("error creating file: %v", err)
 	}
 	defer file.Close()
 
-	f := files.NewFile(filepath.Base(filePath), "me", filePath)
+	f := svc.NewFile(filepath.Base(filePath), "me", filePath)
 	for i := 0; i < textReps; i++ {
 		_, err := file.WriteString(txtData)
 		if err != nil {
@@ -84,9 +84,9 @@ func MakeTmpTxtFile(filePath string, textReps int) (*files.File, error) {
 
 // make a bunch of temp .txt files of varying sizes.
 // under pkg/files/testing/tmp
-func MakeABunchOfTxtFiles(total int, loc string) ([]*files.File, error) {
+func MakeABunchOfTxtFiles(total int, loc string) ([]*svc.File, error) {
 
-	files := make([]*files.File, 0)
+	files := make([]*svc.File, 0)
 	for i := 0; i < total; i++ {
 		fileName := fmt.Sprintf("tmp-%d.txt", i)
 		filePath := filepath.Join(loc, fileName)
@@ -112,8 +112,8 @@ func MakeDummyUser(usrsPath string, i int) (*auth.User, error) {
 		return nil, err
 	}
 
-	rt := files.NewRootDirectory(svcName, "bill buttlicker", usrRoot)
-	drv := files.NewDrive(files.NewUUID(), svcName, "bill buttlicker", svcDir, rt)
+	rt := svc.NewRootDirectory(svcName, "bill buttlicker", usrRoot)
+	drv := svc.NewDrive(svc.NewUUID(), svcName, "bill buttlicker", svcDir, rt)
 
 	// gen base files for this user
 	GenBaseUserFiles(drv.DriveRoot)
@@ -126,7 +126,7 @@ func MakeDummyUser(usrsPath string, i int) (*auth.User, error) {
 	drv.Root.AddFiles(fs)
 
 	// return user struct
-	return auth.NewUser("bill buttlicker", "bill", "bill@bill.com", drv, false), nil
+	return auth.NewUser("bill buttlicker", "bill", "bill@bill.com", drv.ID, false), nil
 }
 
 func MakeABunchOfUsers(total int, usrsPath string) ([]*auth.User, error) {

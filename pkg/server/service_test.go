@@ -27,7 +27,7 @@ func TestServiceConfig(t *testing.T) {
 	BuildEnv()
 	c := ServiceConfig()
 	assert.NotEqual(t, nil, c)
-	assert.True(t, strings.Contains(c.ServiceRoot, "C:"))
+	assert.True(t, strings.Contains(c.S.SvcRoot, "C:"))
 }
 
 func TestSaveStateFile(t *testing.T) {

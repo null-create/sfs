@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"time"
-
-	"github.com/sfs/pkg/files"
 )
 
 type User struct {
@@ -22,24 +20,24 @@ type User struct {
 
 	// pointer to the user's root nimbus drive
 	// plus some meta data
-	Drive      *files.Drive
-	TotalFiles int `json:"total_files"`
-	TotalDirs  int `json:"total_dirs"`
+	DriveID    string `json:"drive_id"`
+	TotalFiles int    `json:"total_files"`
+	TotalDirs  int    `json:"total_dirs"`
 }
 
-func check(name string, userName string, email string, newDrive *files.Drive) bool {
-	if name == "" || userName == "" || email == "" || newDrive == nil {
+func check(name string, userName string, email string, newDrive string) bool {
+	if name == "" || userName == "" || email == "" || newDrive == "" {
 		return false
 	}
 	return true
 }
 
-func NewUser(name string, userName string, email string, newDrive *files.Drive, isAdmin bool) *User {
+func NewUser(name string, userName string, email string, newDrive string, isAdmin bool) *User {
 	if !check(name, userName, email, newDrive) {
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
 	return &User{
-		ID:        files.NewUUID(),
+		ID:        NewUUID(),
 		Name:      name,
 		UserName:  userName,
 		Password:  "default",
@@ -48,7 +46,7 @@ func NewUser(name string, userName string, email string, newDrive *files.Drive, 
 
 		Admin: isAdmin,
 
-		Drive: newDrive,
+		DriveID: newDrive,
 	}
 }
 

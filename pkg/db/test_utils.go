@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/files"
+	svc "github.com/sfs/pkg/service"
 )
 
 // handles test failures,
@@ -56,14 +56,14 @@ func Clean(t *testing.T, dir string) error {
 	return nil
 }
 
-func MakeTestItems(t *testing.T, testDir string) (*files.Drive, *files.Directory, *auth.User) {
-	tempDir := files.NewDirectory(
+func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *auth.User) {
+	tempDir := svc.NewDirectory(
 		"bill",
 		"bill buttlicker",
 		filepath.Join(testDir, "bill"),
 	)
-	tempDrive := files.NewDrive(
-		files.NewUUID(),
+	tempDrive := svc.NewDrive(
+		svc.NewUUID(),
 		"bill",
 		"bill buttlicker",
 		filepath.Join(testDir, "bill"),
@@ -73,7 +73,7 @@ func MakeTestItems(t *testing.T, testDir string) (*files.Drive, *files.Directory
 		"bill",
 		"bill123",
 		"bill@bill.com",
-		tempDrive,
+		tempDrive.ID,
 		false,
 	)
 	return tempDrive, tempDir, tmpUser

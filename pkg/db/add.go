@@ -5,10 +5,11 @@ import (
 	"log"
 
 	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/files"
+
+	svc "github.com/sfs/pkg/service"
 )
 
-func (q *Query) AddFile(f *files.File) error {
+func (q *Query) AddFile(f *svc.File) error {
 	q.Connect()
 	defer q.Close()
 
@@ -38,7 +39,7 @@ func (q *Query) AddFile(f *files.File) error {
 }
 
 // iterate over the files and execute the statement for each
-func (q *Query) AddFiles(fs []*files.File) error {
+func (q *Query) AddFiles(fs []*svc.File) error {
 	for _, file := range fs {
 		if err := q.AddFile(file); err != nil {
 			return fmt.Errorf("[ERROR] : %v", err)
@@ -89,7 +90,7 @@ func (q *Query) AddUsers(usrs []*auth.User) error {
 	return nil
 }
 
-func (q *Query) AddDir(d *files.Directory) error {
+func (q *Query) AddDir(d *svc.Directory) error {
 	q.Connect()
 	defer q.Close()
 
@@ -119,7 +120,7 @@ func (q *Query) AddDir(d *files.Directory) error {
 	return nil
 }
 
-func (q *Query) AddDirs(dirs []*files.Directory) error {
+func (q *Query) AddDirs(dirs []*svc.Directory) error {
 	for _, dir := range dirs {
 		if err := q.AddDir(dir); err != nil {
 			return fmt.Errorf("[ERROR] failed to add dir (%s) to database: %v", dir.ID, err)
@@ -128,7 +129,7 @@ func (q *Query) AddDirs(dirs []*files.Directory) error {
 	return nil
 }
 
-func (q *Query) AddDrive(drv *files.Drive) error {
+func (q *Query) AddDrive(drv *svc.Drive) error {
 	q.Connect()
 	defer q.Close()
 
@@ -155,7 +156,7 @@ func (q *Query) AddDrive(drv *files.Drive) error {
 	return nil
 }
 
-func (q *Query) AddDrives(drvs []*files.Drive) error {
+func (q *Query) AddDrives(drvs []*svc.Drive) error {
 	if len(drvs) == 0 {
 		return fmt.Errorf("no drives inputted")
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/files"
+	svc "github.com/sfs/pkg/service"
 )
 
 /*
@@ -22,6 +22,9 @@ Top level entry point for internal user file system and their operations.
 Will likely be the entry point used for when a server is spun up.
 
 All service configurations may end up living here.
+
+TODO: instantiate with query singleton. need to remove all db utils
+and have service be self contained
 */
 type Service struct {
 	InitTime time.Time `json:"init_time"`
@@ -37,6 +40,9 @@ type Service struct {
 
 	// path to database directory
 	DbDir string `json:"db_dir"`
+
+	// db connection
+	Db *db.Query
 
 	// admin mode. allows for expanded permissions when working with
 	// the internal sfs file systems.
@@ -63,6 +69,7 @@ func NewService(svcRoot string) *Service {
 		StateFile: "",
 		UserDir:   filepath.Join(svcRoot, "users"),
 		DbDir:     filepath.Join(svcRoot, "dbs"),
+		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 
 		// admin mode is optional.
 		// these are standard default values
@@ -155,7 +162,7 @@ func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
 		// ---- load from state file and dbs
-		svc, err := SvcLoad(c.ServiceRoot, false)
+		svc, err := SvcLoad(c.S.SvcRoot, false)
 		if err != nil {
 			return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
 		}
@@ -165,7 +172,7 @@ func Init(new bool, admin bool) (*Service, error) {
 		return svc, nil
 	} else {
 		// ----- initialize new sfs service
-		svc, err := SvcInit(c.ServiceRoot, false)
+		svc, err := SvcInit(c.S.SvcRoot, false)
 		if err != nil {
 			return nil, fmt.Errorf("[ERROR] %v", err)
 		}
@@ -330,7 +337,7 @@ user/
 |---state/
 |   |---userID-d-m-y-hh-mm-ss.json
 */
-func AllocateDrive(name string, owner string, svcRoot string) (*files.Drive, error) {
+func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error) {
 	// new user service file paths
 	usrsDir := filepath.Join(svcRoot, "users")
 	svcDir := filepath.Join(usrsDir, name)
@@ -345,8 +352,8 @@ func AllocateDrive(name string, owner string, svcRoot string) (*files.Drive, err
 		}
 	}
 
-	rt := files.NewRootDirectory(name, owner, usrRoot)
-	drv := files.NewDrive(files.NewUUID(), name, owner, svcDir, rt)
+	rt := svc.NewRootDirectory(name, owner, usrRoot)
+	drv := svc.NewDrive(svc.NewUUID(), name, owner, svcDir, rt)
 
 	// gen base files for this user
 	GenBaseUserFiles(drv.DriveRoot)
@@ -397,12 +404,12 @@ func (s *Service) TotalUsers() int {
 }
 
 // save to service instance and db
-func (s *Service) addUser(u *auth.User, d *files.Drive) error {
+func (s *Service) addUser(u *auth.User, d *svc.Drive) error {
 	q := db.NewQuery(s.DbDir, false)
 	if err := q.AddUser(u); err != nil {
 		return fmt.Errorf("failed to add user to database: %v", err)
 	}
-	u.Drive = d
+	u.DriveID = d.ID
 	s.Users[u.ID] = u
 	return nil
 }
@@ -425,26 +432,32 @@ func (s *Service) AddUser(u *auth.User) error {
 	return nil
 }
 
-// remove a user and all their files and directories
-func (s *Service) RemoveUser(id string) error {
-	if usr, ok := s.Users[id]; ok {
-		if len(usr.Drive.Root.Dirs) != 0 {
-			if err := usr.Drive.Root.Clean(usr.Drive.Root.RootPath); err != nil {
-				return fmt.Errorf(" unable to remove user and drive contents: %v", err)
-			}
-		}
-		// remove from User directory map
-		delete(s.Users, usr.Drive.ID)
-	} else {
-		return fmt.Errorf("user (id=%s) not found", id)
-	}
-	return nil
+// // remove a user and all their files and directories
+// func (s *Service) RemoveUser(id string) error {
+// 	if usr, ok := s.Users[id]; ok {
+// 		if len(usr.Drive.Root.Dirs) != 0 {
+// 			if err := usr.Drive.Root.Clean(usr.Drive.Root.RootPath); err != nil {
+// 				return fmt.Errorf(" unable to remove user and drive contents: %v", err)
+// 			}
+// 		}
+// 		// remove from User directory map
+// 		delete(s.Users, usr.DriveID)
+// 	} else {
+// 		return fmt.Errorf("user (id=%s) not found", id)
+// 	}
+// 	return nil
+// }
+
+// TODO:
+
+func (s *Service) FindUser(userId string) (*auth.User, error) {
+	return nil, nil
 }
 
 // run a sync operation for a user. uses the supplied index,
 // which should have ToUpdate already populated, and builds a
 // batch of files to be either uploaded to or downloaded from
 // a given client
-func (s *Service) StartSync(userID string, up bool, down bool, idx *files.SyncIndex) error {
+func (s *Service) StartSync(userID string, up bool, down bool, idx *svc.SyncIndex) error {
 	return nil
 }

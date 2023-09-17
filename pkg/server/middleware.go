@@ -3,8 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/sfs/pkg/auth"
-
 	"github.com/go-chi/chi"
 )
 
@@ -17,27 +15,27 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
-func GetAuthenticatedUser(userID string, dbDir string, w http.ResponseWriter, r *http.Request) (*auth.User, error) {
-	// TODO: validate the session token in the request
+// func GetAuthenticatedUser(userID string, dbDir string, w http.ResponseWriter, r *http.Request) (*auth.User, error) {
+// 	// TODO: validate the session token in the request
 
-	// attempt to find data about the user from the the user db
-	u, err := findUser(userID, dbDir)
-	if err != nil {
-		ServerErr(w, err.Error())
-		return nil, err
-	}
-	return u, nil
-}
+// 	// attempt to find data about the user from the the user db
+// 	u, err := findUser(userID, dbDir)
+// 	if err != nil {
+// 		ServerErr(w, err.Error())
+// 		return nil, err
+// 	}
+// 	return u, nil
+// }
 
 // get user info
 func AuthUserHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := chi.URLParam(r, "userID")
-		_, err := GetAuthenticatedUser(userID, "", w, r) // TODO get user db path
-		if err != nil {
-			ServerErr(w, "failed to get authenticated user")
-			return
-		}
+		// userID := chi.URLParam(r, "userID")
+		// _, err := GetAuthenticatedUser(userID, "", w, r) // TODO get user db path
+		// if err != nil {
+		// 	ServerErr(w, "failed to get authenticated user")
+		// 	return
+		// }
 		h.ServeHTTP(w, r)
 	})
 }
