@@ -73,7 +73,7 @@ func TestBuildQueue(t *testing.T) {
 
 func TestBuildQueueWithLargeFiles(t *testing.T) {
 	d := MakeTmpDirs(t)
-	f, err := MakeABunchOfTxtFiles(10)
+	f, err := MakeLargeTestFiles(100, d.Path)
 	if err != nil {
 		Fatal(t, err)
 	}
