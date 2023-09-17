@@ -278,12 +278,8 @@ func (d *Directory) AddFiles(files []*File) {
 // removes internal file object from file map
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
-		if err := os.Remove(file.Path); err != nil {
-			log.Fatalf("[ERROR] unable to remove file: %v", err)
-		}
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
-
 		log.Printf("[DEBUG] file %s removed", file.ID)
 	} else {
 		return fmt.Errorf("[ERROR] file %s not found", file.ID)
@@ -318,18 +314,17 @@ func (d *Directory) GetFiles() map[string]*File {
 
 // -------- sub directory methods
 
-// creates the directory and updates internal data structures
+// creates and updates internal data structures.
+//
+// does not create physical subdirectories, only abstractions
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
-		if err := os.Mkdir(dir.Path, PERMS); err != nil {
-			return fmt.Errorf("[ERROR] could not create directory: %v", err)
-		}
 		dir.Parent = d
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
 		log.Printf("[DEBUG] dir %s (%s) added", dir.Name, dir.ID)
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) already exists", dir.Name, dir.ID)
+		return fmt.Errorf("[DEBUG] dir %s (%s) already exists", dir.Name, dir.ID)
 	}
 	return nil
 }
