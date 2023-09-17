@@ -13,6 +13,7 @@ const MAX int64 = 1e+9
 /*
 used to communicate the result of b.AddFiles() to the caller
 
+	0 = failure
 	1 = successful
 	2 = left over files && b.Cap < 0
 	3 = left over files && b.Cap == MAX
@@ -21,6 +22,7 @@ type BatchStatus int
 
 // status enums
 const (
+	Failure  BatchStatus = 0
 	Success  BatchStatus = 1
 	UnderCap BatchStatus = 2
 	CapMaxed BatchStatus = 3
@@ -92,9 +94,6 @@ but its in place as a mechanism for resource management.
 
 TODO: look at the knapsack problem for guidance here.
 
-NOTE: this does not check whether there are any duplicate files in the
-files []*File slice... probably should do that
-
 NOTE: if each batch's files are to be uploaded in their own separate goroutines, and
 each thread is part of a waitgroup, and each batch is processed one at a time, then
 the runtime for each batch will be bound by the largest file in the batch
@@ -104,7 +103,7 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// remember which ones we added so we don't have to modify the
 	// files slice in-place as we're iterating over it
 	//
-	// remember which files weren't added or were ignored
+	// remember which files were/weren't added or were ignored
 	c := NewCtx()
 
 	for _, f := range files {
@@ -173,9 +172,9 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 }
 
 // used for adding single large files to a custom batch (doesn't care about MAX)
-func (b *Batch) AddLgFiles(files []*File) error {
+func (b *Batch) AddLgFiles(files []*File) (BatchStatus, error) {
 	if len(files) == 0 {
-		return fmt.Errorf("no files were added")
+		return Failure, fmt.Errorf("no files were added")
 	}
 	for _, f := range files {
 		if !b.HasFile(f.ID) {
@@ -183,5 +182,5 @@ func (b *Batch) AddLgFiles(files []*File) error {
 			b.Total += 1
 		}
 	}
-	return nil
+	return Success, nil
 }
