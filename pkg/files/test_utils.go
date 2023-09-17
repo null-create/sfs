@@ -174,6 +174,29 @@ func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 	return testFiles, nil
 }
 
+// build large test text files in a specified directory
+func MakeLargeTestFiles(t *testing.T, total int, tmpDir string) ([]*File, error) {
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("tmpLg-%d.txt", i)
+		tfPath := filepath.Join(tmpDir, tfName)
+
+		file, err := os.Create(tfPath)
+		if err != nil {
+			t.Fatalf("[ERROR] failed to create test file: %v", err)
+		}
+		// write the test data a ridiculous amount of times
+		writeTotal := RandInt(1000000)
+		for i := 0; i < writeTotal; i++ {
+			file.Write([]byte(txtData))
+		}
+		file.Close()
+
+		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
+	}
+	return testFiles, nil
+}
+
 func RemoveTestFiles(t *testing.T, total int) error {
 	testDir := GetTestingDir()
 
@@ -214,6 +237,8 @@ func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 //
 // *does not* create actual test directories.
 // this is typically done via directory.AddSubDir()
+//
+// NOTE: none of these test directories have a non-nil parent pointer
 func MakeTestDirs(t *testing.T, total int) []*Directory {
 	testingDir := GetTestingDir()
 
@@ -221,8 +246,6 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 	for i := 0; i < total; i++ {
 		tdName := fmt.Sprintf("%s%d", TestDirName, i)
 		tmpDirPath := filepath.Join(testingDir, tdName)
-
-		// NOTE: none of these test directories have a non-nil parent pointer
 		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDirPath))
 	}
 	return testDirs
@@ -241,12 +264,13 @@ func MakeTmpTxtFile(filePath string, textReps int) (*File, error) {
 	}
 	defer file.Close()
 
+	var data string
 	f := NewFile(filepath.Base(filePath), "me", filePath)
 	for i := 0; i < textReps; i++ {
-		_, err := file.WriteString(txtData)
-		if err != nil {
-			return nil, fmt.Errorf("error writing to test file: %v", err)
-		}
+		data += txtData
+	}
+	if err = f.Save([]byte(data)); err != nil {
+		return nil, err
 	}
 	return f, nil
 }
@@ -264,7 +288,6 @@ func MakeABunchOfTxtFiles(total int) ([]*File, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error creating temporary file: %v", err)
 		}
-
 		files = append(files, f)
 	}
 	return files, nil
