@@ -1,4 +1,4 @@
-package files
+package service
 
 import (
 	"fmt"
@@ -45,7 +45,6 @@ func NewCtx() *AddCtx {
 }
 
 // batch represents a collection of files to be uploaded or downloaded
-// Batch.limit is set by the network profiler
 type Batch struct {
 	ID    string // batch ID (UUID)
 	Cap   int64  // remaining capacity (in bytes)

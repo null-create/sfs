@@ -48,14 +48,25 @@ POST   /v1/u/{userID}/sync      // send a last sync index object to the server
 // instantiate a new chi router
 func NewRouter() *chi.Mux {
 
+	// TODO: get NewAPI() args from .env
+	// if a service is already established, then it
+	// should modify the .env file to save this status,
+	// so we don't instantiate a new instance accidentally.
+
+	// initialize API handlers
+	api := NewAPI(true, false)
+
 	// instantiate router
 	r := chi.NewRouter()
 
-	// add default middleware
+	// chi's default middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// custom middleware
+	r.Use(AuthUserHandler)
 	r.Use(ContentTypeJson)
 
 	// Set a timeout value on the request context (ctx), that will signal
@@ -73,41 +84,27 @@ func NewRouter() *chi.Mux {
 
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
-		//  get user info
-		r.Get("/u/{userID}", nil)
-
 		// ----- files
 
-		// get list of user files and directories
-		r.Get("/u/{userID}/f/files", nil)
-		// get info about a file
-		r.Get("/u/{userID}/f/{fileID}/i", nil)
-		// download a file from the server
-		r.Get("/u/{userID}/f/{fileID}", nil)
-		// add a new file to the server
-		r.Post("/u/{userID}/f/{fileID}", nil)
-		// update a file on the server
-		r.Put("/u/{userID}/f/{fileID}", nil)
-		// delete a file on the server
-		r.Delete("/u/{userID}/f/{fileID}", nil)
+		r.Get("/u/{userID}/f/files", api.GetFileInfo)      // get info about a file
+		r.Get("/u/{userID}/f/{fileID}", api.GetFile)       // download a file from the server
+		r.Post("/u/{userID}/f/{fileID}", api.PutFile)      // add a new file to the server
+		r.Put("/u/{userID}/f/{fileID}", api.PutFile)       // update a file on the server
+		r.Delete("/u/{userID}/f/{fileID}", api.DeleteFile) // delete a file on the server
 
 		// ----- directories
 
-		// get list of user directories
-		r.Get("/u/{userID}/d/dirs/", nil)
-		// delete all user directories
-		r.Delete("/u/{userID}/d/dirs/", nil)
+		r.Get("/u/{userID}/d/dirs/", nil)      // get list of user directories
+		r.Delete("/u/{userID}/d/dirs/", nil)   // delete all user directories
+		r.Get("/u/{userID}/d/{dirID}/i", nil)  // get info (file list) about a directory
+		r.Get("/u/{userID}/d/{dirID}", nil)    // download a .zip file of the directory from the server
+		r.Post("/u/{userID}/d/{dirID}", nil)   // create a (empty) directory to the server
+		r.Put("/u/{userID}/d/{dirID}", nil)    // update a directory on the server
+		r.Delete("/u/{userID}/d/{dirID}", nil) // delete a directory
 
-		// get info (file list) about a directory
-		r.Get("/u/{userID}/d/{dirID}/i", nil)
-		// download a .zip file of the directory from the server
-		r.Get("/u/{userID}/d/{dirID}", nil)
-		// create a (empty) directory to the server
-		r.Post("/u/{userID}/d/{dirID}", nil)
-		// update a directory on the server
-		r.Put("/u/{userID}/d/{dirID}", nil)
-		// delete a directory
-		r.Delete("/u/{userID}/d/{dirID}", nil)
+		// ------- users
+
+		// TODO: add some user API's (add/remove/search users)
 
 		// ----- sync operations
 
@@ -122,7 +119,7 @@ func NewRouter() *chi.Mux {
 	})
 
 	// Mount the admin sub-router
-	// r.Mount("/admin", adminRouter())
+	// r.Mount("/admin", adminRouter)
 
 	return r
 }

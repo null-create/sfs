@@ -17,7 +17,6 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
-// userID := chi.URLParam(r, "userID")
 func GetAuthenticatedUser(userID string, dbDir string, w http.ResponseWriter, r *http.Request) (*auth.User, error) {
 	// TODO: validate the session token in the request
 
@@ -40,6 +39,24 @@ func AuthUserHandler(h http.Handler) http.Handler {
 			return
 		}
 		h.ServeHTTP(w, r)
+	})
+}
+
+// TODO:
+// check if this file is in the DB
+// if not, then create new entry and record checksum.
+// probably should do other safety checks.
+func validateFile(fileID string, w http.ResponseWriter, r *http.Request) bool {
+	return true
+}
+
+// TODO: validate incoming file request before downloading or uploading
+func ValidateFile(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fileID := chi.URLParam(r, "fileID")
+		if ok := validateFile(fileID, w, r); ok {
+			h.ServeHTTP(w, r)
+		}
 	})
 }
 

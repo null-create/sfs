@@ -1,10 +1,12 @@
-package files
+package service
 
 import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
 )
+
+const TEST_MAX = 250
 
 func TestQueueOrder(t *testing.T) {
 	testQ := NewQ()

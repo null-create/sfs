@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,16 +21,28 @@ and other such business to validate requests to the server.
 */
 
 type API struct {
-	dbRoot string
+	dbs string
+
+	Svc *Service // SFS service instance
 }
 
 // TODO: init with query singleton
-func NewAPI() *API {
+func NewAPI(newService bool, isAdmin bool) *API {
 	c := ServiceConfig()
+
+	// initialize sfs service
+	svc, err := Init(newService, isAdmin)
+	if err != nil {
+		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
+	}
 	return &API{
-		dbRoot: filepath.Join(c.ServiceRoot, "dbs"),
+		Svc: svc,
+		dbs: filepath.Join(c.ServiceRoot, "dbs"),
 	}
 }
+
+// TODO: refactor everything to use Service instance struct,
+// and associated functions
 
 // -------- users -----------------------------------------
 
@@ -37,7 +50,7 @@ func NewAPI() *API {
 //
 // if found, it will attempt to prepare it as json data and return it
 func (a *API) getUser(userID string) ([]byte, error) {
-	u, err := findUser(userID, a.dbRoot)
+	u, err := findUser(userID, a.dbs)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +75,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbRoot)
+	f, err := findFile(fileID, a.dbs)
 	if err != nil {
 		ServerErr(w, fmt.Sprintf("couldn't find file: %s", err.Error()))
 		return
@@ -78,7 +91,7 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbRoot)
+	f, err := findFile(fileID, a.dbs)
 	if err != nil {
 		ServerErr(w, err.Error())
 		return
@@ -94,7 +107,7 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbRoot)
+	f, err := findFile(fileID, a.dbs)
 	if err != nil {
 		ServerErr(w, err.Error())
 		return
@@ -122,7 +135,7 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbRoot)
+	f, err := findFile(fileID, a.dbs)
 	if err != nil {
 		ServerErr(w, err.Error())
 		return

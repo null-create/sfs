@@ -1,4 +1,4 @@
-package files
+package service
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ func (q *Queue) Enqueue(b *Batch) {
 
 func (q *Queue) Dequeue() (*Batch, error) {
 	if len(q.Queue) == 0 {
-		return nil, fmt.Errorf("[ERROR] Queue is empty")
+		return nil, fmt.Errorf("file queue is empty")
 	}
 	item := q.Queue[0]
 	q.Queue = q.Queue[1:]

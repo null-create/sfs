@@ -307,32 +307,42 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 // should generate a users.json file (which will keep track of active users),
 // and a drives.json, containing info about each drive, its total size, its location,
 // owner, init date, passwords, etc.
-func GenBaseUserFiles(DrivePath string) {
-	fileNames := []string{"user-info.json", "drive-info.json", "credentials.json"}
+func GenBaseUserFiles(usrInfoDir string) {
+	fileNames := []string{"user.json", "drive.json"}
 	for i := 0; i < len(fileNames); i++ {
-		saveJSON(DrivePath, fileNames[i], make(map[string]interface{}))
+		saveJSON(usrInfoDir, fileNames[i], make(map[string]interface{}))
 	}
 }
 
-// build a new privilaged drive directory for a client on the sfs server
-// with base state file info for user, drive, and user credentials json files
-//
-// must be under ../svcroot/users/<username>
+/*
+build a new privilaged drive directory for a client on the sfs server
+with base state file info for user and drive json files
+
+must be under ../svcroot/users/<username>
+
+drives should have the following structure:
+
+user/
+|---meta/
+|   |---user.json
+|   |---drive.json
+|---root/    <---- user files & directories live here
+|---state/
+|   |---userID-d-m-y-hh-mm-ss.json
+*/
 func AllocateDrive(name string, owner string, svcRoot string) (*files.Drive, error) {
 	// new user service file paths
 	usrsDir := filepath.Join(svcRoot, "users")
 	svcDir := filepath.Join(usrsDir, name)
 	usrRoot := filepath.Join(svcDir, "root")
+	jsonRoot := filepath.Join(svcDir, "meta")
 
-	// make a new user directory under svcRoot/users
-	if err := os.Mkdir(svcDir, 0644); err != nil {
-		return nil, err
-	}
-
-	// make an empty root directory (svcRoot/users/root)
-	// for the user to store files
-	if err := os.Mkdir(usrRoot, 0644); err != nil {
-		return nil, err
+	// make each directory
+	dirs := []string{svcDir, usrsDir, jsonRoot}
+	for _, d := range dirs {
+		if err := os.Mkdir(d, 0644); err != nil {
+			return nil, err
+		}
 	}
 
 	rt := files.NewRootDirectory(name, owner, usrRoot)
