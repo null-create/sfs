@@ -113,10 +113,28 @@ func MakeTmpDirs(t *testing.T) *Directory {
 	}
 
 	sd.AddFiles(moreFiles)
-	d.addSubDir(sd)
-	tmpRoot.addSubDir(d)
+	d.AddSubDir(sd)
+	tmpRoot.AddSubDir(d)
 
 	return tmpRoot
+}
+
+// makes testing/tmp directory objects.
+//
+// *does not* create actual test directories.
+// this is typically done via directory.AddSubDir()
+//
+// NOTE: none of these test directories have a non-nil parent pointer
+func MakeTestDirs(t *testing.T, total int) []*Directory {
+	testingDir := GetTestingDir()
+
+	testDirs := make([]*Directory, 0)
+	for i := 0; i < total; i++ {
+		tdName := fmt.Sprintf("%s%d", TestDirName, i)
+		tmpDirPath := filepath.Join(testingDir, tdName)
+		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDirPath))
+	}
+	return testDirs
 }
 
 // ---- files
@@ -137,118 +155,6 @@ func MutateFiles(t *testing.T, files map[string]*File) map[string]*File {
 		}
 	}
 	return files
-}
-
-func MakeDummyFiles(t *testing.T, total int) []*File {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmp-%d.txt", i)
-		testFiles = append(testFiles, NewFile(tfName, "me", filepath.Join(testDir, tfName)))
-	}
-
-	return testFiles
-}
-
-// makes temp files and file objects for testing purposes
-func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("testdoc-%d.txt", i)
-		tfPath := filepath.Join(testDir, tfName)
-
-		file, err := os.Create(tfPath)
-		if err != nil {
-			t.Fatalf("[ERROR] failed to create test file: %v", err)
-		}
-		file.Write([]byte(txtData))
-		file.Close()
-
-		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
-	}
-	return testFiles, nil
-}
-
-// build large test text files in a specified directory
-func MakeLargeTestFiles(t *testing.T, total int, tmpDir string) ([]*File, error) {
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmpLg-%d.txt", i)
-		tfPath := filepath.Join(tmpDir, tfName)
-
-		file, err := os.Create(tfPath)
-		if err != nil {
-			t.Fatalf("[ERROR] failed to create test file: %v", err)
-		}
-		// write the test data a ridiculous amount of times
-		writeTotal := RandInt(1000000)
-		for i := 0; i < writeTotal; i++ {
-			file.Write([]byte(txtData))
-		}
-		file.Close()
-
-		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
-	}
-	return testFiles, nil
-}
-
-func RemoveTestFiles(t *testing.T, total int) error {
-	testDir := GetTestingDir()
-
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("testdoc-%d.txt", i)
-		tfPath := filepath.Join(testDir, tfName)
-
-		if err := os.Remove(tfPath); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove test file: %v", err)
-		}
-	}
-	return nil
-}
-
-// make test files within a specified directory
-func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
-	testFiles := make([]*File, 0)
-
-	for i := 0; i < total; i++ {
-		name := fmt.Sprintf("test-file-%d.txt", i)
-		tfPath := filepath.Join(tdPath, name)
-
-		// Create creates or truncates the named file.
-		file, err := os.Create(tfPath)
-		if err != nil {
-			t.Fatalf("[ERROR] failed to create test file: %v", err)
-		}
-		file.Write([]byte(txtData))
-		file.Close()
-
-		testFiles = append(testFiles, NewFile(name, "me", tfPath))
-	}
-
-	return testFiles
-}
-
-// makes testing/tmp directory objects.
-//
-// *does not* create actual test directories.
-// this is typically done via directory.AddSubDir()
-//
-// NOTE: none of these test directories have a non-nil parent pointer
-func MakeTestDirs(t *testing.T, total int) []*Directory {
-	testingDir := GetTestingDir()
-
-	testDirs := make([]*Directory, 0)
-	for i := 0; i < total; i++ {
-		tdName := fmt.Sprintf("%s%d", TestDirName, i)
-		tmpDirPath := filepath.Join(testingDir, tdName)
-		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDirPath))
-	}
-	return testDirs
 }
 
 // make a temp .txt file of n size (in bytes).
@@ -291,4 +197,101 @@ func MakeABunchOfTxtFiles(total int) ([]*File, error) {
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+func MakeDummyFiles(t *testing.T, total int) []*File {
+	testDir := GetTestingDir()
+
+	// build dummy file objects + test files
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("tmp-%d.txt", i)
+		testFiles = append(testFiles, NewFile(tfName, "me", filepath.Join(testDir, tfName)))
+	}
+
+	return testFiles
+}
+
+// makes temp files and file objects for testing purposes
+func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
+	testDir := GetTestingDir()
+
+	// build dummy file objects + test files
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("testdoc-%d.txt", i)
+		tfPath := filepath.Join(testDir, tfName)
+
+		file, err := os.Create(tfPath)
+		if err != nil {
+			t.Fatalf("[ERROR] failed to create test file: %v", err)
+		}
+		file.Write([]byte(txtData))
+		file.Close()
+
+		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
+	}
+	return testFiles, nil
+}
+
+// build large test text files in a specified directory
+func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
+	testFiles := make([]*File, 0)
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("tmpXL-%d.txt", i)
+		tfPath := filepath.Join(dest, tfName)
+
+		file, err := os.Create(tfPath)
+		if err != nil {
+			return nil, err
+		}
+
+		var data string
+		for i := 0; i < 1000000; i++ {
+			data += txtData
+		}
+		if _, err := file.Write([]byte(data)); err != nil {
+			return nil, err
+		}
+		file.Close()
+
+		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
+	}
+	return testFiles, nil
+}
+
+func RemoveTestFiles(t *testing.T, total int) error {
+	testDir := GetTestingDir()
+
+	for i := 0; i < total; i++ {
+		tfName := fmt.Sprintf("testdoc-%d.txt", i)
+		tfPath := filepath.Join(testDir, tfName)
+
+		if err := os.Remove(tfPath); err != nil {
+			return fmt.Errorf("[ERROR] unable to remove test file: %v", err)
+		}
+	}
+	return nil
+}
+
+// make test files within a specified directory
+func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
+	testFiles := make([]*File, 0)
+
+	for i := 0; i < total; i++ {
+		name := fmt.Sprintf("test-file-%d.txt", i)
+		tfPath := filepath.Join(tdPath, name)
+
+		// Create creates or truncates the named file.
+		file, err := os.Create(tfPath)
+		if err != nil {
+			t.Fatalf("[ERROR] failed to create test file: %v", err)
+		}
+		file.Write([]byte(txtData))
+		file.Close()
+
+		testFiles = append(testFiles, NewFile(name, "me", tfPath))
+	}
+
+	return testFiles
 }
