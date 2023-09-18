@@ -13,17 +13,17 @@ type Query struct {
 	Query  string
 	Debug  bool
 
-	Conn  *sql.DB     // db connection
-	Stmt  *sql.Stmt   // SQL statement
-	Stmts []*sql.Stmt // SQL statements (when used as a singleton)
+	Conn  *sql.DB              // db connection
+	Stmt  *sql.Stmt            // SQL statement (when used as a one time object)
+	Stmts map[string]*sql.Stmt // SQL statements (when used as a singleton)
 }
 
 // returns a new query struct
 func NewQuery(dbPath string, isSingleton bool) *Query {
 	q := &Query{
 		DBPath: dbPath,
-		Debug:  false,
 		Query:  "",
+		Debug:  false,
 	}
 	if isSingleton {
 		q.Stmts = prepQueries(dbPath)
@@ -31,10 +31,10 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 	return q
 }
 
-func prepQueries(dbPath string) []*sql.Stmt {
+func prepQueries(dbPath string) map[string]*sql.Stmt {
 	conn, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		log.Fatalf("[ERROR] unable to open database: %v", err)
+		log.Fatalf("unable to open database: %v", err)
 	}
 	defer conn.Close()
 
@@ -58,18 +58,14 @@ func prepQueries(dbPath string) []*sql.Stmt {
 		FindUserQuery,
 	}
 
-	// TODO: need a better way to organize prepared statements.
-	// having just a list of statements doesn't help us remember which is which.
-	// probably want to use a map of some kind but not sure how to generate keys
-	stmts := make([]*sql.Stmt, len(queries))
+	stmts := make(map[string]*sql.Stmt, len(queries))
 	for _, query := range queries {
 		s, err := conn.Prepare(query)
 		if err != nil {
 			log.Fatalf("failed to prepare query: %v", err)
 		}
-		stmts = append(stmts, s)
+		stmts[query] = s
 	}
-
 	return stmts
 }
 
@@ -77,7 +73,7 @@ func prepQueries(dbPath string) []*sql.Stmt {
 func (q *Query) Prepare(query string) error {
 	stmt, err := q.Conn.Prepare(query)
 	if err != nil {
-		return fmt.Errorf("[ERROR] unable to prepare statement: %v", err)
+		return fmt.Errorf("unable to prepare statement: %v", err)
 	}
 	q.Query = query
 	q.Stmt = stmt

@@ -9,13 +9,12 @@ import (
 
 type Server struct {
 	StartTime time.Time
-	Svr       *http.Server // http server
+	Svr       *http.Server
 }
 
 // instantiate a new HTTP server with an sfs service instance
-func InitServer(newService bool, isAdmin bool) *Server {
-	// load .env file
-	BuildEnv()
+func NewServer() *Server {
+	BuildEnv() // load .env file
 
 	svr := ServerConfig() // get http server and service configs
 	rtr := NewRouter()    // instantiate router
@@ -38,7 +37,7 @@ func (s *Server) RunTime() float64 {
 
 // start the server
 func (s *Server) Start() {
-	s.StartTime = time.Now()
+	s.StartTime = time.Now().UTC()
 	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("[ERROR] server startup failed: %v", err)
 	}

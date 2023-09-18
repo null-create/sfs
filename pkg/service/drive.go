@@ -46,7 +46,7 @@ type Drive struct {
 	DriveRoot string `json:"driveRoot"`
 
 	// User's root directory
-	Root *Directory
+	Root *Directory `json:"root"`
 }
 
 func check(id string, name string, owner string, rootPath string, root *Directory) bool {

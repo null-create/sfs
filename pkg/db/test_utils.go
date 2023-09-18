@@ -74,6 +74,7 @@ func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *a
 		"bill123",
 		"bill@bill.com",
 		tempDrive.ID,
+		testDir,
 		false,
 	)
 	return tempDrive, tempDir, tmpUser

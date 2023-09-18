@@ -126,7 +126,15 @@ func MakeDummyUser(usrsPath string, i int) (*auth.User, error) {
 	drv.Root.AddFiles(fs)
 
 	// return user struct
-	return auth.NewUser("bill buttlicker", "bill", "bill@bill.com", drv.ID, false), nil
+	u := auth.NewUser(
+		"bill buttlicker",
+		"bill",
+		"bill@bill.com",
+		drv.ID,
+		"",
+		false,
+	)
+	return u, nil
 }
 
 func MakeABunchOfUsers(total int, usrsPath string) ([]*auth.User, error) {

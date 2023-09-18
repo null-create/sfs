@@ -12,7 +12,28 @@ import (
 type Env map[string]string
 
 func NewE() *Env {
+	// make sure the .env file exists before instantiating
+	if !HasDotEnv() {
+		log.Fatal("no .env file present")
+	}
 	return &Env{}
+}
+
+func HasDotEnv() bool {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("failed to get working directory: %v", err)
+	}
+	entries, err := os.ReadDir(wd)
+	if err != nil {
+		log.Fatalf("failed to read directory entires: %v", err)
+	}
+	for _, e := range entries {
+		if e.Name() == ".env" {
+			return true
+		}
+	}
+	return false
 }
 
 // read .env file and set as environment variables
@@ -65,7 +86,16 @@ func (e *Env) Set(k, v string) error {
 			}
 		}
 	} else {
-		log.Printf("%v does not exist", k)
+		log.Printf("env var %v does not exist", k)
 	}
 	return nil
+}
+
+// loads the .env file and an env: map[string]string
+func (e *Env) Load() (map[string]string, error) {
+	env, err := godotenv.Unmarshal(".env")
+	if err != nil {
+		return nil, err
+	}
+	return env, err
 }

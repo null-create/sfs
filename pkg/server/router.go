@@ -31,10 +31,10 @@ DELETE /v1/u/{userID}/f/{fileID}      // delete a file on the server
 GET    /v1/u/{userID}/d/dirs         // get list of user directories
 
 GET    /v1/u/{userID}/d/{dirID}/i/   // get list of files and subdirectories for this directory
-GET    /v1/u/{userID}/d/{dirID}      // download a .zip file from the server of this directory
-POST   /v1/u/{userID}/d/{dirID}      // create a directory to the server
+GET    /v1/u/{userID}/d/{dirID}      // download a .zip (or other compressed format) file of this directory and its contents
+POST   /v1/u/{userID}/d/{dirID}      // create a directory on the server
 UPDATE /v1/u/{userID}/d/{dirID}      // update a directory on the server
-DELETE /v1/u/{userID}/d/{dirID}      // delete a directory
+DELETE /v1/u/{userID}/d/{dirID}      // delete a directory on the server
 
 // ----- sync operations
 
@@ -42,19 +42,13 @@ GET    /v1/u/{userID}/sync      // fetch file last sync times from server
 
 POST   /v1/u/{userID}/sync      // send a last sync index object to the server
                                 // generated from the local client directories to
-																// initiate a client/server file sync.
+								// initiate a client/server file sync.
 */
 
 // instantiate a new chi router
 func NewRouter() *chi.Mux {
-
-	// TODO: get NewAPI() args from .env
-	// if a service is already established, then it
-	// should modify the .env file to save this status,
-	// so we don't instantiate a new instance accidentally.
-
 	// initialize API handlers
-	api := NewAPI(true, false)
+	api := NewAPI(isMode("NEW_SERVICE"), isMode("ADMIN_MODE"))
 
 	// instantiate router
 	r := chi.NewRouter()

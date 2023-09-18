@@ -41,7 +41,7 @@ type Service struct {
 	// path to database directory
 	DbDir string `json:"db_dir"`
 
-	// db connection
+	// db singleton connection
 	Db *db.Query
 
 	// admin mode. allows for expanded permissions when working with
@@ -50,7 +50,7 @@ type Service struct {
 	Admin     string `json:"admin"`
 	AdminKey  string `json:"admin_key"`
 
-	// key: drive-id, val is user struct.
+	// key: user id, val is user struct.
 	//
 	// user structs contain a pointer to the users Drive directory,
 	// so this can be used for measuring disc size and executing
@@ -345,7 +345,7 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 	jsonRoot := filepath.Join(svcDir, "meta")
 
 	// make each directory
-	dirs := []string{svcDir, usrsDir, jsonRoot}
+	dirs := []string{svcDir, usrRoot, jsonRoot}
 	for _, d := range dirs {
 		if err := os.Mkdir(d, 0644); err != nil {
 			return nil, err
@@ -356,12 +356,12 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 	drv := svc.NewDrive(svc.NewUUID(), name, owner, svcDir, rt)
 
 	// gen base files for this user
-	GenBaseUserFiles(drv.DriveRoot)
+	GenBaseUserFiles(jsonRoot)
 
 	return drv, nil
 }
 
-// --------- service methods --------------------------------
+// --------- service functions --------------------------------
 
 /*
 SaveState is meant to capture the current value of
@@ -397,7 +397,7 @@ func (s *Service) SaveState() error {
 	return os.WriteFile(s.StateFile, file, 0644)
 }
 
-// NOTE: these will likely work with handlers
+// --------- users --------------------------------
 
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
@@ -448,11 +448,42 @@ func (s *Service) AddUser(u *auth.User) error {
 // 	return nil
 // }
 
-// TODO:
-
 func (s *Service) FindUser(userId string) (*auth.User, error) {
+	if u, exists := s.Users[userId]; !exists {
+		u, err := s.Db.GetUser(userId) // try DB if not in instance
+		if err != nil {
+			return nil, err
+		}
+		s.Users[u.ID] = u // add to the map since we didn't find it initially
+		return u, nil
+	} else {
+		return u, nil
+	}
+}
+
+// save user state to their state file
+func (s *Service) SaveUser(u *auth.User) error {
+	return nil
+}
+
+// --------- drives --------------------------------
+
+// search DB for drive info, if available
+func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 	return nil, nil
 }
+
+// allocate new drive for a user. Calls AllocateDrive()
+func (s *Service) NewDrive(driveID string) (*svc.Drive, error) {
+	return nil, nil
+}
+
+// save drive state to DB
+func (s *Service) SaveDrive(driveID string) error {
+	return nil
+}
+
+// --------- sync --------------------------------
 
 // run a sync operation for a user. uses the supplied index,
 // which should have ToUpdate already populated, and builds a

@@ -2,7 +2,10 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -18,11 +21,17 @@ type User struct {
 	// used for maintenance roles
 	Admin bool `json:"admin"`
 
+	// path to user state file
+	SfPath string `json:"state_file"`
+
 	// pointer to the user's root nimbus drive
 	// plus some meta data
 	DriveID    string `json:"drive_id"`
 	TotalFiles int    `json:"total_files"`
 	TotalDirs  int    `json:"total_dirs"`
+
+	// path to the the root for their filesystem
+	Root string `json:"root"`
 }
 
 func check(name string, userName string, email string, newDrive string) bool {
@@ -32,7 +41,7 @@ func check(name string, userName string, email string, newDrive string) bool {
 	return true
 }
 
-func NewUser(name string, userName string, email string, newDrive string, isAdmin bool) *User {
+func NewUser(name string, userName string, email string, newDrive string, svcRoot string, isAdmin bool) *User {
 	if !check(name, userName, email, newDrive) {
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
@@ -46,6 +55,7 @@ func NewUser(name string, userName string, email string, newDrive string, isAdmi
 
 		Admin: isAdmin,
 
+		SfPath:  "", // set the first time the state is saved
 		DriveID: newDrive,
 	}
 }
@@ -57,4 +67,15 @@ func (u *User) ToJSON() ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// save state to disk
+func (u *User) SaveState() error {
+	data, err := json.MarshalIndent(u, "", "  ")
+	if err != nil {
+		return err
+	}
+	fn := fmt.Sprintf("user-%s-.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
+	fp := filepath.Join(u.SfPath, fn)
+	return os.WriteFile(fp, data, 0644)
 }

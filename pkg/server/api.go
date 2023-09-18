@@ -24,14 +24,12 @@ and other such business to validate requests to the server.
 */
 
 type API struct {
-	dbs string    // path to db dir root
 	Db  *db.Query // db connection
-
-	Svc *Service // SFS service instance
+	Svc *Service  // SFS service instance
 }
 
-// TODO: init with query singleton
 func NewAPI(newService bool, isAdmin bool) *API {
+	// get service config and db connection
 	c := svc.ServiceConfig()
 	db := db.NewQuery(filepath.Join(c.S.SvcRoot, "dbs"), true)
 
@@ -41,7 +39,6 @@ func NewAPI(newService bool, isAdmin bool) *API {
 		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
 	}
 	return &API{
-		dbs: filepath.Join(c.S.SvcRoot, "dbs"),
 		Db:  db,
 		Svc: svc,
 	}
@@ -81,7 +78,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbs)
+	f, err := findFile(fileID, a.Db)
 	if err != nil {
 		ServerErr(w, fmt.Sprintf("couldn't find file: %s", err.Error()))
 		return
@@ -97,7 +94,7 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbs)
+	f, err := findFile(fileID, a.Db)
 	if err != nil {
 		ServerErr(w, err.Error())
 		return
@@ -110,20 +107,36 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, f.ServerPath)
 }
 
-// upload or update a file on/to the server
-func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
-	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbs)
-	if err != nil {
-		ServerErr(w, err.Error())
-		return
-	}
-
-	// retrieve file from the request
+func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 	formFile, header, err := r.FormFile("myFile")
 	if err != nil {
 		ServerErr(w, fmt.Sprintf("failed to retrive form file data: %v", err))
-		return
+	}
+	defer formFile.Close()
+
+	// TODO: get user's root directory using userID and by searching the DB for the path
+
+	// retrieve file
+	data := make([]byte, 0, header.Size)
+	formFile.Read(data)
+
+	// TODO: file integrity & safety checks. don't be stupid.
+	// maybe file safety checks could be middleware
+
+	// make file object & save to server under path
+	fn := "change me"
+	filePath := "change me"
+	f := svc.NewFile(fn, userID, filePath)
+	if err = f.Save(data); err != nil {
+		ServerErr(w, err.Error())
+	}
+}
+
+// save or update the file
+func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
+	formFile, header, err := r.FormFile("myFile")
+	if err != nil {
+		ServerErr(w, fmt.Sprintf("failed to retrive form file data: %v", err))
 	}
 	defer formFile.Close()
 
@@ -131,17 +144,31 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	_, err = formFile.Read(data)
 	if err != nil {
 		ServerErr(w, err.Error())
-		return
 	}
 	if err := f.Save(data); err != nil {
 		ServerErr(w, err.Error())
-		return
+	}
+}
+
+// upload or update a file on/to the server
+func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPut { // update the file
+		fileID := chi.URLParam(r, "fileID")
+		f, err := findFile(fileID, a.Db)
+		if err != nil {
+			ServerErr(w, err.Error())
+			return
+		}
+		a.putFile(w, r, f)
+	} else if r.Method == http.MethodPost { // create a new file.
+		userID := chi.URLParam(r, "userID")
+		a.newFile(w, r, userID)
 	}
 }
 
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.dbs)
+	f, err := findFile(fileID, a.Db)
 	if err != nil {
 		ServerErr(w, err.Error())
 		return

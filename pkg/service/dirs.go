@@ -50,11 +50,11 @@ type Directory struct {
 	LastSync time.Time `json:"last_sync"`
 
 	// key is file uuid, value is file pointer
-	Files map[string]*File
+	Files map[string]*File `json:"files"`
 
 	// map of subdirectories.
 	// key is the directory ID (UUID), value is the directory pointer
-	Dirs map[string]*Directory
+	Dirs map[string]*Directory `json:"directories"`
 
 	// pointer to parent directory (if not root).
 	Parent *Directory
@@ -312,6 +312,11 @@ func (d *Directory) GetFiles() map[string]*File {
 	return d.Files
 }
 
+// fild a file within the given directory, or subdirectories
+func (d *Directory) FindFile(fileID string) *File {
+	return d.WalkF(fileID)
+}
+
 // -------- sub directory methods
 
 // creates and updates internal data structures.
@@ -451,6 +456,9 @@ Walk() recursively traverses sub directories starting at a given directory (or r
 attempting to find the desired file with the given file ID.
 */
 func (d *Directory) WalkF(fileID string) *File {
+	if f, found := d.Files[fileID]; found {
+		return f
+	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
@@ -459,11 +467,11 @@ func (d *Directory) WalkF(fileID string) *File {
 }
 
 func walkF(dir *Directory, fileID string) *File {
-	if len(dir.Dirs) == 0 {
-		return nil
-	}
 	if f, found := dir.Files[fileID]; found {
 		return f
+	}
+	if len(dir.Dirs) == 0 {
+		return nil
 	}
 	for _, subDirs := range dir.Dirs {
 		if sd := walkF(subDirs, fileID); sd != nil {
@@ -486,11 +494,11 @@ func (d *Directory) WalkD(dirID string) *Directory {
 }
 
 func walkD(dir *Directory, dirID string) *Directory {
-	if len(dir.Dirs) == 0 {
-		return nil
-	}
 	if dir.ID == dirID {
 		return dir
+	}
+	if len(dir.Dirs) == 0 {
+		return nil
 	}
 	for _, subDirs := range dir.Dirs {
 		if sd := walkD(subDirs, dirID); sd != nil {

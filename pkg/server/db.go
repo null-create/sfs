@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
@@ -12,8 +11,7 @@ import (
 // ----- db utils --------------------------------
 
 // get file info from db
-func findFile(fileID string, dbDir string) (*svc.File, error) {
-	q := db.NewQuery(filepath.Join(dbDir, "files"), false)
+func findFile(fileID string, q *db.Query) (*svc.File, error) {
 	f, err := q.GetFile(fileID)
 	if err != nil {
 		return nil, err
@@ -25,8 +23,7 @@ func findFile(fileID string, dbDir string) (*svc.File, error) {
 }
 
 // get user data from db
-func findUser(userID string, dbDir string) (*auth.User, error) {
-	q := db.NewQuery(filepath.Join(dbDir, "users"), false)
+func findUser(userID string, q *db.Query) (*auth.User, error) {
 	u, err := q.GetUser(userID)
 	if err != nil {
 		return nil, err
@@ -38,8 +35,7 @@ func findUser(userID string, dbDir string) (*auth.User, error) {
 }
 
 // get directory data from db
-func findDir(dirID string, dbDir string) (*svc.Directory, error) {
-	q := db.NewQuery(filepath.Join(dbDir, "directories"), false)
+func findDir(dirID string, q *db.Query) (*svc.Directory, error) {
 	d, err := q.GetDirectory(dirID)
 	if err != nil {
 		return nil, err
@@ -51,8 +47,7 @@ func findDir(dirID string, dbDir string) (*svc.Directory, error) {
 }
 
 // get drive data from db
-func findDrive(driveID string, dbDir string) (*svc.Drive, error) {
-	q := db.NewQuery(filepath.Join(dbDir, "drives"), false)
+func findDrive(driveID string, q *db.Query) (*svc.Drive, error) {
 	d, err := q.GetDrive(driveID)
 	if err != nil {
 		return nil, err
