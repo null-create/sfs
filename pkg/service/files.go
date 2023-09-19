@@ -15,7 +15,7 @@ import (
 )
 
 // enusre -rw-r----- permissions
-const PERMS = 0640 // go's default is 066
+const PERMS = 0640 // go's default is 0666
 
 // used to store the association between a file's name and its UUID
 //
@@ -54,7 +54,7 @@ type File struct {
 	Content []byte
 }
 
-// Content is loaded elsewhere since
+// Content is loaded elsewhere
 func NewFile(fileName string, owner string, path string) *File {
 	cs, err := CalculateChecksum(path, "sha256")
 	if err != nil {

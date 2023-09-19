@@ -342,10 +342,10 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 	usrsDir := filepath.Join(svcRoot, "users")
 	svcDir := filepath.Join(usrsDir, name)
 	usrRoot := filepath.Join(svcDir, "root")
-	jsonRoot := filepath.Join(svcDir, "meta")
+	metaRoot := filepath.Join(svcDir, "meta")
 
 	// make each directory
-	dirs := []string{svcDir, usrRoot, jsonRoot}
+	dirs := []string{svcDir, usrRoot, metaRoot}
 	for _, d := range dirs {
 		if err := os.Mkdir(d, 0644); err != nil {
 			return nil, err
@@ -356,7 +356,7 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 	drv := svc.NewDrive(svc.NewUUID(), name, owner, svcDir, rt)
 
 	// gen base files for this user
-	GenBaseUserFiles(jsonRoot)
+	GenBaseUserFiles(metaRoot)
 
 	return drv, nil
 }
@@ -448,6 +448,7 @@ func (s *Service) AddUser(u *auth.User) error {
 // 	return nil
 // }
 
+// find a user. if not in the instance, then it will query the database
 func (s *Service) FindUser(userId string) (*auth.User, error) {
 	if u, exists := s.Users[userId]; !exists {
 		u, err := s.Db.GetUser(userId) // try DB if not in instance
@@ -468,11 +469,6 @@ func (s *Service) SaveUser(u *auth.User) error {
 
 // --------- drives --------------------------------
 
-// search DB for drive info, if available
-func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
-	return nil, nil
-}
-
 // allocate new drive for a user. Calls AllocateDrive()
 func (s *Service) NewDrive(driveID string) (*svc.Drive, error) {
 	return nil, nil
@@ -481,6 +477,11 @@ func (s *Service) NewDrive(driveID string) (*svc.Drive, error) {
 // save drive state to DB
 func (s *Service) SaveDrive(driveID string) error {
 	return nil
+}
+
+// search DB for drive info, if available
+func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
+	return nil, nil
 }
 
 // --------- sync --------------------------------

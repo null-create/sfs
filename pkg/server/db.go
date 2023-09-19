@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
@@ -10,14 +10,22 @@ import (
 
 // ----- db utils --------------------------------
 
+// get a one-off db connection to a given db
+func getDBConn(dbName string) *db.Query {
+	c := ServiceConfig()
+	dbRoot := filepath.Join(c.S.SvcRoot, "dbs")
+	dbPath := filepath.Join(dbRoot, dbName)
+	return db.NewQuery(dbPath, false)
+}
+
 // get file info from db
 func findFile(fileID string, q *db.Query) (*svc.File, error) {
 	f, err := q.GetFile(fileID)
 	if err != nil {
 		return nil, err
 	}
-	if f == nil {
-		return nil, fmt.Errorf("no file found with ID %s", fileID)
+	if f == nil { // not found
+		return nil, nil
 	}
 	return f, nil
 }
@@ -28,8 +36,8 @@ func findUser(userID string, q *db.Query) (*auth.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u == nil {
-		return nil, fmt.Errorf("no user found with ID %s", userID)
+	if u == nil { // not found
+		return nil, nil
 	}
 	return u, nil
 }
@@ -40,8 +48,8 @@ func findDir(dirID string, q *db.Query) (*svc.Directory, error) {
 	if err != nil {
 		return nil, err
 	}
-	if d == nil {
-		return nil, fmt.Errorf("no directory found with ID %s", dirID)
+	if d == nil { // not found
+		return nil, nil
 	}
 	return d, nil
 }
@@ -52,8 +60,8 @@ func findDrive(driveID string, q *db.Query) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-	if d == nil {
-		return nil, fmt.Errorf("no drive found with ID %s", driveID)
+	if d == nil { // not found
+		return nil, nil
 	}
 	return d, nil
 }

@@ -422,6 +422,7 @@ func (d *Directory) GetSubDir(dirID string) *Directory {
 	}
 }
 
+// returns a map[string]*Directory of all directories in the current directory
 func (d *Directory) GetSubDirs() map[string]*Directory {
 	if len(d.Dirs) == 0 {
 		log.Print("[DEBUG] sub directory list is empty")
@@ -430,7 +431,7 @@ func (d *Directory) GetSubDirs() map[string]*Directory {
 	return d.Dirs
 }
 
-// Returns the size of a directory with all its contents.
+// Returns the size of a directory with all its contents, including subdirectories
 //
 // TODO: implement our own version of Walk for this function
 func (d *Directory) DirSize() (float64, error) {

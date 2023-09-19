@@ -65,19 +65,3 @@ func TestDriveSecurityFeatures(t *testing.T) {
 	testDrive.SetNewPassword("anotherPassword", "newPassword", true)
 	assert.Equal(t, "newPassword", testDrive.Key)
 }
-
-func TestGetDriveSize(t *testing.T) {
-	testDrive, _ := MakeDummySystem(t)
-	assert.NotEqual(t, 0, len(testDrive.Root.Files))
-
-	// get the size of the drive
-	dirSize := testDrive.DriveSize()
-	assert.NotEqual(t, 0, dirSize)
-
-	// TODO: figure out actual expected size to compare to
-
-	// clean up
-	if err := Clean(t, GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-}

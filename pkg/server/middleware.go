@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -40,20 +41,26 @@ func AuthUserHandler(h http.Handler) http.Handler {
 	})
 }
 
-// TODO:
 // check if this file is in the DB
-// if not, then create new entry and record checksum.
-// probably should do other safety checks.
-func validateFile(fileID string, w http.ResponseWriter, r *http.Request) bool {
+func validateFile(w http.ResponseWriter, r *http.Request, fileID string) bool {
+	f, err := findFile(fileID, getDBConn("Files"))
+	if err != nil {
+		msg := fmt.Sprintf("failed to find file (%s): ", fileID)
+		w.Write([]byte(msg))
+	}
+	if f == nil { // not found
+		return false
+	}
 	return true
 }
 
-// TODO: validate incoming file request before downloading or uploading
 func ValidateFile(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileID := chi.URLParam(r, "fileID")
-		if ok := validateFile(fileID, w, r); ok {
+		if ok := validateFile(w, r, fileID); ok {
 			h.ServeHTTP(w, r)
+		} else {
+			w.Write([]byte(fmt.Sprintf("file (%s) not found", fileID)))
 		}
 	})
 }

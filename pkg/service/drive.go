@@ -10,7 +10,7 @@ const MAX_SIZE float64 = 1e+9
 
 /*
 "Drives" are just abstractions of a protrected root directory,
-managed by Nimbus, containing backups of a user's files and other subdirectories
+managed by Simple File Sync, containing backups of a user's files and other subdirectories
 to facilitate synchronization across multiple devices.
 
 It's basically just a directory containing some metadata about a users
@@ -83,15 +83,14 @@ func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }
 
-func (d *Drive) GetRoot() *Directory {
-	if d.Root == nil {
-		log.Printf("[WARNING] no root directory assigned to this drive!")
-		return nil
+// save drive state to JSON format
+func (d *Drive) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(d, "", "  ")
+	if err != nil {
+		return nil, err
 	}
-	return d.Root
+	return data, nil
 }
-
-// --------- security --------------------------------
 
 func (d *Drive) Lock(password string) {
 	if password != d.Key {
@@ -127,28 +126,14 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 	}
 }
 
-// --------- meta data --------------------------------
-
-func (d *Drive) DriveSize() float64 {
-	if len(d.Root.Dirs) == 0 {
-		return 0.0
-	}
-	var total float64
-	for _, dir := range d.Root.Dirs {
-		size, err := dir.DirSize()
-		if err != nil {
-			log.Fatalf("[ERR] dir size error: %v", err)
+func (d *Drive) GetFile(fileID string) *File {
+	if len(d.Root.Files) != 0 {
+		if f, ok := d.Root.Files[fileID]; ok {
+			return f
 		}
-		total += size
 	}
-	return total
-}
-
-// save drive state to JSON format
-func (d *Drive) ToJSON() ([]byte, error) {
-	data, err := json.MarshalIndent(d, "", "  ")
-	if err != nil {
-		return nil, err
+	if len(d.Root.Dirs) == 0 {
+		return nil
 	}
-	return data, nil
+	return d.Root.WalkF(fileID)
 }
