@@ -62,7 +62,6 @@ func (q *Query) AddUser(u *auth.User) error {
 	if q.Debug {
 		log.Printf("[DEBUG] querying user: %s ", u.ID)
 	}
-
 	if _, err := q.Stmt.Exec(
 		&u.ID,
 		&u.Name,
@@ -73,6 +72,7 @@ func (q *Query) AddUser(u *auth.User) error {
 		&u.Admin,
 		&u.TotalFiles,
 		&u.TotalDirs,
+		&u.Root,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}

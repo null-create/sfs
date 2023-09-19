@@ -18,11 +18,13 @@ drive size, state, and some security configurations, which itself
 contains the user's "root" directory. Its this "root" directory where
 all the users files live, in whatever arragement they end up using.
 
-drive/
-|----root/
-|----user-info.json
-|----drive-info.json
-|----credentials.json
+user/
+|---meta/
+|   |---user.json
+|   |---drive.json
+|---root/    <---- the "drive." user's files & directories live here
+|---state/
+|   |---userID-d-m-y-hh-mm-ss.json
 
 Drives may be realized as a filesystem on a user's current desktop,
 laptop, dedicated hardrive within a desktop, or separate server.
@@ -126,14 +128,33 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 	}
 }
 
+// TODO: figure out where to place the file
+// based on the supplied file object (containing the path)
+func (d *Drive) AddFile(f *File) error {
+	return nil
+}
+
 func (d *Drive) GetFile(fileID string) *File {
-	if len(d.Root.Files) != 0 {
-		if f, ok := d.Root.Files[fileID]; ok {
-			return f
+	if !d.Protected {
+		if len(d.Root.Files) != 0 {
+			if f, ok := d.Root.Files[fileID]; ok {
+				return f
+			}
 		}
+		if len(d.Root.Dirs) == 0 {
+			return nil
+		}
+		return d.Root.WalkF(fileID)
 	}
-	if len(d.Root.Dirs) == 0 {
-		return nil
+	return nil
+}
+
+func (d *Drive) GetDir(dirID string) *Directory {
+	if !d.Protected {
+		if d.Root.ID == dirID {
+			return d.Root
+		}
+		return d.Root.WalkD(dirID)
 	}
-	return d.Root.WalkF(fileID)
+	return nil
 }

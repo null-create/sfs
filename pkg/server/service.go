@@ -422,7 +422,6 @@ func (s *Service) AddUser(u *auth.User) error {
 		if err != nil {
 			return fmt.Errorf("failed to allocate new drive for user %s \n%v", u.ID, err)
 		}
-		// save to service instance and db
 		if err := s.addUser(u, d); err != nil {
 			return err
 		}
@@ -432,21 +431,24 @@ func (s *Service) AddUser(u *auth.User) error {
 	return nil
 }
 
-// // remove a user and all their files and directories
-// func (s *Service) RemoveUser(id string) error {
-// 	if usr, ok := s.Users[id]; ok {
-// 		if len(usr.Drive.Root.Dirs) != 0 {
-// 			if err := usr.Drive.Root.Clean(usr.Drive.Root.RootPath); err != nil {
-// 				return fmt.Errorf(" unable to remove user and drive contents: %v", err)
-// 			}
-// 		}
-// 		// remove from User directory map
-// 		delete(s.Users, usr.DriveID)
-// 	} else {
-// 		return fmt.Errorf("user (id=%s) not found", id)
-// 	}
-// 	return nil
-// }
+// remove users's drive and all files and directories within
+func (s *Service) remove(driveID string) error {
+
+	return nil
+}
+
+// remove a user and all their files and directories
+func (s *Service) RemoveUser(userID string) error {
+	if usr, ok := s.Users[userID]; ok {
+		if err := s.remove(usr.ID); err != nil {
+			return err
+		}
+		delete(s.Users, usr.DriveID)
+	} else {
+		return fmt.Errorf("user (id=%s) not found", userID)
+	}
+	return nil
+}
 
 // find a user. if not in the instance, then it will query the database
 func (s *Service) FindUser(userId string) (*auth.User, error) {

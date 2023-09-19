@@ -62,7 +62,8 @@ const (
 			last_login DATETIME,
 			is_admin BIT,
 			total_files INT,
-			total_directories INT
+			total_directories INT,
+			root VARCHAR(255)
 		);`
 
 	DropTableQuery string = `DROP TABLE IF EXISTS ?;`
@@ -126,9 +127,10 @@ const (
 			last_login, 
 			is_admin, 
 			total_files, 
-			total_directories
+			total_directories,
+			root
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// ------- update file, user, directory, and drive entries -------
 

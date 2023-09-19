@@ -491,15 +491,18 @@ func (d *Directory) WalkD(dirID string) *Directory {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
 	}
+	if d, ok := d.Dirs[dirID]; ok {
+		return d
+	}
 	return walkD(d, dirID)
 }
 
 func walkD(dir *Directory, dirID string) *Directory {
-	if dir.ID == dirID {
-		return dir
-	}
 	if len(dir.Dirs) == 0 {
 		return nil
+	}
+	if d, ok := dir.Dirs[dirID]; ok {
+		return d
 	}
 	for _, subDirs := range dir.Dirs {
 		if sd := walkD(subDirs, dirID); sd != nil {

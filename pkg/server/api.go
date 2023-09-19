@@ -30,7 +30,7 @@ type API struct {
 
 func NewAPI(newService bool, isAdmin bool) *API {
 	// get service config and db connection
-	c := svc.ServiceConfig()
+	c := ServiceConfig()
 	db := db.NewQuery(filepath.Join(c.S.SvcRoot, "dbs"), true)
 
 	// initialize sfs service

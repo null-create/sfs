@@ -22,7 +22,7 @@ func TestFileIO(t *testing.T) {
 	for _, f := range testFiles {
 		f.Load()
 		assert.NotEqual(t, 0, len(f.Content))
-		assert.Equal(t, []byte(testData), f.Content)
+		assert.Equal(t, []byte(txtData), f.Content)
 
 		f.Clear()
 		assert.Equal(t, 0, len(f.Content))
@@ -30,12 +30,12 @@ func TestFileIO(t *testing.T) {
 
 	// update files with new content
 	for _, f := range testFiles {
-		if err := f.Save([]byte(testData2)); err != nil {
+		if err := f.Save([]byte(testData)); err != nil {
 			t.Fatalf("[ERROR] failed to save new content: %v", err)
 		}
 		f.Load() // f.Save() doesn't load file contents into memory
 		assert.NotEqual(t, 0, len(f.Content))
-		assert.Equal(t, []byte(testData2), f.Content)
+		assert.Equal(t, []byte(testData), f.Content)
 
 		f.Clear()
 		assert.Equal(t, 0, len(f.Content))
@@ -77,7 +77,7 @@ func TestFileSecurityFeatures(t *testing.T) {
 	tf.Lock("default")
 
 	stuff := tf.Content
-	if err := tf.Save([]byte(testData2)); err != nil {
+	if err := tf.Save([]byte(txtData)); err != nil {
 		t.Fatalf("[ERROR] failed to save new content: %v", err)
 	}
 	assert.Equal(t, stuff, tf.Content)
