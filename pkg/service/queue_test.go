@@ -1,6 +1,7 @@
 package service
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -64,6 +65,56 @@ func TestBuildQueue(t *testing.T) {
 	assert.Equal(t, total, q.Queue[0].Total)
 
 	// clean up
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
+	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	f, err := MakeABunchOfTxtFiles(50)
+	if err != nil {
+		Fatal(t, err)
+	}
+	MutateFiles(t, d.GetFiles())
+
+	b := NewBatch()
+	b.Cap = int64(TEST_MAX)
+	q := buildQ(f, b, NewQ())
+	assert.NotEqual(t, nil, q)
+	assert.NotEqual(t, 0, len(q.Queue))
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
+	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	f, err := MakeABunchOfTxtFiles(50)
+	if err != nil {
+		Fatal(t, err)
+	}
+	d.AddFiles(f)
+
+	idx := BuildSyncIndex(d)
+	assert.NotEqual(t, nil, idx)
+
+	b := NewBatch()
+	b.Cap = 100
+
+	// should return a "large file" queue, i.e just a
+	// queue of each of the files.
+	q := BuildQ(idx, NewQ())
+	assert.NotEqual(t, nil, q)
+	assert.NotEqual(t, 0, len(q.Queue))
+
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Fatal(err)
 	}
