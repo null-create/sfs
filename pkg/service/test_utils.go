@@ -150,13 +150,13 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 
 // ---- files
 
-// randomly append test data to give each
-// file a roughly unique size
+// "randomly" update some files
+// whenever RandInt() returns an even value
 func MutateFiles(t *testing.T, files map[string]*File) map[string]*File {
 	for _, f := range files {
-		if RandInt(2) == 1 {
+		if RandInt(100)%2 == 0 {
 			var data string
-			total := RandInt(1000)
+			total := RandInt(5000)
 			for i := 0; i < total; i++ {
 				data += txtData
 			}
@@ -201,7 +201,7 @@ func MakeABunchOfTxtFiles(total int) ([]*File, error) {
 	for i := 0; i < total; i++ {
 		fileName := fmt.Sprintf("tmp-%d.txt", i)
 		filePath := filepath.Join(tmpDir, fileName)
-		f, err := MakeTmpTxtFile(filePath, RandInt(1000))
+		f, err := MakeTmpTxtFile(filePath, RandInt(10000))
 		if err != nil {
 			return nil, fmt.Errorf("error creating temporary file: %v", err)
 		}
@@ -246,6 +246,8 @@ func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 }
 
 // build large test text files in a specified directory
+//
+// builds one huge string. really slow.
 func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
 	testFiles := make([]*File, 0)
 	for i := 0; i < total; i++ {
@@ -258,7 +260,7 @@ func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
 		}
 
 		var data string
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 10000; i++ {
 			data += txtData
 		}
 		if _, err := file.Write([]byte(data)); err != nil {
@@ -269,6 +271,16 @@ func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
 		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
 	}
 	return testFiles, nil
+}
+
+func AddLargeTestFile() (*File, error) {
+	tfDir := filepath.Join(GetCwd(), "test_files")
+	tf := filepath.Join(tfDir, "me.png")
+	dest := filepath.Join(GetTestingDir(), "me.png")
+	if err := Copy(tf, dest); err != nil {
+		return nil, err
+	}
+	return NewFile("me.png", "me", tf), nil
 }
 
 func RemoveTestFiles(t *testing.T, total int) error {

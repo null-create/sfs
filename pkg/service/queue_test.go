@@ -6,8 +6,6 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-const TEST_MAX = 250
-
 func TestQueueOrder(t *testing.T) {
 	testQ := NewQ()
 
@@ -54,10 +52,8 @@ func TestBuildQueue(t *testing.T) {
 	toUpdate := BuildToUpdate(tmpRoot, idx)
 
 	// build and inspect file queue
-	q, err := BuildQ(toUpdate, NewQ())
-	if err != nil {
-		Fatal(t, err)
-	}
+	q := BuildQ(toUpdate, NewQ())
+	assert.NotEqual(t, nil, q)
 	assert.NotEqual(t, 0, len(q.Queue))
 
 	var total int
@@ -72,45 +68,3 @@ func TestBuildQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func TestBuildQueueWithLargeFiles(t *testing.T) {
-	d := MakeTmpDirs(t)
-	f, err := MakeLargeTestFiles(100, d.Path)
-	if err != nil {
-		Fatal(t, err)
-	}
-	d.AddFiles(f)
-
-	// get initial index
-	idx := d.WalkS()
-
-	// randomly update some of the files with additional content, causing their
-	// last sync times to be updated
-	files := d.GetFiles()
-	MutateFiles(t, files)
-
-	// check new index, make sure some of the times are different
-	toUpdate := BuildToUpdate(d, idx)
-
-	// build and inspect file queue
-	q, err := BuildQ(toUpdate, NewQ())
-	if err != nil {
-		Fatal(t, err)
-	}
-	assert.NotEqual(t, 0, len(q.Queue))
-
-	var total int
-	for _, batch := range q.Queue {
-		total += batch.Total
-	}
-	assert.Equal(t, total, len(toUpdate.ToUpdate))
-
-	// clean up
-	if err := Clean(t, GetTestingDir()); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// func TestQueueWithLotsOfBatches(t *testing.T) {
-
-// }

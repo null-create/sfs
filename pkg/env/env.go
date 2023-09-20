@@ -50,8 +50,7 @@ func (e *Env) Get(k string) (string, error) {
 		return "", err
 	}
 	if v, exists := env[k]; exists {
-		// make sure this is right
-		val := os.Getenv(k)
+		val := os.Getenv(k) // make sure this is right
 		if val != v {
 			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
 			return "", fmt.Errorf(msg)

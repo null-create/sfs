@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"math/rand"
 	"os"
@@ -59,6 +60,14 @@ func saveJSON(dir, filename string, data map[string]interface{}) {
 	}
 }
 
+func GetCwd() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("[ERROR] unable to get current working directory %v", err)
+	}
+	return dir
+}
+
 // return the difference between two []*File slices.
 //
 // assuming that go's map implementation has ~O(1) access time,
@@ -108,3 +117,24 @@ func GetKeys(mymap map[T]T) []T {
 	return keys
 }
 */
+
+// copy a file
+func Copy(src, dst string) error {
+	s, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	d, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	_, err = io.Copy(d, s)
+	if err != nil {
+		return err
+	}
+	return nil
+}

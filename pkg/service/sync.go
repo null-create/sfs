@@ -170,9 +170,11 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 			// if none of the left over files will fit in the
 			// current batch, create a new one and move on
 			if wontFit(lo, b.Cap) {
-				q.Enqueue(b)
-				nb := NewBatch()
-				b = nb
+				if len(b.Files) > 0 {
+					q.Enqueue(b)
+					nb := NewBatch()
+					b = nb
+				}
 			}
 		}
 		f = lo
@@ -181,17 +183,17 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 }
 
 // build the queue for file uploads or downloads during a Sync event
-func BuildQ(idx *SyncIndex, q *Queue) (*Queue, error) {
+func BuildQ(idx *SyncIndex, q *Queue) *Queue {
 	files := idx.GetFiles()
 	if files == nil {
-		return nil, fmt.Errorf("no files found to sync for syncing")
+		return nil
 	}
 	// if every individual file exceeds b.MAX, none will able to
 	// be added to the standard batch queue and we like to avoid infinite loops,
 	// so we need to create a large file queue
 	if wontFit(files, MAX) {
 		log.Print("[WARNING] all files exceeded b.MAX. creating large file queue")
-		return LargeFileQ(files), nil
+		return LargeFileQ(files)
 	}
-	return buildQ(files, NewBatch(), NewQ()), nil
+	return buildQ(files, NewBatch(), NewQ())
 }

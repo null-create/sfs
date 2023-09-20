@@ -122,10 +122,10 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 			// building a batch from (assuming slice shrinkage with each pass).
 			if b.Cap-f.Size() >= 0 {
 				b.Files[f.ID] = f
-				b.Cap -= f.Size() // decrement remaining batch capacity
+				b.Cap -= f.Size()
 				b.Total += 1
-				c.Added = append(c.Added, f) // save to added files list
-				if b.Cap == 0 {              // don't bother checking the rest
+				c.Added = append(c.Added, f)
+				if b.Cap == 0 { // don't bother checking the rest
 					break
 				}
 			} else {

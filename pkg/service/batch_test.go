@@ -7,6 +7,9 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
+// 1mb. somewhat arbitrary. hand tuned after some tests
+const TEST_MAX = 1e+6
+
 func TestBatchLimit(t *testing.T) {
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
@@ -34,6 +37,25 @@ func TestBatchLimit(t *testing.T) {
 	// add test files
 	remTestFiles, _ := b.AddFiles(testFiles)
 	assert.True(t, len(remTestFiles) < len(testFiles))
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBatchWithUnevenFileSizes(t *testing.T) {
+	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	f, err := MakeABunchOfTxtFiles(25)
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	b := NewBatch()
+	b.Cap = int64(TEST_MAX)
+	buildQ(f, b, NewQ()) // temp queue to test b.AddFiles() with
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Fatal(err)
