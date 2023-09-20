@@ -183,6 +183,8 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 }
 
 // build the queue for file uploads or downloads during a Sync event
+//
+// idx should have ToUpdate populated
 func BuildQ(idx *SyncIndex, q *Queue) *Queue {
 	files := idx.GetFiles()
 	if files == nil {
