@@ -144,15 +144,6 @@ func getLargeFiles(files []*File) []*File {
 	return f
 }
 
-// create a custom file queue for files that exceed batch.MAX
-func LargeFileQ(files []*File) *Queue {
-	b := NewBatch()
-	b.AddLgFiles(files)
-	q := NewQ()
-	q.Enqueue(b)
-	return q
-}
-
 // keep adding the left over files to new batches until
 // have none left over from each b.AddFiles() call
 func buildQ(f []*File, b *Batch, q *Queue) *Queue {
@@ -198,4 +189,13 @@ func BuildQ(idx *SyncIndex, q *Queue) *Queue {
 		return LargeFileQ(files)
 	}
 	return buildQ(files, NewBatch(), NewQ())
+}
+
+// create a custom file queue for files that exceed batch.MAX
+func LargeFileQ(files []*File) *Queue {
+	b := NewBatch()
+	b.AddLgFiles(files)
+	q := NewQ()
+	q.Enqueue(b)
+	return q
 }
