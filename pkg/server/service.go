@@ -241,23 +241,31 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 //   - are the databases present?
 //   - is the statefile present?
 //
-// if not, raise an error
-func preChecks(svcRoot string) error {
+// if not, raise an error, otherwise returns the
+// path to the state file upon success
+func preChecks(svcRoot string) (string, error) {
 	entries, err := os.ReadDir(svcRoot)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if len(entries) == 0 {
-		return fmt.Errorf("no statefile, user, or database directories found! \n%v", err)
+		return "", fmt.Errorf("no statefile, user, or database directories found! \n%v", err)
 	}
 	for _, entry := range entries {
 		if entry.Name() == "state" || entry.Name() == "dbs" {
 			if isEmpty(filepath.Join(svcRoot, entry.Name())) {
-				return fmt.Errorf("%s directory is empty \n%v", entry.Name(), err)
+				return "", fmt.Errorf("%s directory is empty \n%v", entry.Name(), err)
 			}
 		}
 	}
-	return nil
+	sfPath, err := findStateFile(svcRoot)
+	if err != nil {
+		return "", err
+	}
+	if sfPath == "" {
+		return "", fmt.Errorf("no state file found")
+	}
+	return sfPath, nil
 }
 
 // intialize sfs service from a state file
@@ -275,18 +283,10 @@ func svcLoad(sfPath string) (*Service, error) {
 func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	// ensure (at least) the necessary dbs
 	// and state files are present
-	if err := preChecks(svcPath); err != nil {
-		return nil, err
-	}
-
-	sfPath, err := findStateFile(svcPath)
+	sfPath, err := preChecks(svcPath)
 	if err != nil {
 		return nil, err
 	}
-	if sfPath == "" {
-		return nil, fmt.Errorf("no state file found")
-	}
-
 	svc, err := svcLoad(sfPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
@@ -300,7 +300,6 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 			log.Fatalf("[ERROR] failed to retrieve user data: %v", err)
 		}
 	}
-
 	// make sure we have a path to the db dir
 	// and current state file for this session
 	svc.DbDir = filepath.Join(svcPath, "dbs")
