@@ -45,6 +45,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 		&user.Admin,
 		&user.TotalFiles,
 		&user.TotalDirs,
+		&user.Root,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows returned: %v", err)
