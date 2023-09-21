@@ -181,3 +181,18 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------- directories --------------------------------
+
+func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
+	dirID := chi.URLParam(r, "dirID")
+	d, err := findDir(dirID, a.Db)
+	if err != nil {
+		ServerErr(w, err.Error())
+		return
+	}
+	data, err := d.ToJSON()
+	if err != nil {
+		ServerErr(w, err.Error())
+		return
+	}
+	w.Write(data)
+}

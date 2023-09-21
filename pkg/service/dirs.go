@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -107,6 +108,14 @@ func NewDirectory(name string, owner string, path string) *Directory {
 		Root:      false,
 		Path:      path,
 	}
+}
+
+func (d *Directory) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(d, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (d *Directory) HasParent() bool {

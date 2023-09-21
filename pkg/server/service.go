@@ -433,14 +433,18 @@ func (s *Service) AddUser(u *auth.User) error {
 
 // remove users's drive and all files and directories within
 func (s *Service) remove(driveID string) error {
-
+	if d, err := s.Db.GetDrive(driveID); err == nil {
+		d.Root.Clean(d.Root.Path)
+	} else {
+		return err
+	}
 	return nil
 }
 
 // remove a user and all their files and directories
 func (s *Service) RemoveUser(userID string) error {
 	if usr, ok := s.Users[userID]; ok {
-		if err := s.remove(usr.ID); err != nil {
+		if err := s.remove(usr.DriveID); err != nil {
 			return err
 		}
 		delete(s.Users, usr.DriveID)

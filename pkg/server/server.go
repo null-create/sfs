@@ -38,7 +38,7 @@ func (s *Server) RunTime() float64 {
 // start the server
 func (s *Server) Start() {
 	s.StartTime = time.Now().UTC()
-	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := s.Svr.ListenAndServe(); err != nil {
 		log.Fatalf("[ERROR] server startup failed: %v", err)
 	}
 }
