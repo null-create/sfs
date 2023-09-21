@@ -49,7 +49,6 @@ type Batch struct {
 	ID    string // batch ID (UUID)
 	Cap   int64  // remaining capacity (in bytes)
 	Total int    // total files in this batch
-	Full  bool   // whether this batch is maxed out
 
 	Files map[string]*File // files to be uploaded or downloaded
 }
@@ -154,7 +153,6 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// if we reach capacity before we finish with files,
 	// return a list of the remaining files
 	if b.Cap == MAX && len(c.Added) < len(files) {
-		b.Full = true
 		log.Printf("[DEBUG] reached capacity before we could finish with the remaining files. \nreturning remaining files\n")
 		return Diff(c.Added, files), CapMaxed
 	}

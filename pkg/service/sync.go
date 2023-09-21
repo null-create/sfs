@@ -87,7 +87,8 @@ but we assume this is the root, and that there is no parent directory!
 utilizes the directory's d.WalkS() function
 */
 func BuildSyncIndex(root *Directory) *SyncIndex {
-	if idx := root.WalkS(); idx != nil {
+	idx := NewSyncIndex(root.Owner)
+	if idx := root.WalkS(idx); idx != nil {
 		return idx
 	}
 	return nil
@@ -122,8 +123,8 @@ func wontFit(files []*File, limit int64) bool {
 
 // generates a slice of files that are all under MAX,
 // from a raw list of files
-func prune(files []*File) []*File {
-	lgf := getLargeFiles(files)
+func Prune(files []*File) []*File {
+	lgf := GetLargeFiles(files)
 	return Diff(files, lgf)
 }
 
@@ -131,7 +132,7 @@ func prune(files []*File) []*File {
 //
 // these can be added to a custom batch to be uploaded/downloaded
 // after the ordinary batch queue is done processing
-func getLargeFiles(files []*File) []*File {
+func GetLargeFiles(files []*File) []*File {
 	if len(files) == 0 {
 		return []*File{}
 	}

@@ -42,7 +42,7 @@ func TestBuildQueue(t *testing.T) {
 	tmpRoot := MakeTmpDirs(t)
 
 	// get initial index
-	idx := tmpRoot.WalkS()
+	idx := tmpRoot.WalkS(NewSyncIndex("me"))
 
 	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
@@ -79,13 +79,16 @@ func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
 	if err != nil {
 		Fatal(t, err)
 	}
+
 	MutateFiles(t, d.GetFiles())
 
 	b := NewBatch()
 	b.Cap = int64(TEST_MAX)
+
 	q := buildQ(f, b, NewQ())
 	assert.NotEqual(t, nil, q)
 	assert.NotEqual(t, 0, len(q.Queue))
+	assert.True(t, len(q.Queue) < len(b.Files))
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Fatal(err)
@@ -106,8 +109,11 @@ func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
 	idx := BuildSyncIndex(d)
 	assert.NotEqual(t, nil, idx)
 
+	MutateFiles(t, d.GetFiles())
+	idx = BuildToUpdate(d, idx)
+
 	b := NewBatch()
-	b.Cap = 100
+	b.Cap = 100 // set a small capacity
 
 	// should return a "large file" queue, i.e just a
 	// queue of each of the files.

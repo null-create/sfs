@@ -10,7 +10,7 @@ func TestToUpdate(t *testing.T) {
 	d := MakeTmpDirs(t)
 
 	// get initial index
-	idx := d.WalkS()
+	idx := d.WalkS(NewSyncIndex("me"))
 	assert.NotEqual(t, nil, idx)
 	assert.NotEqual(t, 0, len(idx.LastSync))
 	assert.Equal(t, 20, len(idx.LastSync))
@@ -18,13 +18,7 @@ func TestToUpdate(t *testing.T) {
 	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
 	files := d.GetFiles()
-	for _, f := range files {
-		if RandInt(2) == 1 {
-			if err := f.Save([]byte(testData)); err != nil {
-				Fatal(t, err)
-			}
-		}
-	}
+	MutateFiles(t, files)
 
 	// check new index, make sure some of the times are different
 	toUpdate := BuildToUpdate(d, idx)

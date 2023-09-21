@@ -422,7 +422,9 @@ func (d *Directory) GetSubDir(dirID string) *Directory {
 	}
 }
 
-// returns a map[string]*Directory of all directories in the current directory
+// returns a map[string]*Directory of all directories in the *current* directory
+//
+// does not check subdirectories
 func (d *Directory) GetSubDirs() map[string]*Directory {
 	if len(d.Dirs) == 0 {
 		log.Print("[DEBUG] sub directory list is empty")
@@ -436,7 +438,6 @@ func (d *Directory) GetSubDirs() map[string]*Directory {
 // TODO: implement our own version of Walk for this function
 func (d *Directory) DirSize() (float64, error) {
 	var size float64
-
 	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -448,7 +449,6 @@ func (d *Directory) DirSize() (float64, error) {
 		}
 		return nil
 	})
-
 	return size, err
 }
 
@@ -512,28 +512,34 @@ func walkD(dir *Directory, dirID string) *Directory {
 	return nil
 }
 
+func buildSync(dir *Directory, idx *SyncIndex) *SyncIndex {
+	for _, file := range dir.Files {
+		if _, exists := idx.LastSync[file.ID]; !exists {
+			idx.LastSync[file.ID] = file.LastSync
+		}
+	}
+	return idx
+}
+
 /*
 WalkS() recursively traverses each subdirectory starting from
 the given directory and returns a *SyncIndex pointer containing
 the last sync times for each file in each directory and subdirectories.
 */
-func (d *Directory) WalkS() *SyncIndex {
-	if len(d.Files) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
+func (d *Directory) WalkS(idx *SyncIndex) *SyncIndex {
+	if len(d.Files) > 0 {
+		idx = buildSync(d, idx)
 	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
-		return nil // nothing to search
+		return idx // nothing else to search
 	}
-	return walkS(d, NewSyncIndex(d.Owner))
+	return walkS(d, idx)
 }
 
 func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
-	// check files
 	if len(dir.Files) > 0 {
-		for _, file := range dir.Files {
-			idx.LastSync[file.ID] = file.LastSync
-		}
+		idx = buildSync(dir, idx)
 	} else {
 		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
@@ -550,10 +556,25 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
+func buildUpdate(d *Directory, idx *SyncIndex) *SyncIndex {
+	for _, file := range d.Files {
+		if _, exists := idx.LastSync[file.ID]; exists {
+			// check if the time difference between most recent sync
+			// and last sync is greater than zero.
+			if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
+				idx.ToUpdate[file.ID] = file
+			}
+		} else {
+			continue // this wasn't found previously, ignore
+		}
+	}
+	return idx
+}
+
 // d.WalkU() populates the ToUpdate map of a given SyncIndex
 func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
-	if len(d.Files) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
+	if len(d.Files) > 0 {
+		idx = buildUpdate(d, idx)
 	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
@@ -568,17 +589,7 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	// check files
 	if len(dir.Files) > 0 {
-		for _, file := range dir.Files {
-			if _, exists := idx.LastSync[file.ID]; exists {
-				// check if the time difference between most recent sync
-				// and last sync is greater than zero.
-				if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
-					idx.ToUpdate[file.ID] = file
-				}
-			} else {
-				continue // this wasn't found previously, ignore
-			}
-		}
+		idx = buildUpdate(dir, idx)
 	} else {
 		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
 	}

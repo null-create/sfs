@@ -215,7 +215,7 @@ func TestWalkD(t *testing.T) {
 func TestWalkS(t *testing.T) {
 	tmpDir := MakeTmpDirs(t)
 
-	idx := tmpDir.WalkS()
+	idx := tmpDir.WalkS(NewSyncIndex("me"))
 
 	assert.NotEqual(t, nil, idx)
 	assert.NotEqual(t, 0, len(idx.LastSync))
@@ -235,7 +235,7 @@ func TestWalkS(t *testing.T) {
 func TestWalkU(t *testing.T) {
 	tmpDir := MakeTmpDirs(t)
 
-	idx := tmpDir.WalkS()
+	idx := tmpDir.WalkS(NewSyncIndex("me"))
 
 	assert.NotEqual(t, nil, idx)
 	assert.NotEqual(t, 0, len(idx.LastSync))
