@@ -2,7 +2,11 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 // max size of a single drive (root directory) per user (1GB)
@@ -94,6 +98,16 @@ func (d *Drive) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
+func (d *Drive) SaveState() error {
+	data, err := d.ToJSON()
+	if err != nil {
+		return err
+	}
+	fn := fmt.Sprintf("user-%s-.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
+	fp := filepath.Join(d.DriveRoot, fn)
+	return os.WriteFile(fp, data, 0644)
+}
+
 func (d *Drive) Lock(password string) {
 	if password != d.Key {
 		log.Printf("[DEBUG] wrong password: %v", password)
@@ -134,6 +148,7 @@ func (d *Drive) AddFile(f *File) error {
 	return nil
 }
 
+// find a file
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
 		if len(d.Root.Files) != 0 {
@@ -149,6 +164,7 @@ func (d *Drive) GetFile(fileID string) *File {
 	return nil
 }
 
+// find a directory
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
 		if d.Root.ID == dirID {

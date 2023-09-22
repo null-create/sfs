@@ -134,6 +134,11 @@ const (
 
 	// ------- update file, user, directory, and drive entries -------
 
+	UpdateUserQuery  string = ``
+	UpdateDriveQuery string = ``
+	UpdateDirQuery   string = ``
+	UpdateFileQuery  string = ``
+
 	// remove a user or file iff they (or the file) already exists in the database
 	RemoveQuery string = `
 		DELETE FROM ? WHERE id = ?; 

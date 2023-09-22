@@ -83,6 +83,33 @@ func NewService(svcRoot string) *Service {
 
 // ------- init ---------------------------------------
 
+// initialize a new sfs service from either a state file/dbs or
+// create a new service from scratch.
+func Init(new bool, admin bool) (*Service, error) {
+	c := ServiceConfig()
+	if !new {
+		// ---- load from state file and dbs
+		svc, err := SvcLoad(c.S.SvcRoot, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load service config: %v", err)
+		}
+		if admin {
+			setAdmin(svc)
+		}
+		return svc, nil
+	} else {
+		// ----- initialize new sfs service
+		svc, err := SvcInit(c.S.SvcRoot, false)
+		if err != nil {
+			return nil, err
+		}
+		if admin {
+			setAdmin(svc)
+		}
+		return svc, nil
+	}
+}
+
 func setAdmin(svc *Service) {
 	cfg := ServerConfig()
 	svc.AdminMode = true
@@ -154,33 +181,6 @@ func loadUsers(svc *Service) (*Service, error) {
 		}
 	}
 	return svc, nil
-}
-
-// initialize a new sfs service from either a state file/dbs or
-// create a new service from scratch.
-func Init(new bool, admin bool) (*Service, error) {
-	c := ServiceConfig()
-	if !new {
-		// ---- load from state file and dbs
-		svc, err := SvcLoad(c.S.SvcRoot, false)
-		if err != nil {
-			return nil, fmt.Errorf("[ERROR] failed to load service config: %v", err)
-		}
-		if admin {
-			setAdmin(svc)
-		}
-		return svc, nil
-	} else {
-		// ----- initialize new sfs service
-		svc, err := SvcInit(c.S.SvcRoot, false)
-		if err != nil {
-			return nil, fmt.Errorf("[ERROR] %v", err)
-		}
-		if admin {
-			setAdmin(svc)
-		}
-		return svc, nil
-	}
 }
 
 /*
@@ -389,7 +389,7 @@ func (s *Service) SaveState() error {
 		return fmt.Errorf("unable to marshal service state: %v", err)
 	}
 
-	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().Format("00-00-00-01-02-2006"))
+	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
 	sfPath := filepath.Join(s.SvcRoot, "state")
 	s.StateFile = filepath.Join(sfPath, sfName)
 
@@ -402,18 +402,25 @@ func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
 
+// save user state to their state file
+func (s *Service) SaveUser(u *auth.User) error {
+	if err := u.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // save to service instance and db
 func (s *Service) addUser(u *auth.User, d *svc.Drive) error {
-	q := db.NewQuery(s.DbDir, false)
-	if err := q.AddUser(u); err != nil {
+	u.DriveID = d.ID
+	if err := s.Db.AddUser(u); err != nil {
 		return fmt.Errorf("failed to add user to database: %v", err)
 	}
-	u.DriveID = d.ID
 	s.Users[u.ID] = u
 	return nil
 }
 
-// allocate a new service drive for a new user
+// allocate a new service drive for a newly added user
 func (s *Service) AddUser(u *auth.User) error {
 	if _, exists := s.Users[u.ID]; !exists {
 		// allocate new drive and base service files
@@ -433,7 +440,17 @@ func (s *Service) AddUser(u *auth.User) error {
 // remove users's drive and all files and directories within
 func (s *Service) remove(driveID string) error {
 	if d, err := s.Db.GetDrive(driveID); err == nil {
-		d.Root.Clean(d.Root.Path)
+		if d != nil {
+			if err := d.Root.Clean(d.Root.Path); err != nil {
+				return err
+			}
+			//remove users root dir itself
+			if err := os.Remove(d.Root.Path); err != nil {
+				return err
+			}
+		} else {
+			log.Printf("[DEBUG] drive (id=%s) not found", driveID)
+		}
 	} else {
 		return err
 	}
@@ -442,13 +459,13 @@ func (s *Service) remove(driveID string) error {
 
 // remove a user and all their files and directories
 func (s *Service) RemoveUser(userID string) error {
-	if usr, ok := s.Users[userID]; ok {
+	if usr, exists := s.Users[userID]; exists {
 		if err := s.remove(usr.DriveID); err != nil {
 			return err
 		}
 		delete(s.Users, usr.DriveID)
 	} else {
-		return fmt.Errorf("user (id=%s) not found", userID)
+		log.Printf("user (id=%s) not found", userID)
 	}
 	return nil
 }
@@ -467,26 +484,23 @@ func (s *Service) FindUser(userId string) (*auth.User, error) {
 	}
 }
 
-// save user state to their state file
-func (s *Service) SaveUser(u *auth.User) error {
-	return nil
-}
-
 // --------- drives --------------------------------
 
-// allocate new drive for a user. Calls AllocateDrive()
-func (s *Service) NewDrive(driveID string) (*svc.Drive, error) {
-	return nil, nil
-}
-
 // save drive state to DB
-func (s *Service) SaveDrive(driveID string) error {
+func (s *Service) SaveDrive(d *svc.Drive) error {
+	if err := s.Db.AddDrive(d); err != nil {
+		return err
+	}
 	return nil
 }
 
 // search DB for drive info, if available
 func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
-	return nil, nil
+	drv, err := s.Db.GetDrive(driveID)
+	if err != nil {
+		return nil, err
+	}
+	return drv, nil
 }
 
 // --------- sync --------------------------------

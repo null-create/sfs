@@ -34,7 +34,7 @@ type User struct {
 	Root string `json:"root"`
 }
 
-func check(name string, userName string, email string, newDrive string) bool {
+func check(name, userName, email, newDrive, svcRoot string) bool {
 	if name == "" || userName == "" || email == "" || newDrive == "" {
 		return false
 	}
@@ -42,7 +42,7 @@ func check(name string, userName string, email string, newDrive string) bool {
 }
 
 func NewUser(name string, userName string, email string, newDrive string, svcRoot string, isAdmin bool) *User {
-	if !check(name, userName, email, newDrive) {
+	if !check(name, userName, email, newDrive, svcRoot) {
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
 	return &User{
@@ -51,7 +51,7 @@ func NewUser(name string, userName string, email string, newDrive string, svcRoo
 		UserName:  userName,
 		Password:  "default",
 		Email:     email,
-		LastLogin: time.Now(), // just to initalize the time.Time object
+		LastLogin: time.Now().UTC(),
 
 		Admin: isAdmin,
 
@@ -71,7 +71,7 @@ func (u *User) ToJSON() ([]byte, error) {
 
 // save state to disk
 func (u *User) SaveState() error {
-	data, err := json.MarshalIndent(u, "", "  ")
+	data, err := u.ToJSON()
 	if err != nil {
 		return err
 	}
