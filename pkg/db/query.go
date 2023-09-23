@@ -8,6 +8,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Query objects represent connections to to our database.
+//
+// if instantiated as a singleton, then the query will prepare
+// a map of sql statements that can be used during run time.
 type Query struct {
 	DBPath string
 	Query  string

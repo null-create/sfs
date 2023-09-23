@@ -36,7 +36,7 @@ type Directory struct {
 
 	// absolute path to this directory.
 	// should be something like:
-	// .../nimbus/user/root/../this_directory
+	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
 
 	Protected bool   `json:"protected"` //
@@ -163,7 +163,7 @@ func clean(dirPath string) error {
 
 	for _, name := range names {
 		if err = os.RemoveAll(filepath.Join(dirPath, name)); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove file: %v", err)
+			return fmt.Errorf("[ERROR] unable to remove file or directory: %v", err)
 		}
 	}
 
@@ -205,11 +205,10 @@ point to the parent drive
 */
 func (d *Directory) GetParent() *Directory {
 	if d.Parent == nil && !d.Root {
-		log.Fatal("[ERROR] no parent for directory")
+		log.Print("[WARNING] no parent for non-root directory!")
 		return nil
-	} else {
-		return d.Parent
 	}
+	return d.Parent
 }
 
 // -------- password protection and other simple security stuff

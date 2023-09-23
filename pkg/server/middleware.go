@@ -1,10 +1,9 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi"
+	"github.com/sfs/pkg/auth"
 )
 
 // add json header to requests. added to middleware stack
@@ -16,52 +15,32 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
-// func GetAuthenticatedUser(userID string, dbDir string, w http.ResponseWriter, r *http.Request) (*auth.User, error) {
-// 	// TODO: validate the session token in the request
+func GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
+	// // TODO: validate the jwt session token in the request
+	// userID := jwtstuff...
 
-// 	// attempt to find data about the user from the the user db
-// 	u, err := findUser(userID, dbDir)
-// 	if err != nil {
-// 		ServerErr(w, err.Error())
-// 		return nil, err
-// 	}
-// 	return u, nil
-// }
+	// // attempt to find data about the user from the the user db
+	// u, err := findUser(userID, getDBConn("Users"))
+	// if err != nil {
+	// 	ServerErr(w, err.Error())
+	// 	return nil, err
+	// } else if u == nil {
+	// 	NotFound(w, r, fmt.Sprintf("user %s not found", userID))
+	// 	return nil, nil
+	// }
+	// return u, nil
+	return nil, nil
+}
 
 // get user info
 func AuthUserHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// userID := chi.URLParam(r, "userID")
-		// _, err := GetAuthenticatedUser(userID, "", w, r) // TODO get user db path
-		// if err != nil {
-		// 	ServerErr(w, "failed to get authenticated user")
-		// 	return
-		// }
-		h.ServeHTTP(w, r)
-	})
-}
-
-// check if this file is in the DB
-func validateFile(w http.ResponseWriter, r *http.Request, fileID string) bool {
-	f, err := findFile(fileID, getDBConn("Files"))
-	if err != nil {
-		msg := fmt.Sprintf("failed to find file (%s): ", fileID)
-		w.Write([]byte(msg))
-	}
-	if f == nil { // not found
-		return false
-	}
-	return true
-}
-
-func ValidateFile(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fileID := chi.URLParam(r, "fileID")
-		if ok := validateFile(w, r, fileID); ok {
-			h.ServeHTTP(w, r)
-		} else {
-			w.Write([]byte(fmt.Sprintf("file (%s) not found", fileID)))
+		_, err := GetAuthenticatedUser(w, r)
+		if err != nil {
+			ServerErr(w, "failed to get authenticated user")
+			return
 		}
+		h.ServeHTTP(w, r)
 	})
 }
 

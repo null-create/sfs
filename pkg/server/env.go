@@ -12,7 +12,6 @@ import (
 type Env map[string]string
 
 func NewE() *Env {
-	// make sure the .env file exists before instantiating
 	if !HasDotEnv() {
 		log.Fatal("no .env file present")
 	}
@@ -39,23 +38,35 @@ func HasDotEnv() bool {
 // read .env file and set as environment variables
 func BuildEnv() error {
 	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("could not load .env file: %v", err)
+		return err
 	}
 	return nil
 }
 
-func (e *Env) Get(k string) (string, error) {
-	env, err := godotenv.Unmarshal(".env")
+// make sure the environment variable matches whats defined in the .env file
+func (e *Env) Validate(k string) (string, error) {
+	env, err := godotenv.Read(".env")
 	if err != nil {
 		return "", err
 	}
 	if v, exists := env[k]; exists {
-		// make sure this is right
-		val := os.Getenv(k)
+		val := os.Getenv(k) // make sure this is right
 		if val != v {
 			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
 			return "", fmt.Errorf(msg)
 		}
+		return v, nil
+	} else {
+		return "", fmt.Errorf("%s key is not present in .env file", k)
+	}
+}
+
+func (e *Env) Get(k string) (string, error) {
+	env, err := godotenv.Read(".env")
+	if err != nil {
+		return "", err
+	}
+	if v, exists := env[k]; exists {
 		return v, nil
 	}
 	return "", fmt.Errorf("%s not found", k)
@@ -74,7 +85,7 @@ func set(k, v string, env map[string]string) error {
 
 // update an environment variable, and save to .env file for later use
 func (e *Env) Set(k, v string) error {
-	env, err := godotenv.Unmarshal(".env")
+	env, err := godotenv.Read(".env")
 	if err != nil {
 		return err
 	}
@@ -89,13 +100,4 @@ func (e *Env) Set(k, v string) error {
 		log.Printf("env var %v does not exist", k)
 	}
 	return nil
-}
-
-// loads the .env file and an env: map[string]string
-func (e *Env) Load() (map[string]string, error) {
-	env, err := godotenv.Unmarshal(".env")
-	if err != nil {
-		return nil, err
-	}
-	return env, err
 }

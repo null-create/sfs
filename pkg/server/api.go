@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/service"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -44,9 +45,6 @@ func NewAPI(newService bool, isAdmin bool) *API {
 	}
 }
 
-// TODO: refactor everything to use Service instance struct,
-// and associated functions
-
 // -------- users -----------------------------------------
 
 // attempts to read data from the user database.
@@ -76,11 +74,27 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 
 // -------- files -----------------------------------------
 
-func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
+// check the db for the existence of a file.
+//
+// handles errors and not found cases. returns nil if either of these,
+// are the case, otherwise returns a file pointer.
+func (a *API) findF(w http.ResponseWriter, r *http.Request) *service.File {
 	fileID := chi.URLParam(r, "fileID")
 	f, err := findFile(fileID, a.Db)
 	if err != nil {
 		ServerErr(w, fmt.Sprintf("couldn't find file: %s", err.Error()))
+		return nil
+	} else if f == nil {
+		NotFound(w, r, fmt.Sprintf("file (id=%s) not found", fileID))
+		return nil
+	}
+	return f
+}
+
+// get file metadata
+func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
+	f := a.findF(w, r)
+	if f == nil {
 		return
 	}
 	data, err := f.ToJSON()
@@ -93,10 +107,8 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
-	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.Db)
-	if err != nil {
-		ServerErr(w, err.Error())
+	f := a.findF(w, r)
+	if f == nil {
 		return
 	}
 
@@ -140,7 +152,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 	}
 	defer formFile.Close()
 
-	data := make([]byte, header.Size)
+	data := make([]byte, 0, header.Size)
 	_, err = formFile.Read(data)
 	if err != nil {
 		ServerErr(w, err.Error())
@@ -153,24 +165,23 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPut { // update the file
-		fileID := chi.URLParam(r, "fileID")
-		f, err := findFile(fileID, a.Db)
-		if err != nil {
-			ServerErr(w, err.Error())
+		f := a.findF(w, r)
+		if f == nil {
 			return
 		}
 		a.putFile(w, r, f)
 	} else if r.Method == http.MethodPost { // create a new file.
 		userID := chi.URLParam(r, "userID")
+		// TODO: get destination file path ...somehow.
+		// should be a parameter to newFile()
 		a.newFile(w, r, userID)
 	}
 }
 
+// delete a file from the server
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.Db)
-	if err != nil {
-		ServerErr(w, err.Error())
+	f := a.findF(w, r)
+	if f == nil {
 		return
 	}
 	// remove physical file
@@ -178,15 +189,31 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		ServerErr(w, err.Error())
 		return
 	}
+	// TODO: remove from db and maybe user instance?
 }
 
 // ------- directories --------------------------------
 
-func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
+// check the db for the existence of a directory.
+//
+// handles errors and not found cases. returns nil if either of these,
+// are the case, otherwise returns a directory pointer.
+func (a *API) findD(w http.ResponseWriter, r *http.Request) *service.Directory {
 	dirID := chi.URLParam(r, "dirID")
 	d, err := findDir(dirID, a.Db)
 	if err != nil {
-		ServerErr(w, err.Error())
+		ServerErr(w, fmt.Sprintf("couldn't find file: %s", err.Error()))
+		return nil
+	} else if d == nil {
+		NotFound(w, r, fmt.Sprintf("directory (id=%s) not found", dirID))
+		return nil
+	}
+	return d
+}
+
+func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
+	d := a.findD(w, r)
+	if d == nil {
 		return
 	}
 	data, err := d.ToJSON()

@@ -320,6 +320,8 @@ func GenBaseUserFiles(usrInfoDir string) {
 	}
 }
 
+// --------- drives --------------------------------
+
 /*
 build a new privilaged drive directory for a client on the sfs server
 with base state file info for user and drive json files
@@ -357,6 +359,23 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 	// gen base files for this user
 	GenBaseUserFiles(metaRoot)
 
+	return drv, nil
+}
+
+// save drive state to DB
+func (s *Service) SaveDrive(d *svc.Drive) error {
+	if err := s.Db.AddDrive(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// search DB for drive info, if available
+func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
+	drv, err := s.Db.GetDrive(driveID)
+	if err != nil {
+		return nil, err
+	}
 	return drv, nil
 }
 
@@ -484,31 +503,20 @@ func (s *Service) FindUser(userId string) (*auth.User, error) {
 	}
 }
 
-// --------- drives --------------------------------
+// --------- sync --------------------------------
 
-// save drive state to DB
-func (s *Service) SaveDrive(d *svc.Drive) error {
-	if err := s.Db.AddDrive(d); err != nil {
-		return err
-	}
+func (s *Service) syncUp() error {
 	return nil
 }
 
-// search DB for drive info, if available
-func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
-	drv, err := s.Db.GetDrive(driveID)
-	if err != nil {
-		return nil, err
-	}
-	return drv, nil
+func (s *Service) syncDown() error {
+	return nil
 }
-
-// --------- sync --------------------------------
 
 // run a sync operation for a user. uses the supplied index,
 // which should have ToUpdate already populated, and builds a
 // batch of files to be either uploaded to or downloaded from
 // a given client
-func (s *Service) StartSync(userID string, up bool, down bool, idx *svc.SyncIndex) error {
+func (s *Service) StartSync(driveID string, up, down bool, idx *svc.SyncIndex) error {
 	return nil
 }
