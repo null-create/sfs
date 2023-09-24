@@ -239,13 +239,13 @@ root/
 
 // initialize a new service and corresponding databases
 func SvcInit(svcRoot string, debug bool) (*Service, error) {
-	// ------- make root service directory (wherever it should located)
+	// make root service directory (wherever it should located)
 	log.Print("creating root service directory...")
 	if err := os.Mkdir(svcRoot, 0644); err != nil {
 		return nil, fmt.Errorf("failed to make service root directory: %v", err)
 	}
 
-	//-------- create top-level service directories
+	//create top-level service directories
 	log.Print("creating service subdirectories...")
 	svcPaths := []string{
 		filepath.Join(svcRoot, "users"),
@@ -258,20 +258,38 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 		}
 	}
 
-	// -------- create new service databases
+	// create new service databases
 	log.Print("creating service databases...")
 	if err := db.InitDBs(svcPaths[2]); err != nil {
 		return nil, fmt.Errorf("failed to initialize service databases: %v", err)
 	}
 
-	// --------- create new service instance and save initial state
+	// create new service instance and save initial state
 	log.Print("initializng new service instance...")
 	svc := NewService(svcRoot)
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("failed to save service state: %v", err)
 	}
+
+	// update .env file NEW_SERVICE variable so future boot ups won't
+	// create a new service every time
+	e := NewE()
+	if err := e.Set("NEW_SERVICE", "false"); err != nil {
+		return nil, fmt.Errorf("failed to update service .env file: %v", err)
+	}
+
 	log.Print("all set :)")
 	return svc, nil
+}
+
+func isNewService() bool {
+	e := NewE()
+	if v, err := e.Get("NEW_SERVICE"); err == nil {
+		return v == "true"
+	} else {
+		log.Fatalf("failed to read service .env file: %v", err)
+	}
+	return false
 }
 
 //   - are the databases present?
@@ -317,6 +335,10 @@ func svcLoad(sfPath string) (*Service, error) {
 //
 // populates users map through querying the users database
 func SvcLoad(svcPath string, debug bool) (*Service, error) {
+	// make sure we have the right env configuration
+	if isNewService() {
+		return nil, fmt.Errorf("environment mismatch")
+	}
 	// ensure (at least) the necessary dbs
 	// and state files are present
 	sfPath, err := preChecks(svcPath)
