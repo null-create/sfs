@@ -60,6 +60,9 @@ func (t *Token) Verify(tokenString string) (string, error) {
 		return "", fmt.Errorf("invalid token")
 	}
 	userID := claims["sub"].(string)
+	if userID == "" {
+		return "", fmt.Errorf("no user ID found in token claims")
+	}
 	return userID, nil
 }
 
