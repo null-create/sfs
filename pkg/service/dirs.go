@@ -63,8 +63,8 @@ type Directory struct {
 	// disignator for whether this directory is considerd the "root" directory
 	// if Root is True, then Drive will not be nil (Parent will be nil!) and
 	// should point to the parent Drive struct
-	Root     bool   `json:"root,omitempty"`
-	RootPath string `json:"rootPath,omitempty"`
+	Root     bool   `json:"root"`
+	RootPath string `json:"rootPath"`
 }
 
 // create a new root directory object. does not create physical directory.
@@ -185,14 +185,14 @@ func (d *Directory) Clean(dirPath string) error {
 }
 
 func (d *Directory) HasFile(fileID string) bool {
-	if _, ok := d.Files[fileID]; ok {
+	if _, exists := d.Files[fileID]; exists {
 		return true
 	}
 	return false
 }
 
 func (d *Directory) HasDir(dirID string) bool {
-	if _, ok := d.Dirs[dirID]; ok {
+	if _, exists := d.Dirs[dirID]; exists {
 		return true
 	}
 	return false
@@ -483,6 +483,37 @@ func walkF(dir *Directory, fileID string) *File {
 		if sd := walkF(subDirs, fileID); sd != nil {
 			return sd
 		}
+	}
+	return nil
+}
+
+/*
+WalkFiles() recursively traversies all subdirectories and returns
+a map of all files available for a given user
+*/
+func (d *Directory) WalkFiles() map[string]*File {
+	if len(d.Dirs) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
+		return nil
+	}
+	f := make(map[string]*File)
+	return walkFiles(d, f)
+}
+
+func walkFiles(dir *Directory, files map[string]*File) map[string]*File {
+	if len(dir.Files) > 0 {
+		for _, file := range dir.Files {
+			if _, exists := files[file.ID]; !exists {
+				files[file.ID] = file
+			}
+		}
+	}
+	if len(dir.Dirs) == 0 {
+		log.Printf("dir (id=%s) has no subdirectories", dir.ID)
+		return files
+	}
+	for _, subDir := range dir.Dirs {
+		return walkFiles(subDir, files)
 	}
 	return nil
 }

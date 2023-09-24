@@ -280,3 +280,16 @@ func TestWalkO(t *testing.T) {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
+
+func TestWalkFiles(t *testing.T) {
+	tmpDir := MakeTmpDirs(t)
+	files := tmpDir.WalkFiles()
+	assert.NotEqual(t, nil, files)
+	assert.NotEqual(t, 0, len(files))
+	assert.Equal(t, 20, len(files))
+
+	// clean up after testing
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
