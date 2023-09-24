@@ -43,21 +43,26 @@ func BuildEnv() error {
 	return nil
 }
 
-// make sure the environment variable matches whats defined in the .env file
-func (e *Env) Validate(k string) (string, error) {
-	env, err := godotenv.Read(".env")
-	if err != nil {
-		return "", err
-	}
+func (e *Env) validate(k string, env map[string]string) error {
 	if v, exists := env[k]; exists {
 		val := os.Getenv(k) // make sure this is right
 		if val != v {
 			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
-			return "", fmt.Errorf(msg)
+			return fmt.Errorf(msg)
 		}
-		return v, nil
+		return nil
 	} else {
-		return "", fmt.Errorf("%s key is not present in .env file", k)
+		return fmt.Errorf("%s not found", k)
+	}
+}
+
+// make sure the environment variable matches whats defined in the .env file
+func (e *Env) Validate(k string) error {
+	env, err := godotenv.Read(".env")
+	if err != nil {
+		return err
+	} else {
+		return e.validate(k, env)
 	}
 }
 
@@ -66,8 +71,8 @@ func (e *Env) Get(k string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if v, exists := env[k]; exists {
-		return v, nil
+	if err := e.validate(k, env); err != nil {
+		return env[k], nil
 	}
 	return "", fmt.Errorf("%s not found", k)
 }
