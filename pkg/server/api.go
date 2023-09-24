@@ -44,6 +44,13 @@ func NewAPI(newService bool, isAdmin bool) *API {
 	}
 }
 
+// -------- testing ---------------------------------------
+
+// placeholder handler for testing purposes
+func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hi"))
+}
+
 // -------- users -----------------------------------------
 
 // attempts to read data from the user database.

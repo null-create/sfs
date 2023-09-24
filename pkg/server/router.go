@@ -95,13 +95,13 @@ func NewRouter() *chi.Mux {
 
 		// ----- directories
 
-		r.Get("/u/{userID}/d/dirs/", nil)      // get list of user directories
-		r.Delete("/u/{userID}/d/dirs/", nil)   // delete all user directories
-		r.Get("/u/{userID}/d/{dirID}/i", nil)  // get info (file list) about a directory
-		r.Get("/u/{userID}/d/{dirID}", nil)    // download a .zip file of the directory from the server
-		r.Post("/u/{userID}/d/{dirID}", nil)   // create a (empty) directory to the server
-		r.Put("/u/{userID}/d/{dirID}", nil)    // update a directory on the server
-		r.Delete("/u/{userID}/d/{dirID}", nil) // delete a directory
+		r.Get("/u/{userID}/d/dirs/", api.Placeholder)      // get list of user directories
+		r.Delete("/u/{userID}/d/dirs/", api.Placeholder)   // delete all user directories
+		r.Get("/u/{userID}/d/{dirID}/i", api.Placeholder)  // get info (file list) about a directory
+		r.Get("/u/{userID}/d/{dirID}", api.Placeholder)    // download a .zip file of the directory from the server
+		r.Post("/u/{userID}/d/{dirID}", api.Placeholder)   // create a (empty) directory to the server
+		r.Put("/u/{userID}/d/{dirID}", api.Placeholder)    // update a directory on the server
+		r.Delete("/u/{userID}/d/{dirID}", api.Placeholder) // delete a directory
 
 		// ------- users
 
@@ -112,11 +112,11 @@ func NewRouter() *chi.Mux {
 		// fetch file last sync times for all
 		// user files (in all directories) from server
 		// to start a client side sync operation
-		r.Get("/u/{userID}/sync", nil)
+		r.Get("/u/{userID}/sync", api.Placeholder)
 
 		// send a newly generated last sync index to the
 		// server to initiate a client/server file sync.
-		r.Post("/u/{userID}/sync", nil)
+		r.Post("/u/{userID}/sync", api.Placeholder)
 	})
 
 	// Mount the admin sub-router
