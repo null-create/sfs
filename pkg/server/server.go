@@ -13,6 +13,9 @@ type Server struct {
 }
 
 // instantiate a new HTTP server with an sfs service instance
+//
+// establishes environment variables and intializes a new router
+// with sfs handlers
 func NewServer() *Server {
 	BuildEnv()            // initialize environment variables
 	svr := ServerConfig() // get server configs
@@ -37,6 +40,7 @@ func (s *Server) RunTime() float64 {
 // start the server
 func (s *Server) Start() {
 	s.StartTime = time.Now().UTC()
+	log.Printf("starting server...")
 	if err := s.Svr.ListenAndServe(); err != nil {
 		log.Fatalf("[ERROR] server startup failed: %v", err)
 	}
@@ -44,6 +48,7 @@ func (s *Server) Start() {
 
 // shuts down server and returns the total run time
 func (s *Server) Shutdown() error {
+	log.Printf("shutting down server...")
 	if err := s.Svr.Close(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("server shutdown failed: %v", err)
 	}
