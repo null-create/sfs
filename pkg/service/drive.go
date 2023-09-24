@@ -142,9 +142,13 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 	}
 }
 
-// TODO: figure out where to place the file
-// based on the supplied file object (containing the path)
-func (d *Drive) AddFile(f *File) error {
+// add file to a directory
+func (d *Drive) AddFile(dirID string, f *File) error {
+	dir := d.GetDir(dirID)
+	if dir == nil {
+		return fmt.Errorf("dir (id=%s) not found", dirID)
+	}
+	dir.AddFile(f)
 	return nil
 }
 
