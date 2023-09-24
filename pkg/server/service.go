@@ -81,6 +81,42 @@ func NewService(svcRoot string) *Service {
 	}
 }
 
+// --------- service functions --------------------------------
+
+/*
+SaveState is meant to capture the current value of
+the following fields when saving service state to disk:
+
+	InitTime time.Time `json:"init_time"`
+
+	SvcRoot string `json:"service_root"`  // directory path for sfs service on the server
+	StateFile string `json:"state_file"`  // path to state file directory
+
+	UserDir string `json:"user_dir"` // path to user drives directory
+	DbDir string `json:"db_dir"`     // path to data directory
+
+	// admin mode. allows for expanded permissions when working with
+	// the internal sfs file systems.
+	AdminMode bool   `json:"admin_mode"`
+	Admin     string `json:"admin"`
+	AdminKey  string `json:"admin_key"`
+
+all information about user file metadata  are saved in the database.
+the above fields are saved as a json file.
+*/
+func (s *Service) SaveState() error {
+	file, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return fmt.Errorf("unable to marshal service state: %v", err)
+	}
+
+	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
+	sfPath := filepath.Join(s.SvcRoot, "state")
+	s.StateFile = filepath.Join(sfPath, sfName)
+
+	return os.WriteFile(s.StateFile, file, 0644)
+}
+
 // ------- init ---------------------------------------
 
 // initialize a new sfs service from either a state file/dbs or
@@ -377,42 +413,6 @@ func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 		return nil, err
 	}
 	return drv, nil
-}
-
-// --------- service functions --------------------------------
-
-/*
-SaveState is meant to capture the current value of
-the following fields when saving service state to disk:
-
-	InitTime time.Time `json:"init_time"`
-
-	SvcRoot string `json:"service_root"`  // directory path for sfs service on the server
-	StateFile string `json:"state_file"`  // path to state file directory
-
-	UserDir string `json:"user_dir"` // path to user drives directory
-	DbDir string `json:"db_dir"`     // path to data directory
-
-	// admin mode. allows for expanded permissions when working with
-	// the internal sfs file systems.
-	AdminMode bool   `json:"admin_mode"`
-	Admin     string `json:"admin"`
-	AdminKey  string `json:"admin_key"`
-
-all information about user file metadata  are saved in the database.
-the above fields are saved as a json file.
-*/
-func (s *Service) SaveState() error {
-	file, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("unable to marshal service state: %v", err)
-	}
-
-	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
-	sfPath := filepath.Join(s.SvcRoot, "state")
-	s.StateFile = filepath.Join(sfPath, sfName)
-
-	return os.WriteFile(s.StateFile, file, 0644)
 }
 
 // --------- users --------------------------------

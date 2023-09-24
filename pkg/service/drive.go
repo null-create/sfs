@@ -151,14 +151,6 @@ func (d *Drive) AddFile(f *File) error {
 // find a file
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
-		if len(d.Root.Files) != 0 {
-			if f, ok := d.Root.Files[fileID]; ok {
-				return f
-			}
-		}
-		if len(d.Root.Dirs) == 0 {
-			return nil
-		}
 		return d.Root.WalkF(fileID)
 	}
 	return nil

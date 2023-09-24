@@ -13,7 +13,14 @@ ROUTES:
 
 // ----- meta
 
-GET    /v1/u/{userID}                 // "home". return a root directory listing
+GET    /v1/drive/{userID}             // "home". return a root directory listing
+
+// ----- users (admin only)
+
+GET     /v1/u/{userID}                // get info about a user
+POST    /v1/u/{userID}                // create a new user
+PUT     /v1/u/{userID}                // update a user
+DELETE  /v1/u/{userID}                // delete a user
 
 // ----- files
 
@@ -42,7 +49,7 @@ GET    /v1/u/{userID}/sync      // fetch file last sync times from server
 
 POST   /v1/u/{userID}/sync      // send a last sync index object to the server
                                 // generated from the local client directories to
-								// initiate a client/server file sync.
+								                // initiate a client/server file sync.
 */
 
 // instantiate a new chi router
