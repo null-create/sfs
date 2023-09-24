@@ -73,8 +73,9 @@ func (e *Env) Get(k string) (string, error) {
 	}
 	if err := e.validate(k, env); err != nil {
 		return env[k], nil
+	} else {
+		return "", fmt.Errorf("%s not found: %v", k, err)
 	}
-	return "", fmt.Errorf("%s not found", k)
 }
 
 func set(k, v string, env map[string]string) error {
