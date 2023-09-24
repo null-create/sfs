@@ -19,11 +19,8 @@ const txtData string = "all work and no play makes jack a dull boy"
 
 // run an individual test as part of a series of larger tests
 func RunTestStage(stageName string, test func()) {
-	banner := fmt.Sprintf("=============== %s Testing Stage ===============", stageName)
-	log.Print(banner)
-
+	log.Print(fmt.Sprintf("=============== %s Testing Stage ===============", stageName))
 	test()
-
 	log.Print("================================================")
 }
 
@@ -33,7 +30,7 @@ func GetTestingDir() string {
 	if err != nil {
 		log.Printf("[WARNING] unable to get testing directory: %v\ncreating...", err)
 		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0644); err != nil {
-			log.Fatalf("[ERROR] unable to create test directory: %v", err)
+			log.Fatalf("unable to create test directory: %v", err)
 		}
 	}
 	return filepath.Join(curDir, "testing")
@@ -44,7 +41,7 @@ func GetStateDir() string {
 	if err != nil {
 		log.Printf("[WARNING] unable to find state file testing directory: %v\ncreating...", err)
 		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0644); err != nil {
-			log.Fatalf("[ERROR] unable to create state file testing directoryy: %v", err)
+			log.Fatalf("unable to create state file testing directory: %v", err)
 		}
 	}
 	return filepath.Join(curDir, "state")

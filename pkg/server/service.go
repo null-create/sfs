@@ -467,6 +467,7 @@ func (s *Service) remove(driveID string) error {
 			if err := os.Remove(d.Root.Path); err != nil {
 				return err
 			}
+			log.Printf("[INFO] drive (id=%s) deleted", driveID)
 		} else {
 			log.Printf("[DEBUG] drive (id=%s) not found", driveID)
 		}
@@ -483,6 +484,7 @@ func (s *Service) RemoveUser(userID string) error {
 			return err
 		}
 		delete(s.Users, usr.DriveID)
+		log.Printf("user (id=%s) removed", userID)
 	} else {
 		log.Printf("user (id=%s) not found", userID)
 	}

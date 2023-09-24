@@ -81,8 +81,6 @@ func NewRouter() *chi.Mux {
 		w.Write([]byte("hi"))
 	})
 
-	// TODO: add handlers
-
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
 		// ----- files
@@ -103,7 +101,7 @@ func NewRouter() *chi.Mux {
 		r.Put("/u/{userID}/d/{dirID}", api.Placeholder)    // update a directory on the server
 		r.Delete("/u/{userID}/d/{dirID}", api.Placeholder) // delete a directory
 
-		// ------- users
+		// ------- users (admin only)
 
 		// TODO: add some user API's (add/remove/search users)
 

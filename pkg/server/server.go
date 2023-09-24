@@ -15,7 +15,7 @@ type Server struct {
 // instantiate a new HTTP server with an sfs service instance
 func NewServer() *Server {
 	BuildEnv()            // initialize environment variables
-	svr := ServerConfig() // get http server and service configs
+	svr := ServerConfig() // get server configs
 	rtr := NewRouter()    // instantiate router
 
 	return &Server{
