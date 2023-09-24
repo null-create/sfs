@@ -1,7 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/sfs/pkg/auth"
 )
@@ -15,27 +17,36 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
-func GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
-	// // TODO: validate the jwt session token in the request
-	// userID := jwtstuff...
+func AuthenticateUser(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
+	// retrieve jwt token from request
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer")
+	if len(splitToken) != 2 { // bearer token not in proper format
+		http.Error(w, "invalid token format", http.StatusBadRequest)
+	}
+	reqToken = strings.TrimSpace(splitToken[1])
 
-	// // attempt to find data about the user from the the user db
-	// u, err := findUser(userID, getDBConn("Users"))
-	// if err != nil {
-	// 	ServerErr(w, err.Error())
-	// 	return nil, err
-	// } else if u == nil {
-	// 	NotFound(w, r, fmt.Sprintf("user %s not found", userID))
-	// 	return nil, nil
-	// }
-	// return u, nil
-	return nil, nil
+	// verify token
+	tok := auth.NewT()
+	userID, err := tok.Verify(reqToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	// attempt to find data about the user from the the user db
+	u, err := findUser(userID, getDBConn("Users"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else if u == nil {
+		http.Error(w, fmt.Sprintf("user (id=%s) not found", userID), http.StatusNotFound)
+	}
+	return u, nil
 }
 
 // get user info
 func AuthUserHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := GetAuthenticatedUser(w, r)
+		_, err := AuthenticateUser(w, r)
 		if err != nil {
 			ServerErr(w, "failed to get authenticated user")
 			return

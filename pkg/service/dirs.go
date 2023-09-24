@@ -461,13 +461,10 @@ func (d *Directory) DirSize() (float64, error) {
 }
 
 /*
-Walk() recursively traverses sub directories starting at a given directory (or root),
+WalkF() recursively traverses sub directories starting at a given directory (or root),
 attempting to find the desired file with the given file ID.
 */
 func (d *Directory) WalkF(fileID string) *File {
-	if f, found := d.Files[fileID]; found {
-		return f
-	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
@@ -491,16 +488,13 @@ func walkF(dir *Directory, fileID string) *File {
 }
 
 /*
-Walk() recursively traverses sub directories starting at a given directory (or root),
+WalkD() recursively traverses sub directories starting at a given directory (or root),
 attempting to find the desired sub directory with the given directory ID.
 */
 func (d *Directory) WalkD(dirID string) *Directory {
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
-	}
-	if d, ok := d.Dirs[dirID]; ok {
-		return d
 	}
 	return walkD(d, dirID)
 }
@@ -551,7 +545,6 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	} else {
 		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
-	// check sub directories
 	if len(dir.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
 		return idx
@@ -581,9 +574,6 @@ func buildUpdate(d *Directory, idx *SyncIndex) *SyncIndex {
 
 // d.WalkU() populates the ToUpdate map of a given SyncIndex
 func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
-	if len(d.Files) > 0 {
-		idx = buildUpdate(d, idx)
-	}
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
 		return idx
@@ -595,13 +585,11 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 // of each file in each subdirectory, populating the ToUpdate map of a given SyncIndex
 // as needed.
 func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
-	// check files
 	if len(dir.Files) > 0 {
 		idx = buildUpdate(dir, idx)
 	} else {
 		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
-	// check sub directories
 	if len(dir.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
 		return idx
@@ -635,7 +623,6 @@ func (d *Directory) WalkO(op func(file *File) error) error {
 }
 
 func walkO(dir *Directory, op func(f *File) error) error {
-	// run operation on each file, if possible
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
 			if err := op(file); err != nil {
@@ -648,7 +635,6 @@ func walkO(dir *Directory, op func(f *File) error) error {
 	} else {
 		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
-	// search subdirectories
 	if len(dir.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
 		return nil

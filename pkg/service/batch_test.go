@@ -24,7 +24,7 @@ func TestBatchLimit(t *testing.T) {
 
 	// get total size of testFiles in testing dir
 	b := NewBatch()
-	b.Cap = 25000 // 25 kb batch capacity for testing
+	b.Cap = TEST_MAX
 
 	var totalSize int64
 	for _, testFile := range testFiles {

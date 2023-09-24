@@ -4,25 +4,18 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
 
 // used for run-time environment variable manipulation
-type Env struct {
-	fp  string
-	env map[string]string
-}
+type Env map[string]string
 
 func NewE() *Env {
 	if !HasDotEnv() {
 		log.Fatal("no .env file present")
 	}
-	return &Env{
-		fp:  filepath.Join(GetCwd(), ".env"),
-		env: make(map[string]string),
-	}
+	return &Env{}
 }
 
 // read .env file and set as environment variables
@@ -57,9 +50,9 @@ func (e *Env) Validate(k string) error {
 		return err
 	}
 	if v, exists := env[k]; exists {
-		val := os.Getenv(k)
+		val := os.Getenv(k) // make sure this is right
 		if val != v {
-			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
+			msg := fmt.Sprintf("env mismatch.\n .env file (k=%v, v=%v)\n os.Getenv (k=%s, v=%s)", k, v, k, val)
 			return fmt.Errorf(msg)
 		}
 		return nil
@@ -69,16 +62,11 @@ func (e *Env) Validate(k string) error {
 }
 
 func (e *Env) Get(k string) (string, error) {
-	env, err := godotenv.Unmarshal(e.fp)
+	env, err := godotenv.Read(".env")
 	if err != nil {
 		return "", err
 	}
 	if v, exists := env[k]; exists {
-		val := os.Getenv(k) // make sure this is right
-		if val != v {
-			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
-			return "", fmt.Errorf(msg)
-		}
 		return v, nil
 	}
 	return "", fmt.Errorf("%s not found", k)

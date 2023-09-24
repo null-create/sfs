@@ -68,23 +68,19 @@ func Upload(data []byte, fileName string, destURL string) error {
 //
 // intended to run in its own goroutine
 func Download(fileURL string) (*service.File, error) {
-	// Start the server and listen for incoming connections
-	ln, err := net.Listen("tcp", ":8080") // Replace with the port you want to listen on
+	// TODO: designate specified ports at run times
+	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to start server: %v", err)
 	}
 	defer ln.Close()
 
-	fmt.Println("file download listener started...")
-
-	// Accept incoming connections
 	conn, err := ln.Accept()
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to accept connection: %v", err)
 	}
 	defer conn.Close()
 
-	// Read the file name from the client
 	fileNameBuffer := make([]byte, 1024)
 	n, err := conn.Read(fileNameBuffer)
 	if err != nil {
@@ -92,15 +88,14 @@ func Download(fileURL string) (*service.File, error) {
 	}
 	fileName := string(fileNameBuffer[:n])
 
-	// Create a new file to save the transferred data
-	savePath := filepath.Join("path/to/save/files", fileName) // Replace with the directory where you want to save the files
+	// TODO: add path
+	savePath := filepath.Join("path/to/save/files", fileName)
 	file, err := os.Create(savePath)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to create file: %v", err)
 	}
 	defer file.Close()
 
-	// Receive the file data from the client and write it to the file
 	buffer := make([]byte, 1024)
 	for {
 		n, err := conn.Read(buffer)
@@ -116,8 +111,6 @@ func Download(fileURL string) (*service.File, error) {
 			return nil, fmt.Errorf("[ERROR] failed to write file data: %v", err)
 		}
 	}
-
-	fmt.Println("file received and saved successfully!")
 
 	return nil, nil
 }

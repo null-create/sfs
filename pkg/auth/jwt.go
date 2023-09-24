@@ -44,12 +44,10 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
 		return "", fmt.Errorf("invalid token")
 	}
-
 	userID := claims["sub"].(string)
 	return userID, nil
 }
@@ -59,13 +57,11 @@ func (t *Token) Create(userID string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["sub"] = userID
-	claims["exp"] = time.Now().Add(time.Hour).Unix() // Token expires in 1  hour
-
+	claims["exp"] = time.Now().Add(time.Hour).UTC() // Token expires in 1  hour
 	tokenString, err := token.SignedString(t.Secret)
 	if err != nil {
 		return "", err
 	}
 	t.Jwt = tokenString
-
 	return tokenString, nil
 }

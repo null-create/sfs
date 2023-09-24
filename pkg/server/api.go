@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/service"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -66,7 +65,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "userID")
 	userData, err := a.getUser(userID)
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("user (id=%s) not found", userID))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(userData)
@@ -76,17 +75,17 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 
 // check the db for the existence of a file.
 //
-// handles errors and not found cases. returns nil if either of these,
+// handles errors and not found cases. returns nil if either of these
 // are the case, otherwise returns a file pointer.
-func (a *API) findF(w http.ResponseWriter, r *http.Request) *service.File {
+func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 	fileID := chi.URLParam(r, "fileID")
 	f, err := findFile(fileID, a.Db)
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("couldn't find file: %s", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	} else if f == nil {
-		NotFound(w, r, fmt.Sprintf("file (id=%s) not found", fileID))
-		return nil
+		msg := fmt.Sprintf("file (id=%s) not found", fileID)
+		http.Error(w, msg, http.StatusNotFound)
 	}
 	return f
 }
@@ -99,7 +98,8 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := f.ToJSON()
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("failed to convert to JSON: %s", err.Error()))
+		msg := fmt.Sprintf("failed to convert to JSON: %s", err.Error())
+		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
 	w.Write(data)
@@ -122,7 +122,9 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 	formFile, header, err := r.FormFile("myFile")
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("failed to retrive form file data: %v", err))
+		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
 	defer formFile.Close()
 
@@ -133,14 +135,13 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 	formFile.Read(data)
 
 	// TODO: file integrity & safety checks. don't be stupid.
-	// maybe file safety checks could be middleware
 
 	// make file object & save to server under path
 	fn := "change me"
 	filePath := "change me"
 	f := svc.NewFile(fn, userID, filePath)
 	if err = f.Save(data); err != nil {
-		ServerErr(w, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -148,17 +149,19 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 	formFile, header, err := r.FormFile("myFile")
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("failed to retrive form file data: %v", err))
+		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
 	defer formFile.Close()
 
 	data := make([]byte, 0, header.Size)
 	_, err = formFile.Read(data)
 	if err != nil {
-		ServerErr(w, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	if err := f.Save(data); err != nil {
-		ServerErr(w, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -167,6 +170,7 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPut { // update the file
 		f := a.findF(w, r)
 		if f == nil {
+			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
 		a.putFile(w, r, f)
@@ -187,7 +191,6 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	// remove physical file
 	if err := os.Remove(f.ServerPath); err != nil {
 		ServerErr(w, err.Error())
-		return
 	}
 	// TODO: remove from db and maybe user instance?
 }
@@ -198,14 +201,15 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 //
 // handles errors and not found cases. returns nil if either of these,
 // are the case, otherwise returns a directory pointer.
-func (a *API) findD(w http.ResponseWriter, r *http.Request) *service.Directory {
+func (a *API) findD(w http.ResponseWriter, r *http.Request) *svc.Directory {
 	dirID := chi.URLParam(r, "dirID")
 	d, err := findDir(dirID, a.Db)
 	if err != nil {
-		ServerErr(w, fmt.Sprintf("couldn't find file: %s", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	} else if d == nil {
-		NotFound(w, r, fmt.Sprintf("directory (id=%s) not found", dirID))
+		msg := fmt.Sprintf("directory (id=%s) not found: ", err.Error())
+		http.Error(w, msg, http.StatusNotFound)
 		return nil
 	}
 	return d
@@ -218,7 +222,7 @@ func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := d.ToJSON()
 	if err != nil {
-		ServerErr(w, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(data)

@@ -45,7 +45,7 @@ func (s *SyncIndex) SaveToJSON() error {
 	if err != nil {
 		return err
 	}
-	fn := fmt.Sprintf("%s-sync-index-%s.json", s.User, time.Now().Format("00-00-00-01-02-2006"))
+	fn := fmt.Sprintf("%s-sync-index-%s.json", s.User, time.Now().Format("2006-01-02T15-04-05"))
 	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
 }
 
@@ -180,7 +180,7 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 func BuildQ(idx *SyncIndex, q *Queue) *Queue {
 	files := idx.GetFiles()
 	if files == nil {
-		return nil
+		return q
 	}
 	// if every individual file exceeds b.MAX, none will able to
 	// be added to the standard batch queue and we like to avoid infinite loops,

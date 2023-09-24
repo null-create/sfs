@@ -6,6 +6,7 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
+// NOTE: test is flaky
 func TestToUpdate(t *testing.T) {
 	d := MakeTmpDirs(t)
 
@@ -17,13 +18,13 @@ func TestToUpdate(t *testing.T) {
 
 	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
-	files := d.GetFiles()
+	files := d.GetFiles() // NOTE: this only returns d's top level files
 	MutateFiles(t, files)
 
 	// check new index, make sure some of the times are different
 	toUpdate := BuildToUpdate(d, idx)
 	assert.NotEqual(t, nil, toUpdate)
-	assert.NotEqual(t, 0, len(toUpdate.LastSync))
+	assert.NotEqual(t, 0, len(toUpdate.ToUpdate))
 
 	// make sure all new sync times are valid
 	for _, f := range toUpdate.ToUpdate {
