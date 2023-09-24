@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/sfs/pkg/auth"
 )
@@ -18,27 +17,28 @@ func ContentTypeJson(h http.Handler) http.Handler {
 }
 
 func AuthenticateUser(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
-	// retrieve jwt token from request
-	reqToken := r.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer")
-	if len(splitToken) != 2 { // bearer token not in proper format
-		http.Error(w, "invalid token format", http.StatusBadRequest)
-	}
-	reqToken = strings.TrimSpace(splitToken[1])
-
-	// verify token
 	tok := auth.NewT()
+
+	// retrieve jwt token from request & verify
+	reqToken, err := tok.Extract(r.Header.Get("Authorization"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
+	}
 	userID, err := tok.Verify(reqToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil, err
 	}
 
 	// attempt to find data about the user from the the user db
 	u, err := findUser(userID, getDBConn("Users"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
 	} else if u == nil {
 		http.Error(w, fmt.Sprintf("user (id=%s) not found", userID), http.StatusNotFound)
+		return nil, err
 	}
 	return u, nil
 }

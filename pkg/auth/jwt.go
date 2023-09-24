@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -31,6 +32,16 @@ func getSecret() ([]byte, error) {
 	} else {
 		return nil, err
 	}
+}
+
+// retrieve jwt token from request
+func (t *Token) Extract(rawReqToken string) (string, error) {
+	splitToken := strings.Split(rawReqToken, "Bearer")
+	if len(splitToken) != 2 { // bearer token not in proper format
+		return "", fmt.Errorf("invalid token format")
+	}
+	reqToken := strings.TrimSpace(splitToken[1])
+	return reqToken, nil
 }
 
 // verify jwt token and attempt ot retrieve userID from it.
