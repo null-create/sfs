@@ -24,8 +24,7 @@ type User struct {
 	// path to user state file
 	SfPath string `json:"state_file"`
 
-	// pointer to the user's root nimbus drive
-	// plus some meta data
+	// drive info
 	DriveID    string `json:"drive_id"`
 	TotalFiles int    `json:"total_files"`
 	TotalDirs  int    `json:"total_dirs"`
