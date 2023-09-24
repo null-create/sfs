@@ -283,7 +283,7 @@ func TestWalkO(t *testing.T) {
 
 func TestWalkFiles(t *testing.T) {
 	tmpDir := MakeTmpDirs(t)
-	files := tmpDir.WalkFiles()
+	files := tmpDir.WalkFs()
 	assert.NotEqual(t, nil, files)
 	assert.NotEqual(t, 0, len(files))
 	assert.Equal(t, 20, len(files))

@@ -488,19 +488,19 @@ func walkF(dir *Directory, fileID string) *File {
 }
 
 /*
-WalkFiles() recursively traversies all subdirectories and returns
+WalkFs() recursively traversies all subdirectories and returns
 a map of all files available for a given user
 */
-func (d *Directory) WalkFiles() map[string]*File {
+func (d *Directory) WalkFs() map[string]*File {
 	if len(d.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
 	}
 	f := make(map[string]*File)
-	return walkFiles(d, f)
+	return walkFs(d, f)
 }
 
-func walkFiles(dir *Directory, files map[string]*File) map[string]*File {
+func walkFs(dir *Directory, files map[string]*File) map[string]*File {
 	if len(dir.Files) > 0 {
 		for _, file := range dir.Files {
 			if _, exists := files[file.ID]; !exists {
@@ -513,7 +513,7 @@ func walkFiles(dir *Directory, files map[string]*File) map[string]*File {
 		return files
 	}
 	for _, subDir := range dir.Dirs {
-		return walkFiles(subDir, files)
+		return walkFs(subDir, files)
 	}
 	return nil
 }
