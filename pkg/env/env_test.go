@@ -25,7 +25,9 @@ func buildTestEnvMap() map[string]string {
 }
 
 func TestEnvBuild(t *testing.T) {
-	BuildEnv()
+	if err := BuildEnv(true); err != nil {
+		t.Fatal(err)
+	}
 	testEnv := buildTestEnvMap()
 	for k, env := range testEnv {
 		v := os.Getenv(k)
@@ -34,7 +36,9 @@ func TestEnvBuild(t *testing.T) {
 }
 
 func TestEnvValidate(t *testing.T) {
-	BuildEnv()
+	if err := BuildEnv(true); err != nil {
+		t.Fatal(err)
+	}
 	e := NewE()
 	if err := e.Validate("JWT_SECRET"); err != nil {
 		t.Fatal(err)

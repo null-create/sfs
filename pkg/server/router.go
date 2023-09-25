@@ -67,7 +67,7 @@ func NewRouter() *chi.Mux {
 	r.Use(middleware.Recoverer)
 
 	// custom middleware
-	r.Use(AuthUserHandler)
+	// r.Use(AuthUserHandler)
 	r.Use(ContentTypeJson)
 
 	// Set a timeout value on the request context (ctx), that will signal

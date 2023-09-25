@@ -4,7 +4,7 @@ package db
 
 const (
 
-	// --------general table creation --------------------------------------
+	// --------table creation --------------------------------------
 
 	CreateFileTable string = `
 		CREATE TABLE IF NOT EXISTS Files (
@@ -18,7 +18,8 @@ const (
 			server_path VARCHAR(255),
 			client_path VARCHAR(255),
 			checksum VARCHAR(255),
-			algorithm VARCHAR(50)
+			algorithm VARCHAR(50),
+			UNIQUE(id)
 		);`
 
 	CreateDirectoryTable string = `
@@ -34,7 +35,8 @@ const (
 			overwrite BIT,
 			last_sync DATETIME,
 			drive_root VARCHAR(255),
-			root_path VARCHAR(255)
+			root_path VARCHAR(255),
+			UNIQUE(id)
 		);
 	`
 
@@ -49,7 +51,8 @@ const (
 			protected BIT,
 			key VARCHAR(100),
 			auth_type VARCHAR(50),
-			drive_root VARCHAR(255)
+			drive_root VARCHAR(255),
+			UNIQUE(id)
 		);`
 
 	CreateUserTable string = `
@@ -61,16 +64,20 @@ const (
 			password VARCHAR(100),
 			last_login DATETIME,
 			is_admin BIT,
+			sf_path VARCHAR(255),
+			drive_id VARCHAR(255),  
 			total_files INT,
 			total_directories INT,
-			root VARCHAR(255)
+			root VARCHAR(255),
+			UNIQUE(id)
 		);`
 
 	DropTableQuery string = `DROP TABLE IF EXISTS ?;`
 
 	// ------- file, user, directory, and drive additions ----------------
+
 	AddFileQuery string = `
-		INSERT INTO Files (
+		INSERT OR IGNORE INTO Files (
 			id, 
 			name, 
 			owner, 
@@ -81,12 +88,12 @@ const (
 			server_path, 
 			client_path, 
 			checksum, 
-			algorithm
+			algorithm,
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
-		INSERT INTO Directories (
+		INSERT OR IGNORE INTO Directories (
 			id,
 			name,
 			owner,
@@ -103,7 +110,7 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
-		INSERT INTO Drives (
+		INSERT OR IGNORE INTO Drives (
 			id,
 			name,
 			owner,
@@ -118,19 +125,21 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddUserQuery string = `
-		INSERT INTO Users (
+		INSERT OR IGNORE INTO Users (
 			id, 
 			name, 
 			username, 
 			email, 
 			password, 
 			last_login, 
-			is_admin, 
+			is_admin,
+			sf_path,
+			drive_id, 
 			total_files, 
 			total_directories,
 			root
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// ------- update file, user, directory, and drive entries -------
 

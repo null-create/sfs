@@ -17,7 +17,6 @@ type Server struct {
 // establishes environment variables and intializes a new router
 // with sfs handlers
 func NewServer() *Server {
-	BuildEnv()            // initialize environment variables
 	svr := ServerConfig() // get server configs
 	rtr := NewRouter()    // instantiate router
 

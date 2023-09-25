@@ -24,7 +24,7 @@ func fakeServiceRoot() string {
 // -----------------------------------------------------
 
 func TestServiceConfig(t *testing.T) {
-	BuildEnv()
+	BuildEnv(true)
 	c := ServiceConfig()
 	assert.NotEqual(t, nil, c)
 	assert.True(t, strings.Contains(c.S.SvcRoot, "C:"))

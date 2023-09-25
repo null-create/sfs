@@ -48,7 +48,7 @@ func AuthUserHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := AuthenticateUser(w, r)
 		if err != nil {
-			ServerErr(w, "failed to get authenticated user")
+			http.Error(w, "failed to get authenticated user", http.StatusInternalServerError)
 			return
 		}
 		h.ServeHTTP(w, r)

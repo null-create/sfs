@@ -79,6 +79,11 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 			&user.Password,
 			&user.LastLogin,
 			&user.Admin,
+			&user.SfPath,
+			&user.DriveID,
+			&user.TotalFiles,
+			&user.TotalDirs,
+			&user.Root,
 		); err != nil {
 			if err == sql.ErrNoRows {
 				log.Printf("[DEBUG] no rows returned: %v", err)

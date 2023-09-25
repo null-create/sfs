@@ -5,41 +5,29 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/go-chi/chi"
 
-	"github.com/sfs/pkg/db"
 	svc "github.com/sfs/pkg/service"
 )
 
 /*
-Handlers for directly working with sfs service instance.
+Handlers for directly working with sfs service instance..
 
-These will likely be called by middleware, which will themselves
-be passed to the router when it is instantiated.
-
-We want to add some middleware above these calls to handle user au
+We want to add some middleware above these calls to handle user authorization
 and other such business to validate requests to the server.
 */
 
 type API struct {
-	Db  *db.Query // db connection
-	Svc *Service  // SFS service instance
+	Svc *Service // SFS service instance
 }
 
 func NewAPI(newService bool, isAdmin bool) *API {
-	// get service config and db connection
-	c := ServiceConfig()
-	db := db.NewQuery(filepath.Join(c.S.SvcRoot, "dbs"), true)
-
-	// initialize sfs service
-	svc, err := Init(newService, isAdmin)
+	svc, err := Init(newService, isAdmin) // initialize sfs service
 	if err != nil {
 		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
 	}
 	return &API{
-		Db:  db,
 		Svc: svc,
 	}
 }
@@ -48,10 +36,10 @@ func NewAPI(newService bool, isAdmin bool) *API {
 
 // placeholder handler for testing purposes
 func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi"))
+	w.Write([]byte("not implemented yet :("))
 }
 
-// -------- users -----------------------------------------
+// -------- users (admin only) -----------------------------------------
 
 // attempts to read data from the user database.
 //
@@ -86,7 +74,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 // are the case, otherwise returns a file pointer.
 func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.Db)
+	f, err := findFile(fileID, a.Svc.Db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
@@ -210,7 +198,7 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 // are the case, otherwise returns a directory pointer.
 func (a *API) findD(w http.ResponseWriter, r *http.Request) *svc.Directory {
 	dirID := chi.URLParam(r, "dirID")
-	d, err := findDir(dirID, a.Db)
+	d, err := findDir(dirID, a.Svc.Db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil

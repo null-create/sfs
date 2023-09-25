@@ -22,9 +22,6 @@ Top level entry point for internal user file system and their operations.
 Will likely be the entry point used for when a server is spun up.
 
 All service configurations may end up living here.
-
-TODO: instantiate with query singleton. need to remove all db utils
-and have service be self contained
 */
 type Service struct {
 	InitTime time.Time `json:"init_time"`
@@ -52,7 +49,7 @@ type Service struct {
 
 	// key: user id, val is user struct.
 	//
-	// user structs contain a pointer to the users Drive directory,
+	// user structs contain a path string to the users Drive directory,
 	// so this can be used for measuring disc size and executing
 	// health checks
 	Users map[string]*auth.User `json:"users"`
@@ -69,7 +66,7 @@ func NewService(svcRoot string) *Service {
 		StateFile: "",
 		UserDir:   filepath.Join(svcRoot, "users"),
 		DbDir:     filepath.Join(svcRoot, "dbs"),
-		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), false),
 
 		// admin mode is optional.
 		// these are standard default values
@@ -180,7 +177,6 @@ func findStateFile(svcRoot string) (string, error) {
 //
 // *does not instatiate svc, db, or user paths.* must be set elsewhere
 func loadStateFile(sfPath string) (*Service, error) {
-	// load state file and unmarshal into service struct
 	file, err := os.ReadFile(sfPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read state file: %v", err)
@@ -204,7 +200,8 @@ func loadUsers(svc *Service) (*Service, error) {
 		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
 	if len(usrs) == 0 {
-		return nil, fmt.Errorf("no users found in Users database")
+		log.Print("[WARNING] no users found in Users database")
+		return nil, nil
 	}
 	// NOTE: this assumes the physical files for each
 	// user being loaded are already present. calling svc.AddUser()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -36,20 +37,30 @@ func HasDotEnv() bool {
 }
 
 // read .env file and set as environment variables
-func BuildEnv() error {
-	if err := godotenv.Load(".env"); err != nil {
+func BuildEnv(debug bool) error {
+	wd, err := os.Getwd()
+	if err != nil {
 		return err
+	}
+	if err := godotenv.Load(filepath.Join(wd, ".env")); err != nil {
+		return err
+	}
+	if debug {
+		env := os.Environ()
+		for i, e := range env {
+			fmt.Printf("%d: %s\n", i, e)
+		}
 	}
 	return nil
 }
 
-func (e *Env) validate(k string, env map[string]string) error {
-	if v, exists := env[k]; exists {
-		val := os.Getenv(k) // make sure this is right
-		if val != v {
-			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
-			return fmt.Errorf(msg)
-		}
+func validate(k string, env map[string]string) error {
+	if _, exists := env[k]; exists {
+		// val := os.Getenv(k) // make sure this is right
+		// if val != v {
+		// 	msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
+		// 	return fmt.Errorf(msg)
+		// }
 		return nil
 	} else {
 		return fmt.Errorf("%s not found", k)
@@ -62,7 +73,7 @@ func (e *Env) Validate(k string) error {
 	if err != nil {
 		return err
 	} else {
-		return e.validate(k, env)
+		return validate(k, env)
 	}
 }
 
@@ -71,7 +82,7 @@ func (e *Env) Get(k string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := e.validate(k, env); err != nil {
+	if err := validate(k, env); err == nil {
 		return env[k], nil
 	} else {
 		return "", fmt.Errorf("%s not found: %v", k, err)
@@ -79,7 +90,7 @@ func (e *Env) Get(k string) (string, error) {
 }
 
 func set(k, v string, env map[string]string) error {
-	_, err := godotenv.Marshal(env)
+	err := godotenv.Write(env, ".env")
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,6 @@ type Conf struct {
 }
 
 type serverConf struct {
-	Host int    `env:"SERVER_HOST,required"`
 	Port int    `env:"SERVER_PORT,required"`
 	Addr string `env:"SERVER_ADDR,required"`
 
