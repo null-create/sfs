@@ -85,11 +85,11 @@ func NewRouter() *chi.Mux {
 	r.Route("/v1", func(r chi.Router) {
 		// ----- files
 
-		r.Get("/u/{userID}/f/files", api.GetFileInfo)      // get info about a file
-		r.Get("/u/{userID}/f/{fileID}", api.GetFile)       // download a file from the server
-		r.Post("/u/{userID}/f/{fileID}", api.PutFile)      // add a new file to the server
-		r.Put("/u/{userID}/f/{fileID}", api.PutFile)       // update a file on the server
-		r.Delete("/u/{userID}/f/{fileID}", api.DeleteFile) // delete a file on the server
+		r.Get("/u/{userID}/f/files", api.Placeholder)       // get info about a file
+		r.Get("/u/{userID}/f/{fileID}", api.Placeholder)    // download a file from the server
+		r.Post("/u/{userID}/f/{fileID}", api.Placeholder)   // add a new file to the server
+		r.Put("/u/{userID}/f/{fileID}", api.Placeholder)    // update a file on the server
+		r.Delete("/u/{userID}/f/{fileID}", api.Placeholder) // delete a file on the server
 
 		// ----- directories
 
