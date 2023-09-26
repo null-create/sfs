@@ -9,9 +9,6 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// TODO: handle null columns in all methods below
-
-// TODO: test this!
 // Query to check user existence
 func (q *Query) UserExists(userID string) (bool, error) {
 	var exists bool

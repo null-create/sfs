@@ -24,5 +24,5 @@ func main() {
 		log.Fatal(err)
 	}
 	srv := server.NewServer()
-	srv.Start()
+	srv.Run()
 }

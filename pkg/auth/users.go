@@ -40,8 +40,8 @@ func check(name, userName, email, newDrive, svcRoot string) bool {
 	return true
 }
 
-func NewUser(name string, userName string, email string, newDrive string, svcRoot string, isAdmin bool) *User {
-	if !check(name, userName, email, newDrive, svcRoot) {
+func NewUser(name string, userName string, email string, newDriveID string, svcRoot string, isAdmin bool) *User {
+	if !check(name, userName, email, newDriveID, svcRoot) {
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
 	return &User{
@@ -55,7 +55,7 @@ func NewUser(name string, userName string, email string, newDrive string, svcRoo
 		Admin: isAdmin,
 
 		SfPath:  "", // set the first time the state is saved
-		DriveID: newDrive,
+		DriveID: newDriveID,
 	}
 }
 

@@ -29,6 +29,9 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 		Query:  "",
 		Debug:  false,
 	}
+	// TODO: need a way to indicate this mode to other finds/gets/etc so as to not
+	// redundantly prepare queries prior to execution. isSingleton is set to false
+	// by default for the time being
 	if isSingleton {
 		q.Stmts = prepQueries(dbPath)
 	}
