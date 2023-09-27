@@ -49,13 +49,13 @@ func (s *Server) Start() {
 	}
 }
 
-// shuts down server and returns the total run time
-func (s *Server) Shutdown() error {
+// shuts down server and return total run time
+func (s *Server) Shutdown() (float64, error) {
 	log.Printf("shutting down server...")
 	if err := s.Svr.Close(); err != nil && err != http.ErrServerClosed {
-		return fmt.Errorf("server shutdown failed: %v", err)
+		return 0, fmt.Errorf("server shutdown failed: %v", err)
 	}
-	return nil
+	return s.RunTime(), nil
 }
 
 // runs server with graceful shutdowns
@@ -89,13 +89,11 @@ func (s *Server) Run() {
 		serverStopCtx()
 	}()
 
-	// Run the server
 	log.Printf("starting server...")
 	err := s.Svr.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 
-	// Wait for server context to be stopped
 	<-serverCtx.Done()
 }
