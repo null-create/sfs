@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/sfs/pkg/auth"
 )
 
@@ -55,17 +57,71 @@ func AuthUserHandler(h http.Handler) http.Handler {
 	})
 }
 
-// ------- admin router --------------------------------
+// ------ context --------------------------------
 
-// // A completely separate router for administrator routes
-// func adminRouter() http.Handler {
-// 	r := chi.NewRouter()
-// 	r.Use(AdminOnly)
-// 	// TODO: admin handlers
-// 	// r.Get("/", adminIndex)
-// 	// r.Get("/accounts", adminListAccounts)
-// 	return r
-// }
+func FileCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		file, err := findFile(chi.URLParam(r, "fileID"), getDBConn("Users"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if file == nil {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "file", file)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func DriveCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		drive, err := findDrive(chi.URLParam(r, "driveID"), getDBConn("Drives"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if drive == nil {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "drive", drive)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func DirCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		dir, err := findDir(chi.URLParam(r, "driveID"), getDBConn("Directories"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if dir == nil {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "directory", dir)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func UserCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := findUser(chi.URLParam(r, "driveID"), getDBConn("Users"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if user == nil {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "user", user)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
 
 // func AdminOnly(h http.Handler) http.Handler {
 // 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
