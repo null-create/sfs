@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
 /*
@@ -68,7 +69,8 @@ func NewRouter() *chi.Mux {
 
 	// custom middleware
 	// r.Use(AuthUserHandler)
-	r.Use(ContentTypeJson)
+
+	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
@@ -81,44 +83,91 @@ func NewRouter() *chi.Mux {
 		w.Write([]byte("hi"))
 	})
 
+	// :)
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	})
+
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
 		// ----- files
-
-		r.Get("/u/{userID}/f/files", api.Placeholder)       // get info about a file
-		r.Get("/u/{userID}/f/{fileID}", api.Placeholder)    // download a file from the server
-		r.Post("/u/{userID}/f/{fileID}", api.Placeholder)   // add a new file to the server
-		r.Put("/u/{userID}/f/{fileID}", api.Placeholder)    // update a file on the server
-		r.Delete("/u/{userID}/f/{fileID}", api.Placeholder) // delete a file on the server
+		r.Route("/files", func(r chi.Router) {
+			r.Route("/{fileID}", func(r chi.Router) {
+				r.Use(FileCtx)
+				r.Get("/", api.Placeholder)    // get a file from the server
+				r.Post("/", api.Placeholder)   // add a new file to the server
+				r.Put("/", api.Placeholder)    // update a file on the server
+				r.Delete("/", api.Placeholder) // delete a file on the server
+			})
+			r.Route("/i/{fileID}", func(r chi.Router) {
+				r.Use(FileCtx)
+				r.Get("/", api.Placeholder) // get info about a file
+			})
+		})
 
 		// ----- directories
+		// r.Get("/d/dirs", api.Placeholder)       // get list of user directories
+		// r.Delete("/d/dirs", api.Placeholder)    // delete all user directories
+		r.Route("/dirs", func(r chi.Router) {
+			r.Route("/{dirID}", func(r chi.Router) {
+				r.Use(DirCtx)
+				r.Get("/", api.Placeholder)    // get a directory as a zip file
+				r.Post("/", api.Placeholder)   // create a (empty) directory to the server
+				r.Put("/", api.Placeholder)    // update a directory on the server
+				r.Delete("/", api.Placeholder) // delete a directory
+			})
+			r.Route("/i/{dirID}", func(r chi.Router) {
+				r.Use(DirCtx)
+				r.Get("/", api.Placeholder) // get info about a directory
+			})
+		})
 
-		r.Get("/u/{userID}/d/dirs/", api.Placeholder)      // get list of user directories
-		r.Delete("/u/{userID}/d/dirs/", api.Placeholder)   // delete all user directories
-		r.Get("/u/{userID}/d/{dirID}/i", api.Placeholder)  // get info (file list) about a directory
-		r.Get("/u/{userID}/d/{dirID}", api.Placeholder)    // download a .zip file of the directory from the server
-		r.Post("/u/{userID}/d/{dirID}", api.Placeholder)   // create a (empty) directory to the server
-		r.Put("/u/{userID}/d/{dirID}", api.Placeholder)    // update a directory on the server
-		r.Delete("/u/{userID}/d/{dirID}", api.Placeholder) // delete a directory
+		r.Route("/users", func(r chi.Router) {
 
-		// ------- users (admin only)
+			// ----- users (admin only)
+			// TODO: add some user API's (add/remove/search users)
+			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(UserCtx)
+				r.Get("/", api.Placeholder)    // get info about a user
+				r.Post("/", api.Placeholder)   // add a new user
+				r.Put("/", api.Placeholder)    // update a user
+				r.Delete("/", api.Placeholder) // delete a user
 
-		// TODO: add some user API's (add/remove/search users)
-
-		// ----- sync operations
-
-		// fetch file last sync times for all
-		// user files (in all directories) from server
-		// to start a client side sync operation
-		r.Get("/u/{userID}/sync", api.Placeholder)
-
-		// send a newly generated last sync index to the
-		// server to initiate a client/server file sync.
-		r.Post("/u/{userID}/sync", api.Placeholder)
+				// sync operations
+				r.Route("/sync", func(r chi.Router) {
+					r.Use(UserCtx)
+					// fetch file last sync times for all
+					// user files (in all directories) from server
+					// to start a client side sync operation
+					r.Get("/", api.Placeholder)
+					// send a newly generated last sync index to the
+					// server to initiate a client/server file sync.
+					r.Post("/", api.Placeholder)
+				})
+			})
+		})
 	})
 
 	// Mount the admin sub-router
 	// r.Mount("/admin", adminRouter)
 
+	// generates a json document of our routing
+	// fmt.Println(docgen.MarkdownRoutesDoc(r, docgen.MarkdownOpts{
+	// 	ProjectPath: "github.com/go-chi/chi/v5",
+	// 	Intro:       "Welcome to the chi/_examples/rest generated docs.",
+	// }))
+
 	return r
 }
+
+// ------- admin router --------------------------------
+
+// // A completely separate router for administrator routes
+// func adminRouter() http.Handler {
+// 	r := chi.NewRouter()
+// 	r.Use(AdminOnly)
+// 	// TODO: admin handlers
+// 	// r.Get("/", adminIndex)
+// 	// r.Get("/accounts", adminListAccounts)
+// 	return r
+// }
