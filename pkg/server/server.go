@@ -49,9 +49,9 @@ func (s *Server) Start() {
 	}
 }
 
-// shuts down server and return total run time
+// forcibly shuts down server and returns total run time
 func (s *Server) Shutdown() (float64, error) {
-	log.Printf("shutting down server...")
+	log.Printf("forcing server shut down...")
 	if err := s.Svr.Close(); err != nil && err != http.ErrServerClosed {
 		return 0, fmt.Errorf("server shutdown failed: %v", err)
 	}
@@ -76,11 +76,13 @@ func (s *Server) Run() {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Fatal("graceful shutdown timed out. forcing exit.")
+				log.Print("shutdown timed out. forcing exit.")
+				if _, err := s.Shutdown(); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}()
 
-		// trigger graceful shutdown
 		log.Printf("shutting down server...")
 		err := s.Svr.Shutdown(shutdownCtx)
 		if err != nil {
