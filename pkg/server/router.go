@@ -14,41 +14,36 @@ ROUTES:
 
 // ----- meta
 
-GET    /v1/drive/{userID}             // "home". return a root directory listing
+GET     /v1/drive/{userID}        // "home". return a root directory listing
 
 // ----- users (admin only)
 
-GET     /v1/u/{userID}                // get info about a user
-POST    /v1/u/{userID}                // create a new user
-PUT     /v1/u/{userID}                // update a user
-DELETE  /v1/u/{userID}                // delete a user
+GET     /v1/users/{userID}       // get info about a user
+POST    /v1/users/{userID}       // create a new user
+PUT     /v1/users/{userID}       // update a user
+DELETE  /v1/users/{userID}       // delete a user
 
 // ----- files
 
-GET    /v1/u/{userID}/f/files         // get list of user files and directories
-POST   /v1/u/{userID}/f/files         // send a file to the server
-
-GET    /v1/u/{userID}/f/{fileID}/i/   // get info about a file
-GET    /v1/u/{userID}/f/{fileID}      // download a file from the server
-POST   /v1/u/{userID}/f/{fileID}      // send a new file to the server
-UPDATE /v1/u/{userID}/f/{fileID}      // update a file on the server
-DELETE /v1/u/{userID}/f/{fileID}      // delete a file on the server
+GET    /v1/i/files/{fileID}    // get info about a file
+GET    /v1/files/{fileID}      // download a file from the server
+POST   /v1/files/{fileID}      // send a new file to the server
+PUT    /v1/files/{fileID}      // update a file on the server
+DELETE /v1/files/{fileID}      // delete a file on the server
 
 // ---- directories
 
-GET    /v1/u/{userID}/d/dirs         // get list of user directories
-
-GET    /v1/u/{userID}/d/{dirID}/i/   // get list of files and subdirectories for this directory
-GET    /v1/u/{userID}/d/{dirID}      // download a .zip (or other compressed format) file of this directory and its contents
-POST   /v1/u/{userID}/d/{dirID}      // create a directory on the server
-UPDATE /v1/u/{userID}/d/{dirID}      // update a directory on the server
-DELETE /v1/u/{userID}/d/{dirID}      // delete a directory on the server
+GET    /v1/i/dirs/{dirID}    // get list of files and subdirectories for this directory
+GET    /v1/dirs/{dirID}      // download a .zip (or other compressed format) file of this directory and its contents
+POST   /v1/dirs/{dirID}      // create a directory on the server
+PUT    /v1/dirs/{dirID}      // update a directory on the server
+DELETE /v1/dirs/{dirID}      // delete a directory on the server
 
 // ----- sync operations
 
-GET    /v1/u/{userID}/sync      // fetch file last sync times from server
+GET    /v1/users/{userID}/sync  // fetch file last sync times from server
 
-POST   /v1/u/{userID}/sync      // send a last sync index object to the server
+POST   /v1/users/{userID}/sync  // send a last sync index object to the server
                                 // generated from the local client directories to
 								                // initiate a client/server file sync.
 */
@@ -83,14 +78,8 @@ func NewRouter() *chi.Mux {
 		w.Write([]byte("hi"))
 	})
 
-	// :)
-	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("pong"))
-	})
-
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
-		// ----- files
 		r.Route("/files", func(r chi.Router) {
 			r.Route("/{fileID}", func(r chi.Router) {
 				r.Use(FileCtx)
@@ -105,9 +94,6 @@ func NewRouter() *chi.Mux {
 			})
 		})
 
-		// ----- directories
-		// r.Get("/d/dirs", api.Placeholder)       // get list of user directories
-		// r.Delete("/d/dirs", api.Placeholder)    // delete all user directories
 		r.Route("/dirs", func(r chi.Router) {
 			r.Route("/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
@@ -122,17 +108,16 @@ func NewRouter() *chi.Mux {
 			})
 		})
 
-		r.Route("/users", func(r chi.Router) {
+		r.Route("/drive", func(r chi.Router) {
+			r.Route("/{driveID}", func(r chi.Router) {
+				//r.Use(DriveCtx)
+				r.Get("/", api.Placeholder) // "home" page for files.
+			})
+		})
 
-			// ----- users (admin only)
-			// TODO: add some user API's (add/remove/search users)
+		r.Route("/users", func(r chi.Router) {
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(UserCtx)
-				r.Get("/", api.Placeholder)    // get info about a user
-				r.Post("/", api.Placeholder)   // add a new user
-				r.Put("/", api.Placeholder)    // update a user
-				r.Delete("/", api.Placeholder) // delete a user
-
 				// sync operations
 				r.Route("/sync", func(r chi.Router) {
 					r.Use(UserCtx)
@@ -148,8 +133,13 @@ func NewRouter() *chi.Mux {
 		})
 	})
 
-	// Mount the admin sub-router
-	// r.Mount("/admin", adminRouter)
+	// :)
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	})
+
+	// mount the admin sub-router
+	r.Mount("/admin", adminRouter())
 
 	// generates a json document of our routing
 	// fmt.Println(docgen.MarkdownRoutesDoc(r, docgen.MarkdownOpts{
@@ -162,12 +152,23 @@ func NewRouter() *chi.Mux {
 
 // ------- admin router --------------------------------
 
-// // A completely separate router for administrator routes
-// func adminRouter() http.Handler {
-// 	r := chi.NewRouter()
-// 	r.Use(AdminOnly)
-// 	// TODO: admin handlers
-// 	// r.Get("/", adminIndex)
-// 	// r.Get("/accounts", adminListAccounts)
-// 	return r
-// }
+// A completely separate router for administrator routes
+func adminRouter() http.Handler {
+	r := chi.NewRouter()
+
+	// TODO: add AdminOnly middleware
+
+	// initialize API handlers
+	api := NewAPI(isMode("NEW_SERVICE"), true)
+
+	r.Route("/users", func(r chi.Router) {
+		r.Route("/{userID}", func(r chi.Router) {
+			r.Use(UserCtx)
+			r.Get("/", api.Placeholder)    // get info about a user
+			r.Post("/", api.Placeholder)   // add a new user
+			r.Put("/", api.Placeholder)    // update a user
+			r.Delete("/", api.Placeholder) // delete a user)
+		})
+	})
+	return r
+}
