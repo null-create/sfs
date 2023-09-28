@@ -110,7 +110,7 @@ func NewRouter() *chi.Mux {
 
 		r.Route("/drive", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
-				//r.Use(DriveCtx)
+				r.Use(DriveCtx)
 				r.Get("/", api.Placeholder) // "home" page for files.
 			})
 		})
@@ -120,7 +120,6 @@ func NewRouter() *chi.Mux {
 				r.Use(UserCtx)
 				// sync operations
 				r.Route("/sync", func(r chi.Router) {
-					r.Use(UserCtx)
 					// fetch file last sync times for all
 					// user files (in all directories) from server
 					// to start a client side sync operation
