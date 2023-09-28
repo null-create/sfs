@@ -40,15 +40,6 @@ func (s *Server) RunTime() float64 {
 	return time.Since(s.StartTime).Seconds()
 }
 
-// start the server
-func (s *Server) Start() {
-	s.StartTime = time.Now().UTC()
-	log.Printf("starting server...")
-	if err := s.Svr.ListenAndServe(); err != nil {
-		log.Fatalf("[ERROR] server startup failed: %v", err)
-	}
-}
-
 // forcibly shuts down server and returns total run time
 func (s *Server) Shutdown() (float64, error) {
 	log.Printf("forcing server shut down...")
