@@ -5,8 +5,19 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/sfs/pkg/auth"
+
+	"github.com/go-chi/chi"
+)
+
+type Context string
+
+// context enums
+const (
+	File      Context = "file"
+	Directory Context = "directory"
+	Drive     Context = "drive"
+	User      Context = "user"
 )
 
 // add json header to requests. added to middleware stack
@@ -18,11 +29,16 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
+// retrieve jwt token from request & verify
 func AuthenticateUser(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
-	tok := auth.NewT()
+	authReq := r.Header.Get("Authorization")
+	if authReq == "" {
+		http.Error(w, "authorization header has no token", http.StatusBadRequest)
+		return nil, nil
+	}
 
-	// retrieve jwt token from request & verify
-	reqToken, err := tok.Extract(r.Header.Get("Authorization"))
+	tok := auth.NewT()
+	reqToken, err := tok.Extract(authReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, err
@@ -70,7 +86,7 @@ func FileCtx(h http.Handler) http.Handler {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "file", file)
+		ctx := context.WithValue(r.Context(), File, file)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -86,14 +102,14 @@ func DriveCtx(h http.Handler) http.Handler {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "drive", drive)
+		ctx := context.WithValue(r.Context(), Drive, drive)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func DirCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		dir, err := findDir(chi.URLParam(r, "driveID"), getDBConn("Directories"))
+		dir, err := findDir(chi.URLParam(r, "dirID"), getDBConn("Directories"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -102,14 +118,14 @@ func DirCtx(h http.Handler) http.Handler {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "directory", dir)
+		ctx := context.WithValue(r.Context(), Directory, dir)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func UserCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := findUser(chi.URLParam(r, "driveID"), getDBConn("Users"))
+		user, err := findUser(chi.URLParam(r, "userID"), getDBConn("Users"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -118,7 +134,7 @@ func UserCtx(h http.Handler) http.Handler {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user", user)
+		ctx := context.WithValue(r.Context(), User, user)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
