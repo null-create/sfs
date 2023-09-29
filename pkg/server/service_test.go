@@ -201,39 +201,23 @@ func TestAllocateDrive(t *testing.T) {
 		Fatal(t, err)
 	}
 	assert.NotEqual(t, 0, len(entries))
+
 	for _, e := range entries {
 		if strings.Contains(e.Name(), "root") {
 			continue // don't check root directory
+		} else if strings.Contains(e.Name(), "meta") {
+			fdir := filepath.Join(GetTestingDir(), "users/test/meta")
+			baseFiles, err := os.ReadDir(fdir)
+			if err != nil {
+				Fatal(t, err)
+			}
+			for _, bf := range baseFiles {
+				assert.True(t, strings.Contains(bf.Name(), ".json"))
+			}
 		}
-		assert.True(t, strings.Contains(e.Name(), ".json"))
 	}
 
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
-
-// func TestSvcClearAll(t *testing.T) {
-// 	svc := NewService(filepath.Join(GetTestingDir(), "tmp"))
-
-// 	// TODO: create a bunch of dummy user subdirectories
-// 	// under svcRoot/users
-
-// 	// total := RandInt(100)
-// 	// usrs := make([]*auth.User, 0)
-// 	// for i := 0; i < total; i++ {
-
-// 	// }
-
-// 	svc.ClearAll("")
-
-// 	entries, err := os.ReadDir(svc.SvcRoot)
-// 	if err != nil {
-// 		Fatal(t, err)
-// 	}
-// 	assert.Equal(t, 0, len(entries))
-
-// 	if err := Clean(GetTestingDir()); err != nil {
-// 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-// 	}
-// }
