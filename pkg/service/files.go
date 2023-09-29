@@ -194,16 +194,6 @@ func (f *File) Clear() error {
 	return nil
 }
 
-// update file checksum
-func (f *File) UpdateChecksum() error {
-	newCs, err := CalculateChecksum(f.Path, f.Algorithm)
-	if err != nil {
-		return fmt.Errorf("[ERROR] CalculateChecksum failed: %v", err)
-	}
-	f.CheckSum = newCs
-	return nil
-}
-
 // ----------- File integrity
 
 func CalculateChecksum(filePath string, hashType string) (string, error) {
@@ -242,4 +232,13 @@ func (f *File) ValidateChecksum() {
 	if cs != f.CheckSum {
 		log.Printf("[WARNING] checksum mismatch! orig: %s, new: %s", cs, f.CheckSum)
 	}
+}
+
+func (f *File) UpdateChecksum() error {
+	newCs, err := CalculateChecksum(f.Path, f.Algorithm)
+	if err != nil {
+		return fmt.Errorf("[ERROR] CalculateChecksum failed: %v", err)
+	}
+	f.CheckSum = newCs
+	return nil
 }
