@@ -34,6 +34,19 @@ func GetTestingDir() string {
 	return filepath.Join(curDir, "testing")
 }
 
+func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *auth.User) {
+	tempDir := svc.NewDirectory(
+		"bill", "bill buttlicker", filepath.Join(testDir, "bill"),
+	)
+	tempDrive := svc.NewDrive(
+		svc.NewUUID(), "bill", "bill buttlicker", filepath.Join(testDir, "bill"), tempDir,
+	)
+	tmpUser := auth.NewUser(
+		"bill", "bill123", "bill@bill.com", tempDrive.ID, testDir, false,
+	)
+	return tempDrive, tempDir, tmpUser
+}
+
 // clean all contents from the testing directory
 func Clean(t *testing.T, dir string) error {
 	d, err := os.Open(dir)
@@ -54,28 +67,4 @@ func Clean(t *testing.T, dir string) error {
 	}
 
 	return nil
-}
-
-func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *auth.User) {
-	tempDir := svc.NewDirectory(
-		"bill",
-		"bill buttlicker",
-		filepath.Join(testDir, "bill"),
-	)
-	tempDrive := svc.NewDrive(
-		svc.NewUUID(),
-		"bill",
-		"bill buttlicker",
-		filepath.Join(testDir, "bill"),
-		tempDir,
-	)
-	tmpUser := auth.NewUser(
-		"bill",
-		"bill123",
-		"bill@bill.com",
-		tempDrive.ID,
-		testDir,
-		false,
-	)
-	return tempDrive, tempDir, tmpUser
 }
