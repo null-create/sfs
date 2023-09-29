@@ -115,10 +115,10 @@ func NewRouter() *chi.Mux {
 			})
 		})
 
+		// sync operations
 		r.Route("/users", func(r chi.Router) {
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(UserCtx)
-				// sync operations
 				r.Route("/sync", func(r chi.Router) {
 					// fetch file last sync times for all
 					// user files (in all directories) from server
@@ -155,7 +155,7 @@ func NewRouter() *chi.Mux {
 func adminRouter() http.Handler {
 	r := chi.NewRouter()
 
-	// TODO: add AdminOnly middleware
+	r.Use(AdminOnly)
 
 	// initialize API handlers
 	api := NewAPI(isMode("NEW_SERVICE"), true)
