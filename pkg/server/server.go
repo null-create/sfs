@@ -75,6 +75,44 @@ func (s *Server) Run() {
 		}()
 
 		log.Printf("shutting down server...")
+		if err := s.Svr.Shutdown(shutdownCtx); err != nil {
+			log.Fatal(err)
+		}
+		serverStopCtx()
+	}()
+
+	log.Printf("starting server...")
+	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
+
+	<-serverCtx.Done()
+}
+
+// TODO: test server? test mode?
+// must be able to be shut down programmatically
+func (s *Server) TestRun(turnOff chan bool) {
+	serverCtx, serverStopCtx := context.WithCancel(context.Background())
+
+	go func() {
+		// blocks until turnOff = true
+		// (set by outer test and passed after checks are completed (or failed))
+		<-turnOff
+
+		// shutdown signal with grace period of 10 seconds
+		shutdownCtx, _ := context.WithTimeout(serverCtx, 10*time.Second)
+
+		go func() {
+			<-shutdownCtx.Done()
+			if shutdownCtx.Err() == context.DeadlineExceeded {
+				log.Print("shutdown timed out. forcing exit.")
+				if _, err := s.Shutdown(); err != nil {
+					log.Fatal(err)
+				}
+			}
+		}()
+
+		log.Printf("shutting down server...")
 		err := s.Svr.Shutdown(shutdownCtx)
 		if err != nil {
 			log.Fatal(err)
@@ -83,10 +121,8 @@ func (s *Server) Run() {
 	}()
 
 	log.Printf("starting server...")
-	err := s.Svr.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
+	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
-
 	<-serverCtx.Done()
 }
