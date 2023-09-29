@@ -16,7 +16,6 @@ func (q *Query) UpdateFile(f *svc.File) error {
 	}
 	defer q.Stmt.Close()
 
-	// execute the statement
 	if _, err := q.Stmt.Exec(
 		&f.ID,
 		&f.Name,
