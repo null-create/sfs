@@ -88,7 +88,7 @@ const (
 			server_path, 
 			client_path, 
 			checksum, 
-			algorithm,
+			algorithm
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -143,15 +143,72 @@ const (
 
 	// ------- update file, user, directory, and drive entries -------
 
-	UpdateUserQuery  string = ``
-	UpdateDriveQuery string = ``
-	UpdateDirQuery   string = ``
-	UpdateFileQuery  string = ``
+	UpdateFileQuery string = ``
 
-	// remove a user or file iff they (or the file) already exists in the database
-	RemoveQuery string = `
-		DELETE FROM ? WHERE id = ?; 
-		AND EXISTS (SELECT 1 FROM ? WHERE id=?)`
+	UpdateDirQuery string = `
+		UPDATE Directories
+			SET id = ?,
+			name = ?,
+			owner = ?,
+			size = ?,
+			path = ?,
+			protected = ?,
+			auth_type = ?,
+			key = ?,
+			overwrite = ?,
+			last_sync = ?, 
+			drive_root = ?, 
+			root_path = ?
+		WHERE id = ?;
+	`
+	UpdateDriveQuery string = `
+		UPDATE Drives
+		SET id = ?,
+				name = ?,
+				owner = ?,
+				total_space = ?,
+				used_space = ?,
+				free_space = ?,
+				protected = ?,
+				key = ?,
+				auth_type = ?,
+				drive_root = ?
+		WHERE id = ?;
+	`
+
+	UpdateUserQuery string = `
+	UPDATE Users
+	SET id = ?, 
+			name = ?, 
+			username = ?, 
+			email = ?, 
+			password = ?, 
+			last_login = ?,
+			is_admin = ?,
+			sf_path = ?,
+			drive_id = ?,
+			total_files = ?,
+			total_directories = ?,
+			root = ?
+	WHERE id = ?;`
+
+	// Removal queries remove the row iff they exist
+
+	RemoveFileQuery string = `
+		DELETE FROM Files WHERE id = ? 
+		AND EXISTS (SELECT 1 FROM Files WHERE id = ?);`
+
+	RemoveDirectoryQuery string = `
+		DELETE FROM Directories WHERE id = ? 
+		AND EXISTS (SELECT 1 FROM Directories WHERE id = ?);`
+
+	RemoveDriveQuery string = `
+		DELETE FROM Drives WHERE id = ? 
+		AND EXISTS (SELECT 1 FROM Drives WHERE id = ?);`
+
+	RemoveUserQuery string = `
+		DELETE FROM Users WHERE id = ? 
+		AND EXISTS (SELECT 1 FROM Users WHERE id=?);`
 
 	// ---------- SELECT statements for searching -------------------------------
 
