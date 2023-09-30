@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -279,16 +280,6 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 	return svc, nil
 }
 
-func isNewService() bool {
-	e := NewE()
-	if v, err := e.Get("NEW_SERVICE"); err == nil {
-		return v == "true"
-	} else {
-		log.Fatalf("failed to read service .env file: %v", err)
-	}
-	return false
-}
-
 //   - are the databases present?
 //   - is the statefile present?
 //
@@ -332,10 +323,6 @@ func svcLoad(sfPath string) (*Service, error) {
 //
 // populates users map through querying the users database
 func SvcLoad(svcPath string, debug bool) (*Service, error) {
-	// make sure we have the right env configuration
-	if isNewService() {
-		return nil, fmt.Errorf("environment mismatch")
-	}
 	// ensure (at least) the necessary dbs
 	// and state files are present
 	sfPath, err := preChecks(svcPath)
@@ -408,17 +395,19 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 		}
 	}
 
-	rt := svc.NewRootDirectory(name, owner, usrRoot)
-	drv := svc.NewDrive(svc.NewUUID(), name, owner, svcDir, rt)
-
 	// gen base files for this user
 	GenBaseUserFiles(metaRoot)
+
+	// gen root and drive objects
+	rt := svc.NewRootDirectory(name, owner, usrRoot)
+	drv := svc.NewDrive(svc.NewUUID(), name, owner, svcDir, rt)
 
 	return drv, nil
 }
 
 // save drive state to DB
 func (s *Service) SaveDrive(d *svc.Drive) error {
+	s.Db.WhichDB("drives")
 	if err := s.Db.AddDrive(d); err != nil {
 		return err
 	}
@@ -427,6 +416,7 @@ func (s *Service) SaveDrive(d *svc.Drive) error {
 
 // search DB for drive info, if available
 func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
+	s.Db.WhichDB("drives")
 	drv, err := s.Db.GetDrive(driveID)
 	if err != nil {
 		return nil, err
@@ -442,43 +432,77 @@ func (s *Service) TotalUsers() int {
 
 // save user state to their state file
 func (s *Service) SaveUser(u *auth.User) error {
+	if err := s.UpdateUser(u); err != nil {
+		return err
+	}
 	if err := u.SaveState(); err != nil {
 		return err
 	}
 	return nil
 }
 
-// save to service instance and db
-func (s *Service) addUser(u *auth.User, d *svc.Drive) error {
-	u.DriveID = d.ID
-	if err := s.Db.AddUser(u); err != nil {
+// generate new user instance, and create drive and other base files
+func (s *Service) addUser(userID string, r *http.Request) error {
+
+	// TODO: figure out how to retrieve name, userName, and email fields from a request.
+	// probably some JSON blob of some kind
+
+	user := auth.NewUser(
+		"bill buttlicker", "billBB", "bill@bill.com", userID, s.SvcRoot, false,
+	)
+
+	// allocate new drive and base service files
+	d, err := AllocateDrive(user.Name, user.Name, s.SvcRoot)
+	if err != nil {
+		return fmt.Errorf("failed to allocate new drive for user %s \n%v", user.ID, err)
+	}
+	user.DriveID = d.ID
+
+	s.Db.WhichDB("users")
+	if err := s.Db.AddUser(user); err != nil {
 		return fmt.Errorf("failed to add user to database: %v", err)
 	}
-	s.Users[u.ID] = u
+	if err := s.Db.AddDrive(d); err != nil {
+		return fmt.Errorf("failed to add drive to database: %v", err)
+	}
+
+	s.Users[user.ID] = user
+	if err := s.SaveState(); err != nil {
+		log.Printf("[WARNING] failed to save service state: %v", err)
+	}
 	return nil
 }
 
 // allocate a new service drive for a newly added user
-func (s *Service) AddUser(u *auth.User) error {
-	if _, exists := s.Users[u.ID]; !exists {
-		// allocate new drive and base service files
-		d, err := AllocateDrive(u.Name, u.Name, s.SvcRoot)
+func (s *Service) AddUser(userID string, r *http.Request) error {
+	if _, exists := s.Users[userID]; !exists {
+		s.Db.WhichDB("users")
+		u, err := s.Db.GetUser(userID) // try DB if not in instance
 		if err != nil {
-			return fmt.Errorf("failed to allocate new drive for user %s \n%v", u.ID, err)
+			return err
+		} else if u != nil {
+			return fmt.Errorf("%s already exists", userID)
 		}
-		if err := s.addUser(u, d); err != nil {
+		// add new user to service and create new drive
+		if err = s.addUser(userID, r); err != nil {
+			return err
+		}
+		log.Printf("[INFO] added user: %s", userID)
+		if err := s.SaveState(); err != nil {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] user (id=%s) already present", u.ID)
+		log.Printf("[DEBUG] user (id=%s) already present", userID)
 	}
 	return nil
 }
 
 // remove users's drive and all files and directories within
-func (s *Service) remove(driveID string) error {
+func (s *Service) removeUser(driveID string) error {
+	s.Db.WhichDB("drives")
 	if d, err := s.Db.GetDrive(driveID); err == nil {
 		if d != nil {
+			// remove all files and directories
 			if err := d.Root.Clean(d.Root.Path); err != nil {
 				return err
 			}
@@ -499,13 +523,20 @@ func (s *Service) remove(driveID string) error {
 // remove a user and all their files and directories
 func (s *Service) RemoveUser(userID string) error {
 	if usr, exists := s.Users[userID]; exists {
-		if err := s.remove(usr.DriveID); err != nil {
+		if err := s.removeUser(usr.DriveID); err != nil {
 			return err
 		}
-		delete(s.Users, usr.DriveID)
-		log.Printf("user (id=%s) removed", userID)
+		s.Db.WhichDB("users")
+		if err := s.Db.RemoveUser(usr.ID); err != nil {
+			return err
+		}
+		delete(s.Users, usr.ID)
+		log.Printf("[INFO] user (id=%s) removed", userID)
+		if err := s.SaveState(); err != nil {
+			return err
+		}
 	} else {
-		log.Printf("user (id=%s) not found", userID)
+		log.Printf("[WARNING] user (id=%s) not found", userID)
 	}
 	return nil
 }
@@ -513,6 +544,7 @@ func (s *Service) RemoveUser(userID string) error {
 // find a user. if not in the instance, then it will query the database
 func (s *Service) FindUser(userId string) (*auth.User, error) {
 	if u, exists := s.Users[userId]; !exists {
+		s.Db.WhichDB("users")
 		u, err := s.Db.GetUser(userId) // try DB if not in instance
 		if err != nil {
 			return nil, err
@@ -522,6 +554,41 @@ func (s *Service) FindUser(userId string) (*auth.User, error) {
 	} else {
 		return u, nil
 	}
+}
+
+func (s *Service) updateUser(user *auth.User) error {
+	if err := s.Db.UpdateUser(user); err != nil {
+		return fmt.Errorf("failed to update user in database: %v", err)
+	}
+	s.Users[user.ID] = user
+	s.Db.DBPath = filepath.Join(s.SvcRoot, "dbs")
+
+	log.Printf("[INFO] user (id=%s) updated", user.ID)
+	return nil
+}
+
+func (s *Service) UpdateUser(user *auth.User) error {
+	if _, exists := s.Users[user.ID]; !exists {
+		s.Db.WhichDB("users")
+		u, err := s.Db.GetUser(user.ID) // try DB if not in instance
+		if err != nil {
+			return err
+		}
+		if u != nil { // user exists, update it
+			if err := s.updateUser(user); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("user %v not found", user.ID)
+		}
+	} else {
+		s.Db.WhichDB("users")
+		if err := s.updateUser(user); err != nil {
+			return err
+		}
+		return nil
+	}
+	return nil
 }
 
 // --------- sync --------------------------------
