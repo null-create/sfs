@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -13,9 +14,11 @@ import (
 // if instantiated as a singleton, then the query will prepare
 // a map of sql statements that can be used during run time.
 type Query struct {
-	DBPath string
-	Query  string
-	Debug  bool
+	DBPath string // database directory path
+	CurDB  string // current database we're connecting to
+	Debug  bool   // debug flag
+
+	Singleton bool // flag for whether this is being use as a singleton
 
 	Conn  *sql.DB              // db connection
 	Stmt  *sql.Stmt            // SQL statement (when used as a one time object)
@@ -25,16 +28,18 @@ type Query struct {
 // returns a new query struct
 func NewQuery(dbPath string, isSingleton bool) *Query {
 	q := &Query{
-		DBPath: dbPath,
-		Query:  "",
-		Debug:  false,
+		DBPath:    dbPath,
+		CurDB:     "",
+		Debug:     false,
+		Singleton: isSingleton,
+		Stmts:     make(map[string]*sql.Stmt),
 	}
 	// TODO: need a way to indicate this mode to other finds/gets/etc so as to not
 	// redundantly prepare queries prior to execution. isSingleton is set to false
 	// by default for the time being
-	if isSingleton {
-		q.Stmts = prepQueries(dbPath)
-	}
+	// if isSingleton {
+	// 	q.Stmts = prepQueries(dbPath)
+	// }
 	return q
 }
 
@@ -82,24 +87,35 @@ func (q *Query) Prepare(query string) error {
 	if err != nil {
 		return fmt.Errorf("unable to prepare statement: %v", err)
 	}
-	q.Query = query
 	q.Stmt = stmt
 	return nil
+}
+
+// sets the file path to the db we want to connect to.
+// must reset the internal DB path after use
+func (q *Query) WhichDB(dbName string) {
+	q.CurDB = filepath.Join(q.DBPath, dbName)
 }
 
 // connect to a database given the assigned dbPath when query was initialized
 //
 // must be followed by a defer q.Conn.Close() statement when called!
 func (q *Query) Connect() error {
-	if q.DBPath == "" {
-		return fmt.Errorf("no DB path specified")
+	if q.Singleton {
+		db, err := sql.Open("sqlite3", q.CurDB)
+		if err != nil {
+			return fmt.Errorf("failed to connect to database: %v", err)
+		}
+		q.Conn = db
+		return nil
+	} else {
+		db, err := sql.Open("sqlite3", q.DBPath)
+		if err != nil {
+			return fmt.Errorf("failed to connect to database: %v", err)
+		}
+		q.Conn = db
+		return nil
 	}
-	db, err := sql.Open("sqlite3", q.DBPath)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
-	}
-	q.Conn = db
-	return nil
 }
 
 func (q *Query) Close() error {
