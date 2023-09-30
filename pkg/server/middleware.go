@@ -139,14 +139,14 @@ func UserCtx(h http.Handler) http.Handler {
 	})
 }
 
-// func AdminOnly(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		ctx := r.Context()
-// 		_, ok := ctx.Value("acl.permission").(float64)
-// 		if !ok {
-// 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-// 			return
-// 		}
-// 		h.ServeHTTP(w, r)
-// 	})
-// }
+func AdminOnly(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, ok := ctx.Value("acl.permission").(float64)
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
