@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/server"
 )
@@ -20,9 +18,7 @@ import (
 // TODO:
 // should deterime whether we're running client or server at runtime
 func main() {
-	if err := env.BuildEnv(true); err != nil {
-		log.Fatal(err)
-	}
+	env.BuildEnv(true)
 	srv := server.NewServer()
 	srv.Run()
 }

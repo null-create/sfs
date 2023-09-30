@@ -37,13 +37,13 @@ func HasDotEnv() bool {
 }
 
 // read .env file and set as environment variables
-func BuildEnv(debug bool) error {
+func BuildEnv(debug bool) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		log.Fatalf("failed to get working directory: %v", err)
 	}
 	if err := godotenv.Load(filepath.Join(wd, ".env")); err != nil {
-		return err
+		log.Fatalf("failed to load .env file: %v", err)
 	}
 	if debug {
 		env := os.Environ()
@@ -51,7 +51,6 @@ func BuildEnv(debug bool) error {
 			fmt.Printf("%d: %s\n", i, e)
 		}
 	}
-	return nil
 }
 
 func validate(k string, env map[string]string) error {
