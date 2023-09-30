@@ -142,6 +142,8 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 	}
 }
 
+// ------- file management --------------------------------
+
 // add file to a directory
 func (d *Drive) AddFile(dirID string, f *File) error {
 	dir := d.GetDir(dirID)
@@ -156,6 +158,55 @@ func (d *Drive) AddFile(dirID string, f *File) error {
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
 		return d.Root.WalkF(fileID)
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+// update a file
+func (d *Drive) UpdateFile(dirID string, f *File) error {
+	dir := d.GetDir(dirID)
+	if dir == nil {
+		return fmt.Errorf("dir (id=%s) not found", dirID)
+	}
+	if err := dir.UpdateFile(f); err != nil {
+		return err
+	}
+	return nil
+}
+
+// remove file from a directory
+func (d *Drive) RemoveFile(dirID string, f *File) error {
+	dir := d.GetDir(dirID)
+	if dir == nil {
+		return fmt.Errorf("dir (id=%s) not found", dirID)
+	}
+	if err := dir.RemoveFile(f.ID); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ------ directory management --------------------------------
+
+func (d *Drive) addDir(dir *Directory) error {
+	if err := d.Root.AddSubDir(dir); err != nil {
+		return err
+	}
+	return nil
+}
+
+// add a directory. currently defaults to drive.Root
+func (d *Drive) AddDir(dir *Directory) error {
+	if !d.Protected {
+		if _, exists := d.Root.Dirs[dir.ID]; !exists {
+			if err := d.addDir(dir); err != nil {
+				return err
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -167,6 +218,37 @@ func (d *Drive) GetDir(dirID string) *Directory {
 			return d.Root
 		}
 		return d.Root.WalkD(dirID)
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+func (d *Drive) removeDir(dirID string) error {
+	dir := d.GetDir(dirID)
+	if dir != nil {
+		if err := os.RemoveAll(dir.Path); err != nil {
+			return err
+		}
+		parent := dir.Parent
+		if parent != nil {
+			delete(parent.Dirs, dir.ID)
+		}
+		log.Printf("[DEBUG] directory (id=%s) removed", dirID)
+	} else {
+		log.Printf("[DEBUG] directory (id=%s) not found", dirID)
+	}
+	return nil
+}
+
+// remove a directory
+func (d *Drive) RemoveDir(dirID string) error {
+	if !d.Protected {
+		if err := d.removeDir(dirID); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/auth"
 )
 
 // --------- fixtures --------------------------------
@@ -216,6 +217,84 @@ func TestAllocateDrive(t *testing.T) {
 			}
 		}
 	}
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestAddAndRemoveUser(t *testing.T) {
+	BuildEnv(true)
+
+	c := ServiceConfig()
+	testSvc, err := SvcLoad(c.S.SvcRoot, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// create test user
+	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com",
+		auth.NewUUID(), c.S.SvcRoot, false,
+	)
+	if err := testSvc.AddUser(testUsr.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, testUsr, testSvc.Users[testUsr.ID])
+
+	// check that its in the db and was entered correctly
+	u, err := testSvc.FindUser(testUsr.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotEqual(t, nil, u)
+	assert.Equal(t, testUsr.ID, u.ID)
+
+	// get a tmp drive to check that things have been removed correctly
+	testDrv, err := testSvc.FindDrive(testUsr.DriveID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// attempt to remove user & verify that their drive was removed
+	if err := testSvc.RemoveUser(testUsr.ID); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(testDrv.Root.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, 0, len(entries))
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestAddAndUpdateAUser(t *testing.T) {
+	c := ServiceConfig()
+	testSvc, err := SvcLoad(c.S.SvcRoot, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testUsr := auth.NewUser(
+		"bill buttlicker", "billBB", "bill@bill.com",
+		auth.NewUUID(), c.S.SvcRoot, false,
+	)
+	if err := testSvc.AddUser(testUsr.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	// check that its in the db
+
+	// update name
+	testUsr.Name = "bill buttlicker II"
+
+	if err := testSvc.UpdateUser(testUsr); err != nil {
+		t.Fatal(err)
+	}
+
+	// test that the new name is the same as whats in the DB
 
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
