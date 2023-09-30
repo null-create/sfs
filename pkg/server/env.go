@@ -48,7 +48,7 @@ func BuildEnv(debug bool) error {
 	if debug {
 		env := os.Environ()
 		for i, e := range env {
-			fmt.Printf("%d: %s\n", i, e)
+			fmt.Printf("%d: %s\n", i+1, e)
 		}
 	}
 	return nil
