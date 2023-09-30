@@ -92,9 +92,13 @@ func (q *Query) Prepare(query string) error {
 }
 
 // sets the file path to the db we want to connect to.
-// must reset the internal DB path after use
+//
+// used only in singleton mode. will be a no-op when used
+// otherwise.
 func (q *Query) WhichDB(dbName string) {
-	q.CurDB = filepath.Join(q.DBPath, dbName)
+	if q.Singleton {
+		q.CurDB = filepath.Join(q.DBPath, dbName)
+	}
 }
 
 // connect to a database given the assigned dbPath when query was initialized
