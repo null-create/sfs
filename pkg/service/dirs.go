@@ -245,6 +245,7 @@ func (d *Directory) Unlock(password string) bool {
 // updates internal file map and file's sync time
 func (d *Directory) addFile(file *File) {
 	if _, exists := d.Files[file.ID]; !exists {
+		// TODO: update file absolute paths here? want to keep current
 		d.Files[file.ID] = file
 		d.Files[file.ID].LastSync = time.Now().UTC()
 		log.Printf("[DEBUG] file %s (%s) added", file.Name, file.ID)
@@ -281,6 +282,35 @@ func (d *Directory) AddFiles(files []*File) {
 	} else {
 		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
 	}
+}
+
+func (d *Directory) updateFile(f *File) error {
+	if file, exists := d.Files[f.ID]; exists {
+		// load file content if not already loaded
+		if len(f.Content) == 0 {
+			f.Load()
+		}
+		if len(f.Content) == 0 {
+			return fmt.Errorf("unable to load file content")
+		}
+		if err := file.Save(f.Content); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[DEBUG] file (%v) not found", f.ID)
+	}
+	return nil
+}
+
+func (d *Directory) UpdateFile(f *File) error {
+	if !d.Protected {
+		if err := d.updateFile(f); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
+	}
+	return nil
 }
 
 // removes internal file object from file map
@@ -327,11 +357,12 @@ func (d *Directory) FindFile(fileID string) *File {
 
 // -------- sub directory methods
 
-// creates and updates internal data structures.
-//
-// does not create physical subdirectories, only abstractions
+// creates a new subdirectory and updates internal data structures.
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
+		if err := os.Mkdir(dir.Path, PERMS); err != nil {
+			return err
+		}
 		dir.Parent = d
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
@@ -376,10 +407,12 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 }
 
 func (d *Directory) removeDir(dirID string) error {
-	if dir, ok := d.Dirs[dirID]; ok {
+	if dir, exists := d.Dirs[dirID]; exists {
 		if err := os.Remove(dir.Path); err != nil {
 			return fmt.Errorf("[ERROR] unable to remove directory %s: %v", dirID, err)
 		}
+		delete(d.Dirs, dirID)
+		log.Printf("[INFO] directory (id=%s)  removed", dirID)
 	} else {
 		log.Printf("[DEBUG] directory (id=%s) is not found", dirID)
 	}
@@ -521,6 +554,8 @@ func walkFs(dir *Directory, files map[string]*File) map[string]*File {
 /*
 WalkD() recursively traverses sub directories starting at a given directory (or root),
 attempting to find the desired sub directory with the given directory ID.
+
+Returns nil if the directory is not found
 */
 func (d *Directory) WalkD(dirID string) *Directory {
 	if len(d.Dirs) == 0 {
