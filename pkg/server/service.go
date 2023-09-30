@@ -187,6 +187,7 @@ func loadStateFile(sfPath string) (*Service, error) {
 	if err := json.Unmarshal(file, svc); err != nil {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
 	}
+	svc.Db.Singleton = true
 	svc.StateFile = sfPath
 	svc.InitTime = time.Now().UTC()
 
