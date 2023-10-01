@@ -131,6 +131,7 @@ func (q *Query) AddDirs(dirs []*svc.Directory) error {
 	return nil
 }
 
+// add drive info to drive database
 func (q *Query) AddDrive(drv *svc.Drive) error {
 	q.Connect()
 	defer q.Close()
