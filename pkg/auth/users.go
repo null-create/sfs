@@ -21,7 +21,11 @@ type User struct {
 	// used for maintenance roles
 	Admin bool `json:"admin"`
 
-	// path to user state file
+	// sfs/users/this user
+	SvcRoot string `json:"svc_root"`
+
+	// path to user state file, ie:
+	// sfs/users/state/state.json
 	SfPath string `json:"state_file"`
 
 	// drive info
@@ -33,15 +37,15 @@ type User struct {
 	Root string `json:"root"`
 }
 
-func check(name, userName, email, newDrive, svcRoot string) bool {
-	if name == "" || userName == "" || email == "" || newDrive == "" {
+func valid(name, userName, email, newDrive, svcRoot string) bool {
+	if name == "" || userName == "" || email == "" || newDrive == "" || svcRoot == "" {
 		return false
 	}
 	return true
 }
 
 func NewUser(name string, userName string, email string, newDriveID string, svcRoot string, isAdmin bool) *User {
-	if !check(name, userName, email, newDriveID, svcRoot) {
+	if !valid(name, userName, email, newDriveID, svcRoot) {
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
 	return &User{
@@ -54,6 +58,7 @@ func NewUser(name string, userName string, email string, newDriveID string, svcR
 
 		Admin: isAdmin,
 
+		SvcRoot: svcRoot,
 		SfPath:  "", // set the first time the state is saved
 		DriveID: newDriveID,
 	}
