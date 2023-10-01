@@ -166,7 +166,6 @@ func clean(dirPath string) error {
 			return fmt.Errorf("[ERROR] unable to remove file or directory: %v", err)
 		}
 	}
-
 	return nil
 }
 
