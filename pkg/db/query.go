@@ -101,7 +101,7 @@ func (q *Query) WhichDB(dbName string) {
 	}
 }
 
-// connect to a database given the assigned dbPath when query was initialized
+// connect to a database
 //
 // must be followed by a defer q.Conn.Close() statement when called!
 func (q *Query) Connect() error {
