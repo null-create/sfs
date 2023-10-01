@@ -69,7 +69,7 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 
 	var users []*auth.User
 	for rows.Next() {
-		var user *auth.User
+		user := new(auth.User)
 		if err := rows.Scan(
 			&user.ID,
 			&user.Name,
