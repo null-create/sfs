@@ -164,6 +164,16 @@ func (d *Drive) GetFile(fileID string) *File {
 	return nil
 }
 
+// get a map of all available files for this user
+func (d *Drive) GetFiles() map[string]*File {
+	if !d.Protected {
+		return d.Root.WalkFs()
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
 // update a file
 func (d *Drive) UpdateFile(dirID string, f *File) error {
 	dir := d.GetDir(dirID)
