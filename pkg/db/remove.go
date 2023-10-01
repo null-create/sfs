@@ -20,6 +20,7 @@ func (q *Query) DropTable(tableName string) error {
 	return nil
 }
 
+// remove a table and create a new one by the same name
 func (q *Query) ResetTable(tableName string) error {
 	if err := q.DropTable(tableName); err != nil {
 		return err
