@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -15,6 +16,17 @@ func (q *Query) DropTable(tableName string) error {
 	_, err := q.Conn.Exec(DropTableQuery, tableName)
 	if err != nil {
 		return fmt.Errorf("failed to drop table %s: %v", tableName, err)
+	}
+	return nil
+}
+
+func (q *Query) ResetTable(tableName string) error {
+	if err := q.DropTable(tableName); err != nil {
+		return err
+	}
+	tablePath := filepath.Join(q.DBPath, tableName)
+	if err := NewDB(tableName, tablePath); err != nil {
+		return err
 	}
 	return nil
 }
