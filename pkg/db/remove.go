@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
@@ -17,6 +18,7 @@ func (q *Query) DropTable(tableName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to drop table %s: %v", tableName, err)
 	}
+	log.Printf("[INFO] %s table deleted", tableName)
 	return nil
 }
 
@@ -29,6 +31,7 @@ func (q *Query) ResetTable(tableName string) error {
 	if err := NewDB(tableName, tablePath); err != nil {
 		return err
 	}
+	log.Printf("[INFO] %s table reset", tableName)
 	return nil
 }
 
