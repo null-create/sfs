@@ -107,15 +107,15 @@ func (s *Service) SaveState() error {
 
 	// remove previous state file(s) before writing out.
 	// we only want the most recent one available at a time.
-	entries, err := os.ReadDir(sfDir)
-	if err != nil {
-		return fmt.Errorf("unable to read state file directory: %v", err)
-	}
-	for _, entry := range entries {
-		sf := filepath.Join(sfDir, entry.Name())
-		if err := os.Remove(sf); err != nil {
-			return err
+	if entries, err := os.ReadDir(sfDir); err == nil {
+		for _, entry := range entries {
+			sf := filepath.Join(sfDir, entry.Name())
+			if err := os.Remove(sf); err != nil {
+				return err
+			}
 		}
+	} else {
+		log.Printf("[WARNING] failed to remove previous state file: %v", err)
 	}
 
 	// marshal state instance and write out
@@ -500,7 +500,7 @@ func (s *Service) AddUser(userID string, r *http.Request) error {
 		if err != nil {
 			return err
 		} else if u != nil {
-			return fmt.Errorf("%s already exists", userID)
+			return fmt.Errorf("user (id=%s) already exists", userID)
 		}
 		// add new user to service and create new drive
 		newUser, err := s.createNewUser(userID, r)
@@ -571,7 +571,7 @@ func (s *Service) RemoveUser(userID string) error {
 
 // find a user. if not in the instance, then it will query the database.
 //
-// user returns nil if not found
+// returns nil if user isn't found
 func (s *Service) FindUser(userId string) (*auth.User, error) {
 	if u, exists := s.Users[userId]; !exists {
 		s.Db.WhichDB("users")
