@@ -34,7 +34,7 @@ func (q *Query) UpdateFile(f *svc.File) error {
 	return nil
 }
 
-func (q *Query) UpdateDirectory(d *svc.Directory) error {
+func (q *Query) UpdateDir(d *svc.Directory) error {
 	q.Connect()
 	defer q.Close()
 
