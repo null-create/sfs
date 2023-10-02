@@ -1,14 +1,18 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/sfs/pkg/auth"
+	svc "github.com/sfs/pkg/service"
 
 	"github.com/go-chi/chi"
-
-	svc "github.com/sfs/pkg/service"
 )
 
 /*
@@ -41,6 +45,14 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 
 // -------- users (admin only) -----------------------------------------
 
+// generate new user instance, and create drive and other base files
+func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "userID")
+	if err := a.Svc.AddUser(userID, r); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // attempts to read data from the user database.
 //
 // if found, it will attempt to prepare it as json data and return it
@@ -66,6 +78,42 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(userData)
 }
 
+// TODO: figure out how to determine which user data is new, and
+// how to retrieve the new data from the request object
+func (a *API) updateUser(user *auth.User, r *http.Request) error {
+
+	return nil
+}
+
+func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "userID")
+	u, err := a.Svc.FindUser(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if u == nil {
+		http.Error(w, fmt.Sprintf("user %s not found", userID), http.StatusNotFound)
+		return
+	}
+	if err := a.updateUser(u, r); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "userID")
+	u, err := a.Svc.FindUser(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := a.Svc.RemoveUser(u.ID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // -------- files -----------------------------------------
 
 // check the db for the existence of a file.
@@ -74,13 +122,14 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 // are the case, otherwise returns a file pointer.
 func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := findFile(fileID, a.Svc.Db)
+	f, err := a.Svc.Db.GetFile(fileID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	} else if f == nil {
 		msg := fmt.Sprintf("file (id=%s) not found", fileID)
 		http.Error(w, msg, http.StatusNotFound)
+		return nil
 	}
 	return f
 }
@@ -123,26 +172,47 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 	}
 	defer formFile.Close()
 
-	// TODO: get user's root directory using userID and by searching the DB for the path
-
-	// retrieve file
-	data := make([]byte, 0, header.Size)
-	formFile.Read(data)
-
 	// TODO: file integrity & safety checks. don't be stupid.
 
+	// get the user associated with the file
+	u, err := a.Svc.Db.GetUser(userID)
+	if err != nil {
+		msg := fmt.Sprintf("failed to get user from db: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	// retrieve file
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, formFile)
+	if err != nil {
+		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
 	// make file object & save to server under path
-	fn := "change me"
 	filePath := "change me"
-	f := svc.NewFile(fn, userID, filePath)
-	if err = f.Save(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	f := svc.NewFile(header.Filename, u.Name, filePath)
+
+	if err := f.Save(buf.Bytes()); err != nil {
+		msg := fmt.Sprintf("failed to download file to server: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+	f.LastSync = time.Now().UTC()
+
+	a.Svc.Db.WhichDB("files")
+	if err := a.Svc.Db.AddFile(f); err != nil {
+		msg := fmt.Sprintf("failed to add file to database: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
 }
 
-// save or update the file
+// update the file
 func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
-	formFile, header, err := r.FormFile("myFile")
+	formFile, _, err := r.FormFile("myFile")
 	if err != nil {
 		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -150,13 +220,27 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 	}
 	defer formFile.Close()
 
-	data := make([]byte, 0, header.Size)
-	_, err = formFile.Read(data)
+	// retrieve file & update last sync time
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, formFile)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		msg := fmt.Sprintf("failed to download form file data: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
-	if err := f.Save(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := f.Save(buf.Bytes()); err != nil {
+		msg := fmt.Sprintf("failed to download file to server: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+	f.LastSync = time.Now().UTC()
+
+	// update DB
+	a.Svc.Db.WhichDB("users")
+	if err := a.Svc.Db.UpdateFile(f); err != nil {
+		msg := fmt.Sprintf("failed to update file database: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -185,16 +269,23 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 	// remove physical file
 	if err := os.Remove(f.ServerPath); err != nil {
-		ServerErr(w, err.Error())
+		msg := fmt.Sprintf("failed to remove file from server: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
-	// TODO: remove from db and maybe user instance?
+	// remove from database
+	if err := a.Svc.Db.RemoveFile(f.ID); err != nil {
+		msg := fmt.Sprintf("failed to remove file from database: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
 }
 
 // ------- directories --------------------------------
 
 // check the db for the existence of a directory.
 //
-// handles errors and not found cases. returns nil if either of these,
+// handles errors and not found cases. returns nil if either of these
 // are the case, otherwise returns a directory pointer.
 func (a *API) findD(w http.ResponseWriter, r *http.Request) *svc.Directory {
 	dirID := chi.URLParam(r, "dirID")
