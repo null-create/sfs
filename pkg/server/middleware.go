@@ -77,7 +77,7 @@ func AuthUserHandler(h http.Handler) http.Handler {
 
 func FileCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		file, err := findFile(chi.URLParam(r, "fileID"), getDBConn("Users"))
+		file, err := findFile(chi.URLParam(r, "fileID"), getDBConn("Files"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -138,6 +138,8 @@ func UserCtx(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+// ------ admin stuffm --------------------------------
 
 func AdminOnly(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
