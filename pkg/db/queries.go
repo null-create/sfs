@@ -143,24 +143,37 @@ const (
 
 	// ------- update file, user, directory, and drive entries -------
 
-	UpdateFileQuery string = ``
+	UpdateFileQuery string = `
+		UPDATE Files
+		SET id = ?, 
+				name = ?, 
+				owner = ?, 
+				protected = ?, 
+				key = ?,
+				last_sync = ?, 
+				path = ?, 
+				server_path = ?, 
+				client_path = ?, 
+				checksum = ?, 
+				algorithm = ?
+		WHERE id = ?;`
 
 	UpdateDirQuery string = `
 		UPDATE Directories
-			SET id = ?,
-			name = ?,
-			owner = ?,
-			size = ?,
-			path = ?,
-			protected = ?,
-			auth_type = ?,
-			key = ?,
-			overwrite = ?,
-			last_sync = ?, 
-			drive_root = ?, 
-			root_path = ?
-		WHERE id = ?;
-	`
+		SET id = ?,
+				name = ?,
+				owner = ?,
+				size = ?,
+				path = ?,
+				protected = ?,
+				auth_type = ?,
+				key = ?,
+				overwrite = ?,
+				last_sync = ?, 
+				drive_root = ?, 
+				root_path = ?
+		WHERE id = ?;`
+
 	UpdateDriveQuery string = `
 		UPDATE Drives
 		SET id = ?,
@@ -173,24 +186,23 @@ const (
 				key = ?,
 				auth_type = ?,
 				drive_root = ?
-		WHERE id = ?;
-	`
+		WHERE id = ?;`
 
 	UpdateUserQuery string = `
-	UPDATE Users
-	SET id = ?, 
-			name = ?, 
-			username = ?, 
-			email = ?, 
-			password = ?, 
-			last_login = ?,
-			is_admin = ?,
-			sf_path = ?,
-			drive_id = ?,
-			total_files = ?,
-			total_directories = ?,
-			root = ?
-	WHERE id = ?;`
+		UPDATE Users
+		SET id = ?, 
+				name = ?, 
+				username = ?, 
+				email = ?, 
+				password = ?, 
+				last_login = ?,
+				is_admin = ?,
+				sf_path = ?,
+				drive_id = ?,
+				total_files = ?,
+				total_directories = ?,
+				root = ?
+		WHERE id = ?;`
 
 	// Removal queries remove the row iff they exist
 
