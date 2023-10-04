@@ -233,10 +233,11 @@ const (
 	FindAllDirsQuery   string = `SELECT * FROM Directories;`
 	FindAllFilesQuery  string = `SELECT * FROM Files;`
 
-	FindFileQuery  string = `SELECT * FROM Files WHERE id = ?`
-	FindDirQuery   string = `SELECT * FROM Directories WHERE id = ?`
-	FindDriveQuery string = `SELECT * FROM Drives WHERE id = ?`
-	FindUserQuery  string = `SELECT * FROM Users WHERE id = ?`
+	FindFileQuery         string = `SELECT * FROM Files WHERE id = ?`
+	FindDirQuery          string = `SELECT * FROM Directories WHERE id = ?`
+	FindDriveQuery        string = `SELECT * FROM Drives WHERE id = ?`
+	FindUserQuery         string = `SELECT * FROM Users WHERE id = ?`
+	FindUsersDriveIDQuery string = `SELECT drive_id from Users Where id = ?`
 
 	// ---------- SELECT statements for confirming existance -------------------
 
