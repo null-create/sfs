@@ -254,6 +254,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	assert.NotEqual(t, nil, testDrv)
 
 	// attempt to remove user & verify that their drive was removed
 	if err := testSvc.RemoveUser(testUsr.ID); err != nil {
