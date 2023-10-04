@@ -287,7 +287,8 @@ func (q *Query) GetDriveID(userID string) (string, error) {
 		return "", fmt.Errorf("failed to query: %v", err)
 	}
 	if id == "" {
-		return "", fmt.Errorf("no drive ID found for user %s", userID)
+		log.Printf("no drive ID found for user %s", userID)
+		return "", nil
 	}
 	return id, nil
 }
