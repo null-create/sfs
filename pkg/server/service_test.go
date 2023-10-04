@@ -236,7 +236,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com",
 		auth.NewUUID(), c.S.SvcRoot, false,
 	)
-	if err := testSvc.AddUser(testUsr.ID, nil); err != nil {
+	if err := testSvc.AddUser(testUsr); err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, testUsr, testSvc.Users[testUsr.ID])
@@ -271,6 +271,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 }
 
 func TestAddAndUpdateAUser(t *testing.T) {
+	BuildEnv(true)
 	c := ServiceConfig()
 	testSvc, err := SvcLoad(c.S.SvcRoot, true)
 	if err != nil {
@@ -281,20 +282,31 @@ func TestAddAndUpdateAUser(t *testing.T) {
 		"bill buttlicker", "billBB", "bill@bill.com",
 		auth.NewUUID(), c.S.SvcRoot, false,
 	)
-	if err := testSvc.AddUser(testUsr.ID, nil); err != nil {
+	if err := testSvc.AddUser(testUsr); err != nil {
 		t.Fatal(err)
 	}
 
 	// check that its in the db
+	u, err := testSvc.FindUser(testUsr.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotEqual(t, nil, u)
+	assert.Equal(t, testUsr.ID, u.ID)
 
-	// update name
+	// update name and save
 	testUsr.Name = "bill buttlicker II"
-
-	if err := testSvc.UpdateUser(testUsr); err != nil {
+	if err := testSvc.UpdateUser(testUsr.ID); err != nil {
 		t.Fatal(err)
 	}
 
 	// test that the new name is the same as whats in the DB
+	u, err = testSvc.FindUser(testUsr.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotEqual(t, nil, u)
+	assert.Equal(t, testUsr.ID, u.ID)
 
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)

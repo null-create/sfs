@@ -113,7 +113,7 @@ func (q *Query) RemoveDrive(driveID string) error {
 
 	_, err := q.Conn.Exec(RemoveDriveQuery, driveID, driveID)
 	if err != nil {
-		return fmt.Errorf("failed to remove drive (id=%s): %v", driveID, err)
+		return fmt.Errorf("failed to remove drive (id=%s) from database: %v", driveID, err)
 	}
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 
 // Query objects represent connections to to our database.
 //
-// if instantiated as a singleton, then the query will prepare
+// If instantiated as a singleton, then the query will prepare
 // a map of sql statements that can be used during run time.
 type Query struct {
 	DBPath string // database directory path
@@ -25,7 +25,7 @@ type Query struct {
 	Stmts map[string]*sql.Stmt // SQL statements (when used as a singleton)
 }
 
-// returns a new query struct
+// returns a new query object.
 func NewQuery(dbPath string, isSingleton bool) *Query {
 	q := &Query{
 		DBPath:    dbPath,
@@ -35,8 +35,7 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 		Stmts:     make(map[string]*sql.Stmt),
 	}
 	// TODO: need a way to indicate this mode to other finds/gets/etc so as to not
-	// redundantly prepare queries prior to execution. isSingleton is set to false
-	// by default for the time being
+	// redundantly prepare queries prior to execution.
 	// if isSingleton {
 	// 	q.Stmts = prepQueries(dbPath)
 	// }
@@ -68,6 +67,10 @@ func prepQueries(dbPath string) map[string]*sql.Stmt {
 		FindDirQuery,
 		FindDriveQuery,
 		FindUserQuery,
+		UpdateFileQuery,
+		UpdateDirQuery,
+		UpdateDriveQuery,
+		UpdateUserQuery,
 	}
 
 	stmts := make(map[string]*sql.Stmt, len(queries))

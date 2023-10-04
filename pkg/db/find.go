@@ -14,7 +14,7 @@ func (q *Query) UserExists(userID string) (bool, error) {
 	var exists bool
 	err := q.Conn.QueryRow(ExistsQuery, "Users", userID).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-		return false, fmt.Errorf("[ERROR] couldn't query user (%s): %v", userID, err)
+		return false, fmt.Errorf("couldn't query user (%s): %v", userID, err)
 	}
 	if err == sql.ErrNoRows {
 		return false, nil

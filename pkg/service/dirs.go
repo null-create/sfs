@@ -158,12 +158,12 @@ func clean(dirPath string) error {
 
 	names, err := d.Readdirnames(-1)
 	if err != nil {
-		return fmt.Errorf("[ERROR] unable to read directory: %v", err)
+		return fmt.Errorf("unable to read directory: %v", err)
 	}
 
 	for _, name := range names {
 		if err = os.RemoveAll(filepath.Join(dirPath, name)); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove file or directory: %v", err)
+			return fmt.Errorf("unable to remove file or directory: %v", err)
 		}
 	}
 	return nil

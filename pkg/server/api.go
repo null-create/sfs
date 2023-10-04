@@ -46,12 +46,14 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 // -------- users (admin only) -----------------------------------------
 
 // generate new user instance, and create drive and other base files
-func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "userID")
-	if err := a.Svc.AddUser(userID, r); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
+// func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
+// 	userID := chi.URLParam(r, "userID")
+// 	if err := a.Svc.AddUser(userID); err != nil {
+// 		// TODO: handle a service state save failure internally rather than
+// 		// returning as an http response
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	}
+// }
 
 // attempts to read data from the user database.
 //
@@ -79,7 +81,9 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: figure out how to determine which user data is new, and
-// how to retrieve the new data from the request object
+// how to retrieve the new data from the request object.
+//
+// maybe just save the whole user struct.
 func (a *API) updateUser(user *auth.User, r *http.Request) error {
 
 	return nil
@@ -116,12 +120,19 @@ func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 // -------- files -----------------------------------------
 
+/*
+NOTE: these are single operation file handlers.
+syncing events will have separate handlers for file
+uploads and downloads
+*/
+
 // check the db for the existence of a file.
 //
 // handles errors and not found cases. returns nil if either of these
 // are the case, otherwise returns a file pointer.
 func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 	fileID := chi.URLParam(r, "fileID")
+	a.Svc.Db.WhichDB("Files")
 	f, err := a.Svc.Db.GetFile(fileID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -249,7 +260,6 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPut { // update the file
 		f := a.findF(w, r)
 		if f == nil {
-			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
 		a.putFile(w, r, f)
@@ -289,6 +299,7 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 // are the case, otherwise returns a directory pointer.
 func (a *API) findD(w http.ResponseWriter, r *http.Request) *svc.Directory {
 	dirID := chi.URLParam(r, "dirID")
+	a.Svc.Db.WhichDB("Directories")
 	d, err := findDir(dirID, a.Svc.Db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -313,3 +324,7 @@ func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(data)
 }
+
+// -------- drives --------------------------------
+
+// -------- sync ----------------------------------
