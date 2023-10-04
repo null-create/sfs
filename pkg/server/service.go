@@ -390,7 +390,7 @@ user/
 |---state/
 |   |---userID-d-m-y-hh-mm-ss.json
 */
-func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error) {
+func AllocateDrive(name, ownerID, svcRoot string) (*svc.Drive, error) {
 	// new user service file paths
 	usrsDir := filepath.Join(svcRoot, "users")
 	svcDir := filepath.Join(usrsDir, name)
@@ -409,29 +409,78 @@ func AllocateDrive(name string, owner string, svcRoot string) (*svc.Drive, error
 	GenBaseUserFiles(metaRoot)
 
 	// gen root and drive objects
-	rt := svc.NewRootDirectory(name, owner, usrRoot)
-	drv := svc.NewDrive(svc.NewUUID(), name, owner, svcDir, rt)
+	rt := svc.NewRootDirectory(name, ownerID, usrRoot)
+	drv := svc.NewDrive(svc.NewUUID(), name, ownerID, svcDir, rt)
 
 	return drv, nil
+}
+
+// check for whether a drive exists
+func (s *Service) DriveExists(driveID string) bool {
+	s.Db.WhichDB("drives")
+	if d, err := s.Db.GetDrive(driveID); err == nil {
+		return d != nil
+	} else if err != nil {
+		// return true to not accidentally allocate a new drive.
+		// just because the DB errored out doesn't mean
+		// the drive doesn't exist.
+		log.Printf("error getting drive: %v", err)
+		return true
+	}
+	return false
 }
 
 // save drive state to DB
 func (s *Service) SaveDrive(d *svc.Drive) error {
 	s.Db.WhichDB("drives")
-	if err := s.Db.AddDrive(d); err != nil {
+	if err := s.Db.UpdateDrive(d); err != nil {
 		return err
 	}
 	return nil
 }
 
-// search DB for drive info, if available
+// search DB for drive info, if available. returns a
+// *svc.Drive pointer if successful, nil or error otherwise
 func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 	s.Db.WhichDB("drives")
 	drv, err := s.Db.GetDrive(driveID)
 	if err != nil {
 		return nil, err
 	}
+	if drv == nil {
+		log.Printf("[INFO] drive %s not found", driveID)
+		return nil, nil
+	}
 	return drv, nil
+}
+
+func (s *Service) newDrive(name, ownerID string) (*svc.Drive, error) {
+	d, err := AllocateDrive(name, ownerID, s.SvcRoot)
+	if err != nil {
+		return nil, err
+	}
+	// save new drive to the db
+	s.Db.WhichDB("drives")
+	if err := s.Db.AddDrive(d); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// create a new drive for a user
+func (s *Service) NewDrive(name, ownerID string) (*svc.Drive, error) {
+	// check whether this owner already has a drive
+	if dID, err := s.Db.GetDriveID(ownerID); err != nil {
+		return nil, err
+	} else if dID != "" {
+		return nil, fmt.Errorf("owner (%s) already has a drive (%s): ", ownerID, dID)
+	}
+	// create a new drive
+	if drive, err := s.newDrive(name, ownerID); err == nil {
+		return drive, nil
+	} else {
+		return nil, fmt.Errorf("failed to create new drive: %v", err)
+	}
 }
 
 // --------- users --------------------------------
