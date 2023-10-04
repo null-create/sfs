@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -36,9 +37,19 @@ func HasDotEnv() bool {
 }
 
 // read .env file and set as environment variables
-func BuildEnv() error {
-	if err := godotenv.Load(".env"); err != nil {
+func BuildEnv(debug bool) error {
+	wd, err := os.Getwd()
+	if err != nil {
 		return err
+	}
+	if err := godotenv.Load(filepath.Join(wd, ".env")); err != nil {
+		return err
+	}
+	if debug {
+		env := os.Environ()
+		for i, e := range env {
+			fmt.Printf("%d: %s\n", i+1, e)
+		}
 	}
 	return nil
 }
@@ -79,7 +90,7 @@ func (e *Env) Get(k string) (string, error) {
 }
 
 func set(k, v string, env map[string]string) error {
-	_, err := godotenv.Marshal(env)
+	err := godotenv.Write(env, ".env")
 	if err != nil {
 		return err
 	}
