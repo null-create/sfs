@@ -361,17 +361,6 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	return svc, nil
 }
 
-// generate some base line meta data for this service instance.
-// should generate a users.json file (which will keep track of active users),
-// and a drives.json, containing info about each drive, its total size, its location,
-// owner, init date, passwords, etc.
-func GenBaseUserFiles(usrInfoDir string) {
-	fileNames := []string{"user.json", "drive.json"}
-	for i := 0; i < len(fileNames); i++ {
-		saveJSON(usrInfoDir, fileNames[i], make(map[string]interface{}))
-	}
-}
-
 // --------- drives --------------------------------
 
 /*
@@ -487,6 +476,17 @@ func (s *Service) NewDrive(name, ownerID string) (*svc.Drive, error) {
 
 func (s *Service) TotalUsers() int {
 	return len(s.Users)
+}
+
+// generate some base line meta data for this service instance.
+// should generate a users.json file (which will keep track of active users),
+// and a drives.json, containing info about each drive, its total size, its location,
+// owner, init date, passwords, etc.
+func GenBaseUserFiles(usrInfoDir string) {
+	fileNames := []string{"user.json", "drive.json"}
+	for i := 0; i < len(fileNames); i++ {
+		saveJSON(usrInfoDir, fileNames[i], make(map[string]interface{}))
+	}
 }
 
 // checks service instance and user db for whether a user exists
