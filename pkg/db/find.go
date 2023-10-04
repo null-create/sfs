@@ -275,3 +275,19 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 }
 
 func (q *Query) GetDrives() ([]*svc.Drive, error) { return nil, nil }
+
+// get the drive ID for a given userID
+func (q *Query) GetDriveID(userID string) (string, error) {
+	q.Connect()
+	defer q.Close()
+
+	var id string
+	err := q.Conn.QueryRow(FindUsersDriveIDQuery, userID).Scan(&id)
+	if err != nil {
+		return "", fmt.Errorf("failed to query: %v", err)
+	}
+	if id == "" {
+		return "", fmt.Errorf("no drive ID found for user %s", userID)
+	}
+	return id, nil
+}
