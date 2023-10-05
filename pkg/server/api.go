@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -45,15 +46,22 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 
 // -------- users (admin only) -----------------------------------------
 
-// generate new user instance, and create drive and other base files
-// func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
-// 	userID := chi.URLParam(r, "userID")
-// 	if err := a.Svc.AddUser(userID); err != nil {
-// 		// TODO: handle a service state save failure internally rather than
-// 		// returning as an http response
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
-// }
+// add a new user and drive to sfs instance. user existance and
+// struct pointer should be created by NewUser middleware
+func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	if err := a.Svc.AddUser(u); err != nil {
+		if strings.Contains(err.Error(), "user") {
+			http.Error(w, err.Error(), http.StatusBadRequest) // user already exists
+			return
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		msg := fmt.Sprintf("user (name=%s id=%s) added", u.Name, u.ID)
+		w.Write([]byte(msg))
+	}
+}
 
 // attempts to read data from the user database.
 //
@@ -62,6 +70,9 @@ func (a *API) getUser(userID string) ([]byte, error) {
 	u, err := a.Svc.FindUser(userID)
 	if err != nil {
 		return nil, err
+	}
+	if u == nil {
+		return nil, fmt.Errorf("user %s not found", userID)
 	}
 	jsonData, err := u.ToJSON()
 	if err != nil {
@@ -74,36 +85,41 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "userID")
 	userData, err := a.getUser(userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		if strings.Contains(err.Error(), "not found") { // user not found
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	w.Write(userData)
 }
 
-// TODO: figure out how to determine which user data is new, and
-// how to retrieve the new data from the request object.
-//
-// maybe just save the whole user struct.
-func (a *API) updateUser(user *auth.User, r *http.Request) error {
+// func (a *API) updateUser(user *auth.User) error {
+// 	if err := a.Svc.UpdateUser(user); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
-	return nil
-}
+// TODO: retrieve entire user struct from r *http.Request object?
 
-func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "userID")
-	u, err := a.Svc.FindUser(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if u == nil {
-		http.Error(w, fmt.Sprintf("user %s not found", userID), http.StatusNotFound)
-		return
-	}
-	if err := a.updateUser(u, r); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
+// func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
+// 	userID := chi.URLParam(r, "userID")
+// 	u, err := a.Svc.FindUser(userID)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	} else if u == nil {
+// 		http.Error(w, fmt.Sprintf("user %s not found", userID), http.StatusNotFound)
+// 		return
+// 	}
+// 	if err := a.updateUser(u); err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// }
 
 func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "userID")

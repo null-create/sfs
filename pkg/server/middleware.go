@@ -31,15 +31,16 @@ func ContentTypeJson(h http.Handler) http.Handler {
 
 func NewUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// userID := chi.URLParam(r, "userID")
+		// c := ServiceConfig()
+		// newUserID := auth.NewUUID()
+		// newDriveRoot := filepath.Join(c.S.SvcRoot, newUserID)
 
 		// TODO: figure out how to get name, username, and email for http.Request instances
 		// will probably need to specifcy message structures between clients and servers
-		// newDriveRoot := r.URL.Query().Get("driveRoot")
 
 		// newUser := auth.NewUser(
-		// 	"bill buttlicker", "bilBB", "bill@bill.com",
-		// 	userID, newDriveRoot, false,
+		// 	"bill buttlicker", "billB", "bill@bill.com",
+		// 	newUserID, newDriveRoot, false,
 		// )
 
 		// TODO: custom http.Handler type for this middleware

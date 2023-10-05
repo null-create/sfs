@@ -297,7 +297,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 
 	// update name and save
 	testUsr.Name = "bill buttlicker II"
-	if err := testSvc.UpdateUser(testUsr.ID); err != nil {
+	if err := testSvc.UpdateUser(testUsr); err != nil {
 		t.Fatal(err)
 	}
 

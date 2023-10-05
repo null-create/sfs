@@ -532,15 +532,20 @@ func (s *Service) addUser(user *auth.User) error {
 // allocate a new service drive for a new user.
 //
 // creates a new service drive, adds the user to the
-// user database and service instance.
+// user database and service instance, and adds the
+// drive to the drive database.
 func (s *Service) AddUser(newUser *auth.User) error {
-	if err := s.addUser(newUser); err != nil {
-		return err
-	}
-	log.Printf("[INFO] added user (name=%s id=%s)", newUser.Name, newUser.ID)
-	if err := s.SaveState(); err != nil {
-		// TODO: handle error internally rather than returning it
-		return fmt.Errorf("error saving service state: %s", err)
+	if _, exists := s.Users[newUser.ID]; !exists {
+		if err := s.addUser(newUser); err != nil {
+			return err
+		}
+		log.Printf("[INFO] added user (name=%s id=%s)", newUser.Name, newUser.ID)
+		if err := s.SaveState(); err != nil {
+			log.Printf("[WARNING] failed to save service state: %s", err)
+			return nil
+		}
+	} else {
+		return fmt.Errorf("user (id=%s) already exists", newUser.ID)
 	}
 	return nil
 }
@@ -626,14 +631,14 @@ func (s *Service) updateUser(user *auth.User) error {
 	return nil
 }
 
-func (s *Service) UpdateUser(userID string) error {
-	if _, exists := s.Users[userID]; exists {
+func (s *Service) UpdateUser(user *auth.User) error {
+	if _, exists := s.Users[user.ID]; exists {
 		s.Db.WhichDB("users")
-		user, err := s.Db.GetUser(userID)
+		u, err := s.Db.GetUser(user.ID)
 		if err != nil {
 			return err
 		}
-		if user != nil { // user exists, update it
+		if u != nil { // user exists, update it
 			if err := s.updateUser(user); err != nil {
 				return err
 			}
@@ -645,7 +650,7 @@ func (s *Service) UpdateUser(userID string) error {
 			return fmt.Errorf("user %s not found in user database", user.ID)
 		}
 	} else {
-		return fmt.Errorf("user %s not found", userID)
+		return fmt.Errorf("user %s not found", user.ID)
 	}
 	return nil
 }
