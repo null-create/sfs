@@ -110,6 +110,7 @@ func (q *Query) UpdateUser(u *auth.User) error {
 		&u.TotalFiles,
 		&u.TotalDirs,
 		&u.Root,
+		&u.ID,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}
