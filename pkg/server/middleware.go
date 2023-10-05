@@ -33,7 +33,7 @@ func NewUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// c := ServiceConfig()
 		// newUserID := auth.NewUUID()
-		// newDriveRoot := filepath.Join(c.S.SvcRoot, newUserID)
+		// newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserID)
 
 		// TODO: figure out how to get name, username, and email for http.Request instances
 		// will probably need to specifcy message structures between clients and servers
