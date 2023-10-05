@@ -2,10 +2,7 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -71,15 +68,4 @@ func (u *User) ToJSON() ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-// save state to disk
-func (u *User) SaveState() error {
-	data, err := u.ToJSON()
-	if err != nil {
-		return err
-	}
-	fn := fmt.Sprintf("user-%s-.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
-	fp := filepath.Join(u.SfPath, fn)
-	return os.WriteFile(fp, data, 0644)
 }
