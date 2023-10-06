@@ -18,8 +18,8 @@ GET     /v1/drive/{userID}        // "home". return a root directory listing
 
 // ----- users (admin only)
 
+POST    /v1/users/{userID}/new   // create a new user
 GET     /v1/users/{userID}       // get info about a user
-POST    /v1/users/{userID}       // create a new user
 PUT     /v1/users/{userID}       // update a user
 DELETE  /v1/users/{userID}       // delete a user
 
@@ -77,6 +77,9 @@ func NewRouter() *chi.Mux {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hi"))
 	})
+
+	// TODO: rework so ctx middleware isn't used when creating
+	// files/users/directories. only need ctx for existing items.
 
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
@@ -155,7 +158,7 @@ func NewRouter() *chi.Mux {
 func adminRouter() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(AdminOnly)
+	// r.Use(AdminOnly)
 
 	// initialize API handlers
 	api := NewAPI(isMode("NEW_SERVICE"), true)
@@ -164,9 +167,12 @@ func adminRouter() http.Handler {
 		r.Route("/{userID}", func(r chi.Router) {
 			r.Use(UserCtx)
 			r.Get("/", api.Placeholder)    // get info about a user
-			r.Post("/", api.Placeholder)   // add a new user
 			r.Put("/", api.Placeholder)    // update a user
 			r.Delete("/", api.Placeholder) // delete a user)
+		})
+		r.Route("/new", func(r chi.Router) {
+			r.Use(NewUser)
+			r.Post("/", api.Placeholder) // add a new user
 		})
 	})
 	return r

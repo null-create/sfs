@@ -89,8 +89,7 @@ func (s *Server) Run() {
 	<-serverCtx.Done()
 }
 
-// run a test server that can be shut down using a
-// turnOff bool channel
+// run a test server that can be shut down using a turnOff bool channel
 func (s *Server) TestRun(turnOff chan bool) {
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 

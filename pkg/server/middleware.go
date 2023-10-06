@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 
@@ -31,51 +32,46 @@ func ContentTypeJson(h http.Handler) http.Handler {
 
 func NewUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// c := ServiceConfig()
-		// newUserID := auth.NewUUID()
-		// newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserID)
+		c := ServiceConfig()
+		newUserID := auth.NewUUID()
+		newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserID)
 
-		// TODO: figure out how to get name, username, and email for http.Request instances
-		// will probably need to specifcy message structures between clients and servers
+		ctx := r.Context()
+		newUserName := ctx.Value("userName").(string)
+		newUserAlias := ctx.Value("userAlias").(string)
+		newUserEmail := ctx.Value("userEmail").(string)
 
-		// newUser := auth.NewUser(
-		// 	"bill buttlicker", "billB", "bill@bill.com",
-		// 	newUserID, newDriveRoot, false,
-		// )
+		newUser := auth.NewUser(
+			newUserName, newUserAlias, newUserEmail,
+			newUserID, newDriveRoot, false,
+		)
+		// this basically just repackages the previous
+		// context with a new user object
+		newCtx := context.WithValue(ctx, User, newUser)
 
-		// TODO: custom http.Handler type for this middleware
-		// h.ServeHttp(w, r, newUser)
+		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
 
 // retrieve jwt token from request & verify
-func AuthenticateUser(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
-	authReq := r.Header.Get("Authorization")
-	if authReq == "" {
-		http.Error(w, "authorization header has no token", http.StatusBadRequest)
-		return nil, nil
-	}
-
+func AuthenticateUser(authReq string) (*auth.User, error) {
+	// verify request token
 	tok := auth.NewT()
 	reqToken, err := tok.Extract(authReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, err
 	}
 	userID, err := tok.Verify(reqToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
 
 	// attempt to find data about the user from the the user db
 	u, err := findUser(userID, getDBConn("Users"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, err
 	} else if u == nil {
-		http.Error(w, fmt.Sprintf("user (id=%s) not found", userID), http.StatusNotFound)
-		return nil, err
+		return nil, fmt.Errorf("user (id=%s) not found", userID)
 	}
 	return u, nil
 }
@@ -83,7 +79,12 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request) (*auth.User, error
 // get user info
 func AuthUserHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := AuthenticateUser(w, r)
+		authReq := r.Header.Get("Authorization")
+		if authReq == "" {
+			http.Error(w, "header had no request token", http.StatusBadRequest)
+			return
+		}
+		_, err := AuthenticateUser(authReq)
 		if err != nil {
 			http.Error(w, "failed to get authenticated user", http.StatusInternalServerError)
 			return
@@ -96,13 +97,14 @@ func AuthUserHandler(h http.Handler) http.Handler {
 
 func FileCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		file, err := findFile(chi.URLParam(r, "fileID"), getDBConn("Files"))
+		fileID := chi.URLParam(r, "fileID")
+		file, err := findFile(fileID, getDBConn("Files"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if file == nil {
-			http.Error(w, "file not found", http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), File, file)
@@ -112,13 +114,14 @@ func FileCtx(h http.Handler) http.Handler {
 
 func DriveCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		drive, err := findDrive(chi.URLParam(r, "driveID"), getDBConn("Drives"))
+		driveID := chi.URLParam(r, "driveID")
+		drive, err := findDrive(driveID, getDBConn("Drives"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if drive == nil {
-			http.Error(w, "file not found", http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), Drive, drive)
@@ -128,13 +131,14 @@ func DriveCtx(h http.Handler) http.Handler {
 
 func DirCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		dir, err := findDir(chi.URLParam(r, "dirID"), getDBConn("Directories"))
+		dirID := chi.URLParam(r, "dirID")
+		dir, err := findDir(dirID, getDBConn("Directories"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if dir == nil {
-			http.Error(w, "file not found", http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("directory (id=%s) not found", dirID), http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), Directory, dir)
@@ -144,13 +148,14 @@ func DirCtx(h http.Handler) http.Handler {
 
 func UserCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := findUser(chi.URLParam(r, "userID"), getDBConn("Users"))
+		userID := chi.URLParam(r, "userID")
+		user, err := findUser(userID, getDBConn("Users"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if user == nil {
-			http.Error(w, "file not found", http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("user (id=%s) not found", userID), http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), User, user)
@@ -158,7 +163,7 @@ func UserCtx(h http.Handler) http.Handler {
 	})
 }
 
-// ------ admin stuffm --------------------------------
+// ------ admin stuff --------------------------------
 
 func AdminOnly(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
