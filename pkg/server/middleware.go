@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/service"
 
 	"github.com/go-chi/chi"
 )
@@ -18,6 +19,7 @@ const (
 	File      Context = "file"
 	Directory Context = "directory"
 	Drive     Context = "drive"
+	Path      Context = "path"
 	User      Context = "user"
 )
 
@@ -30,16 +32,48 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
+// attempts to get filename, owner, and path from a requets
+// context, then create a new file object to use for downloading
+func NewFile(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		fileName := ctx.Value(File).(string)
+		owner := ctx.Value(User).(string)
+		path := ctx.Value(Path).(string)
+		if fileName == "" || owner == "" || path == "" {
+			msg := fmt.Sprintf(
+				"missing fields: filename=%s owner=%s path=%s",
+				fileName, owner, path,
+			)
+			http.Error(w, msg, http.StatusBadRequest)
+			return
+		}
+
+		newFile := service.NewFile(fileName, owner, path)
+
+		newCtx := context.WithValue(ctx, File, newFile)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
 func NewUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := ServiceConfig()
 		newUserID := auth.NewUUID()
-		newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserID)
 
 		ctx := r.Context()
 		newUserName := ctx.Value("userName").(string)
 		newUserAlias := ctx.Value("userAlias").(string)
 		newUserEmail := ctx.Value("userEmail").(string)
+		if newUserName == "" || newUserAlias == "" || newUserEmail == "" {
+			msg := fmt.Sprintf(
+				"missing fields: name=%s username=%s email=%s",
+				newUserName, newUserAlias, newUserEmail,
+			)
+			http.Error(w, msg, http.StatusBadRequest)
+			return
+		}
+		newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserName)
 
 		newUser := auth.NewUser(
 			newUserName, newUserAlias, newUserEmail,
@@ -102,8 +136,7 @@ func FileCtx(h http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		if file == nil {
+		} else if file == nil {
 			http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 			return
 		}
@@ -119,8 +152,7 @@ func DriveCtx(h http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		if drive == nil {
+		} else if drive == nil {
 			http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)
 			return
 		}
@@ -136,8 +168,7 @@ func DirCtx(h http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		if dir == nil {
+		} else if dir == nil {
 			http.Error(w, fmt.Sprintf("directory (id=%s) not found", dirID), http.StatusNotFound)
 			return
 		}
@@ -153,8 +184,7 @@ func UserCtx(h http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		if user == nil {
+		} else if user == nil {
 			http.Error(w, fmt.Sprintf("user (id=%s) not found", userID), http.StatusNotFound)
 			return
 		}
