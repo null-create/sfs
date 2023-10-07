@@ -55,9 +55,13 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
+	if !token.Valid {
 		return "", fmt.Errorf("invalid token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", fmt.Errorf("failed to parse jwt claims")
 	}
 	userID := claims["sub"].(string)
 	if userID == "" {
@@ -66,11 +70,11 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	return userID, nil
 }
 
-// create a new token using a given userID
-func (t *Token) Create(userID string) (string, error) {
+// create a new token using a given payload/string
+func (t *Token) Create(payload string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
-	claims["sub"] = userID
+	claims["sub"] = payload
 	claims["exp"] = time.Now().Add(time.Hour).UTC() // Token expires in 1  hour
 	tokenString, err := token.SignedString(t.Secret)
 	if err != nil {
