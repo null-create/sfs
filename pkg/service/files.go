@@ -103,6 +103,14 @@ func (f *File) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
+func (f *File) UpdateMetadata() error {
+	if err := f.UpdateChecksum(); err != nil {
+		return err
+	}
+	f.LastSync = time.Now().UTC()
+	return nil
+}
+
 // ----------- simple security features
 
 func (f *File) Lock(password string) {
