@@ -16,13 +16,6 @@ import (
 	"github.com/go-chi/chi"
 )
 
-/*
-Handlers for directly working with sfs service instance..
-
-We want to add some middleware above these calls to handle user authorization
-and other such business to validate requests to the server.
-*/
-
 type API struct {
 	Svc *Service // SFS service instance
 }
@@ -44,12 +37,25 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("not implemented yet :("))
 }
 
+/*
+NOTE: r *http.Request contains a context field, which
+can be populated using context middleware. if context
+middleware is successful, then we can retrieve values
+like this:
+
+ctx := r.Context()
+
+see: https://pkg.go.dev/net/http#Request.Context
+
+*/
+
 // -------- users (admin only) -----------------------------------------
 
 // add a new user and drive to sfs instance. user existance and
 // struct pointer should be created by NewUser middleware
-func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request, u *auth.User) {
-	if err := a.Svc.AddUser(u); err != nil {
+func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value(User).(*auth.User)
+	if err := a.Svc.AddUser(user); err != nil {
 		if strings.Contains(err.Error(), "user") {
 			http.Error(w, err.Error(), http.StatusBadRequest) // user already exists
 			return
@@ -58,7 +64,7 @@ func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			return
 		}
 	} else {
-		msg := fmt.Sprintf("user (name=%s id=%s) added", u.Name, u.ID)
+		msg := fmt.Sprintf("user (name=%s id=%s) added", user.Name, user.ID)
 		w.Write([]byte(msg))
 	}
 }
@@ -93,42 +99,23 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// TODO: userData should be part of a jwt token claim/payload,
+	// and not just the bare bytes
 	w.Write(userData)
 }
 
-// func (a *API) updateUser(user *auth.User) error {
-// 	if err := a.Svc.UpdateUser(user); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
-// TODO: retrieve entire user struct from r *http.Request object?
-
-// func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
-// 	userID := chi.URLParam(r, "userID")
-// 	u, err := a.Svc.FindUser(userID)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	} else if u == nil {
-// 		http.Error(w, fmt.Sprintf("user %s not found", userID), http.StatusNotFound)
-// 		return
-// 	}
-// 	if err := a.updateUser(u); err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// }
-
-func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "userID")
-	u, err := a.Svc.FindUser(userID)
-	if err != nil {
+// use UserCtx middleware before a call to this
+func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value(User).(*auth.User)
+	if err := a.Svc.UpdateUser(user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := a.Svc.RemoveUser(u.ID); err != nil {
+}
+
+func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value(User).(*auth.User)
+	if err := a.Svc.RemoveUser(user.ID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -190,8 +177,13 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, f.ServerPath)
 }
 
-func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
-	formFile, header, err := r.FormFile("myFile")
+// get a json blob of all files available to this user on the server
+func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
+	formFile, _, err := r.FormFile("myFile")
 	if err != nil {
 		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -199,15 +191,9 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 	}
 	defer formFile.Close()
 
-	// TODO: file integrity & safety checks. don't be stupid.
-
-	// get the user associated with the file
-	u, err := a.Svc.Db.GetUser(userID)
-	if err != nil {
-		msg := fmt.Sprintf("failed to get user from db: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
-	}
+	// retrieve new file object from context before copying data
+	ctx := r.Context()
+	newFile := ctx.Value(File).(*svc.File)
 
 	// retrieve file
 	var buf bytes.Buffer
@@ -217,20 +203,21 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, userID string) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	// make file object & save to server under path
-	filePath := "change me"
-	f := svc.NewFile(header.Filename, u.Name, filePath)
-
-	if err := f.Save(buf.Bytes()); err != nil {
+	if err := newFile.Save(buf.Bytes()); err != nil {
 		msg := fmt.Sprintf("failed to download file to server: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	f.LastSync = time.Now().UTC()
+	newFile.LastSync = time.Now().UTC()
+	newFile.CheckSum, err = svc.CalculateChecksum(newFile.ServerPath, "sha256")
+	if err != nil {
+		msg := fmt.Sprintf("failed to calculate checksum %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
 
 	a.Svc.Db.WhichDB("files")
-	if err := a.Svc.Db.AddFile(f); err != nil {
+	if err := a.Svc.Db.AddFile(newFile); err != nil {
 		msg := fmt.Sprintf("failed to add file to database: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
@@ -247,7 +234,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 	}
 	defer formFile.Close()
 
-	// retrieve file & update last sync time
+	// update file
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, formFile)
 	if err != nil {
@@ -261,6 +248,10 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 		return
 	}
 	f.LastSync = time.Now().UTC()
+	// we ignore the error since we don't want to return it to the user
+	if err = f.UpdateChecksum(); err != nil {
+		log.Printf("failed to update checksum: %v", err)
+	}
 
 	// update DB
 	a.Svc.Db.WhichDB("users")
@@ -274,16 +265,11 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPut { // update the file
-		f := a.findF(w, r)
-		if f == nil {
-			return
-		}
+		ctx := r.Context()
+		f := ctx.Value(File).(*svc.File)
 		a.putFile(w, r, f)
 	} else if r.Method == http.MethodPost { // create a new file.
-		userID := chi.URLParam(r, "userID")
-		// TODO: get destination file path ...somehow.
-		// should be a parameter to newFile()
-		a.newFile(w, r, userID)
+		a.newFile(w, r)
 	}
 }
 
