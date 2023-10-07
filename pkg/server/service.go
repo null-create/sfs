@@ -443,35 +443,6 @@ func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 	return drv, nil
 }
 
-func (s *Service) newDrive(name, ownerID string) (*svc.Drive, error) {
-	d, err := AllocateDrive(name, ownerID, s.SvcRoot)
-	if err != nil {
-		return nil, err
-	}
-	// save new drive to the db
-	s.Db.WhichDB("drives")
-	if err := s.Db.AddDrive(d); err != nil {
-		return nil, err
-	}
-	return d, nil
-}
-
-// create a new drive for a user
-func (s *Service) NewDrive(name, ownerID string) (*svc.Drive, error) {
-	// check whether this owner already has a drive
-	if dID, err := s.Db.GetDriveID(ownerID); err != nil {
-		return nil, err
-	} else if dID != "" {
-		return nil, fmt.Errorf("owner (%s) already has a drive (%s): ", ownerID, dID)
-	}
-	// create a new drive
-	if drive, err := s.newDrive(name, ownerID); err == nil {
-		return drive, nil
-	} else {
-		return nil, fmt.Errorf("failed to create new drive: %v", err)
-	}
-}
-
 // --------- users --------------------------------
 
 func (s *Service) TotalUsers() int {
@@ -510,6 +481,13 @@ func (s *Service) UserExists(userID string) bool {
 
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
+	// check to see if this user already has a drive
+	if dID, err := s.Db.GetDriveID(user.ID); err != nil {
+		return err
+	} else if dID != "" {
+		return fmt.Errorf("user (%s) already has a drive (%s): ", user.ID, dID)
+	}
+
 	// allocate new drive and base service files
 	d, err := AllocateDrive(user.Name, user.Name, s.SvcRoot)
 	if err != nil {
