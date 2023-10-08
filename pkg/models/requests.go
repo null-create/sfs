@@ -9,15 +9,14 @@ import (
 /*
 This module defines REST request objects.
 
-This will be used by both Client and Server when creating request messages
+These will be used by both Client and Server when creating request messages
 */
 
 type InfoReq struct {
-	RequestTime time.Time `json:"request_time"`
+	ReqTime time.Time `json:"request_time"`
 
 	// requestor info
-	UserID   string `json:"user_id"`
-	UserName string `json:"user_name"`
+	Source string `json:"source"` // server or client
 }
 
 // --- info
