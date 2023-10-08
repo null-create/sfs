@@ -16,8 +16,11 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// TODO: add general logging
+
 type API struct {
-	Svc *Service // SFS service instance
+	StartTime time.Time
+	Svc       *Service // SFS service instance
 }
 
 func NewAPI(newService bool, isAdmin bool) *API {
@@ -104,6 +107,27 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(userData)
 }
 
+// return a list of all active users
+func (a *API) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	if usrs, err := a.Svc.Db.GetUsers(); err == nil {
+		if len(usrs) == 0 {
+			w.Write([]byte("no users available"))
+			return
+		}
+		for _, u := range usrs {
+			data, err := u.ToJSON()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Write(data)
+		}
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // use UserCtx middleware before a call to this
 func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
@@ -141,8 +165,6 @@ func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	} else if f == nil {
-		msg := fmt.Sprintf("file (id=%s) not found", fileID)
-		http.Error(w, msg, http.StatusNotFound)
 		return nil
 	}
 	return f
@@ -152,6 +174,8 @@ func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	f := a.findF(w, r)
 	if f == nil {
+		fileID := chi.URLParam(r, "fileID")
+		http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 		return
 	}
 	data, err := f.ToJSON()
@@ -167,6 +191,9 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	f := a.findF(w, r)
 	if f == nil {
+		fileID := chi.URLParam(r, "fileID")
+		msg := fmt.Sprintf("file (id=%s) not found", fileID)
+		http.Error(w, msg, http.StatusNotFound)
 		return
 	}
 
@@ -291,6 +318,8 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+	log.Printf("[INFO] filed (%s) deleted from server", f.Path)
+	w.Write([]byte(fmt.Sprintf("file (%s) deleted", f.Name)))
 }
 
 // ------- directories --------------------------------
@@ -325,6 +354,52 @@ func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(data)
+}
+
+func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	dirName := ctx.Value(Name).(string)
+	parentID := ctx.Value(Parent).(string)
+	path := ctx.Value(Path).(string)
+	owner := ctx.Value(User).(string)
+
+	// check if this directory exists
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		log.Printf("[INFO] dir %s already exists", path)
+		http.Error(w, fmt.Sprintf("dir %s already exists", path), http.StatusBadRequest)
+		return
+	}
+	// make the new physical directory & directory object
+	if err := os.Mkdir(path, svc.PERMS); err != nil {
+		log.Printf("[ERROR] failed to make directory: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	dir := svc.NewDirectory(dirName, owner, path)
+
+	// set parent to this directory
+	parent, err := a.Svc.Db.GetDirectory(parentID)
+	if err != nil {
+		log.Printf("[ERROR] couldn't retrieve directory: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	dir.Parent = parent
+
+	// save new dir to directory db
+	if err := a.Svc.Db.AddDir(dir); err != nil {
+		log.Printf("[ERROR] failed to add directory to database: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Printf("[INFO] dir %s (%s) created", dirName, path)
+
+	msg := fmt.Sprintf("directory %s created", dirName)
+	w.Write([]byte(msg))
+}
+
+func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
+
 }
 
 // -------- drives --------------------------------
