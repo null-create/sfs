@@ -204,9 +204,27 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, f.ServerPath)
 }
 
-// get a json blob of all files available to this user on the server
+// get json blobs of all files available on the server
 func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
-
+	// TODO: replace with user-specific get-files db call
+	if files, err := a.Svc.Db.GetFiles(); err == nil {
+		if len(files) == 0 {
+			w.Write([]byte("no files found"))
+			return
+		}
+		for _, file := range files {
+			data, err := file.ToJSON()
+			if err != nil {
+				msg := fmt.Sprintf("failed to convert file (name=%s id=%s) to JSON: %v", file.Name, file.ID, err)
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			}
+			w.Write(data)
+		}
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
