@@ -15,7 +15,7 @@ func TestServerStartUpWithAPing(t *testing.T) {
 	// shut down signal to the server
 	shutDown := make(chan bool)
 
-	// start server in its own goroutine
+	// start testing server
 	testServer := NewServer()
 	go func() {
 		testServer.TestRun(shutDown)
