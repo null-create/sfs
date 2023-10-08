@@ -77,6 +77,66 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 	}
 }
 
-func TestCreateAndUpdateADrive(t *testing.T) {}
+func TestCreateAndUpdateADrive(t *testing.T) {
+	testDir := GetTestingDir()
 
-func TestCreateAndUpdateAUser(t *testing.T) {}
+	NewTable(filepath.Join(testDir, "Drives"), CreateDriveTable)
+	q := NewQuery(filepath.Join(testDir, "Drives"), false)
+	q.Debug = true
+
+	tmpDrive, _, _ := MakeTestItems(t, testDir)
+
+	if err := q.AddDrive(tmpDrive); err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDrive.Owner = "some user"
+
+	if err := q.UpdateDrive(tmpDrive); err != nil {
+		t.Fatal(err)
+	}
+
+	d, err := q.GetDrive(tmpDrive.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotEqual(t, nil, d)
+	assert.Equal(t, tmpDrive.Owner, "some user")
+	assert.Equal(t, tmpDrive.Owner, d.Owner)
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreateAndUpdateAUser(t *testing.T) {
+	testDir := GetTestingDir()
+
+	NewTable(filepath.Join(testDir, "Users"), CreateUserTable)
+	q := NewQuery(filepath.Join(testDir, "Users"), false)
+	q.Debug = true
+
+	_, _, tmpUser := MakeTestItems(t, testDir)
+
+	if err := q.AddUser(tmpUser); err != nil {
+		t.Fatal(err)
+	}
+
+	tmpUser.Name = "seymore butts"
+
+	if err := q.UpdateUser(tmpUser); err != nil {
+		t.Fatal(err)
+	}
+
+	u, err := q.GetUser(tmpUser.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotEqual(t, nil, u)
+	assert.Equal(t, tmpUser.Name, "seymore butts")
+	assert.Equal(t, tmpUser.Name, u.Name)
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}
