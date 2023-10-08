@@ -47,7 +47,7 @@ func isMode(k string) bool {
 }
 
 // write out as a json file
-func saveJSON(dir, filename string, data map[string]interface{}) {
+func saveJSON(dir, filename string, data any) {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Fatalf("[ERROR] failed marshalling JSON data: %s\n", err)
