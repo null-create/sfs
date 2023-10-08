@@ -28,6 +28,7 @@ func (q *Query) UpdateFile(f *svc.File) error {
 		&f.ClientPath,
 		&f.CheckSum,
 		&f.Algorithm,
+		&f.ID,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}
@@ -56,6 +57,7 @@ func (q *Query) UpdateDir(d *svc.Directory) error {
 		&d.LastSync,
 		&d.Root,
 		&d.RootPath,
+		&d.ID,
 	); err != nil {
 		return fmt.Errorf("failed to add directory: %v", err)
 	}
@@ -82,6 +84,7 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 		&drv.Key,
 		&drv.AuthType,
 		&drv.DriveRoot,
+		&drv.ID,
 	); err != nil {
 		return fmt.Errorf("failed to execute query: %v", err)
 	}

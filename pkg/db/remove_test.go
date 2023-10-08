@@ -90,7 +90,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Users"), false)
 	q.Debug = true
 
-	tmpUser := auth.NewUser("bill", "bill", "bill@bill.com", "1234", "", false)
+	tmpUser := auth.NewUser("bill", "bill", "bill@bill.com", "1234", testDir, false)
 
 	if err := q.AddUser(tmpUser); err != nil {
 		Fatal(t, fmt.Errorf("failed to add user: %v", err))

@@ -237,7 +237,7 @@ const (
 	FindDirQuery          string = `SELECT * FROM Directories WHERE id = ?`
 	FindDriveQuery        string = `SELECT * FROM Drives WHERE id = ?`
 	FindUserQuery         string = `SELECT * FROM Users WHERE id = ?`
-	FindUsersDriveIDQuery string = `SELECT drive_id from Users Where id = ?`
+	FindUsersDriveIDQuery string = `SELECT drive_id FROM Users Where id = ?`
 
 	// ---------- SELECT statements for confirming existance -------------------
 

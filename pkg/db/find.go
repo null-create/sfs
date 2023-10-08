@@ -129,9 +129,7 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
-// populate a slice of *file.File structs from the database
-//
-// assign a limit with a string such as "100"
+// populate a slice of *svc.File structs from the database
 func (q *Query) GetFiles() ([]*svc.File, error) {
 	q.Connect()
 	defer q.Close()

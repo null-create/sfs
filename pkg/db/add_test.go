@@ -55,7 +55,7 @@ func TestAddAndFindMultipleFiles(t *testing.T) {
 
 	// make a bunch of dummy files
 	total := svc.RandInt(100)
-	testFiles := make([]*svc.File, 0)
+	testFiles := make([]*svc.File, 0, total)
 	for i := 0; i < total; i++ {
 		fn := fmt.Sprintf("test-%d.txt", i)
 		f := svc.NewFile(fn, "me", filepath.Join(testDir, fn))
@@ -161,7 +161,6 @@ func TestAddAndFindUser(t *testing.T) {
 	if err != nil {
 		Fatal(t, err)
 	}
-
 	assert.Equal(t, tmpUser.ID, u.ID)
 
 	if err := Clean(t, GetTestingDir()); err != nil {
