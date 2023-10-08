@@ -12,21 +12,6 @@ import (
 	"github.com/go-chi/chi"
 )
 
-type Context string
-
-// context enums
-const (
-	Name      Context = "name"
-	File      Context = "file"
-	Email     Context = "email"
-	Admin     Context = "admin"
-	Directory Context = "directory"
-	Parent    Context = "parent"
-	Drive     Context = "drive"
-	Path      Context = "path"
-	User      Context = "user"
-)
-
 // add json header to requests. added to middleware stack
 // during router instantiation.
 func ContentTypeJson(h http.Handler) http.Handler {
