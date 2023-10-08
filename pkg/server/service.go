@@ -112,7 +112,7 @@ func (s *Service) SaveState() error {
 			}
 		}
 	} else {
-		log.Printf("[WARNING] failed to remove previous state file: %v", err)
+		log.Printf("[WARNING] failed to remove previous state file(s): %v", err)
 	}
 
 	// marshal state instance and write out
@@ -281,7 +281,7 @@ func SvcInit(svcRoot string, debug bool) (*Service, error) {
 		return nil, fmt.Errorf("failed to save service state: %v", err)
 	}
 
-	// update .env file NEW_SERVICE variable so future boot ups won't
+	// update NEW_SERVICE variable so future boot ups won't
 	// create a new service every time
 	e := NewE()
 	if err := e.Set("NEW_SERVICE", "false"); err != nil {
@@ -345,8 +345,7 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
-	// attempt to populate from users database
-	// if state file had no user data
+	// attempt to populate from users database if state file had no user data
 	if len(svc.Users) == 0 {
 		log.Printf("[WARNING] state file had no user data. attempting to populate from users database...")
 		_, err := loadUsers(svc)
@@ -354,10 +353,8 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 			log.Fatalf("[ERROR] failed to retrieve user data: %v", err)
 		}
 	}
-	// make sure we have a path to the db dir
-	// and current state file for this session
+	// make sure we have a path to the db dir and current state file for this session
 	svc.DbDir = filepath.Join(svcPath, "dbs")
-	svc.StateFile = sfPath
 	return svc, nil
 }
 

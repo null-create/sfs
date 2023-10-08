@@ -295,6 +295,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
+	assert.Equal(t, testUsr.Name, u.Name)
 
 	// update name and save
 	testUsr.Name = "bill buttlicker II"
@@ -309,6 +310,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
+	assert.Equal(t, testUsr.Name, u.Name)
 
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
