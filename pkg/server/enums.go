@@ -1,8 +1,8 @@
 package server
 
+// context enums
 type Context string
 
-// context enums
 const (
 	Name      Context = "name"
 	File      Context = "file"
