@@ -66,8 +66,7 @@ func NewUser(h http.Handler) http.Handler {
 		newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserName)
 
 		newUser := auth.NewUser(
-			newUserName, newUserAlias, newUserEmail,
-			auth.NewUUID(), newDriveRoot, isAdmin,
+			newUserName, newUserAlias, newUserEmail, auth.NewUUID(), newDriveRoot, isAdmin,
 		)
 		// this basically just repackages the previous
 		// context with a new user object
