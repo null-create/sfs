@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
-	"github.com/sfs/pkg/service"
+	svc "github.com/sfs/pkg/service"
 
 	"github.com/go-chi/chi"
 )
@@ -16,8 +16,12 @@ type Context string
 
 // context enums
 const (
+	Name      Context = "name"
 	File      Context = "file"
+	Email     Context = "email"
+	Admin     Context = "admin"
 	Directory Context = "directory"
+	Parent    Context = "parent"
 	Drive     Context = "drive"
 	Path      Context = "path"
 	User      Context = "user"
@@ -49,7 +53,7 @@ func NewFile(h http.Handler) http.Handler {
 			return
 		}
 
-		newFile := service.NewFile(fileName, owner, path)
+		newFile := svc.NewFile(fileName, owner, path)
 
 		newCtx := context.WithValue(ctx, File, newFile)
 		h.ServeHTTP(w, r.WithContext(newCtx))
@@ -59,12 +63,12 @@ func NewFile(h http.Handler) http.Handler {
 func NewUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := ServiceConfig()
-		newUserID := auth.NewUUID()
 
 		ctx := r.Context()
-		newUserName := ctx.Value("userName").(string)
-		newUserAlias := ctx.Value("userAlias").(string)
-		newUserEmail := ctx.Value("userEmail").(string)
+		newUserName := ctx.Value(Name).(string)
+		newUserAlias := ctx.Value(User).(string)
+		newUserEmail := ctx.Value(Email).(string)
+		isAdmin := ctx.Value(Admin).(bool)
 		if newUserName == "" || newUserAlias == "" || newUserEmail == "" {
 			msg := fmt.Sprintf(
 				"missing fields: name=%s username=%s email=%s",
@@ -73,11 +77,12 @@ func NewUser(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
+
 		newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserName)
 
 		newUser := auth.NewUser(
 			newUserName, newUserAlias, newUserEmail,
-			newUserID, newDriveRoot, false,
+			auth.NewUUID(), newDriveRoot, isAdmin,
 		)
 		// this basically just repackages the previous
 		// context with a new user object
