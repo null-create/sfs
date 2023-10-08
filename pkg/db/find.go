@@ -56,7 +56,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	return user, nil
 }
 
-// populate a slice of *auth.User structs from the database
+// populates a slice of *auth.User structs of all available users from the database
 func (q *Query) GetUsers() ([]*auth.User, error) {
 	q.Connect()
 	defer q.Close()
