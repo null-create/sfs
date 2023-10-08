@@ -36,8 +36,9 @@ func TestEnvBuild(t *testing.T) {
 func TestEnvValidate(t *testing.T) {
 	BuildEnv(true)
 	e := NewE()
+	assert.NotEqual(t, nil, e)
+
 	if err := e.Validate("JWT_SECRET"); err != nil {
 		t.Fatal(err)
 	}
-	assert.NotEqual(t, nil, e)
 }
