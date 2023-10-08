@@ -30,7 +30,8 @@ type User struct {
 	TotalFiles int    `json:"total_files"`
 	TotalDirs  int    `json:"total_dirs"`
 
-	// path to the the drive root for their filesystem
+	// path to the the drive root for their filesystem, ie:
+	// sfs/users/user-who-ever/root
 	Root string `json:"root"`
 }
 

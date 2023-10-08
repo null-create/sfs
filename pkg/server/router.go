@@ -18,34 +18,37 @@ GET     /v1/drive/{userID}        // "home". return a root directory listing
 
 // ----- users (admin only)
 
-POST    /v1/users/{userID}/new   // create a new user
 GET     /v1/users/{userID}       // get info about a user
+
+POST    /v1/users/new            // create a new user
 PUT     /v1/users/{userID}       // update a user
 DELETE  /v1/users/{userID}       // delete a user
 
 // ----- files
 
-GET    /v1/i/files/{fileID}    // get info about a file
+GET    /v1/files/{fileID}/i    // get info about a file
+
+POST   /v1/files/new           // send a new file to the server
 GET    /v1/files/{fileID}      // download a file from the server
-POST   /v1/files/{fileID}      // send a new file to the server
 PUT    /v1/files/{fileID}      // update a file on the server
 DELETE /v1/files/{fileID}      // delete a file on the server
 
 // ---- directories
 
 GET    /v1/i/dirs/{dirID}    // get list of files and subdirectories for this directory
+
+POST   /v1/dirs/new          // create a directory on the server
 GET    /v1/dirs/{dirID}      // download a .zip (or other compressed format) file of this directory and its contents
-POST   /v1/dirs/{dirID}      // create a directory on the server
 PUT    /v1/dirs/{dirID}      // update a directory on the server
 DELETE /v1/dirs/{dirID}      // delete a directory on the server
 
 // ----- sync operations
 
-GET    /v1/users/{userID}/sync  // fetch file last sync times from server
+GET    /v1/sync              // fetch file last sync times from server
 
-POST   /v1/users/{userID}/sync  // send a last sync index object to the server
-                                // generated from the local client directories to
-								                // initiate a client/server file sync.
+POST   /v1/sync              // send a last sync index object to the server
+                             // generated from the local client directories to
+								             // initiate a client/server file sync.
 */
 
 // instantiate a new chi router
@@ -78,11 +81,9 @@ func NewRouter() *chi.Mux {
 		w.Write([]byte("hi"))
 	})
 
-	// TODO: rework so ctx middleware isn't used when creating
-	// files/users/directories. only need ctx for existing items.
-
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
+		// files
 		r.Route("/files", func(r chi.Router) {
 			r.Route("/{fileID}", func(r chi.Router) {
 				r.Use(FileCtx)
@@ -94,12 +95,13 @@ func NewRouter() *chi.Mux {
 				r.Use(NewFile)
 				r.Post("/", api.PutFile)
 			})
-			r.Route("/i/{fileID}", func(r chi.Router) {
+			r.Route("/{fileID}/i", func(r chi.Router) {
 				r.Use(FileCtx)
 				r.Get("/", api.GetFileInfo) // get info about a file
 			})
 		})
 
+		// directories
 		r.Route("/dirs", func(r chi.Router) {
 			r.Route("/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
@@ -108,12 +110,17 @@ func NewRouter() *chi.Mux {
 				r.Put("/", api.Placeholder)    // update a directory on the server
 				r.Delete("/", api.Placeholder) // delete a directory
 			})
+			r.Route("/new", func(r chi.Router) {
+				// r.Use(NewDirCtx)
+				r.Post("/", api.Placeholder) // create a new directory
+			})
 			r.Route("/i/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
 				r.Get("/", api.Placeholder) // get info about a directory
 			})
 		})
 
+		// drives
 		r.Route("/drive", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
 				r.Use(DriveCtx)
@@ -121,20 +128,27 @@ func NewRouter() *chi.Mux {
 			})
 		})
 
-		// sync operations
+		// users
 		r.Route("/users", func(r chi.Router) {
-			r.Route("/{userID}", func(r chi.Router) {
-				r.Use(UserCtx)
-				r.Route("/sync", func(r chi.Router) {
-					// fetch file last sync times for all
-					// user files (in all directories) from server
-					// to start a client side sync operation
-					r.Get("/", api.Placeholder)
-					// send a newly generated last sync index to the
-					// server to initiate a client/server file sync.
-					r.Post("/", api.Placeholder)
-				})
+			r.Route("/all", func(r chi.Router) {
+				// get a list of all active users
+				// NOTE: this will be part of the admin router
+				// once its ready
+				r.Get("/", api.GetAllUsers)
 			})
+		})
+
+		// sync operations
+		r.Route("/sync", func(r chi.Router) {
+			// r.Use(SyncCtx)
+
+			// fetch file last sync times for all
+			// user files (in all directories) from server
+			// to start a client side sync operation
+			r.Get("/", api.Placeholder)
+			// send a newly generated last sync index to the
+			// server to initiate a client/server file sync.
+			r.Post("/", api.Placeholder)
 		})
 	})
 
