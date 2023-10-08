@@ -91,6 +91,9 @@ func NewRouter() *chi.Mux {
 				r.Put("/", api.PutFile)        // update a file on the server
 				r.Delete("/", api.Placeholder) // delete a file on the server
 			})
+			r.Route("/all", func(r chi.Router) {
+				r.Get("/", api.GetAllFiles) // get info about all user-specific files
+			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
 				r.Use(NewFile)
 				r.Post("/", api.PutFile)
