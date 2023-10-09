@@ -321,3 +321,9 @@ func TestAddAndUpdateAUser(t *testing.T) {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
+
+func TestAddDrive(t *testing.T) {}
+
+func TestAddAndUpdateDrive(t *testing.T) {}
+
+func TestAddAndRemoveDrive(t *testing.T) {}
