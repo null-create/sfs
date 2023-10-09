@@ -7,6 +7,7 @@ import (
 )
 
 type Conf struct {
+	User string `env:"CLIENT"`
 	Root string `env:"CLIENT_ROOT"`
 }
 
