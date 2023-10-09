@@ -1,7 +1,7 @@
 package service
 
 import (
-	"fmt"
+	"log"
 )
 
 // Queue represents a set of file batches that are to be uploaded or downloaded
@@ -32,7 +32,7 @@ func (q *Queue) TotalFiles() int {
 
 // NOTE: thes does NOT ensure there are no duplicate batches!
 //
-// this will need to be done elsewhere
+// that will need to be done elsewhere
 func (q *Queue) Enqueue(b *Batch) {
 	q.Queue = append(q.Queue, b)
 	q.Total += 1
@@ -40,7 +40,8 @@ func (q *Queue) Enqueue(b *Batch) {
 
 func (q *Queue) Dequeue() (*Batch, error) {
 	if len(q.Queue) == 0 {
-		return nil, fmt.Errorf("file queue is empty")
+		log.Printf("[INFO] file queue is empty")
+		return nil, nil
 	}
 	item := q.Queue[0]
 	q.Queue = q.Queue[1:]
