@@ -95,7 +95,7 @@ func set(k, v string, env map[string]string) error {
 	return nil
 }
 
-// update an environment variable, and save to .env file for later use
+// update an environment variable and save to .env file
 func (e *Env) Set(k, v string) error {
 	env, err := godotenv.Read(".env")
 	if err != nil {
