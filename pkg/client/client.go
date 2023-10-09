@@ -100,5 +100,6 @@ func (c *Client) SaveState() error {
 	}
 	fn := fmt.Sprintf("client-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05Z"))
 	fp := filepath.Join(c.SfPath, fn)
+
 	return os.WriteFile(fp, data, svc.PERMS)
 }
