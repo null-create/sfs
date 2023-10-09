@@ -10,22 +10,37 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// this is mainly used for the one-time set up of the client-side service
+/*
+define service directory paths, create necessary state file and
+database directories, and create service databases and initial state file
+
+NOTE: users files and directories within a dedicated service root.
+"root"here means a dedicated directory for the user to backup and retrieve
+any files and directories they wish.
+
+A future alternative mode will to allow for individual files spread
+across a user's normal system to be "marked" as files to "watch" for
+activity (such as updates, modifications, etc), and then be queued for
+synching or backing up with the server.
+
+this can allow for more individual control over files and directories
+as well as elmininate the need for a dedicated "root" service directory.
+(not that this is an inherently bad idea, just want flexiblity)
+*/
 func setup(userName, svcRoot string) (*Client, error) {
-	svcPaths := []string{
-		filepath.Join(svcRoot, "dbs"),
-		filepath.Join(svcRoot, "state"),
+	// make sure service root isn't already made
+	if _, err := os.Stat(svcRoot); !os.IsNotExist(err) {
+		return nil, fmt.Errorf("service root is already present: %v", err)
+	}
+	if err := os.Mkdir(svcRoot, svc.PERMS); err != nil {
+		return nil, err
 	}
 
-	// make sure these are empty before starting
-	for _, svcPath := range svcPaths {
-		entries, err := os.ReadDir(svcPath)
-		if err != nil {
-			return nil, err
-		}
-		if len(entries) != 0 {
-			return nil, fmt.Errorf("svc path should be empty: %s", svcPath)
-		}
+	// define service directory paths
+	svcPaths := []string{
+		filepath.Join(svcRoot, "dbs"),
+		filepath.Join(svcRoot, "root"),
+		filepath.Join(svcRoot, "state"),
 	}
 
 	// make each directory
