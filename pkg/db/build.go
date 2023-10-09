@@ -10,7 +10,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// all database files must end with .db!
 func NewDB(dbName string, pathToNewDB string) error {
 	switch dbName {
 	case "users":
