@@ -12,7 +12,7 @@ import (
  /        \ |     \  /        \
 /_______  / \___  / /_______  /
         \/      \/          \/
-    (AKA) SIMPLE FILE SYNC
+    (AKA SIMPLE FILE SYNC)
 */
 
 // TODO:
