@@ -35,6 +35,7 @@ func NewClient(user, userID string) *Client {
 		Conf:      conf,
 		User:      user,
 		UserID:    userID,
+		SfPath:    filepath.Join(conf.Root, "state"),
 		Db:        db.NewQuery(filepath.Join(conf.Root, "dbs"), true),
 		client: &http.Client{
 			Timeout: time.Second * 30,
