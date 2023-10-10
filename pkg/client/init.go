@@ -16,14 +16,21 @@ import (
 define service directory paths, create necessary state file and
 database directories, and create service databases and initial state file
 
-NOTE: users files and directories within a dedicated service root.
+root/
+|		user
+|	  |---root/     <------ users files and directories live here
+|	  |---state/
+|   |---dbs/
+
+users files and directories within a dedicated service root.
 "root" here means a dedicated directory for the user to backup and retrieve
 any files and directories they wish.
 
-A future alternative mode will to allow for individual files spread
+NOTE: A future alternative mode may allow for individual files spread
 across a user's normal system to be "marked" as files to "watch" for
 activity (such as updates, modifications, etc), and then be queued for
-synching or backing up with the server.
+synching or backing up with the server (automatically, or when a user
+manually intiates a sync).
 
 this can allow for more individual control over files and directories
 as well as elmininate the need for a dedicated "root" service directory.
