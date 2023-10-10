@@ -1,7 +1,9 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -15,7 +17,7 @@ define service directory paths, create necessary state file and
 database directories, and create service databases and initial state file
 
 NOTE: users files and directories within a dedicated service root.
-"root"here means a dedicated directory for the user to backup and retrieve
+"root" here means a dedicated directory for the user to backup and retrieve
 any files and directories they wish.
 
 A future alternative mode will to allow for individual files spread
@@ -64,7 +66,12 @@ func setup(userName, svcRoot string) (*Client, error) {
 		return nil, err
 	}
 
-	return NewClient(userName, auth.NewUUID()), nil
+	// initialize a new client and save initial state
+	client := NewClient(userName, auth.NewUUID())
+	if err := client.SaveState(); err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func Setup() (*Client, error) {
@@ -72,6 +79,42 @@ func Setup() (*Client, error) {
 	client, err := setup(c.User, c.Root)
 	if err != nil {
 		return nil, err
+	}
+	return client, nil
+}
+
+func loadStateFile() ([]byte, error) {
+	c := ClientConfig()
+	entries, err := os.ReadDir(filepath.Join(c.Root, "state"))
+	if err != nil {
+		return nil, err
+	}
+	if len(entries) == 0 {
+		log.Fatal("no state file found for client!")
+	} else if len(entries) > 1 {
+		log.Printf("[WARNING] more than one state file found for client! will default to most recent entry")
+		for i, entry := range entries {
+			log.Printf("	%d: %s", i+1, entry.Name())
+		}
+	}
+	// get most recent one (assuming more than one present somehow)
+	sf := entries[len(entries)-1]
+	data, err := os.ReadFile(sf.Name())
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state file: %v", err)
+	}
+	return data, nil
+}
+
+// load client from state file, if possible
+func LoadClient() (*Client, error) {
+	data, err := loadStateFile()
+	if err != nil {
+		return nil, err
+	}
+	client := new(Client)
+	if err := json.Unmarshal(data, client); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 	return client, nil
 }

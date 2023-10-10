@@ -42,6 +42,17 @@ func GetTestingDir() string {
 
 // handle test failures
 //
+// similar to Fatal(), except you can supply a
+// testing/tmp directy path to clean
+func Fail(t *testing.T, dir string, err error) {
+	if err := Clean(t, dir); err != nil {
+		log.Fatal(err)
+	}
+	t.Fatalf("[ERROR] %v", err)
+}
+
+// handle test failures
+//
 // calls Clean() followed by t.Fatalf()
 func Fatal(t *testing.T, err error) {
 	if err := Clean(t, GetTestingDir()); err != nil {
