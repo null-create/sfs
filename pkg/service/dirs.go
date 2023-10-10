@@ -197,6 +197,25 @@ func (d *Directory) HasDir(dirID string) bool {
 	return false
 }
 
+// Returns the size of a directory with all its contents, including subdirectories
+//
+// TODO: implement our own version of Walk for this function
+func (d *Directory) DirSize() (float64, error) {
+	var size float64
+	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			// TODO: investigate how the conversion of
+			// int64 to float64 can effect results.
+			size += float64(info.Size())
+		}
+		return nil
+	})
+	return size, err
+}
+
 /*
 only root directories can have a nil parent pointer
 since they will have a valid *drive pointer to
@@ -336,9 +355,6 @@ func (d *Directory) RemoveFile(fileID string) error {
 	return nil
 }
 
-// TODO: get a list of *all* files
-// starting at the given directory (treated as root)
-//
 // return a copy of the files map *for this directory*
 //
 // does not return files from subdirectories
@@ -349,7 +365,8 @@ func (d *Directory) GetFiles() map[string]*File {
 	return d.Files
 }
 
-// fild a file within the given directory, or subdirectories
+// find a file within the given directory or subdirectories.
+// returns nil if no such file exists
 func (d *Directory) FindFile(fileID string) *File {
 	return d.WalkF(fileID)
 }
@@ -452,7 +469,7 @@ func (d *Directory) RemoveSubDirs() error {
 	return nil
 }
 
-// directly returns the subdirectory, assuming the supplied key is valid
+// directly returns the subdirectory within the *current* directory.
 func (d *Directory) GetSubDir(dirID string) *Directory {
 	if dir, ok := d.Dirs[dirID]; ok {
 		return dir
@@ -473,24 +490,12 @@ func (d *Directory) GetSubDirs() map[string]*Directory {
 	return d.Dirs
 }
 
-// Returns the size of a directory with all its contents, including subdirectories
-//
-// TODO: implement our own version of Walk for this function
-func (d *Directory) DirSize() (float64, error) {
-	var size float64
-	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			// TODO: investigate how the conversion of
-			// int64 to float64 can effect results.
-			size += float64(info.Size())
-		}
-		return nil
-	})
-	return size, err
+// attempts to locate the directory or subdirectory. returns nil if not found.
+func (d *Directory) FindDir(dirID string) *Directory {
+	return d.WalkD(dirID)
 }
+
+// ------------------------------------------------------------
 
 /*
 WalkF() recursively traverses sub directories starting at a given directory (or root),
