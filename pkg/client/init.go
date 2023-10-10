@@ -20,8 +20,10 @@ root/
 |		user
 |	  |---root/     <------ users files and directories live here
 |	  |---state/
+|   |   |---user-state-date-time.json
 |   |---dbs/
-
+|   |   |---files
+|   |   |---directories
 users files and directories within a dedicated service root.
 "root" here means a dedicated directory for the user to backup and retrieve
 any files and directories they wish.
