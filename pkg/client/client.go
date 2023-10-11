@@ -46,6 +46,9 @@ func NewClient(user, userID string) *Client {
 func (c *Client) cleanSfDir() error {
 	entries, err := os.ReadDir(c.SfDir)
 	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
 		return nil
 	}
 	for _, entry := range entries {
