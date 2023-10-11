@@ -48,6 +48,7 @@ func NewCtx() *AddCtx {
 type Batch struct {
 	ID    string // batch ID (UUID)
 	Cap   int64  // remaining capacity (in bytes)
+	Max   int64  // total capacity (in bytes)
 	Total int    // total files in this batch
 
 	Files map[string]*File // files to be uploaded or downloaded
@@ -58,6 +59,7 @@ func NewBatch() *Batch {
 	return &Batch{
 		ID:    NewUUID(),
 		Cap:   MAX,
+		Max:   MAX,
 		Files: make(map[string]*File, 0),
 	}
 }
@@ -152,13 +154,13 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	}
 	// if we reach capacity before we finish with files,
 	// return a list of the remaining files
-	if b.Cap == MAX && len(c.Added) < len(files) {
+	if b.Cap == 0 && len(c.Added) < len(files) {
 		log.Printf("[DEBUG] reached capacity before we could finish with the remaining files. \nreturning remaining files\n")
 		return Diff(c.Added, files), CapMaxed
 	}
 	// if b.Cap < MAX and we have left over files that were passed over for
 	// being to large for the current batch.
-	if len(c.NotAdded) > 0 && b.Cap < MAX {
+	if len(c.NotAdded) > 0 && b.Cap < b.Max {
 		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
 		if len(c.Added) == 0 {
 			log.Printf("[WARNING] *no* files were added!")
