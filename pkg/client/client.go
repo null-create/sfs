@@ -28,13 +28,13 @@ func NewClient(user, userID string) *Client {
 	conf := ClientConfig()
 
 	// TODO: add custom transport and other http client configurations
-
+	svcRoot := filepath.Join(conf.Root, user)
 	return &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
 		User:      user,
 		UserID:    userID,
-		SfDir:     filepath.Join(conf.Root, "state"),
+		SfDir:     filepath.Join(svcRoot, "state"),
 		Db:        db.NewQuery(filepath.Join(conf.Root, "dbs"), true),
 		client: &http.Client{
 			Timeout: time.Second * 30,
@@ -63,6 +63,7 @@ func (c *Client) SaveState() error {
 	if err := c.cleanSfDir(); err != nil {
 		return err
 	}
+
 	// write out
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
@@ -70,5 +71,6 @@ func (c *Client) SaveState() error {
 	}
 	fn := fmt.Sprintf("client-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05Z"))
 	fp := filepath.Join(c.SfDir, fn)
+
 	return os.WriteFile(fp, data, svc.PERMS)
 }

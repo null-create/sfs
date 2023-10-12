@@ -39,19 +39,17 @@ as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
 func setup(userName, svcRoot string) (*Client, error) {
-	// make sure service root isn't already made
-	if _, err := os.Stat(svcRoot); !os.IsNotExist(err) {
-		return nil, fmt.Errorf("service root is already present: %v", err)
-	}
-	if err := os.Mkdir(svcRoot, svc.PERMS); err != nil {
+	// make client service root directory
+	svcDir := filepath.Join(svcRoot, userName)
+	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
 	}
 
 	// define service directory paths
 	svcPaths := []string{
-		filepath.Join(svcRoot, "dbs"),
-		filepath.Join(svcRoot, "root"),
-		filepath.Join(svcRoot, "state"),
+		filepath.Join(svcDir, "dbs"),
+		filepath.Join(svcDir, "root"),
+		filepath.Join(svcDir, "state"),
 	}
 
 	// make each directory
@@ -64,7 +62,7 @@ func setup(userName, svcRoot string) (*Client, error) {
 	// make each database
 	dbs := []string{"files", "directories"}
 	for _, dName := range dbs {
-		if err := db.NewDB(dName, svcPaths[0]); err != nil {
+		if err := db.NewDB(dName, filepath.Join(svcPaths[0], dName)); err != nil {
 			return nil, err
 		}
 	}
