@@ -3,6 +3,7 @@ package client
 import (
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/sfs/pkg/env"
@@ -49,6 +50,10 @@ func TestNewClient(t *testing.T) {
 	assert.NotEqual(t, 0, len(entries))
 
 	if err := Clean(t, tmpDir); err != nil {
+		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
 		log.Fatal(err)
 	}
 }
@@ -86,11 +91,50 @@ func TestLoadClient(t *testing.T) {
 	assert.Equal(t, c1.client, c2.client)
 
 	if err := Clean(t, tmpDir); err != nil {
+		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
 		log.Fatal(err)
 	}
 }
 
-func TestLoadClientSaveState(t *testing.T) {}
+func TestLoadClientSaveState(t *testing.T) {
+	env.BuildEnv(true)
+
+	// make sure we clean the right testing directory
+	e := env.NewE()
+	tmpDir, err := e.Get("CLIENT_ROOT")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new client, then load a new client object
+	// from the initialized service directory and state file
+	tmpClient, err := Init(true)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	entries, err := os.ReadDir(tmpClient.SfDir)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+	assert.Equal(t, 1, len(entries)) // should only have 1 state file at a time
+	assert.True(t, strings.Contains(entries[0].Name(), "client-state"))
+	assert.True(t, strings.Contains(entries[0].Name(), ".json"))
+
+	if err := Clean(t, tmpDir); err != nil {
+		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+}
 
 func TestClientAddNewUser(t *testing.T) {}
 
