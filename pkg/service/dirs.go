@@ -376,9 +376,6 @@ func (d *Directory) FindFile(fileID string) *File {
 // creates a new subdirectory and updates internal data structures.
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
-		if err := os.Mkdir(dir.Path, PERMS); err != nil {
-			return err
-		}
 		dir.Parent = d
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
@@ -502,7 +499,7 @@ WalkF() recursively traverses sub directories starting at a given directory (or 
 attempting to find the desired file with the given file ID.
 */
 func (d *Directory) WalkF(fileID string) *File {
-	if len(d.Dirs) == 0 {
+	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
 		return nil
 	}
