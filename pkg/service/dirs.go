@@ -596,13 +596,6 @@ the given directory and returns a *SyncIndex pointer containing
 the last sync times for each file in each directory and subdirectories.
 */
 func (d *Directory) WalkS(idx *SyncIndex) *SyncIndex {
-	if len(d.Files) > 0 {
-		idx = buildSync(d, idx)
-	}
-	if len(d.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
-		return idx // nothing else to search
-	}
 	return walkS(d, idx)
 }
 
@@ -641,10 +634,6 @@ func buildUpdate(d *Directory, idx *SyncIndex) *SyncIndex {
 
 // d.WalkU() populates the ToUpdate map of a given SyncIndex
 func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
-	if len(d.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search.", d.Name, d.ID)
-		return idx
-	}
 	return walkU(d, idx)
 }
 
