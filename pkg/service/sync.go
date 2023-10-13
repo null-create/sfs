@@ -177,10 +177,14 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 // build the queue for file uploads or downloads during a Sync event
 //
 // idx should have ToUpdate populated
-func BuildQ(idx *SyncIndex, q *Queue) *Queue {
+func BuildQ(idx *SyncIndex) *Queue {
 	files := idx.GetFiles()
 	if files == nil {
-		return q
+		return nil
+	}
+	if len(files) == 0 {
+		log.Printf("[DEBUG] no files matched for syncing")
+		return nil
 	}
 	// if every individual file exceeds b.MAX, none will able to
 	// be added to the standard batch queue and we like to avoid infinite loops,
