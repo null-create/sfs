@@ -98,9 +98,16 @@ func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
 	b := NewBatch()
 	b.Cap = 100 // set a small capacity
 
+	// build a sync index and mutate files so we can
+	// add them to the ToUpdate map (BuildQ checks for this)
+	idx := BuildSyncIndex(d)
+	d.Files = MutateFiles(t, d.Files)
+	idx = BuildToUpdate(d, idx)
+
 	// should return a "large file" queue, i.e just a
 	// queue of each of the files.
-	q := buildQ(f, b, NewQ())
+	q := BuildQ(idx)
+
 	assert.NotEqual(t, nil, q)
 	assert.NotEqual(t, 0, len(q.Queue))
 

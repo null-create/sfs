@@ -104,7 +104,6 @@ func RemDup(f []*File) []*File {
 }
 
 /*
-
 get keys from the map -- faster than using append()
 see: https://stackoverflow.com/questions/21362950/getting-a-slice-of-keys-from-a-map
 func GetKeys(mymap map[T]T) []T {

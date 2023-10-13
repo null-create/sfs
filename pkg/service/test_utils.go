@@ -184,7 +184,7 @@ func MakeTmpTxtFile(filePath string, textReps int) (*File, error) {
 	var data string
 	f := NewFile(filepath.Base(filePath), "me", filePath)
 	for i := 0; i < textReps; i++ {
-		data += txtData
+		data += txtData // file size will be ~49*textReps bytes in size
 	}
 	if err = f.Save([]byte(data)); err != nil {
 		return nil, err
@@ -258,7 +258,7 @@ func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
 		if err != nil {
 			return nil, err
 		}
-
+		// files are roughly 500kb so "large" is generous here
 		var data string
 		for i := 0; i < 10000; i++ {
 			data += txtData
@@ -271,16 +271,6 @@ func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
 		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
 	}
 	return testFiles, nil
-}
-
-func AddLargeTestFile() (*File, error) {
-	tfDir := filepath.Join(GetCwd(), "test_files")
-	tf := filepath.Join(tfDir, "me.png")
-	dest := filepath.Join(GetTestingDir(), "me.png")
-	if err := Copy(tf, dest); err != nil {
-		return nil, err
-	}
-	return NewFile("me.png", "me", tf), nil
 }
 
 func RemoveTestFiles(t *testing.T, total int) error {
