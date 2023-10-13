@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
@@ -123,6 +124,7 @@ func LoadClient() (*Client, error) {
 	if err := json.Unmarshal(data, client); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
+	client.StartTime = time.Now().UTC()
 	return client, nil
 }
 
