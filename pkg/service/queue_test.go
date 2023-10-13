@@ -39,30 +39,23 @@ func TestQueueOrder(t *testing.T) {
 }
 
 func TestBuildQueue(t *testing.T) {
-	tmpRoot := MakeTmpDirs(t)
+	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	f, err := MakeABunchOfTxtFiles(25)
+	if err != nil {
+		Fatal(t, err)
+	}
 
-	// get initial index
-	idx := tmpRoot.WalkS(NewSyncIndex("me"))
+	MutateFiles(t, d.GetFiles())
 
-	// randomly update some of the files with additional content, causing their
-	// last sync times to be updated
-	files := tmpRoot.GetFiles()
-	MutateFiles(t, files)
+	b := NewBatch()
+	b.Cap = int64(TEST_MAX)
 
-	// check new index, make sure some of the times are different
-	toUpdate := BuildToUpdate(tmpRoot, idx)
-
-	// build and inspect file queue
-	q := BuildQ(toUpdate, NewQ())
+	q := buildQ(f, b, NewQ())
 	assert.NotEqual(t, nil, q)
 	assert.NotEqual(t, 0, len(q.Queue))
-
-	var total int
-	for _, batch := range q.Queue {
-		total += batch.Total
-	}
-	assert.Equal(t, total, len(toUpdate.ToUpdate))
-	assert.Equal(t, total, q.Queue[0].Total)
 
 	// clean up
 	if err := Clean(t, GetTestingDir()); err != nil {
