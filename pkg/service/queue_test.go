@@ -39,7 +39,7 @@ func TestQueueOrder(t *testing.T) {
 }
 
 func TestBuildQueue(t *testing.T) {
-	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -47,8 +47,6 @@ func TestBuildQueue(t *testing.T) {
 	if err != nil {
 		Fatal(t, err)
 	}
-
-	MutateFiles(t, d.GetFiles())
 
 	b := NewBatch()
 	b.Cap = int64(TEST_MAX)
@@ -64,7 +62,7 @@ func TestBuildQueue(t *testing.T) {
 }
 
 func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
-	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -72,8 +70,6 @@ func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
 	if err != nil {
 		Fatal(t, err)
 	}
-
-	MutateFiles(t, d.GetFiles())
 
 	b := NewBatch()
 	b.Cap = int64(TEST_MAX)
@@ -99,18 +95,12 @@ func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
 	}
 	d.AddFiles(f)
 
-	idx := BuildSyncIndex(d)
-	assert.NotEqual(t, nil, idx)
-
-	MutateFiles(t, d.GetFiles())
-	idx = BuildToUpdate(d, idx)
-
 	b := NewBatch()
 	b.Cap = 100 // set a small capacity
 
 	// should return a "large file" queue, i.e just a
 	// queue of each of the files.
-	q := BuildQ(idx, NewQ())
+	q := buildQ(f, b, NewQ())
 	assert.NotEqual(t, nil, q)
 	assert.NotEqual(t, 0, len(q.Queue))
 
