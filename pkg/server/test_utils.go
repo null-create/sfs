@@ -112,9 +112,6 @@ func MakeDummyUser(usrsPath string, i int) (*auth.User, error) {
 	rt := svc.NewRootDirectory(svcName, "bill buttlicker", usrRoot)
 	drv := svc.NewDrive(svc.NewUUID(), svcName, "bill buttlicker", svcDir, rt)
 
-	// gen base files for this user
-	GenBaseUserFiles(drv.DriveRoot)
-
 	// create dummy files for this user
 	fs, err := MakeABunchOfTxtFiles(RandInt(25), rt.RootPath)
 	if err != nil {

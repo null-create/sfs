@@ -148,36 +148,6 @@ func TestCreateNewService(t *testing.T) {
 	}
 }
 
-func TestGenBaseUserFiles(t *testing.T) {
-	svc := &Service{
-		SvcRoot: GetTestingDir(),
-		UserDir: filepath.Join(GetTestingDir(), "users"),
-	}
-
-	if err := os.Mkdir(svc.UserDir, 0644); err != nil {
-		t.Fatal(err)
-	}
-	usrDir := filepath.Join(svc.UserDir, "bill")
-	if err := os.Mkdir(usrDir, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	GenBaseUserFiles(usrDir)
-
-	entries, err := os.ReadDir(usrDir)
-	if err != nil {
-		Fatal(t, err)
-	}
-	assert.NotEqual(t, 0, len(entries))
-	for _, e := range entries {
-		assert.True(t, strings.Contains(e.Name(), ".json"))
-	}
-
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-}
-
 func TestAllocateDrive(t *testing.T) {
 	svc := &Service{
 		SvcRoot: GetTestingDir(),

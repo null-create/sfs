@@ -391,9 +391,6 @@ func AllocateDrive(name, ownerID, svcRoot string) (*svc.Drive, error) {
 		}
 	}
 
-	// gen base files for this user
-	GenBaseUserFiles(metaRoot)
-
 	// gen root and drive objects
 	rt := svc.NewRootDirectory(name, ownerID, usrRoot)
 	drv := svc.NewDrive(svc.NewUUID(), name, ownerID, svcDir, rt)
@@ -446,17 +443,6 @@ func (s *Service) TotalUsers() int {
 	return len(s.Users)
 }
 
-// generate some base line meta data for this service instance.
-// should generate a users.json file (which will keep track of active users),
-// and a drives.json, containing info about each drive, its total size, its location,
-// owner, init date, passwords, etc.
-func GenBaseUserFiles(usrInfoDir string) {
-	fileNames := []string{"user.json", "drive.json"}
-	for i := 0; i < len(fileNames); i++ {
-		saveJSON(usrInfoDir, fileNames[i], make(map[string]interface{}))
-	}
-}
-
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
 	if _, exists := s.Users[userID]; exists {
@@ -501,6 +487,9 @@ func (s *Service) addUser(user *auth.User) error {
 		return fmt.Errorf("failed to add drive to database: %v", err)
 	}
 	s.Users[user.ID] = user
+	if err = s.SaveState(); err != nil {
+		log.Printf("[WARNING] failed to save state: %v", err)
+	}
 	return nil
 }
 
