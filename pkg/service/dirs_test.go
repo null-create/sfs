@@ -111,6 +111,20 @@ func TestRemoveFiles(t *testing.T) {
 	}
 }
 
+func TestAddSubDir(t *testing.T) {
+	dir1 := NewDirectory("tmp", "me", filepath.Join(GetTestingDir(), "tmp1"))
+	dir2 := NewDirectory("tmp2", "me", filepath.Join(GetTestingDir(), "tmp2"))
+	if err := dir1.AddSubDir(dir2); err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, 0, len(dir1.Dirs))
+	assert.True(t, dir1.HasDir(dir2.ID))
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
 func TestAddSubDirs(t *testing.T) {
 	total := RandInt(100)                // root test subdir
 	testDirs := MakeTestDirs(t, total+1) // subdirs to add + 1 for a test root
