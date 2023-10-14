@@ -73,9 +73,6 @@ func TestLoadClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
-	if err := c1.SaveState(); err != nil {
-		Fail(t, tmpDir, err)
-	}
 
 	c2, err := Init(false)
 	if err != nil {

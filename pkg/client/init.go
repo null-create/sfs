@@ -10,6 +10,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/env"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -39,7 +40,7 @@ this can allow for more individual control over files and directories
 as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
-func setup(userName, svcRoot string) (*Client, error) {
+func setup(userName, svcRoot string, e *env.Env) (*Client, error) {
 	// make client service root directory
 	svcDir := filepath.Join(svcRoot, userName)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
@@ -69,7 +70,6 @@ func setup(userName, svcRoot string) (*Client, error) {
 	}
 
 	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
-	e := svc.NewE()
 	if err := e.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
 		return nil, err
 	}
@@ -82,18 +82,20 @@ func setup(userName, svcRoot string) (*Client, error) {
 	return client, nil
 }
 
-func Setup() (*Client, error) {
+// initial client service set up
+func Setup(e *env.Env) (*Client, error) {
 	c := ClientConfig()
-	client, err := setup(c.User, c.Root)
+	client, err := setup(c.User, c.Root, e)
 	if err != nil {
 		return nil, err
 	}
 	return client, nil
 }
 
-func loadStateFile() ([]byte, error) {
+func loadStateFile(user string) ([]byte, error) {
 	c := ClientConfig()
-	entries, err := os.ReadDir(filepath.Join(c.Root, "state"))
+	fp := filepath.Join(c.Root, user, "state")
+	entries, err := os.ReadDir(fp)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +109,7 @@ func loadStateFile() ([]byte, error) {
 	}
 	// get most recent one (assuming more than one present somehow)
 	sf := entries[len(entries)-1]
-	data, err := os.ReadFile(sf.Name())
+	data, err := os.ReadFile(filepath.Join(fp, sf.Name()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read state file: %v", err)
 	}
@@ -115,8 +117,8 @@ func loadStateFile() ([]byte, error) {
 }
 
 // load client from state file, if possible
-func LoadClient() (*Client, error) {
-	data, err := loadStateFile()
+func LoadClient(user string) (*Client, error) {
+	data, err := loadStateFile(user)
 	if err != nil {
 		return nil, err
 	}
@@ -125,19 +127,26 @@ func LoadClient() (*Client, error) {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 	client.StartTime = time.Now().UTC()
+	// TODO: client.client is nil when loaded from a state file.
+	// will need a way to instantiate the actual http client here
 	return client, nil
 }
 
 // initialize client service
 func Init(newClient bool) (*Client, error) {
+	e := env.NewE()
 	if newClient {
-		client, err := Setup()
+		client, err := Setup(e)
 		if err != nil {
 			return nil, err
 		}
 		return client, nil
 	} else {
-		client, err := LoadClient()
+		user, err := e.Get("CLIENT")
+		if err != nil {
+			return nil, err
+		}
+		client, err := LoadClient(user)
 		if err != nil {
 			return nil, err
 		}
