@@ -52,7 +52,7 @@ func (c *Client) cleanSfDir() error {
 		return nil
 	}
 	for _, entry := range entries {
-		if err := os.Remove(entry.Name()); err != nil {
+		if err := os.Remove(filepath.Join(c.SfDir, entry.Name())); err != nil {
 			return err
 		}
 	}
