@@ -102,17 +102,9 @@ the above fields are saved as a json file.
 func (s *Service) SaveState() error {
 	sfDir := filepath.Join(s.SvcRoot, "state")
 
-	// remove previous state file(s) before writing out.
-	// we only want the most recent one available at a time.
-	if entries, err := os.ReadDir(sfDir); err == nil {
-		for _, entry := range entries {
-			sf := filepath.Join(sfDir, entry.Name())
-			if err := os.Remove(sf); err != nil {
-				return err
-			}
-		}
-	} else {
-		log.Printf("[WARNING] failed to remove previous state file(s): %v", err)
+	// make sure we only have one state file at a time
+	if err := s.cleanSfDir(sfDir); err != nil {
+		return err
 	}
 
 	// marshal state instance and write out
@@ -124,6 +116,22 @@ func (s *Service) SaveState() error {
 	s.StateFile = filepath.Join(sfDir, sfName)
 
 	return os.WriteFile(s.StateFile, file, 0644)
+}
+
+// remove previous state file(s) before writing out.
+// we only want the most recent one available at a time.
+func (s *Service) cleanSfDir(sfDir string) error {
+	if entries, err := os.ReadDir(sfDir); err == nil {
+		for _, entry := range entries {
+			sf := filepath.Join(sfDir, entry.Name())
+			if err := os.Remove(sf); err != nil {
+				return err
+			}
+		}
+	} else {
+		log.Printf("[WARNING] failed to remove previous state file(s): %v", err)
+	}
+	return nil
 }
 
 // ------- init ---------------------------------------
