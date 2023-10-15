@@ -7,7 +7,11 @@ import (
 )
 
 type Conf struct {
+	// users name
 	User string `env:"CLIENT"`
+	// client service root, ie ../sfs/client/root
+	//
+	// all users file will be uder .../sfs/root/user-name/root
 	Root string `env:"CLIENT_ROOT"`
 }
 
