@@ -20,6 +20,7 @@ type Client struct {
 	User  *auth.User `json:"user"`           // user
 	Root  string     `json:"root"`           // path to root drive for users files and directories
 	SfDir string     `json:"state_file_dir"` // path to state file
+	Drive *svc.Drive `json:"drive"`          // client drive for managing users files and directories
 
 	Db     *db.Query `json:"db"` // local db connection
 	client *http.Client
@@ -28,12 +29,18 @@ type Client struct {
 func NewClient(user, userID string) *Client {
 	conf := ClientConfig()
 
-	// TODO: add custom transport and other http client configurations
+	// set up local client services
 	svcRoot := filepath.Join(conf.Root, user)
+	root := svc.NewDirectory("root", conf.User, svcRoot)
+	drv := svc.NewDrive(auth.NewUUID(), conf.User, conf.User, root.Path, root)
+
+	// TODO: add custom transport and other http client configurations
+
 	return &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
 		User:      nil,
+		Drive:     drv,
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
