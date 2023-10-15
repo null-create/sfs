@@ -247,6 +247,7 @@ func TestClientDeleteUser(t *testing.T) {
 	if err := tmpClient.RemoveUser(newUser.ID); err != nil {
 		Fail(t, tmpDir, err)
 	}
+	assert.Equal(t, nil, tmpClient.User)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
