@@ -62,11 +62,8 @@ func setup(userName, svcRoot string, e *env.Env) (*Client, error) {
 	}
 
 	// make each database
-	dbs := []string{"files", "directories"}
-	for _, dName := range dbs {
-		if err := db.NewDB(dName, filepath.Join(svcPaths[0], dName)); err != nil {
-			return nil, err
-		}
+	if err := db.InitClientDBs(svcPaths[0]); err != nil {
+		return nil, err
 	}
 
 	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
