@@ -40,19 +40,39 @@ func NewTable(path string, query string) {
 	}
 }
 
+// initialize server databases
 func InitDBs(dbPath string) error {
 	// make sure there's no databases where we want to create in
 	entries, err := os.ReadDir(dbPath)
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to read service database directory: %v", err)
+		return fmt.Errorf("failed to read service database directory: %v", err)
 	}
 	if len(entries) != 0 {
-		return fmt.Errorf("[ERROR] service database directory not empty! %v", entries)
+		return fmt.Errorf("service database directory not empty! %v", entries)
 	}
 
 	dbs := []string{"files", "directories", "users", "drives"}
-	for _, d := range dbs {
-		if err := NewDB(d, filepath.Join(dbPath, d)); err != nil {
+	for _, dbName := range dbs {
+		if err := NewDB(dbName, filepath.Join(dbPath, dbName)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// initialize client databases
+func InitClientDBs(dbPath string) error {
+	entries, err := os.ReadDir(dbPath)
+	if err != nil {
+		return fmt.Errorf("failed to read service database directory: %v", err)
+	}
+	if len(entries) != 0 {
+		return fmt.Errorf("service database directory not empty! %v", entries)
+	}
+
+	dbs := []string{"files", "directories"}
+	for _, dbName := range dbs {
+		if err := NewDB(dbName, filepath.Join(dbPath, dbName)); err != nil {
 			return err
 		}
 	}
