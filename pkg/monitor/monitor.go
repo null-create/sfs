@@ -1,4 +1,4 @@
-package client
+package monitor
 
 /*
 this is the file for the background event-listener daemon.
@@ -10,5 +10,3 @@ modification.
 
 should also have a mechanism to interrupt a sync operation if a new event occurs.
 */
-
-func Monitor(path string) error { return nil }
