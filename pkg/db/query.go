@@ -108,21 +108,18 @@ func (q *Query) WhichDB(dbName string) {
 //
 // must be followed by a defer q.Conn.Close() statement when called!
 func (q *Query) Connect() error {
+	var path string
 	if q.Singleton {
-		db, err := sql.Open("sqlite3", q.CurDB)
-		if err != nil {
-			return fmt.Errorf("failed to connect to database: %v", err)
-		}
-		q.Conn = db
-		return nil
+		path = q.CurDB
 	} else {
-		db, err := sql.Open("sqlite3", q.DBPath)
-		if err != nil {
-			return fmt.Errorf("failed to connect to database: %v", err)
-		}
-		q.Conn = db
-		return nil
+		path = q.DBPath
 	}
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		return err
+	}
+	q.Conn = db
+	return nil
 }
 
 func (q *Query) Close() error {
