@@ -156,6 +156,11 @@ func MakeTestDirs(t *testing.T, total int) []*svc.Directory {
 
 // "randomly" update some files
 // whenever RandInt() returns an even value
+//
+// NOTE: could potentially cause a test to be flakey!
+// this is because sometimes randint will pick 1 and if that's the case
+// then nothing will be modified, and no potential updates could be
+// caught by dir.WalkU().
 func MutateFiles(t *testing.T, files map[string]*svc.File) map[string]*svc.File {
 	for _, f := range files {
 		if RandInt(100)%2 == 0 {
