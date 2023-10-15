@@ -3,4 +3,5 @@ vendor
 docs
 old-files
 pkg/run
+pkg/client/run
 pkg/.env
