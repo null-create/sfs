@@ -277,7 +277,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 
 	// make a bunch of dummy files for this "client"
 	total := RandInt(25)
-	files := make([]*service.File, total)
+	files := make([]*service.File, 0, total)
 	for i := 0; i < total; i++ {
 		fn := filepath.Join(tmpClient.Root, fmt.Sprintf("tmp-%d.txt", i))
 		if file, err := MakeTmpTxtFile(fn, RandInt(1000)); err == nil {
