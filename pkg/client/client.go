@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
 	svc "github.com/sfs/pkg/service"
 )
@@ -16,9 +17,8 @@ type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
 
-	User   string `json:"user"`           // user name
-	UserID string `json:"user_id"`        // user ID
-	SfDir  string `json:"state_file_dir"` // path to state file
+	User  *auth.User `json:"user"`           // user
+	SfDir string     `json:"state_file_dir"` // path to state file
 
 	Db     *db.Query `json:"db"` // local db connection
 	client *http.Client
@@ -32,8 +32,7 @@ func NewClient(user, userID string) *Client {
 	return &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
-		User:      user,
-		UserID:    userID,
+		User:      nil,
 		SfDir:     filepath.Join(svcRoot, "state"),
 		Db:        db.NewQuery(filepath.Join(conf.Root, "dbs"), true),
 		client: &http.Client{
@@ -73,4 +72,39 @@ func (c *Client) SaveState() error {
 	fp := filepath.Join(c.SfDir, fn)
 
 	return os.WriteFile(fp, data, svc.PERMS)
+}
+
+func (c *Client) AddUser(user *auth.User) error {
+	if c.User == nil {
+		c.User = user
+	} else {
+		return fmt.Errorf("[ERROR] cannot have more than one user: %v", c.User)
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) UpdateUser(user *auth.User) error {
+	if user.ID == c.User.ID {
+		c.User = user
+	} else {
+		return fmt.Errorf("user (id=%s) is not client user (id=%s)", user.ID, c.User.ID)
+	}
+	return nil
+}
+
+func (c *Client) RemoveUser(userID string) error {
+	if c.User == nil {
+		return fmt.Errorf("no user (id=%s) found", userID)
+	} else if c.User.ID == userID {
+		c.User = nil
+	} else {
+		return fmt.Errorf("wrong user ID (id=%s)", userID)
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
 }
