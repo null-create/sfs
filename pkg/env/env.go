@@ -89,7 +89,7 @@ func (e *Env) Get(k string) (string, error) {
 }
 
 func set(k, v string, env map[string]string) error {
-	_, err := godotenv.Marshal(env)
+	err := godotenv.Write(env, ".env")
 	if err != nil {
 		return err
 	}
