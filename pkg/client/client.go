@@ -18,6 +18,7 @@ type Client struct {
 	Conf      *Conf     `json:"client_settings"` // client service settings
 
 	User  *auth.User `json:"user"`           // user
+	Root  string     `json:"root"`           // path to root drive for users files and directories
 	SfDir string     `json:"state_file_dir"` // path to state file
 
 	Db     *db.Query `json:"db"` // local db connection
@@ -33,8 +34,9 @@ func NewClient(user, userID string) *Client {
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
 		User:      nil,
+		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
-		Db:        db.NewQuery(filepath.Join(conf.Root, "dbs"), true),
+		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		client: &http.Client{
 			Timeout: time.Second * 30,
 		},
