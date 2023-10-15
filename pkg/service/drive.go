@@ -151,6 +151,7 @@ func (d *Drive) AddFile(dirID string, f *File) error {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
 	dir.AddFile(f)
+	d.Root.Size += float64(f.Size())
 	return nil
 }
 
@@ -195,6 +196,7 @@ func (d *Drive) RemoveFile(dirID string, f *File) error {
 	if err := dir.RemoveFile(f.ID); err != nil {
 		return err
 	}
+	d.Root.Size -= float64(f.Size())
 	return nil
 }
 
