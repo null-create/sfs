@@ -309,7 +309,55 @@ func TestClientBuildSyncIndex(t *testing.T) {
 
 // indexing and monitoring tests
 
-func TestClientBuildAndUpdateSyncIndex(t *testing.T) {}
+func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
+	env.BuildEnv(true)
+
+	// make sure we clean the right testing directory
+	e := env.NewE()
+	tmpDir, err := e.Get("CLIENT_ROOT")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpClient, err := Init(true)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make a bunch of dummy files for this "client"
+	total := RandInt(25)
+	files := make([]*service.File, 0, total)
+	for i := 0; i < total; i++ {
+		fn := filepath.Join(tmpClient.Root, fmt.Sprintf("tmp-%d.txt", i))
+		if file, err := MakeTmpTxtFile(fn, RandInt(1000)); err == nil {
+			files = append(files, file)
+		} else {
+			Fail(t, tmpClient.Root, err)
+		}
+	}
+
+	// set up a new client drive and generate a last sync index of the files
+	root := service.NewDirectory("root", tmpClient.Conf.User, tmpClient.Root)
+	root.AddFiles(files)
+	drv := service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.Conf.User, root.Path, root)
+	tmpClient.Drive = drv
+
+	idx := drv.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))
+
+	MutateFiles(t, root.Files)
+
+	idx = drv.Root.WalkU(idx)
+	assert.NotEqual(t, nil, idx.ToUpdate)
+	assert.NotEqual(t, 0, len(idx.ToUpdate))
+
+	if err := Clean(t, tmpDir); err != nil {
+		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+}
 
 func TestClientDirectoryMonitor(t *testing.T) {}
 
