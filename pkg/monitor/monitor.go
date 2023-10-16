@@ -28,7 +28,7 @@ type Monitor struct {
 	Watcher *fsnotify.Watcher
 }
 
-// NOTE: must call watcher.Close after instantiation@
+// NOTE: must call defer watcher.Close() after instantiation!
 func NewMonitor(path string) *Monitor {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
