@@ -359,8 +359,6 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	}
 }
 
-func TestClientDirectoryMonitor(t *testing.T) {}
-
 func TestClientContactServer(t *testing.T) {}
 
 func TestClientGetSyncIndexFromServer(t *testing.T) {}

@@ -20,6 +20,16 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// TODO: communication struct/ channel to send event
+// notifications to sync threads
+
+type Op int32
+
+type Event struct {
+	Name string // Relative path to the file or directory.
+	Op   Op     // File operation that triggered the event.
+}
+
 // see: https://medium.com/@skdomino/watch-this-file-watching-in-go-5b5a247cf71f
 
 type Monitor struct {
@@ -30,9 +40,9 @@ type Monitor struct {
 	Watcher *fsnotify.Watcher
 }
 
-// NOTE: must call watcher close after instantiation@
+// NOTE: must call watcher.Close after instantiation@
 func NewMonitor(path string) *Monitor {
-	watcher, err := fsnotify.NewWatcher() // Create new watcher.
+	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,17 +61,15 @@ func (m *Monitor) watchDir(path string, fi os.FileInfo, err error) error {
 	return nil
 }
 
-func (m *Monitor) MonitorDrive(drvPath string) {
+// This monitors the entire drive file system by passing m.watchDir
+// to filepath.Walk().
+func (m *Monitor) WatchDrive(shutDown chan bool, notify chan fsnotify.Event, drvPath string) {
 	defer m.Watcher.Close()
 
-	// starting at the root of the drive, walk each file/directory searching for
-	// directories
+	// add all subdirectories to the watcher
 	if err := filepath.Walk(drvPath, m.watchDir); err != nil {
-		fmt.Println("ERROR", err)
+		fmt.Printf("failed to add directories to watcher: %v", err)
 	}
-
-	// shutdown channel
-	done := make(chan bool)
 
 	// start listening for events
 	go func() {
@@ -72,32 +80,35 @@ func (m *Monitor) MonitorDrive(drvPath string) {
 					log.Printf("[WARNING] monitoring failed: %v", event)
 					return
 				}
-				// TODO: parse various events to signal sync events or
-				// other index building operations
-				log.Println("[INFO] event:", event)
+				// write event
 				if event.Has(fsnotify.Write) {
-					log.Println("modified file:", event.Name)
-				} else if event.Has(fsnotify.Create) {
-
-				} else if event.Has(fsnotify.Remove) {
-
-				} else if event.Has(fsnotify.Write) {
-
+					log.Println("[INFO] modified:", event.Name)
+				}
+				// create event
+				if event.Has(fsnotify.Create) {
+					log.Println("[INFO] created:", event.Name)
+				}
+				// delete event
+				if event.Has(fsnotify.Remove) {
+					log.Println("[INFO] renoved:", event.Name)
 				}
 			case err, ok := <-m.Watcher.Errors:
 				if !ok {
+					log.Printf("[ERROR] monitoring failed: %v", err)
 					return
 				}
 				log.Println("error:", err)
+			}
+			// exit monitoring loop if signaled
+			if <-shutDown {
+				log.Print("[INFO] shutting down event thread...")
+				break
 			}
 		}
 	}()
 
 	// add a path
-	err := m.Watcher.Add(drvPath)
-	if err != nil {
+	if err := m.Watcher.Add(drvPath); err != nil {
 		log.Fatal(err)
 	}
-
-	<-done
 }
