@@ -20,18 +20,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// TODO: communication struct/ channel to send event
-// notifications to sync threads
-
-type Op int32
-
-type Event struct {
-	Name string // Relative path to the file or directory.
-	Op   Op     // File operation that triggered the event.
-}
-
-// see: https://medium.com/@skdomino/watch-this-file-watching-in-go-5b5a247cf71f
-
 type Monitor struct {
 	// path to the directory to monitor
 	Path string
@@ -44,6 +32,10 @@ type Monitor struct {
 func NewMonitor(path string) *Monitor {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
+		log.Fatal(err)
+	}
+	// add drive path to monitor
+	if err := watcher.Add(path); err != nil {
 		log.Fatal(err)
 	}
 	return &Monitor{
@@ -63,7 +55,7 @@ func (m *Monitor) watchDir(path string, fi os.FileInfo, err error) error {
 
 // This monitors the entire drive file system by passing m.watchDir
 // to filepath.Walk().
-func (m *Monitor) WatchDrive(shutDown chan bool, notify chan fsnotify.Event, drvPath string) {
+func (m *Monitor) WatchDrive(notify chan fsnotify.Event, drvPath string) {
 	defer m.Watcher.Close()
 
 	// add all subdirectories to the watcher
@@ -83,14 +75,17 @@ func (m *Monitor) WatchDrive(shutDown chan bool, notify chan fsnotify.Event, drv
 				// write event
 				if event.Has(fsnotify.Write) {
 					log.Println("[INFO] modified:", event.Name)
+					notify <- event
 				}
 				// create event
 				if event.Has(fsnotify.Create) {
 					log.Println("[INFO] created:", event.Name)
+					notify <- event
 				}
 				// delete event
 				if event.Has(fsnotify.Remove) {
 					log.Println("[INFO] renoved:", event.Name)
+					notify <- event
 				}
 			case err, ok := <-m.Watcher.Errors:
 				if !ok {
@@ -99,16 +94,6 @@ func (m *Monitor) WatchDrive(shutDown chan bool, notify chan fsnotify.Event, drv
 				}
 				log.Println("error:", err)
 			}
-			// exit monitoring loop if signaled
-			if <-shutDown {
-				log.Print("[INFO] shutting down event thread...")
-				break
-			}
 		}
 	}()
-
-	// add a path
-	if err := m.Watcher.Add(drvPath); err != nil {
-		log.Fatal(err)
-	}
 }
