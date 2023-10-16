@@ -18,14 +18,13 @@ func TestMonitorWithOneFile(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	shutDown := make(chan bool)
 	notify := make(chan fsnotify.Event)
 	monitor := NewMonitor(GetTestingDir())
 
 	// start monitoring thread & wait for a few seconds
 	log.Print("starting monitoring thread...")
 	go func() {
-		monitor.WatchDrive(shutDown, notify, GetTestingDir())
+		monitor.WatchDrive(notify, GetTestingDir())
 	}()
 	time.Sleep(time.Second * 2)
 
@@ -35,14 +34,14 @@ func TestMonitorWithOneFile(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	// verify detection occurred via... some data structure
+	// verify detection occurred
 	event := <-notify
 	if !event.Has(fsnotify.Write) {
 		Fail(t, GetTestingDir(), fmt.Errorf("failed to detect file write"))
 	}
 
-	// shut down the monitoring thread
-	shutDown <- true
+	// // shut down the monitoring thread
+	// shutDown <- true
 
 	// clean up
 	if err := Clean(t, GetTestingDir()); err != nil {
