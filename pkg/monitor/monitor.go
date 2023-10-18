@@ -1,5 +1,11 @@
 package monitor
 
+import (
+	"log"
+	"os"
+	"time"
+)
+
 /*
 this is the file for the background event-listener daemon.
 
@@ -11,89 +17,70 @@ modification.
 should also have a mechanism to interrupt a sync operation if a new event occurs.
 */
 
-import (
-	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-
-	"github.com/fsnotify/fsnotify"
-)
+const MAXStatRetries = 10
+const WAIT = time.Second * 60 // wait a  minute before checking file stat again after sending an event
 
 type Monitor struct {
-	// path to the directory to monitor
+	// path to the users drive root to monitor
 	Path string
 
-	// watcher for file and directory events
-	Watcher *fsnotify.Watcher
+	// map of channels to active watchers (channel type TBD).
+	// key is the file, value is the channel
+	Events map[string]<-chan Event
 }
 
-// NOTE: must call defer watcher.Close() after instantiation!
-func NewMonitor(path string) *Monitor {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// add drive path to monitor
-	if err := watcher.Add(path); err != nil {
-		log.Fatal(err)
-	}
+func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
-		Path:    path,
-		Watcher: watcher,
+		Path: drvRoot,
 	}
 }
 
-func (m *Monitor) watchDir(path string, fi os.FileInfo, err error) error {
-	// since fsnotify can watch all the files in a directory, watchers only need
-	// to be added to each nested directory
-	if fi.Mode().IsDir() {
-		return m.Watcher.Add(path)
-	}
-	return nil
-}
-
-// This monitors the entire drive file system by passing m.watchDir
-// to filepath.Walk().
-func (m *Monitor) WatchDrive(notify chan fsnotify.Event, drvPath string) {
-	defer m.Watcher.Close()
-
-	// add all subdirectories to the watcher
-	if err := filepath.Walk(drvPath, m.watchDir); err != nil {
-		fmt.Printf("failed to add directories to watcher: %v", err)
+// creates a new monitor goroutine for a given file.
+// returns a channel that sends events to the listener for handling
+func watchFile(path string) <-chan Event {
+	initialStat, err := os.Stat(path)
+	if err != nil {
+		log.Printf("[ERROR] failed to get file info: %v", err)
+		return nil
 	}
 
-	// start listening for events
-	go func() {
-		for {
-			select {
-			case event, ok := <-m.Watcher.Events:
-				if !ok {
-					log.Printf("[WARNING] monitoring failed: %v", event)
-					return
-				}
-				// write event
-				if event.Has(fsnotify.Write) {
-					log.Println("[INFO] modified:", event.Name)
-					notify <- event
-				}
-				// create event
-				if event.Has(fsnotify.Create) {
-					log.Println("[INFO] created:", event.Name)
-					notify <- event
-				}
-				// delete event
-				if event.Has(fsnotify.Remove) {
-					log.Println("[INFO] renoved:", event.Name)
-					notify <- event
-				}
-			case err, ok := <-m.Watcher.Errors:
-				if !ok {
-					log.Printf("[ERROR] monitoring failed: %v", err)
-					return
-				}
-				log.Println("error:", err)
+	var retries int
+	for {
+		stat, err := os.Stat(path)
+		if err != nil {
+			log.Printf("[WARN] failed to get file info for %s: %v", path, err)
+			retries += 1
+			if retries == MAXStatRetries {
+				log.Printf("[ERROR] unable to get file info for %s after %d retries. cancelling monitoring...", path, MAXStatRetries)
+				return nil
 			}
 		}
-	}()
+		// TODO:
+		// send notification via a channel using an "event" struct.
+		// maybe capture file state and info to match with from the user's files db.
+		// also shouldn't break loop -- that's just a placeholder.
+		// also we need a way to reset initialStat to stat
+		if stat.Size() != initialStat.Size() {
+			// add event channel here
+
+			// reset
+			initialStat = stat
+			time.Sleep(WAIT)
+		} else if stat.ModTime() != initialStat.ModTime() {
+			// add event channel here
+
+			// reset
+			initialStat = stat
+			time.Sleep(WAIT)
+		} else {
+			// wait and try again.
+			// TODO: customize wait times based on which of
+			// the above conditions was true (i.e. don't read the file
+			// too often if there's a lot of current activity with it)
+			time.Sleep(1 * time.Second)
+		}
+	}
 }
+
+// TODO: function that builds watchFile goroutines for all files in a user's drive root
+// directory. this will be the new constructor for Monitor.
