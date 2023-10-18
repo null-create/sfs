@@ -21,13 +21,6 @@ const TestDirName string = "testDir"
 
 // ---- global
 
-// run an individual test as part of a series of larger tests
-func RunTestStage(stageName string, test func()) {
-	log.Print(fmt.Sprintf("=============== %s Testing Stage ===============", stageName))
-	test()
-	log.Print("================================================")
-}
-
 // build path to test file directory. creates testing directory if it doesn't exist.
 func GetTestingDir() string {
 	curDir, err := os.Getwd()
