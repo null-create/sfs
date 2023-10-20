@@ -1,11 +1,11 @@
 package monitor
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 /*
@@ -29,7 +29,7 @@ type Monitor struct {
 	Path string
 
 	// map of channels to active watchers.
-	// key is the file ID, value is the channel to the watchFile() thread
+	// key is the absolute file path, value is the channel to the watchFile() thread
 	// associated with that file
 	Events map[string]chan EventType
 }
@@ -42,13 +42,12 @@ func NewMonitor(drvRoot string) *Monitor {
 
 // creates a new monitor goroutine for a given file.
 // returns a channel that sends events to the listener for handling
+//
+// TODO: add external shutdown capability (i.e. break for loop)
 func watchFile(path string) chan EventType {
 	initialStat, err := os.Stat(path)
 	if err != nil {
-		log.Printf("[ERROR] failed to get file info: %v", err)
-		return nil
-	} else if errors.Is(err, os.ErrNotExist) {
-		log.Printf("[ERROR] file does not exist: %v", path)
+		log.Printf("[ERROR] failed to get file info for %s :%v\nunable to monitor", path, err)
 		return nil
 	}
 
@@ -59,7 +58,7 @@ func watchFile(path string) chan EventType {
 		for {
 			stat, err := os.Stat(path)
 			if err != nil {
-				log.Printf("[WARN] failed to get file info for %s: %v", path, err)
+				log.Printf("[WARN] failed to get file info for %s: %v\n stopping monitoring...", path, err)
 				return
 			}
 			// TODO:
@@ -79,7 +78,7 @@ func watchFile(path string) chan EventType {
 				// TODO: customize wait times based on which of
 				// the above conditions was true (i.e. don't read the file
 				// too often if there's a lot of current activity with it)
-				time.Sleep(1 * time.Second)
+				time.Sleep(3 * time.Second)
 			}
 		}
 	}()
@@ -87,5 +86,63 @@ func watchFile(path string) chan EventType {
 	return evt
 }
 
-// TODO: function that builds watchFile goroutines for all files in a user's drive root
-// directory. this will be the new constructor for Monitor.
+// generate a series of channels to watchFile() goroutines and populate
+// the m.Events map
+func (m *Monitor) WatchFiles(dirpath string) error {
+	entries, err := os.ReadDir(dirpath)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		return fmt.Errorf("no files in %s", dirpath)
+	}
+	for _, entry := range entries {
+		fp := filepath.Join(dirpath, entry.Name())
+		if _, exists := m.Events[fp]; !exists {
+			m.Events[fp] = watchFile(fp)
+		}
+	}
+	return nil
+}
+
+func (m *Monitor) GetFilePaths() []string {
+	if len(m.Events) == 0 {
+		log.Printf("[INFO] no files being monitored")
+		return nil
+	}
+	files := make([]string, 0, len(m.Events))
+	for fp, _ := range m.Events {
+		files = append(files, fp)
+	}
+	return files
+}
+
+func (m *Monitor) exists(path string) bool {
+	if _, exists := m.Events[path]; exists {
+		return true
+	}
+	return false
+}
+
+func (m *Monitor) GetEventChan(path string) chan EventType {
+	if evtChan, exists := m.Events[path]; exists {
+		return evtChan
+	}
+	log.Printf("[ERROR] file (%s) event channel not found", filepath.Base(path))
+	return nil
+}
+
+func (m *Monitor) NewChan(path string) {
+	if !m.exists(path) {
+		m.Events[path] = watchFile(path)
+	}
+}
+
+func (m *Monitor) CloseChan(path string) error {
+	if evtChan, exists := m.Events[path]; exists {
+		close(evtChan)
+		delete(m.Events, path)
+		return nil
+	}
+	return fmt.Errorf("file (%s) event channel not found", filepath.Base(path))
+}
