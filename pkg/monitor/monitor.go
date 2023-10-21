@@ -64,9 +64,19 @@ func watchFile(path string, stop chan bool) chan EventType {
 		for {
 			stat, err := os.Stat(path)
 			if err != nil {
-				log.Printf("[WARN] failed to get file info for %s: %v\n stopping monitoring...", path, err)
+				// file was deleted
+				if err == os.ErrNotExist {
+					log.Printf("[INFO] file %s was deleted.\nstopping monitoring...", path)
+					evt <- FileDelete
+					close(evt)
+					return
+				} else {
+					log.Printf("[WARN] failed to get file info for %s: %v\n stopping monitoring...", path, err)
+				}
+				close(evt)
 				return
 			}
+			// check for file state change
 			// TODO: maybe capture file state and info to match with from the user's files db.
 			if stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime() {
 				log.Printf(
@@ -110,6 +120,7 @@ func (m *Monitor) WatchFiles(dirpath string) error {
 		fp := filepath.Join(dirpath, entry.Name())
 		if _, exists := m.Events[fp]; !exists {
 			shutDown := make(chan bool)
+			m.OffSwitches[fp] = shutDown
 			m.Events[fp] = watchFile(fp, shutDown)
 		}
 	}
@@ -150,11 +161,11 @@ func (m *Monitor) NewChan(path string) {
 	}
 }
 
-func (m *Monitor) CloseChan(path string) error {
-	if evtChan, exists := m.Events[path]; exists {
-		close(evtChan)
-		delete(m.Events, path)
+func (m *Monitor) CloseChan(filePath string) error {
+	if m.exists(filePath) {
+		delete(m.OffSwitches, filePath)
+		delete(m.Events, filePath)
 		return nil
 	}
-	return fmt.Errorf("file (%s) event channel not found", filepath.Base(path))
+	return fmt.Errorf("file (%s) event channel not found", filepath.Base(filePath))
 }
