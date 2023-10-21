@@ -70,7 +70,7 @@ func watchFile(path string, stop chan bool) chan EventType {
 			// TODO: maybe capture file state and info to match with from the user's files db.
 			if stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime() {
 				log.Printf(
-					fmt.Sprintf("[INFO] file change event -> [cur size: %s, prev size: %s] - [cur mod time: %s - prev mod time: %s]",
+					fmt.Sprintf("[INFO] file change event -> [cur size: %d, prev size: %d] - [cur mod time: %s - prev mod time: %s]",
 						stat.Size(), initialStat.Size(), stat.ModTime(), initialStat.ModTime()),
 				)
 				evt <- FileChange
