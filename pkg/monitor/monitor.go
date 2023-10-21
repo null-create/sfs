@@ -23,6 +23,7 @@ and removed when a file is deleted.
 */
 
 const WAIT = time.Second * 60 // wait a  minute before checking file stat again after sending an event
+const SHORT_WAIT = time.Second * 3
 
 type Monitor struct {
 	// path to the users drive root to monitor
@@ -32,6 +33,11 @@ type Monitor struct {
 	// key is the absolute file path, value is the channel to the watchFile() thread
 	// associated with that file
 	Events map[string]chan EventType
+
+	// map of channels to active watchers that will shut down the watcher goroutine
+	// when set to true.
+	// key == file name, val is bool chan
+	OffSwitches map[string]chan bool
 }
 
 func NewMonitor(drvRoot string) *Monitor {
@@ -44,7 +50,7 @@ func NewMonitor(drvRoot string) *Monitor {
 // returns a channel that sends events to the listener for handling
 //
 // TODO: add external shutdown capability (i.e. break for loop)
-func watchFile(path string) chan EventType {
+func watchFile(path string, stop chan bool) chan EventType {
 	initialStat, err := os.Stat(path)
 	if err != nil {
 		log.Printf("[ERROR] failed to get file info for %s :%v\nunable to monitor", path, err)
@@ -61,24 +67,28 @@ func watchFile(path string) chan EventType {
 				log.Printf("[WARN] failed to get file info for %s: %v\n stopping monitoring...", path, err)
 				return
 			}
-			// TODO:
-			// maybe capture file state and info to match with from the user's files db.
-			if stat.Size() != initialStat.Size() {
+			// TODO: maybe capture file state and info to match with from the user's files db.
+			if stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime() {
+				log.Printf(
+					fmt.Sprintf("[INFO] file change event -> [cur size: %s, prev size: %s] - [cur mod time: %s - prev mod time: %s]",
+						stat.Size(), initialStat.Size(), stat.ModTime(), initialStat.ModTime()),
+				)
 				evt <- FileChange
 				initialStat = stat
 
-				time.Sleep(WAIT)
-			} else if stat.ModTime() != initialStat.ModTime() {
-				evt <- FileChange
-				initialStat = stat
-
+				// wait before checking again
 				time.Sleep(WAIT)
 			} else {
 				// wait and try again.
 				// TODO: customize wait times based on which of
 				// the above conditions was true (i.e. don't read the file
 				// too often if there's a lot of current activity with it)
-				time.Sleep(3 * time.Second)
+				time.Sleep(SHORT_WAIT)
+			}
+			// shutdown signal received
+			if <-stop {
+				log.Printf("[INFO] stopping monitoring...")
+				return
 			}
 		}
 	}()
@@ -99,7 +109,8 @@ func (m *Monitor) WatchFiles(dirpath string) error {
 	for _, entry := range entries {
 		fp := filepath.Join(dirpath, entry.Name())
 		if _, exists := m.Events[fp]; !exists {
-			m.Events[fp] = watchFile(fp)
+			shutDown := make(chan bool)
+			m.Events[fp] = watchFile(fp, shutDown)
 		}
 	}
 	return nil
@@ -134,7 +145,8 @@ func (m *Monitor) GetEventChan(path string) chan EventType {
 
 func (m *Monitor) NewChan(path string) {
 	if !m.exists(path) {
-		m.Events[path] = watchFile(path)
+		shutDown := make(chan bool)
+		m.Events[path] = watchFile(path, shutDown)
 	}
 }
 
