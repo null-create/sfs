@@ -22,7 +22,7 @@ NOTE: a new watcher should be created whenever a new file is created on the serv
 and removed when a file is deleted.
 */
 
-const WAIT = time.Second * 60 // wait a  minute before checking file stat again after sending an event
+const WAIT = time.Second * 10 // wait a  minute before checking file stat again after sending an event
 const SHORT_WAIT = time.Second * 3
 
 type Monitor struct {
@@ -48,8 +48,6 @@ func NewMonitor(drvRoot string) *Monitor {
 
 // creates a new monitor goroutine for a given file.
 // returns a channel that sends events to the listener for handling
-//
-// TODO: add external shutdown capability (i.e. break for loop)
 func watchFile(path string, stop chan bool) chan EventType {
 	initialStat, err := os.Stat(path)
 	if err != nil {
@@ -63,42 +61,31 @@ func watchFile(path string, stop chan bool) chan EventType {
 	go func() {
 		for {
 			stat, err := os.Stat(path)
-			if err != nil {
-				// file was deleted
-				if err == os.ErrNotExist {
-					log.Printf("[INFO] file %s was deleted.\nstopping monitoring...", path)
-					evt <- FileDelete
-					close(evt)
-					return
-				} else {
-					log.Printf("[WARN] failed to get file info for %s: %v\n stopping monitoring...", path, err)
-				}
+			if err != nil && err != os.ErrNotExist {
+				log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
 				close(evt)
 				return
 			}
-			// check for file state change
-			// TODO: maybe capture file state and info to match with from the user's files db.
-			if stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime() {
-				log.Printf(
-					fmt.Sprintf("[INFO] file change event -> [cur size: %d, prev size: %d] - [cur mod time: %s - prev mod time: %s]",
-						stat.Size(), initialStat.Size(), stat.ModTime(), initialStat.ModTime()),
-				)
-				evt <- FileChange
-				initialStat = stat
-
-				// wait before checking again
-				time.Sleep(WAIT)
-			} else {
-				// wait and try again.
-				// TODO: customize wait times based on which of
-				// the above conditions was true (i.e. don't read the file
-				// too often if there's a lot of current activity with it)
-				time.Sleep(SHORT_WAIT)
-			}
-			// shutdown signal received
-			if <-stop {
-				log.Printf("[INFO] stopping monitoring...")
+			// check for file events
+			switch {
+			case err == os.ErrNotExist:
+				log.Print("[INFO] file deletion event")
+				evt <- FileDelete
 				return
+			case stat.Size() != initialStat.Size():
+				log.Print("[INFO] file size change event")
+				evt <- FileChange
+				time.Sleep(1 * time.Second)
+			case stat.ModTime() != initialStat.ModTime():
+				log.Print("[INFO] file modification time change event")
+				evt <- FileChange
+				time.Sleep(1 * time.Second)
+			case <-stop:
+				log.Print("[INFO] shutting down monitoring...")
+				close(evt)
+				return
+			default:
+				time.Sleep(SHORT_WAIT)
 			}
 		}
 	}()

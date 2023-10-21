@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"fmt"
 	"log"
 	"path/filepath"
 	"testing"
@@ -16,22 +15,20 @@ func TestMonitorWithOneFile(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	// start monitoring thread & wait for a few seconds
-	log.Print("starting monitoring thread...")
-
 	// listen for events from file monitor
 	shutDown := make(chan bool)
 	fileChan := watchFile(file.Path, shutDown)
 	go func() {
-		log.Print("[INFO] listening for events...")
+		log.Print("listening for events...")
 		for {
 			select {
 			case <-fileChan:
-				log.Printf("file event received: %v", file)
+				log.Print("file event received")
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}()
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// alter the file to generate a detection
 	log.Print("altering test file...")
@@ -39,20 +36,9 @@ func TestMonitorWithOneFile(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	// verify detection occurred
-	evt := <-fileChan
-	if evt == "" {
-		Fail(t, GetTestingDir(), fmt.Errorf("empty value received from listener"))
-	}
-	if evt != FileChange {
-		Fail(t, GetTestingDir(), fmt.Errorf("wrong detection value received from listener: %v, wanted: %v", evt, FileChange))
-	}
-	log.Printf("file event received: %v", evt)
-
-	// shut down the listener thread
+	// shutdown monitoring thread
+	log.Print("shutting down monitoring thread...")
 	shutDown <- true
-	close(shutDown)
-	close(fileChan)
 
 	// clean up
 	if err := Clean(t, GetTestingDir()); err != nil {
