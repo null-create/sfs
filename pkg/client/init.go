@@ -40,9 +40,9 @@ this can allow for more individual control over files and directories
 as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
-func setup(userName, svcRoot string, e *env.Env) (*Client, error) {
+func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 	// make client service root directory
-	svcDir := filepath.Join(svcRoot, userName)
+	svcDir := filepath.Join(svcRoot, user)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
 	}
@@ -71,12 +71,32 @@ func setup(userName, svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 
-	// initialize a new client and save initial state
-	client := NewClient(userName, auth.NewUUID())
+	// initialize a new client with a new user, then save initial state
+	client := NewClient(user, auth.NewUUID())
+	newUser, err := newUser(user, client.Drive.ID, client.Drive.Root.Path, e)
+	if err != nil {
+		return nil, err
+	}
+	client.User = newUser
 	if err := client.SaveState(); err != nil {
 		return nil, err
 	}
 	return client, nil
+}
+
+// these pull user info from a .env file for now.
+// will probably eventually need a way to input an actual new user from a UI
+func newUser(user string, driveID string, drvRoot string, e *env.Env) (*auth.User, error) {
+	userName, err := e.Get("CLIENT_USERNAME")
+	if err != nil {
+		return nil, err
+	}
+	userEmail, err := e.Get("CLIENT_EMAIL")
+	if err != nil {
+		return nil, err
+	}
+	newUser := auth.NewUser(user, userName, userEmail, driveID, drvRoot, false)
+	return newUser, nil
 }
 
 // initial client service set up
