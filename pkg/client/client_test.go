@@ -15,6 +15,7 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
+// create a new client without a user
 func TestNewClient(t *testing.T) {
 	env.BuildEnv(true)
 
@@ -30,10 +31,9 @@ func TestNewClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
+
 	assert.NotEqual(t, nil, client)
 	assert.NotEqual(t, nil, client.Conf)
-	assert.NotEqual(t, nil, client.User)
-	assert.NotEqual(t, "", client.User.ID)
 	assert.NotEqual(t, "", client.SfDir)
 	assert.NotEqual(t, nil, client.Db)
 	assert.NotEqual(t, nil, client.client)
@@ -62,6 +62,7 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
+// load a client with a pre-existing user
 func TestLoadClient(t *testing.T) {
 	env.BuildEnv(true)
 
@@ -77,7 +78,17 @@ func TestLoadClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
+	// add a new user
+	newUser, err := newUser("bill buttlicker", c1.Drive.ID, c1.Drive.Root.Path, e)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	c1.User = newUser
+	if err = c1.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
+	// start a new client with this data and compare
 	c2, err := Init(false)
 	if err != nil {
 		Fail(t, tmpDir, err)
@@ -87,8 +98,6 @@ func TestLoadClient(t *testing.T) {
 	assert.Equal(t, c1.User, c2.User)
 	assert.Equal(t, c1.User.ID, c2.User.ID)
 	assert.Equal(t, c1.SfDir, c2.SfDir)
-	// assert.Equal(t, c1.Db, c2.Db)
-	// assert.Equal(t, c1.client, c2.client)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
@@ -136,6 +145,7 @@ func TestLoadClientSaveState(t *testing.T) {
 	}
 }
 
+// create an empty client and add a new user
 func TestClientAddNewUser(t *testing.T) {
 	env.BuildEnv(true)
 
