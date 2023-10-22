@@ -68,18 +68,22 @@ func watchFile(path string, stop chan bool) chan EventType {
 			}
 			// check for file events
 			switch {
+			// file deletion
 			case err == os.ErrNotExist:
 				log.Print("[INFO] file deletion event")
 				evt <- FileDelete
 				return
+			// file size change
 			case stat.Size() != initialStat.Size():
 				log.Print("[INFO] file size change event")
 				evt <- FileChange
 				time.Sleep(1 * time.Second)
+			// file modification time change
 			case stat.ModTime() != initialStat.ModTime():
 				log.Print("[INFO] file modification time change event")
 				evt <- FileChange
 				time.Sleep(1 * time.Second)
+			// stop monitoring
 			case <-stop:
 				log.Print("[INFO] shutting down monitoring...")
 				close(evt)
