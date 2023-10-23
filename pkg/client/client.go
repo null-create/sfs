@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -112,6 +113,7 @@ func (c *Client) RemoveUser(userID string) error {
 		return fmt.Errorf("no user (id=%s) found", userID)
 	} else if c.User.ID == userID {
 		c.User = nil
+		log.Printf("[INFO] user %s removed", userID)
 	} else {
 		return fmt.Errorf("wrong user ID (id=%s)", userID)
 	}
