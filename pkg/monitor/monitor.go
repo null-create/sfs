@@ -36,13 +36,15 @@ type Monitor struct {
 
 	// map of channels to active watchers that will shut down the watcher goroutine
 	// when set to true.
-	// key == file name, val is bool chan
+	// key = file path, val is bool chan
 	OffSwitches map[string]chan bool
 }
 
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
-		Path: drvRoot,
+		Path:        drvRoot,
+		Events:      make(map[string]chan EventType),
+		OffSwitches: make(map[string]chan bool),
 	}
 }
 
@@ -72,6 +74,7 @@ func watchFile(path string, stop chan bool) chan EventType {
 			case err == os.ErrNotExist:
 				log.Print("[INFO] file deletion event")
 				evt <- FileDelete
+				close(evt)
 				return
 			// file size change
 			case stat.Size() != initialStat.Size():
@@ -97,37 +100,40 @@ func watchFile(path string, stop chan bool) chan EventType {
 	return evt
 }
 
-// generate a series of channels to watchFile() goroutines and populate
-// the m.Events map
-func (m *Monitor) WatchFiles(dirpath string) error {
+func watchAll(path string, m *Monitor) error {
+	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// make sure this a file
+		if stat, err := os.Stat(filePath); !stat.IsDir() {
+			stop := make(chan bool)
+			evtChan := watchFile(filePath, stop)
+			m.Events[filePath] = evtChan
+			m.OffSwitches[filePath] = stop
+		} else if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to walk directory: %v", err)
+	}
+	return nil
+}
+
+// recursively builds watchers for all files in the directory
+// and subdirectories
+func (m *Monitor) WatchAll(dirpath string) error {
 	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		return err
 	}
 	if len(entries) == 0 {
-		return fmt.Errorf("no files in %s", dirpath)
-	}
-	for _, entry := range entries {
-		fp := filepath.Join(dirpath, entry.Name())
-		if _, exists := m.Events[fp]; !exists {
-			shutDown := make(chan bool)
-			m.OffSwitches[fp] = shutDown
-			m.Events[fp] = watchFile(fp, shutDown)
-		}
-	}
-	return nil
-}
-
-func (m *Monitor) GetFilePaths() []string {
-	if len(m.Events) == 0 {
-		log.Printf("[INFO] no files being monitored")
+		log.Printf("no files or subdirectories in %s", dirpath)
 		return nil
 	}
-	files := make([]string, 0, len(m.Events))
-	for fp, _ := range m.Events {
-		files = append(files, fp)
-	}
-	return files
+	return watchAll(dirpath, m)
 }
 
 func (m *Monitor) exists(path string) bool {
@@ -145,17 +151,23 @@ func (m *Monitor) GetEventChan(path string) chan EventType {
 	return nil
 }
 
-func (m *Monitor) NewChan(path string) {
+// create a watcher thread for a given file
+func (m *Monitor) NewWatcher(path string) {
 	if !m.exists(path) {
 		shutDown := make(chan bool)
+		m.OffSwitches[path] = shutDown
 		m.Events[path] = watchFile(path, shutDown)
+		log.Printf("[INFO] file (%s) watcher created", filepath.Base(path))
 	}
 }
 
+// close a listener channel for a given file
 func (m *Monitor) CloseChan(filePath string) error {
 	if m.exists(filePath) {
+		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
+		log.Printf("[INFO] file channel (%s) closed", filePath)
 		return nil
 	}
 	return fmt.Errorf("file (%s) event channel not found", filepath.Base(filePath))
