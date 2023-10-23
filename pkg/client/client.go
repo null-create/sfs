@@ -46,6 +46,7 @@ func NewClient(user, userID string) *Client {
 		Drive:     drv,
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
+		Monitor:   monitor.NewListener(drv.Root.Path),
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		client: &http.Client{
 			Timeout: time.Second * 30,
@@ -70,12 +71,11 @@ func (c *Client) cleanSfDir() error {
 	return nil
 }
 
+// save client state
 func (c *Client) SaveState() error {
 	if err := c.cleanSfDir(); err != nil {
 		return err
 	}
-
-	// write out
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to encode json: %v", err)
