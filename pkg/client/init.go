@@ -73,7 +73,6 @@ func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 
 	// initialize a new client with a new user, then save initial state
 	client := NewClient(user, auth.NewUUID())
-
 	if err := client.SaveState(); err != nil {
 		return nil, err
 	}
