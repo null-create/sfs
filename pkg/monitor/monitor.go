@@ -108,8 +108,7 @@ func watchAll(path string, m *Monitor) error {
 		// make sure this a file
 		if stat, err := os.Stat(filePath); !stat.IsDir() {
 			stop := make(chan bool)
-			evtChan := watchFile(filePath, stop)
-			m.Events[filePath] = evtChan
+			m.Events[filePath] = watchFile(filePath, stop)
 			m.OffSwitches[filePath] = stop
 		} else if err != nil {
 			return err
