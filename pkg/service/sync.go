@@ -62,21 +62,6 @@ func (s *SyncIndex) GetFiles() []*File {
 	return syncFiles
 }
 
-// get a slice of file paths from the SyncIndex.ToUpdate map
-//
-// can be used when generating lists of files to be processed for uploading or downloading
-func (s *SyncIndex) GetFilePaths() []string {
-	if len(s.ToUpdate) == 0 {
-		log.Printf("[DEBUG] no files queued for uploading or downloading")
-		return []string{}
-	}
-	fp := make([]string, 0, len(s.ToUpdate))
-	for _, file := range s.ToUpdate {
-		fp = append(fp, file.ServerPath)
-	}
-	return fp
-}
-
 // ----------------------------------------------------------------
 
 /*
