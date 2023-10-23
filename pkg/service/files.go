@@ -202,6 +202,27 @@ func (f *File) Clear() error {
 	return nil
 }
 
+// copy this file to another location
+func (f *File) Copy(dst string) error {
+	s, err := os.Open(f.Path)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	d, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	_, err = io.Copy(d, s)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // ----------- File integrity
 
 func CalculateChecksum(filePath string, hashType string) (string, error) {
