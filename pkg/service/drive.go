@@ -52,7 +52,8 @@ type Drive struct {
 	DriveRoot string `json:"driveRoot"`
 
 	// User's root directory
-	Root *Directory `json:"root"`
+	Root      *Directory `json:"root"`
+	SyncIndex *SyncIndex `json:"sync_index"`
 }
 
 func check(id string, name string, owner string, rootPath string, root *Directory) bool {
@@ -261,6 +262,28 @@ func (d *Drive) RemoveDir(dirID string) error {
 		}
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+// ---- sync operations
+
+func (d *Drive) BuildSyncIdx() error {
+	idx := BuildSyncIndex(d.Root)
+	if idx == nil {
+		return fmt.Errorf("unable to build sync index")
+	}
+	d.SyncIndex = idx
+	return nil
+}
+
+func (d *Drive) BuildToUpdate() error {
+	if d.SyncIndex == nil {
+		return fmt.Errorf("no sync index to build from")
+	}
+	d.SyncIndex = BuildToUpdate(d.Root, d.SyncIndex)
+	if len(d.SyncIndex.ToUpdate) == 0 {
+		return fmt.Errorf("no files matched for syncing")
 	}
 	return nil
 }

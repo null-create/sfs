@@ -10,6 +10,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -20,7 +21,9 @@ type Client struct {
 	User  *auth.User `json:"user"`           // user
 	Root  string     `json:"root"`           // path to root drive for users files and directories
 	SfDir string     `json:"state_file_dir"` // path to state file
-	Drive *svc.Drive `json:"drive"`          // client drive for managing users files and directories
+
+	Monitor *monitor.Listener `json:"listener"` // listener that checks for file or directory events
+	Drive   *svc.Drive        `json:"drive"`    // client drive for managing users files and directories
 
 	Db     *db.Query `json:"db"` // local db connection
 	client *http.Client
