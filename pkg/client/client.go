@@ -23,8 +23,8 @@ type Client struct {
 	Root  string     `json:"root"`           // path to root drive for users files and directories
 	SfDir string     `json:"state_file_dir"` // path to state file
 
-	Monitor *monitor.Listener `json:"listener"` // listener that checks for file or directory events
-	Drive   *svc.Drive        `json:"drive"`    // client drive for managing users files and directories
+	Monitor *monitor.Monitor `json:"monitor"` // listener that checks for file or directory events
+	Drive   *svc.Drive       `json:"drive"`   // client drive for managing users files and directories
 
 	Db     *db.Query `json:"db"` // local db connection
 	client *http.Client
@@ -47,7 +47,7 @@ func NewClient(user, userID string) *Client {
 		Drive:     drv,
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
-		Monitor:   monitor.NewListener(drv.Root.Path),
+		Monitor:   monitor.NewMonitor(drv.Root.Path),
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		client: &http.Client{
 			Timeout: time.Second * 30,
@@ -91,7 +91,7 @@ func (c *Client) AddUser(user *auth.User) error {
 	if c.User == nil {
 		c.User = user
 	} else {
-		return fmt.Errorf("[ERROR] cannot have more than one user: %v", c.User)
+		return fmt.Errorf("cannot have more than one user: %v", c.User)
 	}
 	if err := c.SaveState(); err != nil {
 		return err
