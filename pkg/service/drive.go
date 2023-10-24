@@ -177,12 +177,12 @@ func (d *Drive) GetFiles() map[string]*File {
 }
 
 // update a file
-func (d *Drive) UpdateFile(dirID string, f *File) error {
+func (d *Drive) UpdateFile(dirID string, f *File, data []byte) error {
 	dir := d.GetDir(dirID)
 	if dir == nil {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
-	if err := dir.UpdateFile(f); err != nil {
+	if err := dir.UpdateFile(f, data); err != nil {
 		return err
 	}
 	return nil
