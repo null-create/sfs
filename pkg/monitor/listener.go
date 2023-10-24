@@ -8,7 +8,9 @@ synchronization operations accordingly.
 */
 
 type Listener struct {
-	Path string // path to file thats being monitored
+	Path      string         // path to file thats being monitored
+	EventChan chan EventType // event channel to listen to
+	OffSwitch chan bool      // set to true to stop listener goroutine
 }
 
 func NewListener(path string) *Listener {
@@ -46,6 +48,7 @@ func (l *Listener) Listen(stop chan bool, fileChan chan EventType) (chan bool, c
 			}
 		}
 	}()
+	l.OffSwitch = off
 	// channel to stop monitoring
 	// (the stop parameter is this channel)
 	return off, evt
