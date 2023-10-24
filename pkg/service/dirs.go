@@ -302,16 +302,10 @@ func (d *Directory) AddFiles(files []*File) {
 	}
 }
 
-func (d *Directory) updateFile(f *File) error {
+func (d *Directory) updateFile(f *File, data []byte) error {
 	if file, exists := d.Files[f.ID]; exists {
-		// load file content if not already loaded
-		if len(f.Content) == 0 {
-			f.Load()
-		}
-		if len(f.Content) == 0 {
-			return fmt.Errorf("unable to load file content")
-		}
-		if err := file.Save(f.Content); err != nil {
+		if err := file.Save(data); err != nil {
+			file.LastSync = time.Now().UTC()
 			return err
 		}
 	} else {
@@ -320,9 +314,12 @@ func (d *Directory) updateFile(f *File) error {
 	return nil
 }
 
-func (d *Directory) UpdateFile(f *File) error {
+// save new data to a file. file will be created or truncated,
+// depending on its state at time of writing. does not check
+// subdirectories for the existence of this file.
+func (d *Directory) UpdateFile(f *File, data []byte) error {
 	if !d.Protected {
-		if err := d.updateFile(f); err != nil {
+		if err := d.updateFile(f, data); err != nil {
 			return err
 		}
 	} else {
