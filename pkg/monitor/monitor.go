@@ -20,22 +20,27 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 
 NOTE: a new watcher should be created whenever a new file is created on the server or client,
 and removed when a file is deleted.
+
+see: https://stackoverflow.com/questions/8270441/go-language-how-detect-file-changing
 */
 
-const WAIT = time.Second * 10 // wait a  minute before checking file stat again after sending an event
+const WAIT = time.Second * 10 // wait 10 seconds before checking file stat again after sending an event
 const SHORT_WAIT = time.Second * 3
 
 type Monitor struct {
 	// path to the users drive root to monitor
 	Path string
 
-	// map of channels to active watchers.
+	// map of channels to active listeners.
 	// key is the absolute file path, value is the channel to the watchFile() thread
 	// associated with that file
+	//
+	// key = file path, val is EventType channel
 	Events map[string]chan EventType
 
-	// map of channels to active watchers that will shut down the watcher goroutine
+	// map of channels to active listeners that will shut down the watcher goroutine
 	// when set to true.
+	//
 	// key = file path, val is bool chan
 	OffSwitches map[string]chan bool
 }
@@ -101,6 +106,7 @@ func watchFile(path string, stop chan bool) chan EventType {
 }
 
 func watchAll(path string, m *Monitor) error {
+	log.Printf("[INFO] adding watchers for all files under %s ...", path)
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -133,6 +139,15 @@ func (m *Monitor) WatchAll(dirpath string) error {
 		return nil
 	}
 	return watchAll(dirpath, m)
+}
+
+// add a file to the events map
+func (m *Monitor) WatchFile(filePath string) {
+	if _, exists := m.Events[filePath]; !exists {
+		stop := make(chan bool)
+		m.OffSwitches[filePath] = stop
+		m.Events[filePath] = watchFile(filePath, stop)
+	}
 }
 
 func (m *Monitor) exists(path string) bool {
