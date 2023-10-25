@@ -129,6 +129,22 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
+// retrieves a file ID using a given file path
+func (q *Query) GetFileID(filePath string) (string, error) {
+	q.Connect()
+	defer q.Close()
+
+	var fileID string
+	if err := q.Conn.QueryRow(FindFileIDQuery, filePath).Scan(&fileID); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows returned (path=%s): %v", filePath, err)
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to get file ID: %v", err)
+	}
+	return fileID, nil
+}
+
 // populate a slice of *svc.File structs from the database
 func (q *Query) GetFiles() ([]*svc.File, error) {
 	q.Connect()
