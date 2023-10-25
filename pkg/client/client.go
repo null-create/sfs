@@ -105,6 +105,9 @@ func (c *Client) UpdateUser(user *auth.User) error {
 	} else {
 		return fmt.Errorf("user (id=%s) is not client user (id=%s)", user.ID, c.User.ID)
 	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
 	return nil
 }
 
