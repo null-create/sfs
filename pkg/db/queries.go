@@ -233,6 +233,7 @@ const (
 	FindAllDirsQuery   string = `SELECT * FROM Directories;`
 	FindAllFilesQuery  string = `SELECT * FROM Files;`
 
+	FindFileIDQuery       string = `SELECT path FROM Files WHERE id = ?`
 	FindFileQuery         string = `SELECT * FROM Files WHERE id = ?`
 	FindDirQuery          string = `SELECT * FROM Directories WHERE id = ?`
 	FindDriveQuery        string = `SELECT * FROM Drives WHERE id = ?`
