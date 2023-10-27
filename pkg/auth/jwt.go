@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go" // TODO: replace -- this has a security problem
 )
 
 // json web token
