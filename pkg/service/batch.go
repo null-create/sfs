@@ -93,11 +93,6 @@ or downloading batches of files. MAX is subject to change of course,
 but its in place as a mechanism for resource management.
 
 TODO: look at the knapsack problem for guidance here.
-
-NOTE: if each batch's files are to be uploaded in their own separate goroutines, and
-each thread is part of a waitgroup, and each batch is processed one at a time, then
-the runtime for each batch will be bound by the largest file in the batch
-(assuming consistent upload speed and no other external circumstances).
 */
 func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// remember which ones we added so we don't have to modify the
@@ -106,11 +101,18 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// remember which files were/weren't added or were ignored
 	c := NewCtx()
 
-	for _, f := range files {
-		if !b.HasFile(f.ID) {
+	// take our unsorted slice of file objets and sort by size, then
+	// return the results as Pairlist whos values are sorted by value in
+	// ascending order
+	sortedFiles := b.SortMapByValue(b.SliceToMap(files))
+
+	for _, f := range sortedFiles {
+		if !b.HasFile(f.Key.ID) {
 			// "if a current file's size doesn't exceed the remaining batch capacity, add it."
 			//
 			// this is basically a greedy approach, but that may change.
+			//
+			// EDIT: sorting has been added, but leaving the comments below because reasons
 			//
 			// since lists are unsorted, a file that is much larger than its neighbors may cause
 			// batches to not contain as many possible files since one files weight may greatly tip
@@ -122,24 +124,24 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 			// number of times we need to iterate over the list of files (and remaning subsets after
 			// each batch) and where k is the size of the *current* list we're iterating over and
 			// building a batch from (assuming slice shrinkage with each pass).
-			if b.Cap-f.Size() >= 0 {
-				b.Files[f.ID] = f
-				b.Cap -= f.Size()
+			if b.Cap-f.Key.Size() >= 0 {
+				b.Files[f.Key.ID] = f.Key
+				b.Cap -= f.Key.Size()
 				b.Total += 1
-				c.Added = append(c.Added, f)
+				c.Added = append(c.Added, f.Key)
 				if b.Cap == 0 { // don't bother checking the rest
 					break
 				}
 			} else {
 				// we want to check the other files in this list
 				// since they may be small enough to add onto this batch.
-				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.Size(), b.Cap)
-				c.NotAdded = append(c.NotAdded, f)
+				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.Key.Size(), b.Cap)
+				c.NotAdded = append(c.NotAdded, f.Key)
 				continue
 			}
 		} else {
-			log.Printf("[DEBUG] file (id=%s) already present. skipping...", f.ID)
-			c.Ignored = append(c.Ignored, f)
+			log.Printf("[DEBUG] file (id=%s) already present. skipping...", f.Key.ID)
+			c.Ignored = append(c.Ignored, f.Key)
 			continue
 		}
 	}
@@ -183,80 +185,4 @@ func (b *Batch) AddLgFiles(files []*File) (BatchStatus, error) {
 		}
 	}
 	return Success, nil
-}
-
-// ---------------- sorted version
-
-// takes an unsorted slice of file objets and sorts them by size before
-// adding them to the batch. this will likely return smaller slices
-// of larger files that will be added to subsequent batches.
-func (b *Batch) AddFilesWithSorting(files []*File) ([]*File, BatchStatus) {
-	// take our unsorted slice of file objets and sort by size, then
-	// return the results as a map whos values are sorted by value in
-	// ascending order
-	sortedFiles := b.SortMapByValue(b.SliceToMap(files))
-
-	// remember which ones we added so we don't have to modify the
-	// files slice in-place as we're iterating over it
-	//
-	// remember which files were/weren't added or were ignored
-	c := NewCtx()
-
-	for _, f := range sortedFiles {
-		if !b.HasFile(f.Key.ID) {
-			// keep our original greedy approach, however since we have a
-			// sorted slice of files we know that we will be able to
-			// continuously add as many files as we can until we reach a file
-			// that will cause us to exceed b.Cap
-			if b.Cap-f.Key.Size() >= 0 {
-				b.Files[f.Key.ID] = f.Key
-				b.Cap -= f.Key.Size()
-				b.Total += 1
-				c.Added = append(c.Added, f.Key)
-				if b.Cap == 0 { // don't bother checking the rest
-					break
-				}
-			} else {
-				// we want to check the other files in this list
-				// since they may be small enough to add onto this batch.
-				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.Key.Size(), b.Cap)
-				c.NotAdded = append(c.NotAdded, f.Key)
-				continue
-			}
-		} else {
-			log.Printf("[DEBUG] file (id=%s) already present. skipping...", f.Key.ID)
-			c.Ignored = append(c.Ignored, f.Key)
-			continue
-		}
-	}
-
-	// were there duplicates?
-	if len(c.Ignored) > 0 {
-		log.Print("[DEBUG] there were files that already present in this batch.")
-		for i, file := range c.Ignored {
-			log.Printf("%d: %v", i+1, file.Name)
-		}
-	}
-
-	// success!
-	if len(c.Added) == len(files) {
-		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
-		return c.Added, Success
-	}
-	// if we reach capacity before we finish with files, return a list of the remaining files
-	if b.Cap == 0 && len(c.Added) < len(files) {
-		log.Printf("[DEBUG] reached capacity before we could finish with the remaining files. \nreturning remaining files\n")
-		return Diff(c.Added, files), CapMaxed
-	}
-	// if b.Cap < MAX and we have left over files that were passed over for
-	// being to large for the current batch.
-	if len(c.NotAdded) > 0 && b.Cap < b.Max {
-		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
-		if len(c.Added) == 0 {
-			log.Printf("[WARNING] *no* files were added!")
-		}
-		return c.NotAdded, UnderCap
-	}
-
-	return nil, 0
 }
