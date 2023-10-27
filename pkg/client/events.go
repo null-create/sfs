@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"log"
+	"time"
 
 	"github.com/sfs/pkg/monitor"
 )
@@ -38,34 +38,40 @@ func (c *Client) StopMonitoring() error {
 // that is coordinating (or at least keeping track of) all
 // the watcher/listener event goroutines
 func (c *Client) EventHandler(filePath string) error {
+	// get event channel for this file to listen to
 	evt := c.Monitor.GetEventChan(filePath)
 	if evt == nil {
 		return fmt.Errorf("no event listener for file %s", filePath)
 	}
+	// get off switch for this monitor
 	off := c.Monitor.GetOffSwitch(filePath)
 	if off == nil {
 		return fmt.Errorf("no shut off channel for file %s", filePath)
 	}
+	// get ID for this file so we can quickly update the sync index
+	// without having to rebuild every time
+	fileID, err := c.Db.GetFileID(filePath)
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		for {
 			select {
 			case e := <-evt:
 				switch e {
-				// TODO: need a way to individually update
-				// the sync indexes toUpdate map, rather than
-				// recursively every time.
+				// TODO: add sync operations
 				case monitor.FileCreate:
-					// c.Drive.SyncIndex.ToUpdate[filePath] = time.Now().UTC()
+					c.Drive.SyncIndex.LastSync[fileID] = time.Now().UTC()
 				case monitor.FileChange:
-
+					c.Drive.SyncIndex.LastSync[fileID] = time.Now().UTC()
 				case monitor.FileDelete:
+					off <- true // shutdown monitoring thread
+					delete(c.Drive.SyncIndex.LastSync, fileID)
 				}
-			case <-off:
-				c.Monitor.OffSwitches[filePath] <- true // shut down monitor
-				log.Printf("stopping event handler for file %s", filePath)
-				return
 			}
 		}
 	}()
+
 	return nil
 }
