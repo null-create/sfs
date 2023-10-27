@@ -9,6 +9,7 @@ https://stackoverflow.com/questions/18695346/how-can-i-sort-a-mapstringint-by-it
 
 // --------------- sorted batch building
 
+// converts a slice of files to map[*File]int64 where the int is the files size
 func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
 	m := make(map[*File]int64)
 	for _, f := range files {
@@ -17,7 +18,6 @@ func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
 	return m
 }
 
-// A data structure to hold a key/value pair.
 type Pair struct {
 	Key   *File // file object
 	Value int64 // size of file
