@@ -103,8 +103,7 @@ func (e *Env) GetEnv() (map[string]string, error) {
 }
 
 func set(k, v string, env map[string]string) error {
-	err := godotenv.Write(env, ".env")
-	if err != nil {
+	if err := godotenv.Write(env, ".env"); err != nil {
 		return err
 	}
 	if err := os.Setenv(k, v); err != nil {
