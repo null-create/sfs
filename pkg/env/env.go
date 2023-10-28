@@ -88,6 +88,20 @@ func (e *Env) Get(k string) (string, error) {
 	}
 }
 
+func (e *Env) GetEnv() (map[string]string, error) {
+	env, err := godotenv.Read(".env")
+	if err != nil {
+		return nil, err
+	}
+	// make sure this is accurate first
+	for _, k := range env {
+		if err := validate(k, env); err != nil {
+			return nil, err
+		}
+	}
+	return env, nil
+}
+
 func set(k, v string, env map[string]string) error {
 	err := godotenv.Write(env, ".env")
 	if err != nil {
