@@ -496,10 +496,6 @@ WalkF() recursively traverses sub directories starting at a given directory (or 
 attempting to find the desired file with the given file ID.
 */
 func (d *Directory) WalkF(fileID string) *File {
-	if len(d.Files) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", d.Name, d.ID)
-		return nil
-	}
 	return walkF(d, fileID)
 }
 
@@ -508,6 +504,7 @@ func walkF(dir *Directory, fileID string) *File {
 		return f
 	}
 	if len(dir.Dirs) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
