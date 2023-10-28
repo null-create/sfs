@@ -35,13 +35,13 @@ func TestServiceConfig(t *testing.T) {
 func TestSaveStateFile(t *testing.T) {
 	svc := &Service{
 		SvcRoot:   fakeServiceRoot(),
-		StateFile: GetStateDir(),
+		StateFile: GetTestingDir(),
 	}
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
 	}
 
-	entries, err := os.ReadDir(GetStateDir())
+	entries, err := os.ReadDir(GetTestingDir())
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -49,7 +49,7 @@ func TestSaveStateFile(t *testing.T) {
 	assert.Equal(t, 1, len(entries))
 	assert.True(t, strings.Contains(entries[0].Name(), "sfs-state") && strings.Contains(entries[0].Name(), ".json"))
 
-	if err := Clean(GetStateDir()); err != nil {
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
@@ -57,7 +57,7 @@ func TestSaveStateFile(t *testing.T) {
 func TestLoadServiceFromStateFile(t *testing.T) {
 	svc := &Service{
 		SvcRoot:   fakeServiceRoot(),
-		StateFile: GetStateDir(),
+		StateFile: GetTestingDir(),
 	}
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
