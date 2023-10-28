@@ -30,7 +30,7 @@ func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Size < p[j].Size }
 
-// A function to turn a map into a PairList, then sort and return it.
+// sort a map of files by file size and return as a PairList
 func (b *Batch) SortMapByValue(m map[*File]int64) PairList {
 	p := make(PairList, len(m))
 	i := 0
