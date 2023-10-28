@@ -81,14 +81,14 @@ func watchFile(path string, stop chan bool) chan Event {
 				close(evt)
 				return
 			default:
+				// events
 				stat, err := os.Stat(path)
-				log.Printf("stat: %s", path)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
 					close(evt)
 					return
 				}
-				// events
+
 				switch {
 				// file deleted
 				case err == os.ErrNotExist:
