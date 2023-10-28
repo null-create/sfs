@@ -37,13 +37,13 @@ func HasDotEnv() bool {
 }
 
 // read .env file and set as environment variables
-func BuildEnv(debug bool) error {
+func BuildEnv(debug bool) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		log.Fatalf("failed to get working directory: %v", err)
 	}
 	if err := godotenv.Load(filepath.Join(wd, ".env")); err != nil {
-		return err
+		log.Fatalf("failed to load .env file: %v", err)
 	}
 	if debug {
 		env := os.Environ()
@@ -51,16 +51,15 @@ func BuildEnv(debug bool) error {
 			fmt.Printf("%d: %s\n", i+1, e)
 		}
 	}
-	return nil
 }
 
 func validate(k string, env map[string]string) error {
-	if _, exists := env[k]; exists {
-		// val := os.Getenv(k) // make sure this is right
-		// if val != v {
-		// 	msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
-		// 	return fmt.Errorf(msg)
-		// }
+	if v, exists := env[k]; exists {
+		val := os.Getenv(k) // make sure this is right
+		if val != v {
+			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
+			return fmt.Errorf(msg)
+		}
 		return nil
 	} else {
 		return fmt.Errorf("%s not found", k)
@@ -89,6 +88,20 @@ func (e *Env) Get(k string) (string, error) {
 	}
 }
 
+func (e *Env) GetEnv() (map[string]string, error) {
+	env, err := godotenv.Read(".env")
+	if err != nil {
+		return nil, err
+	}
+	// make sure this is accurate first
+	for _, k := range env {
+		if err := validate(k, env); err != nil {
+			return nil, err
+		}
+	}
+	return env, nil
+}
+
 func set(k, v string, env map[string]string) error {
 	if err := godotenv.Write(env, ".env"); err != nil {
 		return err
@@ -99,7 +112,7 @@ func set(k, v string, env map[string]string) error {
 	return nil
 }
 
-// update an environment variable and save to .env file
+// update an environment variable, and save to .env file for later use
 func (e *Env) Set(k, v string) error {
 	env, err := godotenv.Read(".env")
 	if err != nil {
