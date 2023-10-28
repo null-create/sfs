@@ -91,8 +91,6 @@ we're bound  by an upper size limit on our batch sizes (MAX) since
 we ideally don't want to clog a home network's resources when uploading
 or downloading batches of files. MAX is subject to change of course,
 but its in place as a mechanism for resource management.
-
-TODO: look at the knapsack problem for guidance here.
 */
 func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// remember which ones we added so we don't have to modify the
@@ -170,6 +168,7 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 		}
 		return c.NotAdded, UnderCap
 	}
+
 	return nil, 0
 }
 
