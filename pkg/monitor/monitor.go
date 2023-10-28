@@ -75,51 +75,52 @@ func watchFile(path string, stop chan bool) chan Event {
 	go func() {
 		log.Print("[INFO] starting monitoring...")
 		for {
-			stat, err := os.Stat(path)
-			log.Printf("stat: %s", path)
-			if err != nil && err != os.ErrNotExist {
-				log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
-				close(evt)
-				return
-			}
-			// events
-			switch {
-			// file deleted
-			case err == os.ErrNotExist:
-				log.Printf("[INFO] file %s deleted. shuttown down monitoring...", path)
-				evt <- Event{
-					Type: FileDelete,
-					Time: time.Now().UTC(),
-					Path: path,
-				}
-				close(evt)
-				return
-			// file size change
-			case stat.Size() != initialStat.Size():
-				log.Printf("[INFO] file size change detected: %d -> %d", stat.Size(), initialStat.Size())
-				evt <- Event{
-					Type: FileChange,
-					Time: time.Now().UTC(),
-					Path: path,
-				}
-				initialStat = stat
-			// file mod time change
-			case stat.ModTime() != initialStat.ModTime():
-				log.Printf("[INFO] file mod time change detected: %v -> %v", stat.ModTime(), initialStat.ModTime())
-				evt <- Event{
-					Type: FileChange,
-					Time: time.Now().UTC(),
-					Path: path,
-				}
-				initialStat = stat
-			// stop monitoring
+			select {
 			case <-stop:
 				log.Printf("[INFO] shutting down monitoring...")
 				close(evt)
 				return
 			default:
-				continue
+				stat, err := os.Stat(path)
+				log.Printf("stat: %s", path)
+				if err != nil && err != os.ErrNotExist {
+					log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
+					close(evt)
+					return
+				}
+				// events
+				switch {
+				// file deleted
+				case err == os.ErrNotExist:
+					log.Printf("[INFO] file %s deleted. shutting down monitoring...", path)
+					evt <- Event{
+						Type: FileDelete,
+						Time: time.Now().UTC(),
+						Path: path,
+					}
+					close(evt)
+					return
+				// file size change
+				case stat.Size() != initialStat.Size():
+					log.Printf("[INFO] file size change detected: %d -> %d", stat.Size(), initialStat.Size())
+					evt <- Event{
+						Type: FileChange,
+						Time: time.Now().UTC(),
+						Path: path,
+					}
+					initialStat = stat
+				// file mod time change
+				case stat.ModTime() != initialStat.ModTime():
+					log.Printf("[INFO] file mod time change detected: %v -> %v", stat.ModTime(), initialStat.ModTime())
+					evt <- Event{
+						Type: FileChange,
+						Time: time.Now().UTC(),
+						Path: path,
+					}
+					initialStat = stat
+				}
 			}
+			time.Sleep(SHORT_WAIT)
 		}
 	}()
 
