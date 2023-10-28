@@ -109,6 +109,8 @@ func (d *Drive) SaveState() error {
 	return os.WriteFile(fp, data, 0644)
 }
 
+// ------- security --------------------------------
+
 func (d *Drive) Lock(password string) {
 	if password != d.Key {
 		log.Printf("[DEBUG] wrong password: %v", password)
@@ -266,7 +268,7 @@ func (d *Drive) RemoveDir(dirID string) error {
 	return nil
 }
 
-// ---- sync operations
+// ---- sync operations --------------------------------
 
 func (d *Drive) BuildSyncIdx() error {
 	idx := BuildSyncIndex(d.Root)
