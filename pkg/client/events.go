@@ -49,7 +49,7 @@ func (c *Client) EventHandler(filePath string) error {
 		return fmt.Errorf("no shut off channel for file %s", filePath)
 	}
 	// get ID for this file so we can quickly update the sync index
-	// without having to rebuild every time
+	// without having to rebuild it every time
 	fileID, err := c.Db.GetFileID(filePath)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (c *Client) EventHandler(filePath string) error {
 		for {
 			select {
 			case e := <-evt:
-				switch e {
+				switch e.Type {
 				// TODO: add sync operations
 				case monitor.FileCreate:
 					c.Drive.SyncIndex.LastSync[fileID] = time.Now().UTC()
@@ -69,6 +69,8 @@ func (c *Client) EventHandler(filePath string) error {
 					off <- true // shutdown monitoring thread
 					delete(c.Drive.SyncIndex.LastSync, fileID)
 				}
+			default:
+				continue
 			}
 		}
 	}()

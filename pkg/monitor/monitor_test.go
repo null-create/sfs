@@ -7,6 +7,24 @@ import (
 	"time"
 )
 
+func testListener(fileChan chan EventType, stopListener chan bool) {
+	log.Print("listening for events...")
+	for {
+		select {
+		case evt := <-fileChan:
+			switch evt {
+			case FileChange:
+				log.Print("file event received")
+			}
+		case <-stopListener:
+			log.Print("shutting down listener...")
+			return
+		default:
+			continue
+		}
+	}
+}
+
 func TestMonitorWithOneFile(t *testing.T) {
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
@@ -17,28 +35,48 @@ func TestMonitorWithOneFile(t *testing.T) {
 
 	// listen for events from file monitor
 	shutDown := make(chan bool)
+	stopListener := make(chan bool)
 	fileChan := watchFile(file.Path, shutDown)
 	go func() {
 		log.Print("listening for events...")
 		for {
 			select {
-			case <-fileChan:
-				log.Print("file event received")
-				time.Sleep(1 * time.Second)
+			case evt := <-fileChan:
+				switch evt.Type {
+				case FileChange:
+					log.Print("file event received")
+				}
+			case <-stopListener:
+				log.Print("shutting down listener...")
+				return
+			default:
+				continue
 			}
 		}
 	}()
+
 	time.Sleep(2 * time.Second)
 
 	// alter the file to generate a detection
 	log.Print("altering test file...")
-	if err := file.Save([]byte(txtData)); err != nil {
+
+	// make a huge string so we can hopefully
+	// detect the change
+	var data string
+	for i := 0; i < 10000; i++ {
+		data += txtData
+	}
+	if err := file.Save([]byte(data)); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 
+	// wait for the listener goroutine to receive the event
+	time.Sleep(2 * time.Second)
+
 	// shutdown monitoring thread
-	log.Print("shutting down monitoring thread...")
+	log.Print("shutting down monitoring and listening threads...")
 	shutDown <- true
+	stopListener <- true
 
 	// clean up
 	if err := Clean(t, GetTestingDir()); err != nil {

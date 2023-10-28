@@ -36,7 +36,7 @@ type Monitor struct {
 	// associated with that file
 	//
 	// key = file path, val is EventType channel
-	Events map[string]chan EventType
+	Events map[string]chan Event
 
 	// map of channels to active listeners that will shut down the watcher goroutine
 	// when set to true.
@@ -48,14 +48,14 @@ type Monitor struct {
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
 		Path:        drvRoot,
-		Events:      make(map[string]chan EventType),
+		Events:      make(map[string]chan Event),
 		OffSwitches: make(map[string]chan bool),
 	}
 }
 
 // creates a new monitor goroutine for a given file.
 // returns a channel that sends events to the listener for handling
-func watchFile(path string, stop chan bool) chan EventType {
+func watchFile(path string, stop chan bool) chan Event {
 	initialStat, err := os.Stat(path)
 	if err != nil {
 		log.Printf("[ERROR] failed to get file info for %s :%v\nunable to monitor", path, err)
@@ -63,41 +63,55 @@ func watchFile(path string, stop chan bool) chan EventType {
 	}
 
 	// event channel
-	evt := make(chan EventType)
+	evt := make(chan Event)
 
 	go func() {
+		log.Print("[INFO] starting monitoring...")
 		for {
 			stat, err := os.Stat(path)
+			log.Printf("stat: %s", path)
 			if err != nil && err != os.ErrNotExist {
 				log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
 				close(evt)
 				return
 			}
-			// check for file events
+			// events
 			switch {
-			// file deletion
+			// file deleted
 			case err == os.ErrNotExist:
-				log.Print("[INFO] file deletion event")
-				evt <- FileDelete
+				log.Printf("[INFO] file %s deleted. shuttown down monitoring...", path)
+				evt <- Event{
+					Type: FileDelete,
+					Time: time.Now().UTC(),
+					Path: path,
+				}
 				close(evt)
 				return
 			// file size change
 			case stat.Size() != initialStat.Size():
-				log.Print("[INFO] file size change event")
-				evt <- FileChange
-				time.Sleep(1 * time.Second)
-			// file modification time change
+				log.Printf("[INFO] file size change detected: %d -> %d", stat.Size(), initialStat.Size())
+				evt <- Event{
+					Type: FileChange,
+					Time: time.Now().UTC(),
+					Path: path,
+				}
+				initialStat = stat
+			// file mod time change
 			case stat.ModTime() != initialStat.ModTime():
-				log.Print("[INFO] file modification time change event")
-				evt <- FileChange
-				time.Sleep(1 * time.Second)
+				log.Printf("[INFO] file mod time change detected: %v -> %v", stat.ModTime(), initialStat.ModTime())
+				evt <- Event{
+					Type: FileChange,
+					Time: time.Now().UTC(),
+					Path: path,
+				}
+				initialStat = stat
 			// stop monitoring
 			case <-stop:
-				log.Print("[INFO] shutting down monitoring...")
+				log.Printf("[INFO] shutting down monitoring...")
 				close(evt)
 				return
 			default:
-				time.Sleep(SHORT_WAIT)
+				continue
 			}
 		}
 	}()
@@ -113,9 +127,7 @@ func watchAll(path string, m *Monitor) error {
 		}
 		// make sure this a file
 		if stat, err := os.Stat(filePath); !stat.IsDir() {
-			stop := make(chan bool)
-			m.Events[filePath] = watchFile(filePath, stop)
-			m.OffSwitches[filePath] = stop
+			m.WatchFile(filePath)
 		} else if err != nil {
 			return err
 		}
@@ -158,7 +170,7 @@ func (m *Monitor) exists(path string) bool {
 }
 
 // get an event listener channel for a given file
-func (m *Monitor) GetEventChan(path string) chan EventType {
+func (m *Monitor) GetEventChan(path string) chan Event {
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
