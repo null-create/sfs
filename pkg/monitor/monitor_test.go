@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/alecthomas/assert/v2"
 )
 
 func testListener(fileChan chan EventType, stopListener chan bool) {
@@ -36,16 +38,15 @@ func TestMonitorWithOneFile(t *testing.T) {
 	// listen for events from file monitor
 	shutDown := make(chan bool)
 	stopListener := make(chan bool)
-	fileChan := watchFile(file.Path, shutDown)
 	go func() {
 		log.Print("listening for events...")
+		fileChan := watchFile(file.Path, shutDown)
 		for {
 			select {
 			case evt := <-fileChan:
-				switch evt.Type {
-				case FileChange:
-					log.Print("file event received")
-				}
+				log.Print("file event received")
+				assert.Equal(t, FileChange, evt.Type)
+				assert.Equal(t, file.Path, evt.Path)
 			case <-stopListener:
 				log.Print("shutting down listener...")
 				return

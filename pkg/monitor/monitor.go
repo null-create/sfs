@@ -53,6 +53,13 @@ func NewMonitor(drvRoot string) *Monitor {
 	}
 }
 
+func (m *Monitor) exists(path string) bool {
+	if _, exists := m.Events[path]; exists {
+		return true
+	}
+	return false
+}
+
 // creates a new monitor goroutine for a given file.
 // returns a channel that sends events to the listener for handling
 func watchFile(path string, stop chan bool) chan Event {
@@ -155,18 +162,11 @@ func (m *Monitor) WatchAll(dirpath string) error {
 
 // add a file to the events map
 func (m *Monitor) WatchFile(filePath string) {
-	if _, exists := m.Events[filePath]; !exists {
+	if !m.exists(filePath) {
 		stop := make(chan bool)
 		m.OffSwitches[filePath] = stop
 		m.Events[filePath] = watchFile(filePath, stop)
 	}
-}
-
-func (m *Monitor) exists(path string) bool {
-	if _, exists := m.Events[path]; exists {
-		return true
-	}
-	return false
 }
 
 // get an event listener channel for a given file
@@ -199,16 +199,6 @@ func (m *Monitor) GetPaths() []string {
 		paths = append(paths, path)
 	}
 	return paths
-}
-
-// create a watcher thread for a given file
-func (m *Monitor) NewWatcher(path string) {
-	if !m.exists(path) {
-		shutDown := make(chan bool)
-		m.OffSwitches[path] = shutDown
-		m.Events[path] = watchFile(path, shutDown)
-		log.Printf("[INFO] file (%s) watcher created", filepath.Base(path))
-	}
 }
 
 // close a listener channel for a given file
