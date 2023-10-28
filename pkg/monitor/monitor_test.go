@@ -85,4 +85,6 @@ func TestMonitorWithOneFile(t *testing.T) {
 	}
 }
 
+func TestMonitorWithMultipleChanges(t *testing.T) {}
+
 func TestMonitorWithManyFiles(t *testing.T) {}
