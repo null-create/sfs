@@ -73,7 +73,7 @@ func GetCwd() string {
 // assuming that go's map implementation has ~O(1) access time,
 // then this function should work in ~O(n) on an unsorted slice.
 //
-// https://stackoverflow.com/questions/19374219/how-to-find-the-difference-between-two-slices-of-strings
+// based off of: https://stackoverflow.com/questions/19374219/how-to-find-the-difference-between-two-slices-of-strings
 func Diff(f, g []*File) []*File {
 	tmp := make(map[*File]int)
 	for _, file := range g {
