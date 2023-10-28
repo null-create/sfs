@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alecthomas/assert/v2"
 	"github.com/sfs/pkg/auth"
+
+	"github.com/alecthomas/assert/v2"
 )
 
 // --------- fixtures --------------------------------
