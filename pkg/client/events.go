@@ -8,6 +8,8 @@ import (
 	"github.com/sfs/pkg/monitor"
 )
 
+type EHandler func(*Client, string) error
+
 // ---- file monitoring operations
 
 // add a file listener to the map if the file isn't already present.

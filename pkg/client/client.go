@@ -28,8 +28,8 @@ type Client struct {
 
 	Db *db.Query `json:"db"` // local db connection
 
-	Handlers map[string]func(*Client, string) error // map of active event handlers for individual files
-	Transfer *transfer.Transfer                     // file transfer component
+	Handlers map[string]EHandler // map of active event handlers for individual files
+	Transfer *transfer.Transfer  // file transfer component
 }
 
 func NewClient(user, userID string) *Client {
@@ -55,7 +55,7 @@ func NewClient(user, userID string) *Client {
 		// Monitor:   monitor,
 		Drive: drv,
 		Db:    db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		// Handlers:  make(map[string]func(*Client, string) error),
+		// Handlers:  make(map[string]EHandler),
 		// Transfer:  transfer.NewTransfer(),
 	}
 }
