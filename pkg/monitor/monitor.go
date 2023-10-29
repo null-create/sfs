@@ -24,7 +24,8 @@ NOTE: a new watcher should be created whenever a new file is created on the serv
 and removed when a file is deleted.
 */
 
-const WAIT = time.Second * 3
+// arbitrary wait time between checks
+const WAIT = time.Microsecond * 500
 
 type Monitor struct {
 	// path to the users drive root to monitor
