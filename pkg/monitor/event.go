@@ -31,7 +31,7 @@ type Event struct {
 
 func (e *Event) String() string {
 	return fmt.Sprintf(
-		"Event \nid=%v \ntime=%v \ntype=%v \npath=%v ",
+		"Event\n	id: %v\n	time: %v\n	type: %v\n	path: %v",
 		e.ID, e.Time, e.Type, e.Path,
 	)
 }
