@@ -17,6 +17,14 @@ func (c *Client) WatchFile(filePath string) {
 	}
 }
 
+// start monitoring files for changes
+func (c *Client) StartMonitor() error {
+	if err := c.Monitor.Start(c.Drive.DriveRoot); err != nil {
+		return err
+	}
+	return nil
+}
+
 // stop all event listeners for this client
 func (c *Client) StopMonitoring() error {
 	if err := c.Monitor.ShutDown(); err != nil {

@@ -45,7 +45,7 @@ func NewClient(user, userID string) *Client {
 
 	// set up monitor
 	monitor := monitor.NewMonitor(drv.Root.Path)
-	if err := monitor.SetUp(drv.Root.Path); err != nil {
+	if err := monitor.Start(drv.Root.Path); err != nil {
 		log.Fatalf("failed to set up file listeners: %v", err)
 	}
 

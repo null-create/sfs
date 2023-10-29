@@ -138,9 +138,20 @@ func LoadClient(user string) (*Client, error) {
 	if err := json.Unmarshal(data, client); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
-	client.StartTime = time.Now().UTC()
+
 	// TODO: client.client is nil when loaded from a state file.
 	// will need a way to instantiate the actual http client here
+
+	// // start client file monitoring services
+	// if err := client.StartMonitor(); err != nil {
+	// 	return nil, fmt.Errorf("failed to start client monitor: %v", err)
+	// }
+	// if err = client.BuildHandlers(); err != nil {
+	// 	return nil, fmt.Errorf("failed to create event listers: %v", err)
+	// }
+
+	client.StartTime = time.Now().UTC()
+
 	return client, nil
 }
 

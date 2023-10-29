@@ -138,7 +138,7 @@ func watchAll(path string, m *Monitor) error {
 
 // recursively builds watchers for all files in the directory
 // and subdirectories
-func (m *Monitor) SetUp(dirpath string) error {
+func (m *Monitor) Start(dirpath string) error {
 	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		return err
