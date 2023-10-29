@@ -10,11 +10,13 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
+type TestListener func(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool)
+
 // creates a new listener goroutine and checks received events
-func testListener(t *testing.T, path string, shutDown chan bool, stopListener chan bool) {
+func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
 		log.Print("listening for events...")
-		fileChan := watchFile(path, shutDown)
+		fileChan := watchFile(path, stopMonitor)
 		for {
 			select {
 			case evt := <-fileChan:
@@ -40,6 +42,15 @@ func testListener(t *testing.T, path string, shutDown chan bool, stopListener ch
 	}()
 }
 
+// starts a new testListner for a given file.
+// returns a monitor shutdown channel and a listener shut down channel
+func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
+	stopMonitor := make(chan bool)
+	stopListener := make(chan bool)
+	testListener(t, path, stopMonitor, stopListener)
+	return stopMonitor, stopListener
+}
+
 func TestMonitorWithOneFile(t *testing.T) {
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
@@ -60,13 +71,7 @@ func TestMonitorWithOneFile(t *testing.T) {
 
 	// make a huge string so we can hopefully
 	// detect the change
-	var data string
-	for i := 0; i < 10000; i++ {
-		data += txtData
-	}
-	if err := file.Save([]byte(data)); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
+	MutateFile(t, file)
 
 	// wait for the listener goroutine to receive the event
 	time.Sleep(2 * time.Second)
@@ -101,15 +106,8 @@ func TestMonitorWithMultipleChanges(t *testing.T) {
 	log.Print("altering test file...")
 
 	for k := 0; k < 10; k++ {
-		// make a huge string so we can hopefully
-		// detect the change
-		var data string
-		for i := 0; i < 1000; i++ {
-			data += txtData
-		}
-		if err := file.Save([]byte(data)); err != nil {
-			Fail(t, GetTestingDir(), err)
-		}
+		MutateFile(t, file)
+		time.Sleep(time.Millisecond * 500)
 	}
 
 	// wait for the listener goroutine to receive the event
@@ -142,14 +140,7 @@ func TestMonitorWithDifferentEvents(t *testing.T) {
 	time.Sleep(time.Second)
 
 	log.Print("altering file...")
-	// add a big string to detect the change
-	var data string
-	for i := 0; i < 10000; i++ {
-		data += txtData
-	}
-	if err := file.Save([]byte(data)); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
+	MutateFile(t, file)
 
 	time.Sleep(time.Second)
 
@@ -163,6 +154,60 @@ func TestMonitorWithDifferentEvents(t *testing.T) {
 	log.Print("shutting down monitoring and listening threads...")
 	shutDown <- true
 	stopListener <- true
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+}
+
+type OffSwitches struct {
+	StopMonitor  chan bool
+	StopListener chan bool
+}
+
+func TestMonitorWatchAll(t *testing.T) {
+	tmp := MakeTmpDirs(t)
+
+	// new monitor
+	monitor := NewMonitor(tmp.Path)
+	if err := monitor.Start(monitor.Path); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// get the files to monitor
+	files, err := tmp.GetFiles()
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// create tmp listeners for each file
+	offSwitches := make([]*OffSwitches, 0, len(files))
+	for i := 0; i < len(files); i++ {
+		stopMonitor, stopListener := NewTestListener(t, files[i].Path)
+		off := &OffSwitches{
+			StopMonitor:  stopMonitor,
+			StopListener: stopListener,
+		}
+		offSwitches = append(offSwitches, off)
+	}
+
+	// alter a bunch of the files at random
+	for _, file := range files {
+		choice := RandInt(2)
+		switch choice {
+		case 1:
+			log.Print("altering file...")
+			MutateFile(t, file)
+		case 2:
+			continue
+		}
+	}
+
+	// stop all the listeners and monitors
+	for _, off := range offSwitches {
+		off.StopListener <- true
+		off.StopMonitor <- true
+	}
+
 	if err := Clean(t, GetTestingDir()); err != nil {
 		log.Fatal(err)
 	}

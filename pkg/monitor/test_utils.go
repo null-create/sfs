@@ -129,6 +129,17 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 
 // ---- files
 
+// alter a test file with additional data
+func MutateFile(t *testing.T, f *svc.File) {
+	var data string
+	for i := 0; i < 10000; i++ {
+		data += txtData
+	}
+	if err := f.Save([]byte(data)); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+}
+
 // "randomly" update some files
 // whenever RandInt() returns an even value
 //

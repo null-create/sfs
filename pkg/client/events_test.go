@@ -31,15 +31,14 @@ func TestStartHandler(t *testing.T) {
 	c := NewClient(user, auth.NewUUID())
 	c.Drive.Root = MakeTmpDirs(t)
 
-	// randomly pick a file to monitor and create a new handler,
-	// then modify the file to check for detections
+	// randomly pick a file to monitor
 	files, err := c.Drive.Root.GetFiles()
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
 	f := files[RandInt(len(files)-1)]
 
-	// creat a new monitor and watch for changes
+	// create a new monitor and watch for changes
 	c.Monitor = monitor.NewMonitor(c.Drive.Root.Path)
 	c.Monitor.WatchFile(f.Path)
 
@@ -53,6 +52,9 @@ func TestStartHandler(t *testing.T) {
 
 	// wait a couple seconds for things to sync up
 	time.Sleep(2 * time.Second)
+
+	// modify the file to generate detections
+	MutateFile(t, f)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
