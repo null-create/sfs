@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -26,6 +27,13 @@ type Event struct {
 	Path string
 	// time of the event
 	Time time.Time
+}
+
+func (e *Event) String() string {
+	return fmt.Sprintf(
+		"Event \nid=%v \ntime=%v \ntype=%v \npath=%v ",
+		e.ID, e.Time, e.Type, e.Path,
+	)
 }
 
 // Elist is a buffer for file events in order to maximize
