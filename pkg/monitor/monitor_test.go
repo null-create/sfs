@@ -27,6 +27,8 @@ func testListener(t *testing.T, path string, shutDown chan bool, stopListener ch
 					log.Print("file delete event received")
 					assert.Equal(t, FileDelete, evt.Type)
 					assert.Equal(t, path, evt.Path)
+				default:
+					log.Printf("unknown event type: %v", evt.Type)
 				}
 			case <-stopListener:
 				log.Print("shutting down listener...")
