@@ -36,14 +36,10 @@ type EList []Event
 const THRESHOLD = 10
 
 type Events struct {
-	// buffer limit
-	threshold int
-	// current total events
-	Total int
-	// flag to indicate whether a sync operation should start
-	StartSync bool
-	// event object list
-	Events EList
+	threshold int   // buffer limit
+	Total     int   // current total events
+	StartSync bool  // flag to indicate whether a sync operation should start
+	Events    EList // event object list
 }
 
 // new Events tracker. if buffered sync
@@ -77,9 +73,13 @@ func (e *Events) HasEvent(evt Event) bool {
 	return false
 }
 
-// add events until threshold is met. any subsequent
-// events won't be added and will be ignored.
+// add events until threshold is met.
 // sets StartSync to true when threshold is met.
+//
+// additional events will be ignored until e.Reset() is called.
+//
+// if Events is buffered, then sync operations will be delayed
+// until threshold is met, otherwise threshold is set to 1 by default
 func (e *Events) AddEvent(evt Event) {
 	if !e.HasEvent(evt) && e.Total+1 <= e.threshold {
 		e.Events = append(e.Events, evt)
@@ -88,6 +88,6 @@ func (e *Events) AddEvent(evt Event) {
 			e.StartSync = true
 		}
 	} else {
-		log.Printf("[WARNING] event list threshold met")
+		log.Printf("[WARNING] event list threshold met. event %s not added!", evt.ID)
 	}
 }

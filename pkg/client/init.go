@@ -47,14 +47,12 @@ func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 
-	// define service directory paths
+	// define service directory paths & make directories
 	svcPaths := []string{
 		filepath.Join(svcDir, "dbs"),
 		filepath.Join(svcDir, "root"),
 		filepath.Join(svcDir, "state"),
 	}
-
-	// make each directory
 	for _, svcPath := range svcPaths {
 		if err := os.Mkdir(svcPath, svc.PERMS); err != nil {
 			return nil, err
@@ -66,13 +64,23 @@ func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 
+	// initialize a new client with a new user
+	client, err := newClient(user)
+	if err != nil {
+		return nil, err
+	}
+
 	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
 	if err := e.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
 		return nil, err
 	}
 
-	// initialize a new client with a new user, then save initial state
+	return client, nil
+}
+
+func newClient(user string) (*Client, error) {
 	client := NewClient(user, auth.NewUUID())
+	client.BuildHandlers()
 	if err := client.SaveState(); err != nil {
 		return nil, err
 	}

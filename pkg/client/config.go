@@ -9,6 +9,8 @@ import (
 type Conf struct {
 	// users name
 	User string `env:"CLIENT"`
+	// users email
+	Email string `env:"CLIENT_EMAIL"`
 	// client service root, ie ../sfs/client/root
 	//
 	// all users file will be uder .../sfs/root/user-name/root

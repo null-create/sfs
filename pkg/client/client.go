@@ -4,21 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
+	"github.com/sfs/pkg/transfer"
 )
 
 type Client struct {
-	mu sync.Mutex
-
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
 
@@ -31,8 +28,8 @@ type Client struct {
 
 	Db *db.Query `json:"db"` // local db connection
 
-	client   *http.Client
 	Handlers map[string]func(*Client, string) error // map of active event handlers for individual files
+	Transfer *transfer.Transfer                     // file transfer component
 }
 
 func NewClient(user, userID string) *Client {
@@ -43,26 +40,23 @@ func NewClient(user, userID string) *Client {
 	root := svc.NewDirectory("root", conf.User, svcRoot)
 	drv := svc.NewDrive(auth.NewUUID(), conf.User, conf.User, root.Path, root)
 
-	// set up monitor
-	monitor := monitor.NewMonitor(drv.Root.Path)
-	if err := monitor.Start(drv.Root.Path); err != nil {
-		log.Fatalf("failed to set up file listeners: %v", err)
-	}
-
-	// TODO: add custom transport and other http client configurations
+	// // set up monitor
+	// monitor := monitor.NewMonitor(drv.Root.Path)
+	// if err := monitor.Start(drv.Root.Path); err != nil {
+	// 	log.Fatalf("failed to set up file listeners: %v", err)
+	// }
 
 	return &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
-		User:      nil,
-		Drive:     drv,
+		User:      auth.NewUser(user, userID, conf.Email, auth.NewUUID(), svcRoot, false),
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
-		Monitor:   monitor,
-		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		client: &http.Client{
-			Timeout: time.Second * 30,
-		},
+		// Monitor:   monitor,
+		Drive: drv,
+		Db:    db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		// Handlers:  make(map[string]func(*Client, string) error),
+		// Transfer:  transfer.NewTransfer(),
 	}
 }
 

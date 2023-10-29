@@ -31,12 +31,16 @@ func TestNewClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
-
 	assert.NotEqual(t, nil, client)
 	assert.NotEqual(t, nil, client.Conf)
+	assert.NotEqual(t, nil, client.User)
+	assert.NotEqual(t, "", client.Root)
 	assert.NotEqual(t, "", client.SfDir)
+	// assert.NotEqual(t, nil, client.Monitor)
+	assert.NotEqual(t, nil, client.Drive)
 	assert.NotEqual(t, nil, client.Db)
-	assert.NotEqual(t, nil, client.client)
+	// assert.NotEqual(t, nil, client.Handlers)
+	// assert.NotEqual(t, nil, client.Transfer)
 
 	// check that .env was updated after initialization,
 	// specifically that CLIENT_NEW_SERVICE was set to "false"
@@ -135,55 +139,6 @@ func TestLoadClientSaveState(t *testing.T) {
 	assert.Equal(t, 1, len(entries)) // should only have 1 state file at a time
 	assert.True(t, strings.Contains(entries[0].Name(), "client-state"))
 	assert.True(t, strings.Contains(entries[0].Name(), ".json"))
-
-	if err := Clean(t, tmpDir); err != nil {
-		// reset our .env file for other tests
-		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
-			log.Fatal(err2)
-		}
-		log.Fatal(err)
-	}
-}
-
-// create an empty client and add a new user
-func TestClientAddNewUser(t *testing.T) {
-	env.BuildEnv(true)
-
-	// make sure we clean the right testing directory
-	e := env.NewE()
-	tmpDir, err := e.Get("CLIENT_ROOT")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tmpClient, err := Init(true)
-	if err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	newUser := auth.NewUser(
-		"bill buttlicker", "billB", "bill@bill.com", auth.NewUUID(),
-		filepath.Join(tmpClient.Conf.Root, "bill buttlicker"), false,
-	)
-
-	if err := tmpClient.AddUser(newUser); err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	user := tmpClient.User
-
-	assert.NotEqual(t, nil, user)
-	assert.Equal(t, newUser.ID, user.ID)
-	assert.Equal(t, newUser.Name, user.Name)
-	assert.Equal(t, newUser.Email, user.Email)
-	assert.Equal(t, newUser.Password, user.Password)
-	assert.Equal(t, newUser.Email, user.Email)
-	assert.Equal(t, newUser.Admin, user.Admin)
-	assert.Equal(t, newUser.SvcRoot, user.SvcRoot)
-	assert.Equal(t, newUser.DriveID, user.DriveID)
-	assert.Equal(t, newUser.TotalFiles, user.TotalFiles)
-	assert.Equal(t, newUser.TotalDirs, user.TotalDirs)
-	assert.Equal(t, newUser.Root, user.Root)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests

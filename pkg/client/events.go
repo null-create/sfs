@@ -98,6 +98,9 @@ func EventHandler(c *Client, filePath string) error {
 				}
 				evts.AddEvent(e)
 				if evts.StartSync {
+					// populate ToUpdate map before transferring all files to be synced
+					// to the server
+					c.Drive.SyncIndex = c.Drive.Root.WalkU(c.Drive.SyncIndex)
 
 					evts.Reset()
 				}

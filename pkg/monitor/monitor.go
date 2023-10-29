@@ -197,7 +197,7 @@ func (m *Monitor) CloseChan(filePath string) error {
 		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
-		log.Printf("[INFO] file channel (%s) closed", filePath)
+		log.Printf("[INFO] file channel (%s) closed", filepath.Base(filePath))
 		return nil
 	}
 	return fmt.Errorf("file (%s) event channel not found", filepath.Base(filePath))
@@ -206,7 +206,8 @@ func (m *Monitor) CloseChan(filePath string) error {
 // shutdown all active monitoring threads
 func (m *Monitor) ShutDown() error {
 	if len(m.OffSwitches) == 0 {
-		return fmt.Errorf("no event off channels available")
+		log.Printf("[INFO] no event off channels available. nothing to shutdown.")
+		return nil
 	}
 	paths := m.GetPaths()
 	if paths == nil {
