@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/sfs/pkg/monitor"
@@ -108,6 +109,7 @@ func EventHandler(c *Client, filePath string) error {
 				}
 				evts.AddEvent(e)
 				if evts.StartSync {
+					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
 					// populate ToUpdate map before transferring all files to be synced
 					// to the server
 					c.Drive.SyncIndex = c.Drive.Root.WalkU(c.Drive.SyncIndex)
