@@ -21,12 +21,12 @@ const (
 type Event struct {
 	// UUID of the event
 	ID string
+	// time of the event
+	Time time.Time
 	// type of file event, i.e. create, edit, or delete
 	Type EventType
 	// location of the file event (path to the file itself)
 	Path string
-	// time of the event
-	Time time.Time
 }
 
 func (e *Event) String() string {
