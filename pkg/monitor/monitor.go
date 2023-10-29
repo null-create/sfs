@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/sfs/pkg/auth"
 )
 
 /*
@@ -20,12 +22,9 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 
 NOTE: a new watcher should be created whenever a new file is created on the server or client,
 and removed when a file is deleted.
-
-see: https://stackoverflow.com/questions/8270441/go-language-how-detect-file-changing
 */
 
-const WAIT = time.Second * 10 // wait 10 seconds before checking file stat again after sending an event
-const SHORT_WAIT = time.Second * 3
+const WAIT = time.Second * 3
 
 type Monitor struct {
 	// path to the users drive root to monitor
@@ -81,46 +80,36 @@ func watchFile(path string, stop chan bool) chan Event {
 				close(evt)
 				return
 			default:
-				// events
 				stat, err := os.Stat(path)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
 					close(evt)
 					return
 				}
-
 				switch {
-				// file deleted
 				case err == os.ErrNotExist:
 					log.Printf("[INFO] file %s deleted. shutting down monitoring...", path)
 					evt <- Event{
 						Type: FileDelete,
+						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
 						Path: path,
 					}
 					close(evt)
 					return
-				// file size change
-				case stat.Size() != initialStat.Size():
-					log.Printf("[INFO] file size change detected: %d -> %d", stat.Size(), initialStat.Size())
+				case stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime():
+					log.Printf("[INFO] file size change detected: %d kb -> %d kb", stat.Size()/1000, initialStat.Size()/1000)
 					evt <- Event{
 						Type: FileChange,
-						Time: time.Now().UTC(),
-						Path: path,
-					}
-					initialStat = stat
-				// file mod time change
-				case stat.ModTime() != initialStat.ModTime():
-					log.Printf("[INFO] file mod time change detected: %v -> %v", stat.ModTime(), initialStat.ModTime())
-					evt <- Event{
-						Type: FileChange,
+						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
 						Path: path,
 					}
 					initialStat = stat
 				}
 			}
-			time.Sleep(SHORT_WAIT)
+			// wait before checking again
+			time.Sleep(WAIT)
 		}
 	}()
 
@@ -149,13 +138,13 @@ func watchAll(path string, m *Monitor) error {
 
 // recursively builds watchers for all files in the directory
 // and subdirectories
-func (m *Monitor) WatchAll(dirpath string) error {
+func (m *Monitor) SetUp(dirpath string) error {
 	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		return err
 	}
 	if len(entries) == 0 {
-		log.Printf("no files or subdirectories in %s", dirpath)
+		log.Printf("[WARNING] no files or subdirectories in %s", dirpath)
 		return nil
 	}
 	return watchAll(dirpath, m)

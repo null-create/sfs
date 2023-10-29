@@ -18,6 +18,9 @@ type SyncIndex struct {
 	// is updated with each save
 	IdxFp string `json:"file"`
 
+	// flag to indicate whether a sync operation should be executed
+	Sync bool `json:"sync"`
+
 	// We will use the file path for each file to retrieve the pointer for the
 	// file object if it is to be queued for uploading or downloading
 	//
@@ -34,6 +37,8 @@ type SyncIndex struct {
 func NewSyncIndex(user string) *SyncIndex {
 	return &SyncIndex{
 		User:     user,
+		IdxFp:    "",
+		Sync:     false,
 		LastSync: make(map[string]time.Time, 0),
 		ToUpdate: make(map[string]*File, 0),
 	}

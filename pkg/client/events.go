@@ -9,12 +9,6 @@ import (
 
 // ---- file monitoring operations
 
-// populates c.Monitor.Events with listener goroutines for all
-// files in the client's drive.
-func (c *Client) WatchFiles() error {
-	return c.Monitor.WatchAll(c.Drive.Root.Path)
-}
-
 // add a file listener to the map if the file isn't already present.
 // will be a no-op if its already being watched.
 func (c *Client) WatchFile(filePath string) {
@@ -31,13 +25,38 @@ func (c *Client) StopMonitoring() error {
 	return nil
 }
 
-// main event loop that coordinates sync operations after
-// receiving a file event from the listener.
+// build a map of event handlers for client files.
+// each handler will listen for events from files and will
+// call synchronization operations accordingly
+//
+// should ideally only be called once during initialization
+func (c *Client) BuildHandlers() error {
+	// get list of files for the user
+	files := c.Drive.GetFiles()
 
-// TODO: this should be part of a larger data structure
-// that is coordinating (or at least keeping track of) all
-// the watcher/listener event goroutines
-func (c *Client) EventHandler(filePath string) error {
+	// build handlers for each, populate handler map
+	for _, file := range files {
+		if _, exists := c.Handlers[file.ID]; !exists {
+			c.Handlers[file.ID] = EventHandler
+		}
+	}
+	return nil
+}
+
+// start an event handler for a given file
+func (c *Client) StartHandler(fileID string) error {
+	if handler, exists := c.Handlers[fileID]; exists {
+		if err := handler(c, fileID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sets up a new listener for a given path.
+//
+// handles received events and starts transfer operations
+func EventHandler(c *Client, filePath string) error {
 	// get event channel for this file to listen to
 	evt := c.Monitor.GetEventChan(filePath)
 	if evt == nil {
@@ -56,11 +75,11 @@ func (c *Client) EventHandler(filePath string) error {
 	}
 
 	go func() {
+		evts := monitor.NewEvents(false)
 		for {
 			select {
 			case e := <-evt:
 				switch e.Type {
-				// TODO: add sync operations
 				case monitor.FileCreate:
 					c.Drive.SyncIndex.LastSync[fileID] = time.Now().UTC()
 				case monitor.FileChange:
@@ -69,11 +88,15 @@ func (c *Client) EventHandler(filePath string) error {
 					off <- true // shutdown monitoring thread
 					delete(c.Drive.SyncIndex.LastSync, fileID)
 				}
+				evts.AddEvent(e)
+				if evts.StartSync {
+
+					evts.Reset()
+				}
 			default:
 				continue
 			}
 		}
 	}()
-
 	return nil
 }
