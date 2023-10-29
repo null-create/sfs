@@ -95,7 +95,9 @@ func MakeTmpDir(t *testing.T, path string) (*svc.Directory, error) {
 }
 
 // create a temporary root directory with files and a subdirectory,
-// also with files, under pkg/files/testing/tmp
+// also with files, under testing/tmp
+//
+// returns complete test root with directory and file
 func MakeTmpDirs(t *testing.T) *svc.Directory {
 	// make our temporary directory
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
