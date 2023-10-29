@@ -18,7 +18,7 @@ func TestToUpdate(t *testing.T) {
 
 	// randomly update some of the files with additional content, causing their
 	// last sync times to be updated
-	files := d.GetFiles() // NOTE: this only returns d's top level files
+	files := d.GetFileMap() // NOTE: this only returns d's top level files
 	MutateFiles(t, files)
 
 	// check new index, make sure some of the times are different
