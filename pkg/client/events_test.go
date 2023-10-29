@@ -21,7 +21,7 @@ func TestStartHandler(t *testing.T) {
 	}
 
 	// temp client with temp root
-	user, err := e.Get("CLIENT_USER")
+	user, err := e.Get("CLIENT")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,6 +55,10 @@ func TestStartHandler(t *testing.T) {
 
 	// modify the file to generate detections
 	MutateFile(t, f)
+
+	// wait for the monitor to register detections
+	// and send them to the listener
+	time.Sleep(2 * time.Second)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
