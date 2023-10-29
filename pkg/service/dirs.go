@@ -355,11 +355,26 @@ func (d *Directory) RemoveFile(fileID string) error {
 // return a copy of the files map *for this directory*
 //
 // does not return files from subdirectories
-func (d *Directory) GetFiles() map[string]*File {
+func (d *Directory) GetFileMap() map[string]*File {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir (%s) has no files", d.ID)
 	}
 	return d.Files
+}
+
+// get a slice of all files starting from this directory
+func (d *Directory) GetFiles() ([]*File, error) {
+	fileMap := d.WalkFs()
+	if len(fileMap) == 0 {
+		return nil, fmt.Errorf("no files found")
+	}
+	var i int
+	files := make([]*File, 0, len(fileMap))
+	for _, f := range fileMap {
+		files[i] = f
+		i++
+	}
+	return files, nil
 }
 
 // find a file within the given directory or subdirectories.
