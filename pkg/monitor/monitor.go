@@ -52,7 +52,7 @@ func NewMonitor(drvRoot string) *Monitor {
 	}
 }
 
-func (m *Monitor) exists(path string) bool {
+func (m *Monitor) Exists(path string) bool {
 	if _, exists := m.Events[path]; exists {
 		return true
 	}
@@ -152,7 +152,7 @@ func (m *Monitor) Start(dirpath string) error {
 
 // add a file to the events map
 func (m *Monitor) WatchFile(filePath string) {
-	if !m.exists(filePath) {
+	if !m.Exists(filePath) {
 		stop := make(chan bool)
 		m.OffSwitches[filePath] = stop
 		m.Events[filePath] = watchFile(filePath, stop)
@@ -193,7 +193,7 @@ func (m *Monitor) GetPaths() []string {
 
 // close a listener channel for a given file
 func (m *Monitor) CloseChan(filePath string) error {
-	if m.exists(filePath) {
+	if m.Exists(filePath) {
 		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
