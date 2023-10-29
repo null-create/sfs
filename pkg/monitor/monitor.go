@@ -159,6 +159,24 @@ func (m *Monitor) WatchFile(filePath string) {
 	}
 }
 
+// get an event listener channel for a given file
+func (m *Monitor) GetEventChan(path string) chan Event {
+	if evtChan, exists := m.Events[path]; exists {
+		return evtChan
+	}
+	log.Printf("[ERROR] file (%s) event channel not found", filepath.Base(path))
+	return nil
+}
+
+// get an event listener off switch for a given file
+func (m *Monitor) GetOffSwitch(path string) chan bool {
+	if offSwitch, exists := m.OffSwitches[path]; exists {
+		return offSwitch
+	}
+	log.Printf("[ERROR] off switch not found for file (%s) monitoring goroutine", filepath.Base(path))
+	return nil
+}
+
 // get a slice of file paths for associated monitoring goroutines.
 // returns nil if none are available.
 func (m *Monitor) GetPaths() []string {
@@ -171,6 +189,18 @@ func (m *Monitor) GetPaths() []string {
 		paths = append(paths, path)
 	}
 	return paths
+}
+
+// close a listener channel for a given file
+func (m *Monitor) CloseChan(filePath string) error {
+	if m.exists(filePath) {
+		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
+		delete(m.OffSwitches, filePath)
+		delete(m.Events, filePath)
+		log.Printf("[INFO] file channel (%s) closed", filepath.Base(filePath))
+		return nil
+	}
+	return fmt.Errorf("file (%s) event channel not found", filepath.Base(filePath))
 }
 
 // shutdown all active monitoring threads
