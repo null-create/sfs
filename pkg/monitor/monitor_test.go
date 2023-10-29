@@ -157,6 +157,10 @@ func TestMonitorWithDifferentEvents(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
+	// shutdown monitoring thread & clean up
+	log.Print("shutting down monitoring and listening threads...")
+	shutDown <- true
+	stopListener <- true
 	if err := Clean(t, GetTestingDir()); err != nil {
 		log.Fatal(err)
 	}
