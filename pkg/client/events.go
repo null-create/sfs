@@ -12,7 +12,7 @@ import (
 // add a file listener to the map if the file isn't already present.
 // will be a no-op if its already being watched.
 func (c *Client) WatchFile(filePath string) {
-	if _, exists := c.Monitor.Events[filePath]; !exists {
+	if !c.Monitor.Exists(filePath) {
 		c.Monitor.WatchFile(filePath)
 	}
 }
@@ -33,6 +33,26 @@ func (c *Client) StopMonitoring() error {
 	return nil
 }
 
+// add a new event handler for the given file
+func (c *Client) NewHandler(fileID string) error {
+	if _, exists := c.Handlers[fileID]; !exists {
+		c.Handlers[fileID] = EventHandler
+	} else {
+		return fmt.Errorf("file (id=%v) is already registered", fileID)
+	}
+	return nil
+}
+
+// start an event handler for a given file
+func (c *Client) StartHandler(fileID string) error {
+	if handler, exists := c.Handlers[fileID]; exists {
+		if err := handler(c, fileID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // build a map of event handlers for client files.
 // each handler will listen for events from files and will
 // call synchronization operations accordingly
@@ -46,16 +66,6 @@ func (c *Client) BuildHandlers() error {
 	for _, file := range files {
 		if _, exists := c.Handlers[file.ID]; !exists {
 			c.Handlers[file.ID] = EventHandler
-		}
-	}
-	return nil
-}
-
-// start an event handler for a given file
-func (c *Client) StartHandler(fileID string) error {
-	if handler, exists := c.Handlers[fileID]; exists {
-		if err := handler(c, fileID); err != nil {
-			return err
 		}
 	}
 	return nil
