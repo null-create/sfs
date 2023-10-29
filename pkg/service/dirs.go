@@ -369,7 +369,7 @@ func (d *Directory) GetFiles() ([]*File, error) {
 		return nil, fmt.Errorf("no files found")
 	}
 	var i int
-	files := make([]*File, 0, len(fileMap))
+	files := make([]*File, len(fileMap))
 	for _, f := range fileMap {
 		files[i] = f
 		i++
