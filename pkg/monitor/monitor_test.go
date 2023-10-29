@@ -123,7 +123,7 @@ func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 	}
 }
 
-func TestMonitorWithDifferentEvents(t *testing.T) {
+func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
 	file, err := MakeTmpTxtFile(fn, RandInt(1000))
