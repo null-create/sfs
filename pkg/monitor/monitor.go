@@ -98,7 +98,7 @@ func watchFile(path string, stop chan bool) chan Event {
 					close(evt)
 					return
 				case stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime():
-					log.Printf("[INFO] file size change detected: %d kb -> %d kb", initialStat.Size()/1000, stat.Size()/1000)
+					log.Printf("[INFO] file size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000))
 					evt <- Event{
 						Type: FileChange,
 						ID:   auth.NewUUID(),
