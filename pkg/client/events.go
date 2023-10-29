@@ -54,6 +54,14 @@ func (c *Client) StartHandler(fileID string) error {
 	return nil
 }
 
+func (c *Client) eventInfo(evt monitor.Event) {
+	msg := fmt.Sprintf(
+		"[INFO] file event -> time: %v | type: %s | path: %s",
+		evt.ID, evt.Type, evt.Path,
+	)
+	log.Print(msg)
+}
+
 // build a map of event handlers for client files.
 // each handler will listen for events from files and will
 // call synchronization operations accordingly
@@ -98,6 +106,7 @@ func EventHandler(c *Client, filePath string) error {
 		for {
 			select {
 			case e := <-evt:
+				c.eventInfo(e) // display event info
 				switch e.Type {
 				case monitor.FileCreate:
 					c.Drive.SyncIndex.LastSync[fileID] = time.Now().UTC()
