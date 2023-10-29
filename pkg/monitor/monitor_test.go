@@ -10,8 +10,6 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-type TestListener func(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool)
-
 // creates a new listener goroutine and checks received events
 func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
@@ -87,7 +85,7 @@ func TestMonitorWithOneFile(t *testing.T) {
 	}
 }
 
-func TestMonitorWithMultipleChanges(t *testing.T) {
+func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
 	file, err := MakeTmpTxtFile(fn, RandInt(1000))
@@ -100,7 +98,8 @@ func TestMonitorWithMultipleChanges(t *testing.T) {
 	stopListener := make(chan bool)
 	testListener(t, file.Path, shutDown, stopListener)
 
-	time.Sleep(2 * time.Second)
+	// wait for listener to start
+	time.Sleep(time.Second)
 
 	// alter the file a bunch of times to generate detections
 	log.Print("altering test file...")
@@ -111,7 +110,7 @@ func TestMonitorWithMultipleChanges(t *testing.T) {
 	}
 
 	// wait for the listener goroutine to receive the event
-	time.Sleep(2 * time.Second)
+	time.Sleep(time.Second)
 
 	// shutdown monitoring thread
 	log.Print("shutting down monitoring and listening threads...")
@@ -145,7 +144,6 @@ func TestMonitorWithDifferentEvents(t *testing.T) {
 	time.Sleep(time.Second)
 
 	log.Print("deleting file...")
-	// delete file to generate a deletion event
 	if err := os.Remove(file.Path); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -179,7 +177,7 @@ func TestMonitorWatchAll(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	// create tmp listeners for each file
+	// create tmp listeners for each file monitor
 	offSwitches := make([]*OffSwitches, 0, len(files))
 	for i := 0; i < len(files); i++ {
 		stopMonitor, stopListener := NewTestListener(t, files[i].Path)
