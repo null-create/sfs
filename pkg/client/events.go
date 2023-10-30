@@ -47,9 +47,9 @@ func (c *Client) NewHandler(fileID string) error {
 }
 
 // start an event handler for a given file
-func (c *Client) StartHandler(fileID string) error {
-	if handler, exists := c.Handlers[fileID]; exists {
-		if err := handler(c, fileID); err != nil {
+func (c *Client) StartHandler(filePath string) error {
+	if handler, exists := c.Handlers[filePath]; exists {
+		if err := handler(c, filePath); err != nil {
 			return err
 		}
 	}
