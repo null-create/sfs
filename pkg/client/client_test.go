@@ -39,7 +39,7 @@ func TestNewClient(t *testing.T) {
 	// assert.NotEqual(t, nil, client.Monitor)
 	assert.NotEqual(t, nil, client.Drive)
 	assert.NotEqual(t, nil, client.Db)
-	// assert.NotEqual(t, nil, client.Handlers)
+	assert.NotEqual(t, nil, client.Handlers)
 	// assert.NotEqual(t, nil, client.Transfer)
 
 	// check that .env was updated after initialization,
@@ -100,8 +100,11 @@ func TestLoadClient(t *testing.T) {
 	assert.NotEqual(t, nil, c2)
 	assert.Equal(t, c1.Conf, c2.Conf)
 	assert.Equal(t, c1.User, c2.User)
+	assert.Equal(t, c1.Root, c2.Root)
 	assert.Equal(t, c1.User.ID, c2.User.ID)
 	assert.Equal(t, c1.SfDir, c2.SfDir)
+	assert.Equal(t, c1.Db, c2.Db)
+	assert.Equal(t, c1.Handlers, c2.Handlers)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
