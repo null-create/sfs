@@ -25,7 +25,7 @@ and removed when a file is deleted.
 */
 
 // arbitrary wait time between checks
-const WAIT = time.Microsecond * 500
+const WAIT = time.Millisecond * 500
 
 type Monitor struct {
 	// path to the users drive root to monitor
@@ -107,10 +107,11 @@ func watchFile(path string, stop chan bool) chan Event {
 						Path: path,
 					}
 					initialStat = stat
+				default:
+					// wait before checking again
+					time.Sleep(WAIT)
 				}
 			}
-			// wait before checking again
-			time.Sleep(WAIT)
 		}
 	}()
 

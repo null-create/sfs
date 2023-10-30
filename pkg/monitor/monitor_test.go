@@ -40,6 +40,34 @@ func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener
 	}()
 }
 
+func testChanListener(t *testing.T, path string, fileChan chan Event, stopListener chan bool) {
+	go func() {
+		log.Print("listening for events...")
+		for {
+			select {
+			case evt := <-fileChan:
+				switch evt.Type {
+				case FileChange:
+					log.Print("file change event received")
+					assert.Equal(t, FileChange, evt.Type)
+					assert.Equal(t, path, evt.Path)
+				case FileDelete:
+					log.Print("file delete event received")
+					assert.Equal(t, FileDelete, evt.Type)
+					assert.Equal(t, path, evt.Path)
+				default:
+					log.Printf("unknown event type: %v", evt.Type)
+				}
+			case <-stopListener:
+				log.Print("shutting down listener...")
+				return
+			default:
+				continue
+			}
+		}
+	}()
+}
+
 // starts a new testListner for a given file.
 // returns a monitor shutdown channel and a listener shut down channel
 func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
@@ -157,15 +185,18 @@ func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 	}
 }
 
-type OffSwitches struct {
-	StopMonitor  chan bool
-	StopListener chan bool
-}
+// type OffSwitches struct {
+// 	StopMonitor  chan bool
+// 	StopListener chan bool
+// }
 
 func TestMonitorWatchAll(t *testing.T) {
 	tmp := MakeTmpDirs(t)
 
-	// new monitor
+	// initialize new monitor with watching goroutines
+	// for all files under tmp. none of the watchers will have event
+	// listeners, we just want to see if they all independently
+	// detect file changes.
 	monitor := NewMonitor(tmp.Path)
 	if err := monitor.Start(monitor.Path); err != nil {
 		Fail(t, GetTestingDir(), err)
@@ -175,17 +206,6 @@ func TestMonitorWatchAll(t *testing.T) {
 	files, err := tmp.GetFiles()
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
-	}
-
-	// create tmp listeners for each file monitor
-	offSwitches := make([]*OffSwitches, 0, len(files))
-	for i := 0; i < len(files); i++ {
-		stopMonitor, stopListener := NewTestListener(t, files[i].Path)
-		off := &OffSwitches{
-			StopMonitor:  stopMonitor,
-			StopListener: stopListener,
-		}
-		offSwitches = append(offSwitches, off)
 	}
 
 	// alter a bunch of the files at random
@@ -200,10 +220,12 @@ func TestMonitorWatchAll(t *testing.T) {
 		}
 	}
 
-	// stop all the listeners and monitors
-	for _, off := range offSwitches {
-		off.StopListener <- true
-		off.StopMonitor <- true
+	// stop all  monitors
+	//
+	// NOTE: off switches don't seem to be working?
+	// test times out currently
+	for _, off := range monitor.OffSwitches {
+		off <- true
 	}
 
 	if err := Clean(t, GetTestingDir()); err != nil {

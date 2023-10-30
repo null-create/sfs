@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/monitor"
 )
 
 func TestStartHandler(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
@@ -20,15 +19,12 @@ func TestStartHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// temp client with temp root
-	user, err := e.Get("CLIENT")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// create a temp client (no actual service directories)
 	// with test files and subdirectories
-	c := NewClient(user, auth.NewUUID())
+	c, err := Init(true)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
 	c.Drive.Root = MakeTmpDirs(t)
 
 	// randomly pick a file to monitor
@@ -37,6 +33,11 @@ func TestStartHandler(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	f := files[RandInt(len(files)-1)]
+
+	// this is just so the event handler can get the fileID
+	if err := c.Db.AddFile(f); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
 	// create a new monitor and watch for changes
 	c.Monitor = monitor.NewMonitor(c.Drive.Root.Path)
@@ -69,4 +70,4 @@ func TestStartHandler(t *testing.T) {
 	}
 }
 
-func TestBuildHandlers(t *testing.T) {}
+// func TestBuildHandlers(t *testing.T) {}

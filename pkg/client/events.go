@@ -37,11 +37,11 @@ func (c *Client) StopMonitoring() error {
 }
 
 // add a new event handler for the given file
-func (c *Client) NewHandler(fileID string) error {
-	if _, exists := c.Handlers[fileID]; !exists {
-		c.Handlers[fileID] = EventHandler
+func (c *Client) NewHandler(filePath string) error {
+	if _, exists := c.Handlers[filePath]; !exists {
+		c.Handlers[filePath] = EventHandler
 	} else {
-		return fmt.Errorf("file (id=%v) is already registered", fileID)
+		return fmt.Errorf("file (%v) is already registered", filePath)
 	}
 	return nil
 }
@@ -119,14 +119,14 @@ func EventHandler(c *Client, filePath string) error {
 					delete(c.Drive.SyncIndex.LastSync, fileID)
 				}
 				evts.AddEvent(e)
-				if evts.StartSync {
-					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
-					// populate ToUpdate map before transferring all files to be synced
-					// to the server
-					c.Drive.SyncIndex = c.Drive.Root.WalkU(c.Drive.SyncIndex)
+				// if evts.StartSync {
+				// 	log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
+				// 	// populate ToUpdate map before transferring all files to be synced
+				// 	// to the server
+				// 	c.Drive.SyncIndex = c.Drive.Root.WalkU(c.Drive.SyncIndex)
 
-					evts.Reset()
-				}
+				// 	evts.Reset()
+				// }
 			default:
 				continue
 			}

@@ -94,6 +94,8 @@ func (c *Client) SaveState() error {
 	return os.WriteFile(fp, data, svc.PERMS)
 }
 
+// ---- user functions --------------------------------
+
 func (c *Client) AddUser(user *auth.User) error {
 	if c.User == nil {
 		c.User = user
