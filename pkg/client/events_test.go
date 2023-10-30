@@ -19,8 +19,7 @@ func TestStartHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// create a temp client (no actual service directories)
-	// with test files and subdirectories
+	// create a temp client with test files and subdirectories
 	c, err := Init(true)
 	if err != nil {
 		Fail(t, tmpDir, err)
@@ -30,12 +29,19 @@ func TestStartHandler(t *testing.T) {
 	// randomly pick a file to monitor
 	files, err := c.Drive.Root.GetFiles()
 	if err != nil {
+		if err2 := Clean(t, GetTestingDir()); err2 != nil {
+			log.Printf("[ERROR] %v", err)
+			log.Fatal(err2)
+		}
 		Fail(t, tmpDir, err)
 	}
 	f := files[RandInt(len(files)-1)]
 
 	// this is just so the event handler can get the fileID
 	if err := c.Db.AddFile(f); err != nil {
+		if err2 := Clean(t, GetTestingDir()); err2 != nil {
+			log.Fatal(err2)
+		}
 		Fail(t, tmpDir, err)
 	}
 
@@ -45,9 +51,17 @@ func TestStartHandler(t *testing.T) {
 
 	// create a new handler and start listening for file events from the monitor
 	if err := c.NewHandler(f.Path); err != nil {
+		if err2 := Clean(t, GetTestingDir()); err2 != nil {
+			log.Printf("[ERROR] %v", err)
+			log.Fatal(err2)
+		}
 		Fail(t, tmpDir, err)
 	}
 	if err = c.StartHandler(f.Path); err != nil {
+		if err2 := Clean(t, GetTestingDir()); err2 != nil {
+			log.Printf("[ERROR] %v", err)
+			log.Fatal(err2)
+		}
 		Fail(t, tmpDir, err)
 	}
 
@@ -62,6 +76,10 @@ func TestStartHandler(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	if err := Clean(t, tmpDir); err != nil {
+		if err2 := Clean(t, GetTestingDir()); err2 != nil {
+			log.Printf("[ERROR] %v", err)
+			log.Fatal(err2)
+		}
 		// reset our .env file for other tests
 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
 			log.Fatal(err2)
