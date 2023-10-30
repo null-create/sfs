@@ -73,8 +73,8 @@ func (e *Events) Reset() {
 }
 
 func (e *Events) HasEvent(evt Event) bool {
-	for _, e := range e.Events {
-		if evt.ID == e.ID {
+	for _, evnt := range e.Events {
+		if evt.ID == evnt.ID {
 			return true
 		}
 	}
