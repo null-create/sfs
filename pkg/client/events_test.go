@@ -43,10 +43,10 @@ func TestStartHandler(t *testing.T) {
 	c.Monitor.WatchFile(f.Path)
 
 	// create a new handler and start listening for file events from the monitor
-	if err := c.NewHandler(f.ID); err != nil {
+	if err := c.NewHandler(f.Path); err != nil {
 		Fail(t, tmpDir, err)
 	}
-	if err = c.StartHandler(f.ID); err != nil {
+	if err = c.StartHandler(f.Path); err != nil {
 		Fail(t, tmpDir, err)
 	}
 

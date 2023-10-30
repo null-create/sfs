@@ -161,20 +161,20 @@ func (m *Monitor) WatchFile(filePath string) {
 }
 
 // get an event listener channel for a given file
-func (m *Monitor) GetEventChan(path string) chan Event {
-	if evtChan, exists := m.Events[path]; exists {
+func (m *Monitor) GetEventChan(filePath string) chan Event {
+	if evtChan, exists := m.Events[filePath]; exists {
 		return evtChan
 	}
-	log.Printf("[ERROR] file (%s) event channel not found", filepath.Base(path))
+	log.Printf("[ERROR] file (%s) event channel not found", filepath.Base(filePath))
 	return nil
 }
 
 // get an event listener off switch for a given file
-func (m *Monitor) GetOffSwitch(path string) chan bool {
-	if offSwitch, exists := m.OffSwitches[path]; exists {
+func (m *Monitor) GetOffSwitch(filePath string) chan bool {
+	if offSwitch, exists := m.OffSwitches[filePath]; exists {
 		return offSwitch
 	}
-	log.Printf("[ERROR] off switch not found for file (%s) monitoring goroutine", filepath.Base(path))
+	log.Printf("[ERROR] off switch not found for file (%s) monitoring goroutine", filepath.Base(filePath))
 	return nil
 }
 
