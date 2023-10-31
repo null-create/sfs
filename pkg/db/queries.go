@@ -224,21 +224,21 @@ const (
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	FindAllQuery       string = `SELECT * FROM ?`
-	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?`
-	FindQuery          string = `SELECT * FROM ? WHERE id = ?`
+	FindAllQuery       string = `SELECT * FROM ?;`
+	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?;`
+	FindQuery          string = `SELECT * FROM ? WHERE id = ?;`
 
 	FindAllUsersQuery  string = `SELECT * FROM Users;`
 	FindAllDrivesQuery string = `SELECT * FROM Drives;`
 	FindAllDirsQuery   string = `SELECT * FROM Directories;`
 	FindAllFilesQuery  string = `SELECT * FROM Files;`
 
-	FindFileIDQuery       string = `SELECT path FROM Files WHERE id = ?`
-	FindFileQuery         string = `SELECT * FROM Files WHERE id = ?`
-	FindDirQuery          string = `SELECT * FROM Directories WHERE id = ?`
-	FindDriveQuery        string = `SELECT * FROM Drives WHERE id = ?`
-	FindUserQuery         string = `SELECT * FROM Users WHERE id = ?`
-	FindUsersDriveIDQuery string = `SELECT drive_id FROM Users Where id = ?`
+	FindFileIDQuery       string = `SELECT id FROM Files WHERE path = ?;`
+	FindFileQuery         string = `SELECT * FROM Files WHERE id = ?;`
+	FindDirQuery          string = `SELECT * FROM Directories WHERE id = ?;`
+	FindDriveQuery        string = `SELECT * FROM Drives WHERE id = ?;`
+	FindUserQuery         string = `SELECT * FROM Users WHERE id = ?;`
+	FindUsersDriveIDQuery string = `SELECT drive_id FROM Users Where id = ?;`
 
 	// ---------- SELECT statements for confirming existance -------------------
 
