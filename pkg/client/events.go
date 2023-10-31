@@ -102,6 +102,9 @@ func EventHandler(c *Client, filePath string) error {
 	if err != nil {
 		return err
 	}
+	if fileID == "" {
+		return fmt.Errorf("no ID found for file %s", filePath)
+	}
 
 	go func() {
 		evts := monitor.NewEvents(false)
