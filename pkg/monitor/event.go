@@ -40,7 +40,7 @@ func (e *Event) String() string {
 // synchronization operations between client and server
 type EList []Event
 
-// arbitrary threhold limit for Elists
+// arbitrary threshold limit for Elists
 const THRESHOLD = 10
 
 type Events struct {

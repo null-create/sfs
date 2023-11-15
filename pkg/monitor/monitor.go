@@ -71,7 +71,6 @@ func watchFile(path string, stop chan bool) chan Event {
 
 	// event channel
 	evt := make(chan Event)
-
 	go func() {
 		log.Print("[INFO] starting monitoring...")
 		for {
@@ -118,6 +117,8 @@ func watchFile(path string, stop chan bool) chan Event {
 	return evt
 }
 
+// add all files under the given path (assumed to be a root directory)
+// to the monitoring instance
 func watchAll(path string, m *Monitor) error {
 	log.Printf("[INFO] adding watchers for all files under %s ...", path)
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {

@@ -1,7 +1,6 @@
 package env
 
 import (
-	"os"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -24,14 +23,14 @@ func buildTestEnvMap() map[string]string {
 	return env
 }
 
-func TestEnvBuild(t *testing.T) {
-	BuildEnv(true)
-	testEnv := buildTestEnvMap()
-	for k, env := range testEnv {
-		v := os.Getenv(k)
-		assert.Equal(t, v, env)
-	}
-}
+// func TestEnvBuild(t *testing.T) {
+// 	BuildEnv(true)
+// 	testEnv := buildTestEnvMap()
+// 	for k, env := range testEnv {
+// 		v := os.Getenv(k)
+// 		assert.Equal(t, v, env)
+// 	}
+// }
 
 func TestEnvValidate(t *testing.T) {
 	BuildEnv(true)

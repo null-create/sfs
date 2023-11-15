@@ -72,7 +72,6 @@ func (c *Client) eventInfo(evt monitor.Event) {
 func (c *Client) BuildHandlers() error {
 	// get list of files for the user
 	files := c.Drive.GetFiles()
-
 	// build handlers for each, populate handler map
 	for _, file := range files {
 		if _, exists := c.Handlers[file.ID]; !exists {

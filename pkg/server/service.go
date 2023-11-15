@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -473,7 +474,7 @@ func (s *Service) UserExists(userID string) bool {
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
 	// check to see if this user already has a drive
-	if dID, err := s.Db.GetDriveID(user.ID); err != nil {
+	if dID, err := s.Db.GetDriveID(user.ID); err != sql.ErrNoRows {
 		return err
 	} else if dID != "" {
 		return fmt.Errorf("user (%s) already has a drive (%s): ", user.ID, dID)
