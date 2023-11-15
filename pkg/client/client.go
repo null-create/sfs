@@ -134,3 +134,7 @@ func (c *Client) RemoveUser(userID string) error {
 	}
 	return nil
 }
+
+// ----- files --------------------------------------
+
+// ----- directories --------------------------------
