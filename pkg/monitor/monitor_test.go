@@ -27,36 +27,6 @@ func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener
 					log.Print("file delete event received")
 					assert.Equal(t, FileDelete, evt.Type)
 					assert.Equal(t, path, evt.Path)
-				default:
-					log.Printf("unknown event type: %v", evt.Type)
-				}
-			case <-stopListener:
-				log.Print("shutting down listener...")
-				return
-			default:
-				continue
-			}
-		}
-	}()
-}
-
-func testChanListener(t *testing.T, path string, fileChan chan Event, stopListener chan bool) {
-	go func() {
-		log.Print("listening for events...")
-		for {
-			select {
-			case evt := <-fileChan:
-				switch evt.Type {
-				case FileChange:
-					log.Print("file change event received")
-					assert.Equal(t, FileChange, evt.Type)
-					assert.Equal(t, path, evt.Path)
-				case FileDelete:
-					log.Print("file delete event received")
-					assert.Equal(t, FileDelete, evt.Type)
-					assert.Equal(t, path, evt.Path)
-				default:
-					log.Printf("unknown event type: %v", evt.Type)
 				}
 			case <-stopListener:
 				log.Print("shutting down listener...")
