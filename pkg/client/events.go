@@ -114,6 +114,10 @@ func EventHandler(c *Client, filePath string) error {
 		return err
 	}
 	go func() {
+		if c.Drive.SyncIndex == nil {
+			log.Print("[WARNING] no sync index found. must initialize before monitoring. event handler exiting...")
+			return
+		}
 		for {
 			select {
 			case e := <-evt:
