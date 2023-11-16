@@ -216,6 +216,7 @@ func (m *Monitor) ShutDown() error {
 	if paths == nil {
 		return fmt.Errorf("no paths available")
 	}
+	log.Print("[INFO] shutting down all active monitoring threads...")
 	for _, path := range paths {
 		m.OffSwitches[path] <- true
 	}
