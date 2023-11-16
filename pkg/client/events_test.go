@@ -92,6 +92,9 @@ func TestStartHandler(t *testing.T) {
 		}
 		log.Fatal(err)
 	}
+	if err = Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // func TestBuildHandlers(t *testing.T) {}
