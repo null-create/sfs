@@ -167,17 +167,11 @@ func TestClientUpdateUser(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 
-	newUser := auth.NewUser(
-		"bill buttlicker", "billB", "bill@bill.com", auth.NewUUID(),
-		filepath.Join(tmpClient.Conf.Root, "bill buttlicker"), false,
-	)
+	// update name initialized with client
+	user := tmpClient.User
+	user.Name = "William J Buttlicker"
 
-	if err := tmpClient.AddUser(newUser); err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	newUser.Name = "william j buttlicker"
-	if err := tmpClient.UpdateUser(newUser); err != nil {
+	if err := tmpClient.UpdateUser(user); err != nil {
 		Fail(t, tmpDir, err)
 	}
 
@@ -205,16 +199,9 @@ func TestClientDeleteUser(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 
-	newUser := auth.NewUser(
-		"bill buttlicker", "billB", "bill@bill.com", auth.NewUUID(),
-		filepath.Join(tmpClient.Conf.Root, "bill buttlicker"), false,
-	)
+	user := tmpClient.User
 
-	if err := tmpClient.AddUser(newUser); err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	if err := tmpClient.RemoveUser(newUser.ID); err != nil {
+	if err := tmpClient.RemoveUser(user.ID); err != nil {
 		Fail(t, tmpDir, err)
 	}
 	assert.Equal(t, nil, tmpClient.User)
