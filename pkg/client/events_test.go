@@ -19,12 +19,17 @@ func TestStartHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// create a temp client with test files and subdirectories
+	// create a temp client with test files and subdirectories,
+	// and build a sync index since the event handler will need
+	// to interact with it
 	c, err := Init(true)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
 	c.Drive.Root = MakeTmpDirs(t)
+	if err := c.Drive.BuildSyncIdx(); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
 	// randomly pick a file to monitor
 	files, err := c.Drive.Root.GetFiles()
