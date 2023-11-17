@@ -23,6 +23,9 @@ type Transfer struct {
 	Buffer   *bytes.Buffer
 	Listener func(network string, address string) (net.Listener, error)
 
+	Src  string // local file path of the file to be uploaded
+	Dest string // local destination for file downloads
+
 	Client *http.Client
 }
 
@@ -96,7 +99,9 @@ func (t *Transfer) Download(dest, fileURL string) error {
 		return fmt.Errorf("[ERROR] failed to start client listener: %v", err)
 	}
 	defer ln.Close()
-	conn, err := ln.Accept() // blocks until connection is established
+
+	// blocks until connection is established
+	conn, err := ln.Accept()
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to create connection: %v", err)
 	}
@@ -117,7 +122,7 @@ func (t *Transfer) Download(dest, fileURL string) error {
 
 	// start downloading
 	log.Printf("[INFO] downloading file %v ...", file)
-	buffer := make([]byte, 0, 2048)
+	buffer := make([]byte, 0, 1024)
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {

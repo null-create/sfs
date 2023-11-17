@@ -133,12 +133,21 @@ func watchAll(path string, m *Monitor) error {
 	if err != nil {
 		return fmt.Errorf("failed to walk directory: %v", err)
 	}
+	// make sure  we can shut everything down if need be
+	if len(m.Events) != len(m.OffSwitches) {
+		return fmt.Errorf(
+			"failed to add off switches for all monitors. \nevts = %d, off-switches = %d",
+			len(m.Events), len(m.OffSwitches),
+		)
+	}
+	log.Printf("[INFO] monitor is running. watching (%d) files", len(m.Events))
 	return nil
 }
 
 // recursively builds watchers for all files in the directory
 // and subdirectories
 func (m *Monitor) Start(dirpath string) error {
+	log.Print("[INFO] starting monitor...")
 	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		return err

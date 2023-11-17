@@ -30,11 +30,14 @@ type Client struct {
 
 	// map of active event handlers for individual files
 	// key == filepath, value == new EventHandler() function
-	Handlers map[string]EHandler
-	Transfer *transfer.Transfer // file transfer component
+	Handlers map[string]EHandler `json:"handlers"`
+	Transfer *transfer.Transfer  `json:"transfer"` // file transfer component
 }
 
+// creates a new client object. does not create actual service directories or
+// other necessary infrastructure -- only the client itself.
 func NewClient(user, userID string) *Client {
+	// get configs
 	conf := ClientConfig()
 
 	// set up local client services
@@ -42,24 +45,25 @@ func NewClient(user, userID string) *Client {
 	root := svc.NewDirectory("root", conf.User, svcRoot)
 	drv := svc.NewDrive(auth.NewUUID(), conf.User, conf.User, root.Path, root)
 
-	// // set up monitor
-	// monitor := monitor.NewMonitor(drv.Root.Path)
-	// if err := monitor.Start(drv.Root.Path); err != nil {
-	// 	log.Fatalf("failed to set up file listeners: %v", err)
-	// }
-
-	return &Client{
+	// intialize client and start monitoring service
+	c := &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
 		User:      auth.NewUser(user, userID, conf.Email, auth.NewUUID(), svcRoot, false),
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
-		// Monitor:   monitor,
-		Drive:    drv,
-		Db:       db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		Handlers: make(map[string]EHandler),
-		// Transfer:  transfer.NewTransfer(),
+		Monitor:   monitor.NewMonitor(drv.Root.Path),
+		Drive:     drv,
+		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		Handlers:  make(map[string]EHandler),
+		Transfer:  transfer.NewTransfer(),
 	}
+	if err := c.Monitor.Start(root.Path); err != nil {
+		log.Fatal("failed to start monitor", err)
+	}
+	c.BuildHandlers()
+
+	return c
 }
 
 // remove previous state file(s)

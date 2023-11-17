@@ -27,7 +27,7 @@ type Event struct {
 
 func (e *Event) String() string {
 	return fmt.Sprintf(
-		"Event\n	id: %v\n	time: %v\n	type: %v\n	path: %v",
+		"[INFO] file event \n(id=%s) -> time: %v | type: %s | path: %s",
 		e.ID, e.Time, e.Type, e.Path,
 	)
 }

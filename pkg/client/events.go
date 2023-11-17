@@ -76,15 +76,6 @@ func (c *Client) StartHandler(filePath string) error {
 	return nil
 }
 
-func (c *Client) EventInfo(evt monitor.Event) string {
-	msg := fmt.Sprintf(
-		"[INFO] file event -> time: %v | type: %s | path: %s",
-		evt.ID, evt.Type, evt.Path,
-	)
-	log.Print(msg)
-	return msg
-}
-
 // build a map of event handlers for client files.
 // each handler will listen for events from files and will
 // call synchronization operations accordingly. if no files
@@ -123,16 +114,9 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 				}
 				if evts.StartSync {
 					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
-					// populate ToUpdate map only if *evts is buffered* before transferring all
-					// files to be synced to the server, otherwise just sync the single file
-					// (no need to update the entire ToUpdate map for one file)
-					if evts.Buffered {
-						// c.Drive.SyncIndex = c.Drive.Root.WalkU(c.Drive.SyncIndex)
-					}
 					// TODO: sync ops...
 					//
 					// will need to be able to use c.Drive.SyncIndex as part of its signature
-					// will
 					evts.Reset()
 				}
 			default:
