@@ -45,6 +45,7 @@ const THRESHOLD = 10
 
 type Events struct {
 	threshold int   // buffer limit
+	Buffered  bool  // whether this event list is buffered
 	Total     int   // current total events
 	StartSync bool  // flag to indicate whether a sync operation should start
 	Events    EList // event object list
@@ -62,6 +63,7 @@ func NewEvents(buffered bool) *Events {
 	}
 	return &Events{
 		threshold: threshold,
+		Buffered:  buffered,
 		Events:    make(EList, 0),
 	}
 }
