@@ -81,7 +81,6 @@ func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 
 func newClient(user string) (*Client, error) {
 	client := NewClient(user, auth.NewUUID())
-	client.BuildHandlers()
 	if err := client.SaveState(); err != nil {
 		return nil, err
 	}
