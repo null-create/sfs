@@ -19,9 +19,6 @@ should be a setting, but the daemon will automatically make a new sync index wit
 modification.
 
 should also have a mechanism to interrupt a sync operation if a new event occurs.
-
-NOTE: a new watcher should be created whenever a new file is created on the server or client,
-and removed when a file is deleted.
 */
 
 // arbitrary wait time between checks
@@ -35,7 +32,7 @@ type Monitor struct {
 	// key is the absolute file path, value is the channel to the watchFile() thread
 	// associated with that file
 	//
-	// key = file path, val is EventType channel
+	// key = file path, val is Event channel
 	Events map[string]chan Event
 
 	// map of channels to active listeners that will shut down the watcher goroutine
@@ -195,15 +192,13 @@ func (m *Monitor) GetPaths() []string {
 }
 
 // close a listener channel for a given file
-func (m *Monitor) CloseChan(filePath string) error {
+func (m *Monitor) CloseChan(filePath string) {
 	if m.Exists(filePath) {
 		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
 		log.Printf("[INFO] file channel (%s) closed", filepath.Base(filePath))
-		return nil
 	}
-	return fmt.Errorf("file (%s) event channel not found", filepath.Base(filePath))
 }
 
 // shutdown all active monitoring threads
