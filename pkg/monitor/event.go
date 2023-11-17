@@ -19,14 +19,10 @@ const (
 )
 
 type Event struct {
-	// UUID of the event
-	ID string
-	// time of the event
-	Time time.Time
-	// type of file event, i.e. create, edit, or delete
-	Type EventType
-	// location of the file event (path to the file itself)
-	Path string
+	ID   string    // UUID of the event
+	Time time.Time // time of the event
+	Type EventType // type of file event, i.e. create, edit, or delete
+	Path string    // location of the file event (path to the file itself)
 }
 
 func (e *Event) String() string {
@@ -100,4 +96,17 @@ func (e *Events) AddEvent(evt Event) {
 	} else {
 		log.Printf("[WARNING] event list threshold met. event %s not added!", evt.ID)
 	}
+}
+
+// returns a slice of file or directory paths to be used
+// during sync operations
+func (e *Events) GetPaths() ([]string, error) {
+	if len(e.Events) == 0 {
+		return []string{}, fmt.Errorf("event list is empty")
+	}
+	var paths []string
+	for _, evt := range e.Events {
+		paths = append(paths, evt.Path)
+	}
+	return paths, nil
 }
