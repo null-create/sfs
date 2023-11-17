@@ -87,19 +87,21 @@ func (c *Client) EventInfo(evt monitor.Event) string {
 
 // build a map of event handlers for client files.
 // each handler will listen for events from files and will
-// call synchronization operations accordingly
+// call synchronization operations accordingly. if no files
+// are present during the build call then this will be a no-op.
 //
 // should ideally only be called once during initialization
-func (c *Client) BuildHandlers() error {
-	// get list of files for the user
+func (c *Client) BuildHandlers() {
 	files := c.Drive.GetFiles()
-	// build handlers for each, populate handler map
+	if len(files) == 0 {
+		log.Print("[WARNING] no files to build handlers for")
+		return
+	}
 	for _, file := range files {
 		if _, exists := c.Handlers[file.ID]; !exists {
 			c.Handlers[file.ID] = EventHandler
 		}
 	}
-	return nil
 }
 
 // handles received events and starts transfer operations
