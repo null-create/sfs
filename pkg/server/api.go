@@ -253,6 +253,7 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+	// update checksum
 	newFile.LastSync = time.Now().UTC()
 	newFile.CheckSum, err = svc.CalculateChecksum(newFile.ServerPath, "sha256")
 	if err != nil {
