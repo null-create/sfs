@@ -19,9 +19,6 @@ Will also probably need to make use of the batches, queues, and some functions
 (like BuildQ()) defined in sync.go within in the core service module.
 */
 
-// push function to upload to the server. will run in its own goroutine.
-func push(f *svc.File) error { return nil }
-
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
 func (c *Client) Push() error {
@@ -34,21 +31,30 @@ func (c *Client) Push() error {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	// 'fan-out' individual upload goroutines to the server
-	// TODO: get necessary API's to target, as this may be
-	// where we want to target the servers endpoints.
-	// for _, batch := range queue.Queue {
-	// 	for _, file := range batch.Files {
-
-	// 	}
-	// }
+	for _, batch := range queue.Queue {
+		for _, file := range batch.Files {
+			// load each file prior to starting updload
+			file.Load()
+			// TODO: replace file.ServerPath with destURL/server API for this file
+			go c.Transfer.Upload(file.Content, file.Name, file.ServerPath)
+		}
+	}
 	return nil
 }
-
-// pull function to download a single newer/updated file from server.
-// runs in its own goroutine. several of these will operate during Pull()
-func pull() error { return nil }
 
 // get a sync index from the server, compare with the local one
 // with the client, and pull any files that are out of date on the client side
 // create goroutines for each download and 'fan-in' once all are complete
 func (c *Client) Pull() error { return nil }
+
+// background daemon that listens for requests from the server to
+// download files. returns a channel that is used to shut down the daemon
+// if needed
+func (c *Client) ListenerDaemon() (chan bool, error) {
+	// 1. establish connection with server
+	// 2. start a blocking net listener for pings from the server
+	// 3. if we get a request, get the request type (get from server or push to server),
+	//    then generate a list of files or directories to be sent to the server or pulled from
+	//    the server
+	return nil, nil
+}
