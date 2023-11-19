@@ -8,7 +8,6 @@ require (
 	github.com/alecthomas/assert/v2 v2.3.0
 	github.com/codeskyblue/openid-go v0.0.0-20160923065855-0d30842b2fb4
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/render v1.0.1
@@ -24,5 +23,4 @@ require (
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
 )
