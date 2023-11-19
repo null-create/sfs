@@ -8,7 +8,7 @@ import (
 	"github.com/sfs/pkg/monitor"
 )
 
-type EHandler func(chan monitor.Event, chan bool, string, *monitor.Events) error
+type EHandler func(chan monitor.Event, chan bool, string, *monitor.Events) (chan bool, error)
 
 // ---- file monitoring operations
 
@@ -69,7 +69,8 @@ func (c *Client) StartHandler(filePath string) error {
 		if err != nil {
 			return err
 		}
-		if err := handler(evt, off, fileID, evts); err != nil {
+		// TODO: handle handlers off switch return
+		if _, err := handler(evt, off, fileID, evts); err != nil {
 			return err
 		}
 	}
@@ -96,10 +97,13 @@ func (c *Client) BuildHandlers() {
 }
 
 // handles received events and starts transfer operations
-func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *monitor.Events) error {
+func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *monitor.Events) (chan bool, error) {
+	stopMonitor := make(chan bool)
 	go func() {
 		for {
 			select {
+			case <-stopMonitor:
+				return
 			case e := <-evt:
 				// c.EventInfo(e) // display event info
 				switch e.Type {
@@ -114,9 +118,7 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 				}
 				if evts.StartSync {
 					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
-					// TODO: sync ops...
-					//
-					// will need to be able to use c.Drive.SyncIndex as part of its signature
+					// TODO: signal client.Push() ...somehow
 					evts.Reset()
 				}
 			default:
@@ -124,5 +126,5 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 			}
 		}
 	}()
-	return nil
+	return stopMonitor, nil
 }
