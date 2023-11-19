@@ -47,12 +47,24 @@ func GetStateDir() string {
 	return filepath.Join(curDir, "state")
 }
 
+// like Fatal() but you can specify the directory to clean
+func Fail(t *testing.T, dir string, err error) {
+	if err2 := Clean(dir); err2 != nil {
+		log.Fatal(err2)
+	}
+	t.Fatalf("[ERROR] %v", err)
+}
+
+// handle test failures
+//
+// calls Clean() followed by t.Fatalf()
 // handle test failures
 //
 // calls Clean() followed by t.Fatalf()
 func Fatal(t *testing.T, err error) {
-	Clean(GetStateDir())
-	Clean(GetTestingDir())
+	if err2 := Clean(GetTestingDir()); err2 != nil {
+		log.Fatal(err2)
+	}
 	t.Fatalf("[ERROR] %v", err)
 }
 
@@ -150,17 +162,67 @@ func Clean(dir string) error {
 		return err
 	}
 	defer d.Close()
-
 	names, err := d.Readdirnames(-1)
 	if err != nil {
 		return err
 	}
-
 	for _, name := range names {
 		if err = os.RemoveAll(filepath.Join(dir, name)); err != nil {
 			return err
 		}
 	}
-
 	return nil
+}
+
+// ---- tmp dirs
+
+// creates an empty directory under ../nimbus/pkg/files/testing
+func MakeTmpDir(t *testing.T, path string) (*svc.Directory, error) {
+	if err := os.Mkdir(path, 0666); err != nil {
+		return nil, fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
+	}
+	dir := svc.NewDirectory("tmp", "me", path)
+	return dir, nil
+}
+
+// create a temporary root directory with files and a subdirectory,
+// also with files, under testing/tmp
+//
+// returns complete test root with directory and files
+func MakeTmpDirs(t *testing.T) *svc.Directory {
+	// make our temporary directory
+	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// create some temp files and associated file pointers
+	files, err := MakeABunchOfTxtFiles(10, d.Path)
+	if err != nil {
+		Fatal(t, err)
+	}
+	tmpRoot := svc.NewRootDirectory("root", "me", filepath.Join(GetTestingDir(), "tmp"))
+	tmpRoot.AddFiles(files)
+
+	// add a subdirectory with files so we can test traversal
+	sd, err := MakeTmpDir(t, filepath.Join(tmpRoot.Path, "tmpSubDir"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	moreFiles := make([]*svc.File, 0)
+	for i := 0; i < 10; i++ {
+		fname := fmt.Sprintf("tmp-%d.txt", i)
+		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(1000))
+		if err != nil {
+			Fatal(t, err)
+		}
+		moreFiles = append(moreFiles, f)
+	}
+
+	sd.AddFiles(moreFiles)
+	d.AddSubDir(sd)
+	tmpRoot.AddSubDir(d)
+
+	return tmpRoot
 }
