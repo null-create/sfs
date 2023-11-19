@@ -18,15 +18,12 @@ import (
 // transfer operations are intended to run in their own goroutine as part
 // of sync operations with the server
 type Transfer struct {
-	Start time.Time
-
+	Start    time.Time
 	Buffer   *bytes.Buffer
 	Listener func(network string, address string) (net.Listener, error)
-
-	Src  string // local file path of the file to be uploaded
-	Dest string // local destination for file downloads
-
-	Client *http.Client
+	Src      string // local file path of the file to be uploaded
+	Dest     string // local destination for file downloads
+	Client   *http.Client
 }
 
 func NewTransfer() *Transfer {
