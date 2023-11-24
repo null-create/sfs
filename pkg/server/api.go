@@ -29,7 +29,8 @@ func NewAPI(newService bool, isAdmin bool) *API {
 		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
 	}
 	return &API{
-		Svc: svc,
+		StartTime: time.Now().UTC(),
+		Svc:       svc,
 	}
 }
 
