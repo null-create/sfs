@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -12,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	svc "github.com/sfs/pkg/service"
 )
 
 // transfer handles the uploading and downloading of individual files.
@@ -40,8 +43,8 @@ func NewTransfer() *Transfer {
 	}
 }
 
-func (t *Transfer) PrepareReq(contentType, destURL string) (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodPost, destURL, t.Buffer)
+func (t *Transfer) PrepareReq(method, contentType, destURL string) (*http.Request, error) {
+	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] failed to create HTTP request: %v", err)
 	}
@@ -49,31 +52,40 @@ func (t *Transfer) PrepareReq(contentType, destURL string) (*http.Request, error
 	return req, nil
 }
 
-// prepare and transfer each file for upload or download
+// prepare and transfer a file for upload or download
 //
 // intended to run within its own goroutine
-func (t *Transfer) Upload(data []byte, fileName, destURL string) error {
+func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	bodyWriter := multipart.NewWriter(t.Buffer)
 	defer bodyWriter.Close()
 
 	// create a form file field for the file
-	fileWriter, err := bodyWriter.CreateFormFile("file", fileName)
+	fileWriter, err := bodyWriter.CreateFormFile("file", filepath.Base(file.Path))
 	if err != nil {
 		return err
 	}
 
 	// load data into file writer
-	if _, err = fileWriter.Write(data); err != nil {
+	if len(file.Content) == 0 {
+		file.Load()
+	}
+	if _, err = fileWriter.Write(file.Content); err != nil {
 		return fmt.Errorf("[ERROR] failed to write file data: %v", err)
 	}
 
 	// prepare and send the request to the server
-	req, err := t.PrepareReq(bodyWriter.FormDataContentType(), destURL)
+	req, err := t.PrepareReq(method, bodyWriter.FormDataContentType(), destURL)
 	if err != nil {
 		return err
 	}
-	log.Printf("[INFO] uploading %v ...", fileName)
-	resp, err := t.Client.Do(req)
+
+	// add file info context to request
+	ctx := context.WithValue(req.Context(), File, filepath.Base(file.Path))
+	ctx = context.WithValue(ctx, Owner, file.Owner)
+	ctx = context.WithValue(ctx, Path, file.ServerPath)
+
+	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
+	resp, err := t.Client.Do(req.WithContext(ctx))
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to send HTTP request: %v", err)
 	}
