@@ -46,6 +46,7 @@ type File struct {
 	Path       string    `json:"path"`
 	ServerPath string    `json:"server_path"`
 	ClientPath string    `json:"client_path"`
+	Endpoint   string    `json:"endpoint"` // unique API endpoint
 
 	CheckSum  string `json:"checksum"`
 	Algorithm string `json:"algorithm"`
@@ -61,7 +62,9 @@ func NewFile(fileName string, owner string, path string) *File {
 		log.Printf("[DEBUG] Error calculating checksum: %v", err)
 	}
 
+	// add custom endpoint to this file
 	uuid := NewUUID()
+	endpoint := fmt.Sprintf("http://localhost:8080/v1/files/%s", uuid)
 
 	return &File{
 		Name:  fileName,
@@ -74,8 +77,9 @@ func NewFile(fileName string, owner string, path string) *File {
 
 		LastSync:   time.Now().UTC(),
 		Path:       path,
-		ServerPath: path, // temporary
-		ClientPath: path, // temporary
+		ServerPath: path,     // temporary
+		ClientPath: path,     // temporary
+		Endpoint:   endpoint, // server API endpoint
 
 		CheckSum:  cs,
 		Algorithm: "sha256",

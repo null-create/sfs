@@ -117,6 +117,7 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 		&file.Path,
 		&file.ServerPath,
 		&file.ClientPath,
+		&file.Endpoint,
 		&file.CheckSum,
 		&file.Algorithm,
 	); err != nil {
@@ -169,6 +170,7 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 			&file.Path,
 			&file.ServerPath,
 			&file.ClientPath,
+			&file.Endpoint,
 			&file.CheckSum,
 			&file.Algorithm,
 		); err != nil {

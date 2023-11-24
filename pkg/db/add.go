@@ -30,6 +30,7 @@ func (q *Query) AddFile(f *svc.File) error {
 		&f.Path,
 		&f.ServerPath,
 		&f.ClientPath,
+		&f.Endpoint,
 		&f.CheckSum,
 		&f.Algorithm,
 	); err != nil {

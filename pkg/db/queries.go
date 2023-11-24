@@ -17,6 +17,7 @@ const (
 			path VARCHAR(255),
 			server_path VARCHAR(255),
 			client_path VARCHAR(255),
+			endpoint VARCHAR(255),
 			checksum VARCHAR(255),
 			algorithm VARCHAR(50),
 			UNIQUE(id)
@@ -86,11 +87,12 @@ const (
 			last_sync, 
 			path, 
 			server_path, 
-			client_path, 
+			client_path,
+			endpoint, 
 			checksum, 
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT OR IGNORE INTO Directories (
@@ -153,7 +155,8 @@ const (
 				last_sync = ?, 
 				path = ?, 
 				server_path = ?, 
-				client_path = ?, 
+				client_path = ?,
+				endpoint = ?,  
 				checksum = ?, 
 				algorithm = ?
 		WHERE id = ?;`

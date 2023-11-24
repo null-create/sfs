@@ -15,6 +15,8 @@ import (
 	"github.com/sfs/pkg/transfer"
 )
 
+// TODO: add map of API endpoints associated with each file and directory
+
 type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
@@ -23,15 +25,18 @@ type Client struct {
 	Root  string     `json:"root"`           // path to root drive for users files and directories
 	SfDir string     `json:"state_file_dir"` // path to state file
 
-	Monitor *monitor.Monitor `json:"monitor"` // listener that checks for file or directory events
-	Drive   *svc.Drive       `json:"drive"`   // client drive for managing users files and directories
+	Monitor *monitor.Monitor // listener that checks for file or directory events
+	Drive   *svc.Drive       `json:"drive"` // client drive for managing users files and directories
 
 	Db *db.Query `json:"db"` // local db connection
 
+	Transfer *transfer.Transfer // file transfer component
 	// map of active event handlers for individual files
 	// key == filepath, value == new EventHandler() function
 	Handlers map[string]EHandler `json:"handlers"`
-	Transfer *transfer.Transfer  `json:"transfer"` // file transfer component
+	// server api endpoints.
+	// key == file object, value is the associated endpoint
+	Endpoints map[*svc.File]string `json:"endpoints"`
 }
 
 // creates a new client object. does not create actual service directories or
@@ -58,10 +63,10 @@ func NewClient(user, userID string) *Client {
 		Handlers:  make(map[string]EHandler),
 		Transfer:  transfer.NewTransfer(),
 	}
+	c.BuildHandlers()
 	if err := c.Monitor.Start(root.Path); err != nil {
 		log.Fatal("failed to start monitor", err)
 	}
-	c.BuildHandlers()
 
 	return c
 }
@@ -140,4 +145,63 @@ func (c *Client) RemoveUser(userID string) error {
 
 // ----- files --------------------------------------
 
+// add a file to a specified directory
+func (c *Client) AddFile(dirID string, file *svc.File) error {
+	return c.Drive.AddFile(dirID, file)
+}
+
+// add a series of files to a specified directory
+func (c *Client) AddFiles(dirID string, files []*svc.File) error {
+	if len(files) == 0 {
+		return fmt.Errorf("no files to add")
+	}
+	for _, file := range files {
+		if err := c.Drive.AddFile(dirID, file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// update a file in a specied directory
+func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
+	file := c.Drive.GetFile(fileID)
+	if file == nil {
+		return fmt.Errorf("no file ID %s found", fileID)
+	}
+	if len(data) == 0 {
+		return fmt.Errorf("no data received")
+	}
+	return c.Drive.UpdateFile(dirID, file, data)
+}
+
+func (c *Client) RemoveFile(dirID string, file *svc.File) error {
+	return c.Drive.RemoveFile(dirID, file)
+}
+
+// remove files from a specied directory
+func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
+	if len(fileIDs) == 0 {
+		return fmt.Errorf("no files to remove")
+	}
+	for _, fileID := range fileIDs {
+		file := c.Drive.GetFile(fileID)
+		if file == nil { // didn't find the file. ignore.
+			continue
+		}
+		if err := c.Drive.RemoveFile(dirID, file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ----- directories --------------------------------
+
+func (c *Client) AddDir(dir *svc.Directory) error { return nil }
+
+func (c *Client) AddDirs(dirs []*svc.Directory) error { return nil }
+
+func (c *Client) RemoveDir(dirID string) error { return nil }
+
+func (c *Client) RemoveDirs(dirIDs []string) error { return nil }
