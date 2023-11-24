@@ -4,13 +4,60 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/transfer"
 )
 
 const LocalHost = "http://localhost:8080"
+
+func TestGetAllFileInfoAPI(t *testing.T) {
+	BuildEnv(true)
+
+	// shut down signal to the server
+	shutDown := make(chan bool)
+
+	// start testing server
+	log.Print("starting test server...")
+	testServer := NewServer()
+	go func() {
+		testServer.TestRun(shutDown)
+	}()
+
+	// attempt to retrieve all file info from the server
+	log.Printf("retrieving file data...")
+
+	endpoint := fmt.Sprint(LocalHost, "/v1/files/all")
+
+	client := http.Client{Timeout: time.Second * 600}
+	res, err := client.Get(endpoint)
+	if err != nil {
+		shutDown <- true
+		t.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		shutDown <- true
+		msg := fmt.Sprintf(
+			"response code was not 200: %d\n header object: %v\n",
+			res.StatusCode, res.Header,
+		)
+		t.Fatal(fmt.Errorf(msg))
+	}
+
+	// retrieve data from the request
+	data := make([]byte, 0)
+	_, err = res.Body.Read(data)
+	if err != nil {
+		shutDown <- true
+		t.Fatal(err)
+	}
+	res.Body.Close()
+
+	log.Print("shutting down test server...")
+	shutDown <- true
+}
 
 func TestFileGetAPI(t *testing.T) {
 	BuildEnv(true)
@@ -18,34 +65,101 @@ func TestFileGetAPI(t *testing.T) {
 	// shut down signal to the server
 	shutDown := make(chan bool)
 
+	// add temp file to try and retrieve
+
 	// start testing server
+	log.Print("starting test server...")
 	testServer := NewServer()
 	go func() {
 		testServer.TestRun(shutDown)
 	}()
 
-	// wait for server to start up
-	log.Printf("waiting for server to start up...")
-	time.Sleep(time.Second * 2)
+	shutDown <- true // shut down test server
 
-	client := http.Client{Timeout: time.Second * 10}
+	// remove tmp file
+}
 
-	log.Printf("retrieving file data...")
+func TestFilePutAPI(t *testing.T) {
+	BuildEnv(true)
 
-	endpoint := fmt.Sprint(LocalHost, "/v1/files/all")
-	res, err := client.Get(endpoint)
+	// shut down signal to the server
+	shutDown := make(chan bool)
+
+	// start testing server
+	log.Print("starting test server...")
+	testServer := NewServer()
+	go func() {
+		testServer.TestRun(shutDown)
+	}()
+
+	// create tmp file to try and send it to the server
+	log.Print("creating tmp file...")
+	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
+	if err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+
+	endpoint := fmt.Sprint(LocalHost, "/v1/files/new")
+
+	// transfer file
+	log.Print("uploading file...")
+	transfer := transfer.NewTransfer()
+	if err := transfer.Upload(http.MethodPut, file, endpoint); err != nil {
+		shutDown <- true // shut down test server
+		Fail(t, GetTestingDir(), err)
+	}
+
+	log.Print("retrieving info about file from server...")
+
+	// confirm file's presence via a GET
+	fileEndpoint := fmt.Sprint(LocalHost, fmt.Sprintf("/v1/files/%s", file.ID))
+
+	client := http.Client{Timeout: time.Second * 600}
+	res, err := client.Get(fileEndpoint)
 	if err != nil {
 		shutDown <- true
 		t.Fatal(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusOK)
+	if res.StatusCode != http.StatusOK {
+		shutDown <- true
+		msg := fmt.Sprintf(
+			"response code was not 200: %d\n header object: %v\n",
+			res.StatusCode, res.Header,
+		)
+		t.Fatal(fmt.Errorf(msg))
+	}
 
 	shutDown <- true // shut down test server
+
+	// clean up
+	if err := Clean(GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func TestFilePutAPI(t *testing.T) {}
+func TestFileDeleteAPI(t *testing.T) {
+	BuildEnv(true)
 
-func TestFileDeleteAPI(t *testing.T) {}
+	// shut down signal to the server
+	shutDown := make(chan bool)
+
+	// start testing server
+	log.Print("starting test server...")
+	testServer := NewServer()
+	go func() {
+		testServer.TestRun(shutDown)
+	}()
+
+	// add some test files so we can retrieve one of them
+	tmp := MakeTmpDirs(t)
+
+	shutDown <- true // shut down test server
+
+	if err := Clean(tmp.Path); err != nil {
+		log.Fatal(err)
+	}
+}
 
 func TestGetDirectoryAPI(t *testing.T) {}
 
