@@ -148,13 +148,13 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 // ------- file management --------------------------------
 
 // add file to a directory
-func (d *Drive) AddFile(dirID string, f *File) error {
+func (d *Drive) AddFile(dirID string, file *File) error {
 	dir := d.GetDir(dirID)
 	if dir == nil {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
-	dir.AddFile(f)
-	d.Root.Size += float64(f.Size())
+	dir.AddFile(file)
+	d.Root.Size += float64(file.Size())
 	return nil
 }
 
@@ -179,27 +179,27 @@ func (d *Drive) GetFiles() map[string]*File {
 }
 
 // update a file
-func (d *Drive) UpdateFile(dirID string, f *File, data []byte) error {
+func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 	dir := d.GetDir(dirID)
 	if dir == nil {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
-	if err := dir.UpdateFile(f, data); err != nil {
+	if err := dir.UpdateFile(file, data); err != nil {
 		return err
 	}
 	return nil
 }
 
 // remove file from a directory
-func (d *Drive) RemoveFile(dirID string, f *File) error {
+func (d *Drive) RemoveFile(dirID string, file *File) error {
 	dir := d.GetDir(dirID)
 	if dir == nil {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
-	if err := dir.RemoveFile(f.ID); err != nil {
+	if err := dir.RemoveFile(file.ID); err != nil {
 		return err
 	}
-	d.Root.Size -= float64(f.Size())
+	d.Root.Size -= float64(file.Size())
 	return nil
 }
 

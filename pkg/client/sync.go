@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"net/http"
 
 	svc "github.com/sfs/pkg/service"
 )
@@ -33,10 +34,8 @@ func (c *Client) Push() error {
 	// 'fan-out' individual upload goroutines to the server
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
-			// load each file prior to starting updload
-			file.Load()
 			// TODO: replace file.ServerPath with destURL/server API for this file
-			go c.Transfer.Upload(file.Content, file.Name, file.ServerPath)
+			go c.Transfer.Upload(http.MethodPost, file, file.ServerPath)
 		}
 	}
 	return nil

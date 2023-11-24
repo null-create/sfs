@@ -15,7 +15,7 @@ import (
 // this string is roughly 49 bytes in size, depending on encoding.
 //
 // in go's case, this is a utf-8 encoded string, so this is roughly 49 bytes
-const txtData string = "all work and no play makes jack a dull boy"
+const txtData string = "all work and no play makes jack a dull boy\n"
 
 // run an individual test as part of a series of larger tests
 func RunTestStage(stageName string, test func()) {

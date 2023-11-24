@@ -25,6 +25,7 @@ func ContentTypeJson(h http.Handler) http.Handler {
 // context, then create a new file object to use for downloading
 func NewFile(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// get raw file info from request context
 		ctx := r.Context()
 		fileName := ctx.Value(File).(string)
 		owner := ctx.Value(User).(string)
@@ -37,9 +38,8 @@ func NewFile(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
-
+		// create new file object and add to request context
 		newFile := svc.NewFile(fileName, owner, path)
-
 		newCtx := context.WithValue(ctx, File, newFile)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
