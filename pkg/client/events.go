@@ -103,6 +103,7 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 		for {
 			select {
 			case <-stopMonitor:
+				log.Printf("[INFO] stopping event handler for file id=%v", fileID)
 				return
 			case e := <-evt:
 				// c.EventInfo(e) // display event info
