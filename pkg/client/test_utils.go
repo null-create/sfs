@@ -136,30 +136,13 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	return tmpRoot
 }
 
-// makes testing/tmp directory objects.
-//
-// *does not* create actual test directories.
-// this is typically done via directory.AddSubDir()
-//
-// NOTE: none of these test directories have a non-nil parent pointer
-func MakeTestDirs(t *testing.T, total int) []*svc.Directory {
-	testingDir := GetTestingDir()
-
-	testDirs := make([]*svc.Directory, 0)
-	for i := 0; i < total; i++ {
-		tdName := fmt.Sprintf("%s%d", TestDirName, i)
-		tmpDirPath := filepath.Join(testingDir, tdName)
-		testDirs = append(testDirs, svc.NewDirectory(tdName, "me", tmpDirPath))
-	}
-	return testDirs
-}
-
 // ---- files
 
 // alter a test file with additional data
 func MutateFile(t *testing.T, f *svc.File) {
 	var data string
-	for i := 0; i < 10000; i++ {
+	total := RandInt(5000)
+	for i := 0; i < total; i++ {
 		data += txtData
 	}
 	if err := f.Save([]byte(data)); err != nil {
@@ -175,6 +158,7 @@ func MutateFile(t *testing.T, f *svc.File) {
 // then nothing will be modified, and no potential updates could be
 // caught by dir.WalkU().
 func MutateFiles(t *testing.T, files map[string]*svc.File) map[string]*svc.File {
+	var mutated int
 	for _, f := range files {
 		if RandInt(100)%2 == 0 {
 			var data string
@@ -185,7 +169,13 @@ func MutateFiles(t *testing.T, files map[string]*svc.File) map[string]*svc.File 
 			if err := f.Save([]byte(data)); err != nil {
 				Fatal(t, err)
 			}
+			mutated += 1
 		}
+	}
+	if mutated == 0 {
+		log.Print("[WARNING] no test files altered!")
+	} else {
+		log.Printf("[INFO] altered %d files", mutated)
 	}
 	return files
 }
@@ -230,113 +220,4 @@ func MakeABunchOfTxtFiles(total int) ([]*svc.File, error) {
 		files = append(files, f)
 	}
 	return files, nil
-}
-
-func MakeDummyFiles(t *testing.T, total int) []*svc.File {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*svc.File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmp-%d.txt", i)
-		testFiles = append(testFiles, svc.NewFile(tfName, "me", filepath.Join(testDir, tfName)))
-	}
-
-	return testFiles
-}
-
-// makes temp files and file objects for testing purposes
-func MakeTestFiles(t *testing.T, total int) ([]*svc.File, error) {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*svc.File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("testdoc-%d.txt", i)
-		tfPath := filepath.Join(testDir, tfName)
-
-		file, err := os.Create(tfPath)
-		if err != nil {
-			t.Fatalf("[ERROR] failed to create test file: %v", err)
-		}
-		file.Write([]byte(txtData))
-		file.Close()
-
-		testFiles = append(testFiles, svc.NewFile(tfName, "me", tfPath))
-	}
-	return testFiles, nil
-}
-
-// build large test text files in a specified directory
-//
-// builds one huge string. really slow.
-func MakeLargeTestFiles(total int, dest string) ([]*svc.File, error) {
-	testFiles := make([]*svc.File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmpXL-%d.txt", i)
-		tfPath := filepath.Join(dest, tfName)
-
-		file, err := os.Create(tfPath)
-		if err != nil {
-			return nil, err
-		}
-
-		var data string
-		for i := 0; i < 10000; i++ {
-			data += txtData
-		}
-		if _, err := file.Write([]byte(data)); err != nil {
-			return nil, err
-		}
-		file.Close()
-
-		testFiles = append(testFiles, svc.NewFile(tfName, "me", tfPath))
-	}
-	return testFiles, nil
-}
-
-func AddLargeTestFile() (*svc.File, error) {
-	tfDir := filepath.Join(GetWd(), "test_files")
-	tf := filepath.Join(tfDir, "me.png")
-	dest := filepath.Join(GetTestingDir(), "me.png")
-	if err := Copy(tf, dest); err != nil {
-		return nil, err
-	}
-	return svc.NewFile("me.png", "me", tf), nil
-}
-
-func RemoveTestFiles(t *testing.T, total int) error {
-	testDir := GetTestingDir()
-
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("testdoc-%d.txt", i)
-		tfPath := filepath.Join(testDir, tfName)
-
-		if err := os.Remove(tfPath); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove test file: %v", err)
-		}
-	}
-	return nil
-}
-
-// make test files within a specified directory
-func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*svc.File {
-	testFiles := make([]*svc.File, 0)
-
-	for i := 0; i < total; i++ {
-		name := fmt.Sprintf("test-file-%d.txt", i)
-		tfPath := filepath.Join(tdPath, name)
-
-		// Create creates or truncates the named file.
-		file, err := os.Create(tfPath)
-		if err != nil {
-			t.Fatalf("[ERROR] failed to create test file: %v", err)
-		}
-		file.Write([]byte(txtData))
-		file.Close()
-
-		testFiles = append(testFiles, svc.NewFile(name, "me", tfPath))
-	}
-
-	return testFiles
 }
