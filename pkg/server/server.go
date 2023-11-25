@@ -17,9 +17,7 @@ type Server struct {
 }
 
 // instantiate a new HTTP server with an sfs service instance
-//
-// establishes environment variables and intializes a new router
-// with sfs handlers
+// contained within the router
 func NewServer() *Server {
 	rtr := NewRouter()    // instantiate router
 	svr := ServerConfig() // get server configs
