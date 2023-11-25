@@ -11,10 +11,11 @@ type Conf struct {
 	User string `env:"CLIENT"`
 	// users email
 	Email string `env:"CLIENT_EMAIL"`
-	// client service root, ie ../sfs/client/root
-	//
-	// all users file will be uder .../sfs/root/user-name/root
+	// client service root
+	// ie. ../sfs/client/run/user-name
 	Root string `env:"CLIENT_ROOT"`
+	// testing root directory
+	TestRoot string `env:"CLIENT_TESTING"`
 }
 
 func ClientConfig() *Conf {

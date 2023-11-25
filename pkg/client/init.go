@@ -11,6 +11,7 @@ import (
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
 	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 	"github.com/sfs/pkg/transfer"
 )
@@ -138,6 +139,7 @@ func loadStateFile(user string) ([]byte, error) {
 
 // load client from state file, if possible
 func LoadClient(user string) (*Client, error) {
+	// load client state
 	data, err := loadStateFile(user)
 	if err != nil {
 		return nil, err
@@ -146,19 +148,19 @@ func LoadClient(user string) (*Client, error) {
 	if err := json.Unmarshal(data, client); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
-	// TODO: transfer component is nil when loaded from a state file.
-	// will need a way to instantiate here
+	// // start db connection
+	client.Db = db.NewQuery(filepath.Join(client.Conf.Root, client.Conf.User, "dbs"), true)
+	// add transfer client
 	client.Transfer = transfer.NewTransfer()
-
-	// start client file monitoring services
+	// add monitoring services
+	client.Monitor = monitor.NewMonitor(client.Root)
+	// start client file monitoring services and initialize handlers
 	if err := client.StartMonitor(); err != nil {
 		return nil, fmt.Errorf("failed to start client monitor: %v", err)
 	}
-	// initialize handlers for all monitoring goroutines
+	client.Handlers = make(map[string]EHandler) // initialize handlers map
 	client.BuildHandlers()
-
 	client.StartTime = time.Now().UTC()
-
 	return client, nil
 }
 

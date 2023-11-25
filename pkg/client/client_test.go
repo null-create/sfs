@@ -36,11 +36,11 @@ func TestNewClient(t *testing.T) {
 	assert.NotEqual(t, nil, client.User)
 	assert.NotEqual(t, "", client.Root)
 	assert.NotEqual(t, "", client.SfDir)
-	// assert.NotEqual(t, nil, client.Monitor)
+	assert.NotEqual(t, nil, client.Monitor)
 	assert.NotEqual(t, nil, client.Drive)
 	assert.NotEqual(t, nil, client.Db)
 	assert.NotEqual(t, nil, client.Handlers)
-	// assert.NotEqual(t, nil, client.Transfer)
+	assert.NotEqual(t, nil, client.Transfer)
 
 	// check that .env was updated after initialization,
 	// specifically that CLIENT_NEW_SERVICE was set to "false"
@@ -263,7 +263,8 @@ func TestClientBuildSyncIndex(t *testing.T) {
 }
 
 // indexing and monitoring tests
-
+// this test is flaky because we don't always alter
+// files with each run. might need to not make it so random.
 func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	env.BuildEnv(true)
 
@@ -274,6 +275,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// make a test client
 	tmpClient, err := Init(true)
 	if err != nil {
 		Fail(t, tmpDir, err)
@@ -294,17 +296,20 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	// set up a new client drive and generate a last sync index of the files
 	root := service.NewDirectory("root", tmpClient.Conf.User, tmpClient.Root)
 	root.AddFiles(files)
-	drv := service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.Conf.User, root.Path, root)
-	tmpClient.Drive = drv
+	tmpClient.Drive = service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.Conf.User, root.Path, root)
 
-	idx := drv.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))
+	// create initial sync index
+	idx := tmpClient.Drive.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))
 
+	// alter some files so we can mark them to be synced
 	MutateFiles(t, root.Files)
 
-	idx = drv.Root.WalkU(idx)
+	// build ToUpdate map
+	idx = tmpClient.Drive.Root.WalkU(idx)
 	assert.NotEqual(t, nil, idx.ToUpdate)
 	assert.NotEqual(t, 0, len(idx.ToUpdate))
 
+	// clean up
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
@@ -314,8 +319,8 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	}
 }
 
-func TestClientContactServer(t *testing.T) {}
+// func TestClientContactServer(t *testing.T) {}
 
-func TestClientGetSyncIndexFromServer(t *testing.T) {}
+// func TestClientGetSyncIndexFromServer(t *testing.T) {}
 
-func TestClientSendSyncIndexToServer(t *testing.T) {}
+// func TestClientSendSyncIndexToServer(t *testing.T) {}

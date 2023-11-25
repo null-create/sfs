@@ -15,8 +15,6 @@ import (
 	"github.com/sfs/pkg/transfer"
 )
 
-// TODO: add map of API endpoints associated with each file and directory
-
 type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
@@ -25,18 +23,22 @@ type Client struct {
 	Root  string     `json:"root"`           // path to root drive for users files and directories
 	SfDir string     `json:"state_file_dir"` // path to state file
 
-	Monitor *monitor.Monitor // listener that checks for file or directory events
-	Drive   *svc.Drive       `json:"drive"` // client drive for managing users files and directories
+	Drive *svc.Drive `json:"drive"` // client drive for managing users files and directories
+	Db    *db.Query  `json:"db"`    // local db connection
 
-	Db *db.Query `json:"db"` // local db connection
+	// server api endpoints.
+	// key == fileID, value is the associated endpoint
+	Endpoints map[string]string `json:"endpoints"`
 
-	Transfer *transfer.Transfer // file transfer component
+	// listener that checks for file or directory events
+	Monitor *monitor.Monitor `json:"-"` // json ignore tags
+
 	// map of active event handlers for individual files
 	// key == filepath, value == new EventHandler() function
-	Handlers map[string]EHandler `json:"handlers"`
-	// server api endpoints.
-	// key == file object, value is the associated endpoint
-	Endpoints map[*svc.File]string `json:"endpoints"`
+	Handlers map[string]EHandler `json:"-"`
+
+	// file transfer component
+	Transfer *transfer.Transfer `json:"-"`
 }
 
 // creates a new client object. does not create actual service directories or
@@ -175,6 +177,7 @@ func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
 	return c.Drive.UpdateFile(dirID, file, data)
 }
 
+// remove a file in a specied directory
 func (c *Client) RemoveFile(dirID string, file *svc.File) error {
 	return c.Drive.RemoveFile(dirID, file)
 }
