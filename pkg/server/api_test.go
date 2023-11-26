@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,14 +21,14 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 	shutDown := make(chan bool)
 
 	// start testing server
-	log.Print("starting test server...")
+	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
 		testServer.TestRun(shutDown)
 	}()
 
 	// attempt to retrieve all file info from the server
-	log.Printf("retrieving file data...")
+	log.Printf("[TEST] retrieving file data...")
 
 	endpoint := fmt.Sprint(LocalHost, "/v1/files/all")
 
@@ -39,23 +40,26 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 	}
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
+		b, err := httputil.DumpResponse(res, true)
+		if err != nil {
+			t.Fatal(err)
+		}
 		msg := fmt.Sprintf(
-			"response code was not 200: %d\n header object: %v\n",
-			res.StatusCode, res.Header,
+			"response code was not 200: %d\n response: %v\n",
+			res.StatusCode, string(b),
 		)
 		t.Fatal(fmt.Errorf(msg))
 	}
 
 	// retrieve data from the request
-	data := make([]byte, 0)
-	_, err = res.Body.Read(data)
+	b, err := httputil.DumpResponse(res, true)
 	if err != nil {
 		shutDown <- true
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	log.Printf("[TEST] retrieved file data: %v", string(b))
 
-	log.Print("shutting down test server...")
+	log.Print("[TEST] shutting down test server...")
 	shutDown <- true
 }
 
@@ -86,14 +90,14 @@ func TestFilePutAPI(t *testing.T) {
 	shutDown := make(chan bool)
 
 	// start testing server
-	log.Print("starting test server...")
+	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
 		testServer.TestRun(shutDown)
 	}()
 
 	// create tmp file to try and send it to the server
-	log.Print("creating tmp file...")
+	log.Print("[TEST] creating tmp file...")
 	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
 	if err != nil {
 		shutDown <- true
@@ -103,14 +107,14 @@ func TestFilePutAPI(t *testing.T) {
 	endpoint := fmt.Sprint(LocalHost, "/v1/files/new")
 
 	// transfer file
-	log.Print("uploading file...")
+	log.Print("[TEST] uploading file...")
 	transfer := transfer.NewTransfer()
 	if err := transfer.Upload(http.MethodPut, file, endpoint); err != nil {
 		shutDown <- true // shut down test server
 		Fail(t, GetTestingDir(), err)
 	}
 
-	log.Print("retrieving info about file from server...")
+	log.Print("[TEST] retrieving info about file from server...")
 
 	// confirm file's presence via a GET
 	fileEndpoint := fmt.Sprint(LocalHost, fmt.Sprintf("/v1/files/%s", file.ID))
@@ -145,7 +149,7 @@ func TestFileDeleteAPI(t *testing.T) {
 	shutDown := make(chan bool)
 
 	// start testing server
-	log.Print("starting test server...")
+	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
 		testServer.TestRun(shutDown)
@@ -161,6 +165,6 @@ func TestFileDeleteAPI(t *testing.T) {
 	}
 }
 
-func TestGetDirectoryAPI(t *testing.T) {}
+// func TestGetDirectoryAPI(t *testing.T) {}
 
-func TestPutDirectoryAPI(t *testing.T) {}
+// func TestPutDirectoryAPI(t *testing.T) {}
