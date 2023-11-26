@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/env"
-	"github.com/sfs/pkg/monitor"
 )
 
 func TestStartHandler(t *testing.T) {
@@ -51,8 +50,7 @@ func TestStartHandler(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 
-	// create a new monitor and watch for changes
-	c.Monitor = monitor.NewMonitor(c.Drive.Root.Path)
+	// monitor this new file for changes
 	c.Monitor.WatchFile(f.Path)
 
 	// create a new handler and start listening for file events from the monitor
