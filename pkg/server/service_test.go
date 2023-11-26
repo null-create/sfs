@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,18 +12,6 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-// --------- fixtures --------------------------------
-
-func fakeServiceRoot() string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("[ERROR] failed to get current working directory: %v", err)
-	}
-	return cwd
-}
-
-// -----------------------------------------------------
-
 func TestServiceConfig(t *testing.T) {
 	BuildEnv(true)
 	c := ServiceConfig()
@@ -34,14 +21,19 @@ func TestServiceConfig(t *testing.T) {
 
 func TestSaveStateFile(t *testing.T) {
 	svc := &Service{
-		SvcRoot:   fakeServiceRoot(),
+		SvcRoot:   GetTestingDir(),
 		StateFile: GetTestingDir(),
 	}
+	// make a tmp folder for the state file
+	if err := os.Mkdir(filepath.Join(GetTestingDir(), "state"), 0666); err != nil {
+		t.Fatal(err)
+	}
+	// save state file
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
 	}
 
-	entries, err := os.ReadDir(GetTestingDir())
+	entries, err := os.ReadDir(filepath.Join(GetTestingDir(), "state"))
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -55,22 +47,30 @@ func TestSaveStateFile(t *testing.T) {
 }
 
 func TestLoadServiceFromStateFile(t *testing.T) {
+	// clean up after any previous failed runs
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+	// create a test service instance
 	svc := &Service{
-		SvcRoot:   fakeServiceRoot(),
+		SvcRoot:   GetTestingDir(),
 		StateFile: GetTestingDir(),
+	}
+	// make a tmp folder for the state file
+	if err := os.Mkdir(filepath.Join(GetTestingDir(), "state"), 0666); err != nil {
+		Fatal(t, err)
 	}
 	if err := svc.SaveState(); err != nil {
 		Fatal(t, err)
 	}
-
+	// load a new test service instance from the newly generated state file
 	svc2, err := loadStateFile(svc.StateFile)
 	if err != nil {
 		Fatal(t, err)
 	}
-
 	// remove temp state file prior to checking so we don't accidentally
 	// leave tmp files behind if an assert fails.
-	if err := Clean(filepath.Join(fakeServiceRoot(), "state")); err != nil {
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 
@@ -114,6 +114,11 @@ func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
 }
 
 func TestCreateNewService(t *testing.T) {
+	// clean up after any previous failed runs
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+
 	testRoot := filepath.Join(GetTestingDir(), "tmp")
 	testSvc, err := SvcInit(testRoot, true)
 	if err != nil {
@@ -293,8 +298,8 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	}
 }
 
-func TestAddDrive(t *testing.T) {}
+// func TestAddDrive(t *testing.T) {}
 
-func TestAddAndUpdateDrive(t *testing.T) {}
+// func TestAddAndUpdateDrive(t *testing.T) {}
 
-func TestAddAndRemoveDrive(t *testing.T) {}
+// func TestAddAndRemoveDrive(t *testing.T) {}

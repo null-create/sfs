@@ -109,14 +109,14 @@ func (s *Service) SaveState() error {
 	}
 
 	// marshal state instance and write out
-	file, err := json.MarshalIndent(s, "", "  ")
+	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return fmt.Errorf("unable to marshal service state: %v", err)
 	}
 	sfName := fmt.Sprintf("sfs-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
 	s.StateFile = filepath.Join(sfDir, sfName)
 
-	return os.WriteFile(s.StateFile, file, 0644)
+	return os.WriteFile(s.StateFile, data, svc.PERMS)
 }
 
 // remove previous state file(s) before writing out.
@@ -202,22 +202,19 @@ func loadStateFile(sfPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read state file: %v", err)
 	}
-
 	svc := &Service{}
 	if err := json.Unmarshal(file, svc); err != nil {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
 	}
-	svc.Db.Singleton = true
 	svc.StateFile = sfPath
 	svc.InitTime = time.Now().UTC()
-
 	return svc, nil
 }
 
 // populate svc.Users map from users database
 func loadUsers(svc *Service) (*Service, error) {
-	q := db.NewQuery(filepath.Join(svc.DbDir, "users"), false)
-	usrs, err := q.GetUsers()
+	svc.Db.WhichDB("users")
+	usrs, err := svc.Db.GetUsers()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
@@ -354,16 +351,18 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
+	// instantiate DB connections
+	svc.Db = db.NewQuery(svc.DbDir, true)
+	svc.Db.Singleton = true
 	// attempt to populate from users database if state file had no user data
+	// make sure we have a path to the db dir and current state file for this session
 	if len(svc.Users) == 0 {
 		log.Printf("[WARNING] state file had no user data. attempting to populate from users database...")
 		_, err := loadUsers(svc)
 		if err != nil {
-			log.Fatalf("[ERROR] failed to retrieve user data: %v", err)
+			return nil, fmt.Errorf("failed to retrieve user data: %v", err)
 		}
 	}
-	// make sure we have a path to the db dir and current state file for this session
-	svc.DbDir = filepath.Join(svcPath, "dbs")
 	return svc, nil
 }
 
