@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -473,7 +472,8 @@ func (s *Service) UserExists(userID string) bool {
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
 	// check to see if this user already has a drive
-	if dID, err := s.Db.GetDriveID(user.ID); err != sql.ErrNoRows {
+	s.Db.WhichDB("users")
+	if dID, err := s.Db.GetDriveID(user.ID); err != nil {
 		return err
 	} else if dID != "" {
 		return fmt.Errorf("user (%s) already has a drive (%s): ", user.ID, dID)
@@ -553,13 +553,16 @@ func (s *Service) removeUser(driveID string) error {
 // remove a user and all their files and directories
 func (s *Service) RemoveUser(userID string) error {
 	if usr, exists := s.Users[userID]; exists {
+		// remove users drive and all files/directories
 		if err := s.removeUser(usr.DriveID); err != nil {
 			return err
 		}
+		// remove user from database
 		s.Db.WhichDB("users")
 		if err := s.Db.RemoveUser(usr.ID); err != nil {
 			return err
 		}
+		// delete from service instance
 		delete(s.Users, usr.ID)
 		log.Printf("[INFO] user (id=%s) removed", userID)
 		if err := s.SaveState(); err != nil {
@@ -603,6 +606,7 @@ func (s *Service) updateUser(user *auth.User) error {
 	return nil
 }
 
+// update user info
 func (s *Service) UpdateUser(user *auth.User) error {
 	if _, exists := s.Users[user.ID]; exists {
 		s.Db.WhichDB("users")
@@ -629,11 +633,11 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // --------- sync --------------------------------
 
-func (s *Service) syncUp() error {
+func (s *Service) Push() error {
 	return nil
 }
 
-func (s *Service) syncDown() error {
+func (s *Service) Pull() error {
 	return nil
 }
 

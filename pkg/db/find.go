@@ -299,11 +299,10 @@ func (q *Query) GetDriveID(userID string) (string, error) {
 
 	var id string
 	err := q.Conn.QueryRow(FindUsersDriveIDQuery, userID).Scan(&id)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return "", fmt.Errorf("failed to query: %v", err)
-	}
-	if id == "" {
-		log.Printf("no drive ID found for user %s", userID)
+	} else if err == sql.ErrNoRows || id == "" {
+		log.Printf("no drive associated with user %v", userID)
 		return "", nil
 	}
 	return id, nil

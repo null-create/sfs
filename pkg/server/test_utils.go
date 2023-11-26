@@ -27,12 +27,31 @@ func RunTestStage(stageName string, test func()) {
 func GetTestingDir() string {
 	curDir, err := os.Getwd()
 	if err != nil {
-		log.Printf("[WARNING] unable to get testing directory: %v\ncreating...", err)
+		log.Printf("[WARNING] unable to find testing directory: %v\ncreating a new one...", err)
 		if err := os.Mkdir(filepath.Join(curDir, "testing"), 0644); err != nil {
-			log.Fatalf("unable to create test directory: %v", err)
+			log.Fatalf("unable to create testing directory: %v", err)
 		}
 	}
 	return filepath.Join(curDir, "testing")
+}
+
+// clean all contents from the testing directory
+func Clean(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		if err = os.RemoveAll(filepath.Join(dir, name)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // like Fatal() but you can specify the directory to clean
@@ -98,25 +117,6 @@ func MakeABunchOfTxtFiles(total int, loc string) ([]*svc.File, error) {
 	return files, nil
 }
 
-// clean all contents from the testing directory
-func Clean(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		if err = os.RemoveAll(filepath.Join(dir, name)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // ---- tmp dirs
 
 // creates an empty directory under ../nimbus/pkg/files/testing
@@ -152,7 +152,6 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-
 	moreFiles := make([]*svc.File, 0)
 	for i := 0; i < 10; i++ {
 		fname := fmt.Sprintf("tmp-%d.txt", i)
@@ -163,6 +162,7 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 		moreFiles = append(moreFiles, f)
 	}
 
+	// build the directories
 	sd.AddFiles(moreFiles)
 	d.AddSubDir(sd)
 	tmpRoot.AddSubDir(d)

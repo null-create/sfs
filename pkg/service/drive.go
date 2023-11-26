@@ -39,19 +39,19 @@ type Drive struct {
 	Owner string `json:"owner:"`
 
 	// all three measured in Kb or Mb
-	TotalSize float64 `json:"totalSize"`
-	UsedSpace float64 `json:"usedSpace"`
-	FreeSpace float64 `json:"freeSpace"`
+	TotalSize float64 `json:"total_size"`
+	UsedSpace float64 `json:"used_space"`
+	FreeSpace float64 `json:"free_space"`
 
 	// Security stuff
 	Protected bool   `json:"protected"`
 	Key       string `json:"key"`
-	AuthType  string `json:"authType"`
+	AuthType  string `json:"auth_type"`
 
 	// location of the drive on physical server filesystem
-	DriveRoot string `json:"driveRoot"`
+	DriveRoot string `json:"drive_root"`
 
-	// User's root directory
+	// User's root directory & sync index
 	Root      *Directory `json:"root"`
 	SyncIndex *SyncIndex `json:"sync_index"`
 }

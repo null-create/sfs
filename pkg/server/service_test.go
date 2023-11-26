@@ -250,11 +250,12 @@ func TestAddAndRemoveUser(t *testing.T) {
 func TestAddAndUpdateAUser(t *testing.T) {
 	BuildEnv(true)
 	c := ServiceConfig()
+	// create a test instance
 	testSvc, err := SvcLoad(c.S.SvcRoot, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// create a test user
 	testUsr := auth.NewUser(
 		"bill buttlicker", "billBB", "bill@bill.com",
 		auth.NewUUID(), c.S.SvcRoot, false,
