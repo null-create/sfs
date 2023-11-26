@@ -13,7 +13,7 @@ import (
 // get a one-off db connection to a given db
 func getDBConn(dbName string) *db.Query {
 	c := ServiceConfig()
-	dbRoot := filepath.Join(c.S.SvcRoot, "dbs")
+	dbRoot := filepath.Join(c.SvcRoot, "dbs")
 	dbPath := filepath.Join(dbRoot, dbName)
 	return db.NewQuery(dbPath, false)
 }

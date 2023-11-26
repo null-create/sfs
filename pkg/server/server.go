@@ -25,10 +25,10 @@ func NewServer() *Server {
 	return &Server{
 		Svr: &http.Server{
 			Handler:      rtr,
-			Addr:         svr.Server.Addr,
-			ReadTimeout:  svr.Server.TimeoutRead,
-			WriteTimeout: svr.Server.TimeoutWrite,
-			IdleTimeout:  svr.Server.TimeoutIdle,
+			Addr:         svr.Addr,
+			ReadTimeout:  svr.TimeoutRead,
+			WriteTimeout: svr.TimeoutWrite,
+			IdleTimeout:  svr.TimeoutIdle,
 		},
 	}
 }

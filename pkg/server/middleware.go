@@ -63,7 +63,7 @@ func NewUser(h http.Handler) http.Handler {
 			return
 		}
 
-		newDriveRoot := filepath.Join(c.S.SvcRoot, "users", newUserName)
+		newDriveRoot := filepath.Join(c.SvcRoot, "users", newUserName)
 
 		newUser := auth.NewUser(
 			newUserName, newUserAlias, newUserEmail, auth.NewUUID(), newDriveRoot, isAdmin,

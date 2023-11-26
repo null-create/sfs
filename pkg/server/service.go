@@ -142,7 +142,7 @@ func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
 		// ---- load from state file and dbs
-		svc, err := SvcLoad(c.S.SvcRoot, false)
+		svc, err := SvcLoad(c.SvcRoot, false)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load service config: %v", err)
 		}
@@ -152,7 +152,7 @@ func Init(new bool, admin bool) (*Service, error) {
 		return svc, nil
 	} else {
 		// ----- initialize new sfs service
-		svc, err := SvcInit(c.S.SvcRoot, false)
+		svc, err := SvcInit(c.SvcRoot, false)
 		if err != nil {
 			return nil, err
 		}
@@ -166,8 +166,8 @@ func Init(new bool, admin bool) (*Service, error) {
 func setAdmin(svc *Service) {
 	cfg := ServerConfig()
 	svc.AdminMode = true
-	svc.Admin = cfg.Server.Admin
-	svc.AdminKey = cfg.Server.AdminKey
+	svc.Admin = cfg.Admin
+	svc.AdminKey = cfg.AdminKey
 }
 
 func findStateFile(svcRoot string) (string, error) {

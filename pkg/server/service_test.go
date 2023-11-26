@@ -16,7 +16,7 @@ func TestServiceConfig(t *testing.T) {
 	BuildEnv(true)
 	c := ServiceConfig()
 	assert.NotEqual(t, nil, c)
-	assert.True(t, strings.Contains(c.S.SvcRoot, "C:"))
+	assert.True(t, strings.Contains(c.SvcRoot, "C:"))
 }
 
 func TestSaveStateFile(t *testing.T) {
@@ -202,15 +202,15 @@ func TestAllocateDrive(t *testing.T) {
 func TestAddAndRemoveUser(t *testing.T) {
 	BuildEnv(true)
 
-	c := ServiceConfig()
-	testSvc, err := SvcLoad(c.S.SvcRoot, true)
+	conf := ServiceConfig()
+	testSvc, err := SvcLoad(conf.SvcRoot, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// create test user
 	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com",
-		auth.NewUUID(), c.S.SvcRoot, false,
+		auth.NewUUID(), conf.SvcRoot, false,
 	)
 	if err := testSvc.AddUser(testUsr); err != nil {
 		t.Fatal(err)
@@ -251,14 +251,14 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	BuildEnv(true)
 	c := ServiceConfig()
 	// create a test instance
-	testSvc, err := SvcLoad(c.S.SvcRoot, true)
+	testSvc, err := SvcLoad(c.SvcRoot, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// create a test user
 	testUsr := auth.NewUser(
 		"bill buttlicker", "billBB", "bill@bill.com",
-		auth.NewUUID(), c.S.SvcRoot, false,
+		auth.NewUUID(), c.SvcRoot, false,
 	)
 	if err := testSvc.AddUser(testUsr); err != nil {
 		t.Fatal(err)
@@ -293,7 +293,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 	// remove test user drive
-	tmpDir := filepath.Join(c.S.SvcRoot, "users", origName)
+	tmpDir := filepath.Join(c.SvcRoot, "users", origName)
 	if err := Clean(tmpDir); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
