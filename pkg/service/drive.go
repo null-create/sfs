@@ -151,12 +151,16 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 
 // add file to a directory
 func (d *Drive) AddFile(dirID string, file *File) error {
-	dir := d.GetDir(dirID)
-	if dir == nil {
-		return fmt.Errorf("dir (id=%s) not found", dirID)
+	if !d.Protected {
+		dir := d.GetDir(dirID)
+		if dir == nil {
+			return fmt.Errorf("dir (id=%s) not found", dirID)
+		}
+		dir.AddFile(file)
+		d.Root.Size += float64(file.Size())
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
 	}
-	dir.AddFile(file)
-	d.Root.Size += float64(file.Size())
 	return nil
 }
 
@@ -228,6 +232,18 @@ func (d *Drive) AddDir(dir *Directory) error {
 	return nil
 }
 
+// add subdirectories to the drives root directory
+func (d *Drive) AddDirs(dirs []*Directory) error {
+	if !d.Protected {
+		if err := d.Root.AddSubDirs(dirs); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
 // find a directory
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
@@ -263,6 +279,24 @@ func (d *Drive) RemoveDir(dirID string) error {
 	if !d.Protected {
 		if err := d.removeDir(dirID); err != nil {
 			return err
+		}
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+// remove directories from the drive root directory
+func (d *Drive) RemoveDirs(dirs []*Directory) error {
+	if !d.Protected {
+		if len(dirs) == 0 {
+			log.Print("[INFO] no subdirectories to remove")
+			return nil
+		}
+		for _, dir := range dirs {
+			if err := d.RemoveDir(dir.ID); err != nil {
+				return err
+			}
 		}
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
