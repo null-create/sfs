@@ -22,7 +22,7 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	testRoot := NewRootDirectory("testRoot", "me", driveRoot)
 	testRoot.AddFiles(testFiles1)
 
-	testDrive := NewDrive(NewUUID(), "testDrive", "me", driveRoot, testRoot)
+	testDrive := NewDrive(NewUUID(), "testDrive", "me", driveRoot, NewUUID(), testRoot)
 
 	// create a subdirectory with dummy files
 	sdPath := filepath.Join(driveRoot, "testSubDir")
@@ -46,7 +46,7 @@ func TestDriveSecurityFeatures(t *testing.T) {
 	tmpDir := filepath.Join(testDir, "testDir")
 
 	testRoot := NewRootDirectory("testRoot", "me", filepath.Join(tmpDir, "testRoot"))
-	testDrive := NewDrive(NewUUID(), "test-drive", "me", tmpDir, testRoot)
+	testDrive := NewDrive(NewUUID(), "test-drive", "me", tmpDir, NewUUID(), testRoot)
 
 	testDrive.Lock("default")
 	assert.True(t, testDrive.Protected)

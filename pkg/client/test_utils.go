@@ -160,7 +160,7 @@ func MutateFile(t *testing.T, f *svc.File) {
 func MutateFiles(t *testing.T, files map[string]*svc.File) map[string]*svc.File {
 	var mutated int
 	for _, f := range files {
-		if RandInt(100)%2 == 0 {
+		if RandInt(1000)%2 == 0 {
 			var data string
 			total := RandInt(5000)
 			for i := 0; i < total; i++ {

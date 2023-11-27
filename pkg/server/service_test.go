@@ -202,25 +202,29 @@ func TestAllocateDrive(t *testing.T) {
 func TestAddAndRemoveUser(t *testing.T) {
 	BuildEnv(true)
 
+	// create test service instance
 	conf := ServiceConfig()
+	testFolder := filepath.Join(conf.SvcRoot, "users")
 	testSvc, err := SvcLoad(conf.SvcRoot, true)
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, testFolder, err)
 	}
 
 	// create test user
 	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com",
 		auth.NewUUID(), conf.SvcRoot, false,
 	)
+
+	// add user to service instance
 	if err := testSvc.AddUser(testUsr); err != nil {
-		t.Fatal(err)
+		Fail(t, testFolder, err)
 	}
 	assert.Equal(t, testUsr, testSvc.Users[testUsr.ID])
 
 	// check that its in the db and was entered correctly
 	u, err := testSvc.FindUser(testUsr.ID)
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, testFolder, err)
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
@@ -228,22 +232,22 @@ func TestAddAndRemoveUser(t *testing.T) {
 	// get a tmp drive to check that things have been removed correctly
 	testDrv, err := testSvc.FindDrive(testUsr.DriveID)
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, testFolder, err)
 	}
 	assert.NotEqual(t, nil, testDrv)
 
 	// attempt to remove user & verify that their drive was removed
 	if err := testSvc.RemoveUser(testUsr.ID); err != nil {
-		t.Fatal(err)
+		Fail(t, testFolder, err)
 	}
-	entries, err := os.ReadDir(testDrv.Root.Path)
+	entries, err := os.ReadDir(filepath.Join(conf.SvcRoot, "users"))
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, testFolder, err)
 	}
 	assert.Equal(t, 0, len(entries))
 
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	if err := Clean(filepath.Join(conf.SvcRoot, "users")); err != nil {
+		t.Errorf("[ERROR] unable to remove test user directories: %v", err)
 	}
 }
 

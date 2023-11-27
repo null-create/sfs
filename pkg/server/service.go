@@ -136,7 +136,7 @@ func (s *Service) cleanSfDir(sfDir string) error {
 
 // ------- init ---------------------------------------
 
-// initialize a new sfs service from either a state file/dbs or
+// initialize a new server-side sfs service from either a state file/dbs or
 // create a new service from scratch.
 func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
@@ -400,7 +400,7 @@ func AllocateDrive(name, ownerID, svcRoot string) (*svc.Drive, error) {
 
 	// gen root and drive objects
 	rt := svc.NewRootDirectory(name, ownerID, usrRoot)
-	drv := svc.NewDrive(svc.NewUUID(), name, ownerID, svcDir, rt)
+	drv := svc.NewDrive(svc.NewUUID(), name, ownerID, svcDir, rt.ID, rt)
 
 	return drv, nil
 }
@@ -452,6 +452,7 @@ func (s *Service) TotalUsers() int {
 
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
+	s.Db.WhichDB("users")
 	if _, exists := s.Users[userID]; exists {
 		// make sure they exist in the DB too
 		exists, err := s.Db.UserExists(userID)
@@ -494,10 +495,11 @@ func (s *Service) addUser(user *auth.User) error {
 	if err := s.Db.AddDrive(d); err != nil {
 		return fmt.Errorf("failed to add drive to database: %v", err)
 	}
-	s.Users[user.ID] = user
-	if err = s.SaveState(); err != nil {
-		log.Printf("[WARNING] failed to save state: %v", err)
+	s.Db.WhichDB("directories")
+	if err := s.Db.AddDir(d.Root); err != nil {
+		return fmt.Errorf("failed to add directory to database: %v", err)
 	}
+	s.Users[user.ID] = user
 	return nil
 }
 
@@ -527,13 +529,19 @@ func (s *Service) AddUser(newUser *auth.User) error {
 func (s *Service) removeUser(driveID string) error {
 	s.Db.WhichDB("drives")
 	if d, err := s.Db.GetDrive(driveID); err == nil {
-		if d != nil {
+		if d != nil && d.DriveRoot != "" {
+			// get root directory for this drive
+			s.Db.WhichDB("directories")
+			root, err := s.Db.GetDirectory(d.RootID)
+			if err != nil {
+				return err
+			}
 			// remove all files and directories
-			if err := d.Root.Clean(d.Root.Path); err != nil {
+			if err := d.Root.Clean(root.Path); err != nil {
 				return err
 			}
 			//remove users root dir itself
-			if err := os.Remove(d.Root.Path); err != nil {
+			if err := os.Remove(d.DriveRoot); err != nil {
 				return err
 			}
 			// remove drive from database

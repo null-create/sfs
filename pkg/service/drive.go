@@ -52,6 +52,7 @@ type Drive struct {
 	DriveRoot string `json:"drive_root"`
 
 	// User's root directory & sync index
+	RootID    string     `json:"root_id"`
 	Root      *Directory `json:"root"`
 	SyncIndex *SyncIndex `json:"sync_index"`
 }
@@ -65,7 +66,7 @@ func check(id string, name string, owner string, rootPath string, root *Director
 }
 
 // creates a new drive service for a user. does not create new physical files
-func NewDrive(id string, name string, owner string, rootPath string, root *Directory) *Drive {
+func NewDrive(id string, name string, owner string, rootPath string, rootID string, root *Directory) *Drive {
 	if !check(id, name, owner, rootPath, root) {
 		return nil
 	}
@@ -82,6 +83,7 @@ func NewDrive(id string, name string, owner string, rootPath string, root *Direc
 		Key:       "default",
 
 		DriveRoot: rootPath,
+		RootID:    rootID,
 		Root:      root,
 	}
 }

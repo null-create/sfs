@@ -50,7 +50,7 @@ func NewClient(user, userID string) *Client {
 	// set up local client services
 	svcRoot := filepath.Join(conf.Root, user)
 	root := svc.NewDirectory("root", conf.User, svcRoot)
-	drv := svc.NewDrive(auth.NewUUID(), conf.User, conf.User, root.Path, root)
+	drv := svc.NewDrive(auth.NewUUID(), conf.User, conf.User, root.Path, root.ID, root)
 
 	// intialize client and start monitoring service
 	c := &Client{
