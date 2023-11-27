@@ -201,10 +201,18 @@ func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
 
 // ----- directories --------------------------------
 
-func (c *Client) AddDir(dir *svc.Directory) error { return nil }
+func (c *Client) AddDir(dir *svc.Directory) error {
+	return c.Drive.AddDir(dir)
+}
 
-func (c *Client) AddDirs(dirs []*svc.Directory) error { return nil }
+func (c *Client) AddDirs(dirs []*svc.Directory) error {
+	return c.Drive.AddDirs(dirs)
+}
 
-func (c *Client) RemoveDir(dirID string) error { return nil }
+func (c *Client) RemoveDir(dirID string) error {
+	return c.Drive.RemoveDir(dirID)
+}
 
-func (c *Client) RemoveDirs(dirIDs []string) error { return nil }
+func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
+	return c.Drive.RemoveDirs(dirs)
+}
