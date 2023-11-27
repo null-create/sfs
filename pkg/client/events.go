@@ -77,6 +77,21 @@ func (c *Client) StartHandler(filePath string) error {
 	return nil
 }
 
+// start all available handlers
+func (c *Client) StartHandlers() error {
+	files := c.Drive.GetFiles()
+	if len(files) == 0 {
+		log.Print("[WARNING] no files to build handlers for")
+		return nil
+	}
+	for _, f := range files {
+		if err := c.StartHandler(f.Path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // build a map of event handlers for client files.
 // each handler will listen for events from files and will
 // call synchronization operations accordingly. if no files
@@ -106,7 +121,6 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 				log.Printf("[INFO] stopping event handler for file id=%v", fileID)
 				return
 			case e := <-evt:
-				// c.EventInfo(e) // display event info
 				switch e.Type {
 				case monitor.FileCreate:
 					evts.AddEvent(e)
