@@ -56,6 +56,28 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	return user, nil
 }
 
+// get a userID from a driveID.
+// will return an empty string if no userID is found with this driveID
+func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
+	q.Connect()
+	defer q.Close()
+
+	if q.Debug {
+		log.Printf("[DEBUG] querying for userID using driveID %s", driveID)
+	}
+
+	var userID string
+	if err := q.Conn.QueryRow(FindUsersDriveIDQuery, driveID).Scan(&userID); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[INFO] no user associated with driveID %s", driveID)
+			return "", nil
+		} else {
+			return "", fmt.Errorf("failed to query for userID: %v", err)
+		}
+	}
+	return userID, nil
+}
+
 // populates a slice of *auth.User structs of all available users from the database
 func (q *Query) GetUsers() ([]*auth.User, error) {
 	q.Connect()
@@ -270,8 +292,8 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	d := new(svc.Drive)
 	if err := q.Conn.QueryRow(FindDriveQuery, driveID).Scan(
 		&d.ID,
-		&d.Name,
-		&d.Owner,
+		&d.OwnerName,
+		&d.OwnerID,
 		&d.TotalSize,
 		&d.UsedSpace,
 		&d.FreeSpace,
