@@ -34,9 +34,9 @@ Drives may be realized as a filesystem on a user's current desktop,
 laptop, dedicated hardrive within a desktop, or separate server.
 */
 type Drive struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Owner string `json:"owner:"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	OwnerID string `json:"owner:"`
 
 	// all three measured in Kb or Mb
 	TotalSize float64 `json:"total_size"`
@@ -71,9 +71,9 @@ func NewDrive(id string, name string, owner string, rootPath string, rootID stri
 		return nil
 	}
 	return &Drive{
-		ID:    id,
-		Name:  name,
-		Owner: owner,
+		ID:      id,
+		Name:    name,
+		OwnerID: owner,
 
 		TotalSize: MAX_SIZE,
 		UsedSpace: 0,

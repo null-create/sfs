@@ -90,7 +90,7 @@ func TestCreateAndUpdateADrive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tmpDrive.Owner = "some user"
+	tmpDrive.OwnerID = "some user"
 
 	if err := q.UpdateDrive(tmpDrive); err != nil {
 		t.Fatal(err)
@@ -101,8 +101,8 @@ func TestCreateAndUpdateADrive(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.NotEqual(t, nil, d)
-	assert.Equal(t, tmpDrive.Owner, "some user")
-	assert.Equal(t, tmpDrive.Owner, d.Owner)
+	assert.Equal(t, tmpDrive.OwnerID, "some user")
+	assert.Equal(t, tmpDrive.OwnerID, d.OwnerID)
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Fatal(err)
