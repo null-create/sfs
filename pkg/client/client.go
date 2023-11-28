@@ -43,20 +43,20 @@ type Client struct {
 
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
-func NewClient(user, userID string) *Client {
+func NewClient(userID string) *Client {
 	// get configs
 	conf := ClientConfig()
 
 	// set up local client services
-	svcRoot := filepath.Join(conf.Root, user)
+	svcRoot := filepath.Join(conf.Root, conf.User)
 	root := svc.NewDirectory("root", conf.User, svcRoot)
-	drv := svc.NewDrive(auth.NewUUID(), conf.User, conf.User, root.Path, root.ID, root)
+	drv := svc.NewDrive(auth.NewUUID(), conf.User, userID, root.Path, root.ID, root)
 
 	// intialize client and start monitoring service
 	c := &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
-		User:      auth.NewUser(user, userID, conf.Email, auth.NewUUID(), svcRoot, false),
+		User:      auth.NewUser(conf.User, userID, conf.Email, auth.NewUUID(), svcRoot, false),
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
 		Monitor:   monitor.NewMonitor(drv.Root.Path),
@@ -69,7 +69,9 @@ func NewClient(user, userID string) *Client {
 	if err := c.Monitor.Start(root.Path); err != nil {
 		log.Fatal("failed to start monitor", err)
 	}
-
+	if err := c.StartHandlers(); err != nil {
+		log.Fatal("failed to start event handlers", err)
+	}
 	return c
 }
 

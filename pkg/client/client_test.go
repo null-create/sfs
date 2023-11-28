@@ -246,7 +246,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 	root := service.NewDirectory("root", tmpClient.Conf.User, tmpClient.Root)
 	root.AddFiles(files)
 
-	drv := service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.Conf.User, root.Path, root.ID, root)
+	drv := service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.Path, root.ID, root)
 
 	idx := drv.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))
 	assert.NotEqual(t, nil, idx)
@@ -296,7 +296,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	// set up a new client drive and generate a last sync index of the files
 	root := service.NewDirectory("root", tmpClient.Conf.User, tmpClient.Root)
 	root.AddFiles(files)
-	tmpClient.Drive = service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.Conf.User, root.Path, root.ID, root)
+	tmpClient.Drive = service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.Path, root.ID, root)
 
 	// create initial sync index
 	idx := tmpClient.Drive.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))

@@ -76,7 +76,7 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 
 	if _, err := q.Stmt.Exec(
 		&drv.ID,
-		&drv.Name,
+		&drv.OwnerName,
 		&drv.OwnerID,
 		&drv.TotalSize,
 		&drv.UsedSpace,

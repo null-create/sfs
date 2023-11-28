@@ -34,9 +34,9 @@ Drives may be realized as a filesystem on a user's current desktop,
 laptop, dedicated hardrive within a desktop, or separate server.
 */
 type Drive struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	OwnerID string `json:"owner:"`
+	ID        string `json:"drive_id"`
+	OwnerName string `json:"owner_name"`
+	OwnerID   string `json:"owner_id:"`
 
 	// all three measured in Kb or Mb
 	TotalSize float64 `json:"total_size"`
@@ -57,8 +57,8 @@ type Drive struct {
 	SyncIndex *SyncIndex `json:"sync_index"`
 }
 
-func check(id string, name string, owner string, rootPath string, root *Directory) bool {
-	if id == "" || name == "" || owner == "" || rootPath == "" || root == nil {
+func check(driveID string, ownerName string, ownerID string, rootPath string, root *Directory) bool {
+	if driveID == "" || ownerName == "" || ownerID == "" || rootPath == "" || root == nil {
 		log.Printf("[ERROR] invalid drive parameters. none can be empty!")
 		return false
 	}
@@ -66,14 +66,14 @@ func check(id string, name string, owner string, rootPath string, root *Director
 }
 
 // creates a new drive service for a user. does not create new physical files
-func NewDrive(id string, name string, owner string, rootPath string, rootID string, root *Directory) *Drive {
-	if !check(id, name, owner, rootPath, root) {
+func NewDrive(driveID string, ownerName string, ownerID string, rootPath string, rootID string, root *Directory) *Drive {
+	if !check(driveID, ownerName, ownerID, rootPath, root) {
 		return nil
 	}
 	return &Drive{
-		ID:      id,
-		Name:    name,
-		OwnerID: owner,
+		ID:        driveID,
+		OwnerName: ownerName,
+		OwnerID:   ownerID,
 
 		TotalSize: MAX_SIZE,
 		UsedSpace: 0,
