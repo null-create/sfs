@@ -35,15 +35,15 @@ type User struct {
 	Root string `json:"root"`
 }
 
-func valid(name, userName, email, newDrive, svcRoot string) bool {
-	if name == "" || userName == "" || email == "" || newDrive == "" || svcRoot == "" {
+func valid(name, userName, email, svcRoot string) bool {
+	if name == "" || userName == "" || email == "" || svcRoot == "" {
 		return false
 	}
 	return true
 }
 
-func NewUser(name string, userName string, email string, newDriveID string, svcRoot string, isAdmin bool) *User {
-	if !valid(name, userName, email, newDriveID, svcRoot) {
+func NewUser(name string, userName string, email string, svcRoot string, isAdmin bool) *User {
+	if !valid(name, userName, email, svcRoot) {
 		log.Fatalf("[ERROR] all new user params must be provided")
 	}
 	return &User{
@@ -58,7 +58,7 @@ func NewUser(name string, userName string, email string, newDriveID string, svcR
 
 		SvcRoot: svcRoot,
 		SfPath:  "", // set the first time the state is saved
-		DriveID: newDriveID,
+		DriveID: "", // set during first time set up
 	}
 }
 

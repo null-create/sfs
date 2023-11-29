@@ -111,6 +111,13 @@ func (d *Drive) SaveState() error {
 	return os.WriteFile(fp, data, 0644)
 }
 
+func (d *Drive) GetOwnerID() (string, error) {
+	if d.OwnerID == "" {
+		return "", fmt.Errorf("drives should have an associated owner ID")
+	}
+	return d.OwnerID, nil
+}
+
 // ------- security --------------------------------
 
 func (d *Drive) Lock(password string) {
@@ -300,6 +307,21 @@ func (d *Drive) RemoveDirs(dirs []*Directory) error {
 		}
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+// ----- cleanup --------------------------------
+
+// removes all users files and directories from their drive
+func (d *Drive) Remove() error {
+	if !d.Protected {
+		if err := d.Root.Clean(d.Root.Path); err != nil {
+			return err
+		}
+		d.Root.Clear(d.Root.Key)
+	} else {
+		log.Printf("[DEBUG] drive protected")
 	}
 	return nil
 }

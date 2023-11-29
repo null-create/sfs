@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	svc "github.com/sfs/pkg/service"
@@ -28,14 +29,20 @@ func (c *Client) Push() error {
 	}
 	// build file/dir queue for uploading
 	queue := svc.BuildQ(c.Drive.SyncIndex)
-	if len(queue.Queue) == 0 || queue == nil { // this might be a bit redundant
+	if len(queue.Queue) == 0 || queue == nil { // the "or" might be a bit redundant
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	// 'fan-out' individual upload goroutines to the server
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
 			// TODO: replace file.ServerPath with destURL/server API for this file
-			go c.Transfer.Upload(http.MethodPost, file, file.ServerPath)
+			// TODO: some apis are contingent on http method: file post/put is new vs update
+			// need a way to handle these cases on the fly
+			go func() {
+				if err := c.Transfer.Upload(http.MethodPost, file, file.ServerPath); err != nil {
+					log.Printf("[WARNING] failed to upload file: %s", file.ID)
+				}
+			}()
 		}
 	}
 	return nil

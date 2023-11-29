@@ -31,6 +31,8 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 		log.Printf("[DEBUG] querying user %s", userID)
 	}
 
+	q.WhichDB("users")
+
 	user := new(auth.User)
 	if err := q.Conn.QueryRow(FindUserQuery, userID).Scan(
 		&user.ID,
@@ -65,6 +67,7 @@ func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
 	if q.Debug {
 		log.Printf("[DEBUG] querying for userID using driveID %s", driveID)
 	}
+	q.WhichDB("users")
 
 	var userID string
 	if err := q.Conn.QueryRow(FindUsersDriveIDQuery, driveID).Scan(&userID); err != nil {
@@ -82,6 +85,8 @@ func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
 func (q *Query) GetUsers() ([]*auth.User, error) {
 	q.Connect()
 	defer q.Close()
+
+	q.WhichDB("users")
 
 	rows, err := q.Conn.Query(FindAllUsersQuery)
 	if err != nil {
@@ -128,6 +133,8 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	q.Connect()
 	defer q.Close()
 
+	q.WhichDB("files")
+
 	file := new(svc.File)
 	if err := q.Conn.QueryRow(FindFileQuery, fileID).Scan(
 		&file.ID,
@@ -157,6 +164,8 @@ func (q *Query) GetFileID(filePath string) (string, error) {
 	q.Connect()
 	defer q.Close()
 
+	q.WhichDB("files")
+
 	var fileID string
 	if err := q.Conn.QueryRow(FindFileIDQuery, filePath).Scan(&fileID); err != nil {
 		if err == sql.ErrNoRows {
@@ -172,6 +181,8 @@ func (q *Query) GetFileID(filePath string) (string, error) {
 func (q *Query) GetFiles() ([]*svc.File, error) {
 	q.Connect()
 	defer q.Close()
+
+	q.WhichDB("files")
 
 	rows, err := q.Conn.Query(FindAllFilesQuery)
 	if err != nil {
@@ -217,6 +228,8 @@ func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
+	q.WhichDB("directories")
+
 	d := new(svc.Directory)
 	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
 		&d.ID,
@@ -244,6 +257,8 @@ func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
+
+	q.WhichDB("directories")
 
 	rows, err := q.Conn.Query(FindAllQuery, "Directories", limit)
 	if err != nil {
@@ -289,6 +304,8 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	q.Connect()
 	defer q.Close()
 
+	q.WhichDB("drives")
+
 	d := new(svc.Drive)
 	if err := q.Conn.QueryRow(FindDriveQuery, driveID).Scan(
 		&d.ID,
@@ -301,6 +318,7 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 		&d.Key,
 		&d.AuthType,
 		&d.DriveRoot,
+		&d.RootID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows returned: %v", err)
@@ -318,6 +336,8 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) { return nil, nil }
 func (q *Query) GetDriveID(userID string) (string, error) {
 	q.Connect()
 	defer q.Close()
+
+	q.WhichDB("drives")
 
 	var id string
 	err := q.Conn.QueryRow(FindUsersDriveIDQuery, userID).Scan(&id)

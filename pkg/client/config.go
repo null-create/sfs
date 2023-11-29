@@ -9,6 +9,8 @@ import (
 type Conf struct {
 	// users name
 	User string `env:"CLIENT"`
+	// users ID
+	UserID string `env:"CLIENT"` // this is generated at creation time. won't be in the initial .env file
 	// users email
 	Email string `env:"CLIENT_EMAIL"`
 	// client service root

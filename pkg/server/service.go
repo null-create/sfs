@@ -641,18 +641,30 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // --------- sync --------------------------------
 
-func (s *Service) Push() error {
-	return nil
-}
+/*
+run a sync operation for a user.
+*/
+func (s *Service) Sync(driveID string, clientIdx *svc.SyncIndex) error {
+	// check for drive existance
+	drive, err := s.Db.GetDrive(driveID)
+	if err != nil {
+		return fmt.Errorf("failed to get drive: %v", err)
+	}
+	if drive == nil {
+		return fmt.Errorf("drive not found")
+	}
+	// build sync index if necessary
+	if len(drive.SyncIndex.LastSync) == 0 || drive.SyncIndex == nil {
+		ownerID, err := drive.GetOwnerID()
+		if err != nil {
+			return err
+		}
+		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(ownerID))
+	}
+	// compare against clientIdx and return the difference between the two
+	// indicies, if any
+	// clients will handle pushes/pulls to their respective API's once this
+	// index is returned to them
 
-func (s *Service) Pull() error {
-	return nil
-}
-
-// run a sync operation for a user. uses the supplied index,
-// which should have ToUpdate already populated, and builds a
-// batch of files to be either uploaded to or downloaded from
-// a given client
-func (s *Service) StartSync(driveID string, up, down bool, idx *svc.SyncIndex) error {
 	return nil
 }

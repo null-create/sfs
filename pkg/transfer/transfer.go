@@ -21,12 +21,16 @@ import (
 // transfer operations are intended to run in their own goroutine as part
 // of sync operations with the server
 type Transfer struct {
-	Start    time.Time
-	Buffer   *bytes.Buffer
+	Start  time.Time
+	Buffer *bytes.Buffer
+
+	// dedicated listener for downloads and the background daemon
 	Listener func(network string, address string) (net.Listener, error)
-	Src      string // local file path of the file to be uploaded
-	Dest     string // local destination for file downloads
-	Client   *http.Client
+
+	Src  string // local file path of the file to be uploaded
+	Dest string // local destination for file downloads
+
+	Client *http.Client
 }
 
 func NewTransfer() *Transfer {
@@ -73,7 +77,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		return fmt.Errorf("[ERROR] failed to write file data: %v", err)
 	}
 
-	// prepare and send the request to the server
+	// prepare and send the request to the destination
 	req, err := t.PrepareReq(method, bodyWriter.FormDataContentType(), destURL)
 	if err != nil {
 		return err
@@ -101,9 +105,9 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // download a file from the given URL.
 //
 // intended to run in its own goroutine
-func (t *Transfer) Download(dest, fileURL string) error {
+func (t *Transfer) Download(destPath, fileURL string) error {
 	// listen for server requests
-	ln, err := t.Listener("tcp", ":8080")
+	ln, err := t.Listener("tcp", ":8080") // TODO: port should be a config setting
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to start client listener: %v", err)
 	}
@@ -123,7 +127,7 @@ func (t *Transfer) Download(dest, fileURL string) error {
 		return fmt.Errorf("[ERROR] failed to read file name from server: %v", err)
 	}
 	fileName := string(fileNameBuffer[:n])
-	file, err := os.Create(filepath.Join(dest, fileName))
+	file, err := os.Create(filepath.Join(destPath, fileName))
 	if err != nil {
 		return fmt.Errorf("[ERROR] failed to create file: %v", err)
 	}

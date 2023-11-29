@@ -83,10 +83,11 @@ func TestLoadClient(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	// add a new user
-	newUser, err := newUser("bill buttlicker", c1.Drive.ID, c1.Drive.Root.Path, e)
+	newUser, err := newUser("bill buttlicker", c1.Drive.Root.Path, e)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
+	newUser.DriveID = c1.Drive.ID
 	c1.User = newUser
 	if err = c1.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
@@ -103,7 +104,8 @@ func TestLoadClient(t *testing.T) {
 	assert.Equal(t, c1.Root, c2.Root)
 	assert.Equal(t, c1.User.ID, c2.User.ID)
 	assert.Equal(t, c1.SfDir, c2.SfDir)
-	assert.Equal(t, c1.Db, c2.Db)
+	assert.NotEqual(t, nil, c2.Db)
+	assert.True(t, c2.Db.Singleton)
 	assert.Equal(t, c1.Handlers, c2.Handlers)
 
 	if err := Clean(t, tmpDir); err != nil {

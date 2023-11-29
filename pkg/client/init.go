@@ -26,6 +26,7 @@ root/
 |	  |---state/
 |   |   |---user-state-date-time.json
 |   |---dbs/
+|   |   |---users
 |   |   |---files
 |   |   |---directories
 users files and directories within a dedicated service root.
@@ -42,9 +43,14 @@ this can allow for more individual control over files and directories
 as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
-func setup(user, svcRoot string, e *env.Env) (*Client, error) {
+func setup(svcRoot string, e *env.Env) (*Client, error) {
+	clientName, err := e.Get("CLIENT")
+	if err != nil {
+		return nil, err
+	}
+
 	// make client service root directory
-	svcDir := filepath.Join(svcRoot, user)
+	svcDir := filepath.Join(svcRoot, clientName)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
 	}
@@ -66,9 +72,20 @@ func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 
-	// initialize a new client with a new user
-	client, err := newClient(user)
+	// set up new user
+	newUser, err := newUser(clientName, svcDir, e)
 	if err != nil {
+		return nil, err
+	}
+
+	// initialize a new client for the new user
+	client, err := newClient(newUser)
+	if err != nil {
+		return nil, err
+	}
+	newUser.DriveID = client.Drive.ID
+	client.Db.WhichDB("users")
+	if err := client.Db.AddUser(newUser); err != nil {
 		return nil, err
 	}
 
@@ -80,8 +97,8 @@ func setup(user, svcRoot string, e *env.Env) (*Client, error) {
 	return client, nil
 }
 
-func newClient(user string) (*Client, error) {
-	client := NewClient(user, auth.NewUUID())
+func newClient(user *auth.User) (*Client, error) {
+	client := NewClient(user)
 	if err := client.SaveState(); err != nil {
 		return nil, err
 	}
@@ -90,7 +107,7 @@ func newClient(user string) (*Client, error) {
 
 // these pull user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
-func newUser(user string, driveID string, drvRoot string, e *env.Env) (*auth.User, error) {
+func newUser(clientName string, drvRoot string, e *env.Env) (*auth.User, error) {
 	userName, err := e.Get("CLIENT_USERNAME")
 	if err != nil {
 		return nil, err
@@ -99,14 +116,17 @@ func newUser(user string, driveID string, drvRoot string, e *env.Env) (*auth.Use
 	if err != nil {
 		return nil, err
 	}
-	newUser := auth.NewUser(user, userName, userEmail, driveID, drvRoot, false)
+	newUser := auth.NewUser(clientName, userName, userEmail, drvRoot, false)
+	if err := e.Set("CLIENT_ID", newUser.ID); err != nil {
+		return nil, err
+	}
 	return newUser, nil
 }
 
 // initial client service set up
 func Setup(e *env.Env) (*Client, error) {
 	c := ClientConfig()
-	client, err := setup(c.User, c.Root, e)
+	client, err := setup(c.Root, e)
 	if err != nil {
 		return nil, err
 	}
@@ -148,18 +168,35 @@ func LoadClient(user string) (*Client, error) {
 	if err := json.Unmarshal(data, client); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
+
 	// // start db connection
 	client.Db = db.NewQuery(filepath.Join(client.Conf.Root, client.Conf.User, "dbs"), true)
-	// add transfer client
+
+	// load user
+	if client.User == nil {
+		user, err := client.GetUser()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user: %v", err)
+		}
+		client.User = user
+	}
+
+	// add transfer component
 	client.Transfer = transfer.NewTransfer()
-	// add monitoring services
+
+	// start client file monitoring services
 	client.Monitor = monitor.NewMonitor(client.Root)
-	// start client file monitoring services and initialize handlers
 	if err := client.StartMonitor(); err != nil {
 		return nil, fmt.Errorf("failed to start client monitor: %v", err)
 	}
-	client.Handlers = make(map[string]EHandler) // initialize handlers map
+
+	// initialize handlers map and start all handlers
+	client.Handlers = make(map[string]EHandler)
 	client.BuildHandlers()
+	if err := client.StartHandlers(); err != nil {
+		return nil, fmt.Errorf("failed to start event handlers: %v", err)
+	}
+
 	client.StartTime = time.Now().UTC()
 	return client, nil
 }

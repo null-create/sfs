@@ -54,7 +54,7 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 
 	// add temp directory
 	if err := q.AddDir(tmpDir); err != nil {
-		t.Fatal(err)
+		Fatal(t, err)
 	}
 	log.Printf("added directory: %s", tmpDir.ID)
 
@@ -62,12 +62,12 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 	tmpDir.Name = "pron"
 
 	if err := q.UpdateDir(tmpDir); err != nil {
-		t.Fatal(fmt.Errorf("failed to update directory: %v", err))
+		Fatal(t, fmt.Errorf("failed to update directory: %v", err))
 	}
 	// pull the dir from the db and make sure the name is accurate
 	d, err := q.GetDirectory(tmpDir.ID)
 	if err != nil {
-		t.Fatal(err)
+		Fatal(t, err)
 	}
 
 	assert.Equal(t, tmpDir.Name, d.Name)
@@ -87,18 +87,18 @@ func TestCreateAndUpdateADrive(t *testing.T) {
 	tmpDrive, _, _ := MakeTestItems(t, testDir)
 
 	if err := q.AddDrive(tmpDrive); err != nil {
-		t.Fatal(err)
+		Fatal(t, err)
 	}
 
 	tmpDrive.OwnerID = "some user"
 
 	if err := q.UpdateDrive(tmpDrive); err != nil {
-		t.Fatal(err)
+		Fatal(t, err)
 	}
 
 	d, err := q.GetDrive(tmpDrive.ID)
 	if err != nil {
-		t.Fatal(err)
+		Fatal(t, err)
 	}
 	assert.NotEqual(t, nil, d)
 	assert.Equal(t, tmpDrive.OwnerID, "some user")

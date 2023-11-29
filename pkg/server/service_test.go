@@ -211,9 +211,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	}
 
 	// create test user
-	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com",
-		auth.NewUUID(), conf.SvcRoot, false,
-	)
+	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", conf.SvcRoot, false)
 
 	// add user to service instance
 	if err := testSvc.AddUser(testUsr); err != nil {
@@ -260,10 +258,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 		t.Fatal(err)
 	}
 	// create a test user
-	testUsr := auth.NewUser(
-		"bill buttlicker", "billBB", "bill@bill.com",
-		auth.NewUUID(), c.SvcRoot, false,
-	)
+	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", c.SvcRoot, false)
 	if err := testSvc.AddUser(testUsr); err != nil {
 		t.Fatal(err)
 	}

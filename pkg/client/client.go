@@ -19,9 +19,10 @@ type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
 
-	User  *auth.User `json:"user"`           // user
-	Root  string     `json:"root"`           // path to root drive for users files and directories
-	SfDir string     `json:"state_file_dir"` // path to state file
+	UserID string     `json:"user_id"`        // usersID for this client
+	User   *auth.User `json:"user"`           // user object
+	Root   string     `json:"root"`           // path to root drive for users files and directories
+	SfDir  string     `json:"state_file_dir"` // path to state file
 
 	Drive *svc.Drive `json:"drive"` // client drive for managing users files and directories
 	Db    *db.Query  `json:"db"`    // local db connection
@@ -43,20 +44,21 @@ type Client struct {
 
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
-func NewClient(userID string) *Client {
+func NewClient(user *auth.User) *Client {
 	// get configs
 	conf := ClientConfig()
 
 	// set up local client services
 	svcRoot := filepath.Join(conf.Root, conf.User)
-	root := svc.NewDirectory("root", conf.User, svcRoot)
-	drv := svc.NewDrive(auth.NewUUID(), conf.User, userID, root.Path, root.ID, root)
+	root := svc.NewDirectory("root", conf.User, filepath.Join(svcRoot, "root"))
+	drv := svc.NewDrive(auth.NewUUID(), conf.User, user.ID, root.Path, root.ID, root)
 
 	// intialize client and start monitoring service
 	c := &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
-		User:      auth.NewUser(conf.User, userID, conf.Email, auth.NewUUID(), svcRoot, false),
+		UserID:    user.ID,
+		User:      user,
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
 		Monitor:   monitor.NewMonitor(drv.Root.Path),
@@ -120,6 +122,21 @@ func (c *Client) AddUser(user *auth.User) error {
 	return nil
 }
 
+func (c *Client) GetUser() (*auth.User, error) {
+	if c.User == nil {
+		log.Print("[WARNING] client instance has no user object. attempting to get user from the database...")
+		if c.Db == nil {
+			return nil, fmt.Errorf("failed to get user. database not initialized")
+		}
+		user, err := c.Db.GetUser(c.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user from database")
+		}
+		return user, nil
+	}
+	return c.User, nil
+}
+
 func (c *Client) UpdateUser(user *auth.User) error {
 	if user.ID == c.User.ID {
 		c.User = user
@@ -132,10 +149,19 @@ func (c *Client) UpdateUser(user *auth.User) error {
 	return nil
 }
 
+// remove a user and their drive from the client instance.
+// clears all users files and directores, as well as removes the
+// user from the client instance and db.
 func (c *Client) RemoveUser(userID string) error {
 	if c.User == nil {
 		return fmt.Errorf("no user (id=%s) found", userID)
 	} else if c.User.ID == userID {
+		// remove drive and users files
+		c.Drive.Remove()
+		// remove user and info from database
+		if err := c.Db.RemoveUser(c.UserID); err != nil {
+			return err
+		}
 		c.User = nil
 		log.Printf("[INFO] user %s removed", userID)
 	} else {

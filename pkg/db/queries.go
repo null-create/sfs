@@ -53,6 +53,7 @@ const (
 			key VARCHAR(100),
 			auth_type VARCHAR(50),
 			drive_root VARCHAR(255),
+			root_id VARCHAR(50),
 			UNIQUE(id)
 		);`
 
@@ -122,9 +123,10 @@ const (
 			protected,
 			key,
 			auth_type,
-			drive_root
+			drive_root,
+			root_id
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddUserQuery string = `
 		INSERT OR IGNORE INTO Users (
@@ -188,7 +190,8 @@ const (
 				protected = ?,
 				key = ?,
 				auth_type = ?,
-				drive_root = ?
+				drive_root = ?,
+				root_id = ?
 		WHERE id = ?;`
 
 	UpdateUserQuery string = `

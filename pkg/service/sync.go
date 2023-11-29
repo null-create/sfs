@@ -11,7 +11,7 @@ import (
 
 type SyncIndex struct {
 	// userID of of the user this sync index belongs to
-	User string `json:"user"`
+	UserID string `json:"user"`
 
 	// filepath to save sync-index.json to, i.e.
 	// path/to/userID-sync-index-date.json, where <date>
@@ -34,9 +34,9 @@ type SyncIndex struct {
 }
 
 // create a new sync-index object
-func NewSyncIndex(user string) *SyncIndex {
+func NewSyncIndex(userID string) *SyncIndex {
 	return &SyncIndex{
-		User:     user,
+		UserID:   userID,
 		IdxFp:    "",
 		Sync:     false,
 		LastSync: make(map[string]time.Time, 0),
@@ -50,7 +50,7 @@ func (s *SyncIndex) SaveToJSON() error {
 	if err != nil {
 		return err
 	}
-	fn := fmt.Sprintf("%s-sync-index-%s.json", s.User, time.Now().Format("2006-01-02T15-04-05"))
+	fn := fmt.Sprintf("%s-sync-index-%s.json", s.UserID, time.Now().Format("2006-01-02T15-04-05"))
 	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
 }
 
