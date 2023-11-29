@@ -39,6 +39,8 @@ func (q *Query) RemoveUser(userID string) error {
 	q.Connect()
 	defer q.Close()
 
+	q.WhichDB("users")
+
 	_, err := q.Conn.Exec(RemoveUserQuery, userID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to remove user: %v", err)

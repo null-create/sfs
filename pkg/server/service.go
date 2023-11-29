@@ -212,7 +212,6 @@ func loadStateFile(sfPath string) (*Service, error) {
 
 // populate svc.Users map from users database
 func loadUsers(svc *Service) (*Service, error) {
-	svc.Db.WhichDB("users")
 	usrs, err := svc.Db.GetUsers()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
@@ -352,7 +351,6 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	}
 	// instantiate DB connections
 	svc.Db = db.NewQuery(svc.DbDir, true)
-	svc.Db.Singleton = true
 	// attempt to populate from users database if state file had no user data
 	// make sure we have a path to the db dir and current state file for this session
 	if len(svc.Users) == 0 {
@@ -407,7 +405,6 @@ func AllocateDrive(name, ownerID, svcRoot string) (*svc.Drive, error) {
 
 // check for whether a drive exists
 func (s *Service) DriveExists(driveID string) bool {
-	s.Db.WhichDB("drives")
 	if d, err := s.Db.GetDrive(driveID); err == nil {
 		return d != nil
 	} else if err != nil {
@@ -422,7 +419,6 @@ func (s *Service) DriveExists(driveID string) bool {
 
 // save drive state to DB
 func (s *Service) SaveDrive(d *svc.Drive) error {
-	s.Db.WhichDB("drives")
 	if err := s.Db.UpdateDrive(d); err != nil {
 		return err
 	}
@@ -432,7 +428,6 @@ func (s *Service) SaveDrive(d *svc.Drive) error {
 // search DB for drive info, if available. returns a
 // *svc.Drive pointer if successful, nil or error otherwise
 func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
-	s.Db.WhichDB("drives")
 	drv, err := s.Db.GetDrive(driveID)
 	if err != nil {
 		return nil, err
@@ -473,7 +468,6 @@ func (s *Service) UserExists(userID string) bool {
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
 	// check to see if this user already has a drive
-	s.Db.WhichDB("users")
 	if dID, err := s.Db.GetDriveID(user.ID); err != nil {
 		return err
 	} else if dID != "" {
@@ -487,15 +481,12 @@ func (s *Service) addUser(user *auth.User) error {
 	}
 	user.DriveID = d.ID
 
-	s.Db.WhichDB("users")
 	if err := s.Db.AddUser(user); err != nil {
 		return fmt.Errorf("failed to add user to database: %v", err)
 	}
-	s.Db.WhichDB("drives")
 	if err := s.Db.AddDrive(d); err != nil {
 		return fmt.Errorf("failed to add drive to database: %v", err)
 	}
-	s.Db.WhichDB("directories")
 	if err := s.Db.AddDir(d.Root); err != nil {
 		return fmt.Errorf("failed to add directory to database: %v", err)
 	}
@@ -527,11 +518,9 @@ func (s *Service) AddUser(newUser *auth.User) error {
 // remove users's drive and all files and directories within,
 // as well as all drive information from the database
 func (s *Service) removeUser(driveID string) error {
-	s.Db.WhichDB("drives")
 	if d, err := s.Db.GetDrive(driveID); err == nil {
 		if d != nil && d.DriveRoot != "" {
 			// get root directory for this drive
-			s.Db.WhichDB("directories")
 			root, err := s.Db.GetDirectory(d.RootID)
 			if err != nil {
 				return err
@@ -566,7 +555,6 @@ func (s *Service) RemoveUser(userID string) error {
 			return err
 		}
 		// remove user from database
-		s.Db.WhichDB("users")
 		if err := s.Db.RemoveUser(usr.ID); err != nil {
 			return err
 		}
@@ -587,7 +575,6 @@ func (s *Service) RemoveUser(userID string) error {
 // returns nil if user isn't found
 func (s *Service) FindUser(userId string) (*auth.User, error) {
 	if u, exists := s.Users[userId]; !exists {
-		s.Db.WhichDB("users")
 		u, err := s.Db.GetUser(userId)
 		if err != nil {
 			return nil, err
@@ -617,7 +604,6 @@ func (s *Service) updateUser(user *auth.User) error {
 // update user info
 func (s *Service) UpdateUser(user *auth.User) error {
 	if _, exists := s.Users[user.ID]; exists {
-		s.Db.WhichDB("users")
 		u, err := s.Db.GetUser(user.ID)
 		if err != nil {
 			return err

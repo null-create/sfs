@@ -160,7 +160,6 @@ uploads and downloads
 // are the case, otherwise returns a file pointer.
 func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 	fileID := chi.URLParam(r, "fileID")
-	a.Svc.Db.WhichDB("Files")
 	f, err := a.Svc.Db.GetFile(fileID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -301,7 +300,6 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 	}
 
 	// update DB
-	a.Svc.Db.WhichDB("users")
 	if err := a.Svc.Db.UpdateFile(f); err != nil {
 		msg := fmt.Sprintf("failed to update file database: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -324,14 +322,19 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	f := a.findF(w, r)
 	if f == nil {
+		http.Error(w, "file not found", http.StatusNotFound)
 		return
 	}
 	// remove physical file
-	if err := os.Remove(f.ServerPath); err != nil {
-		msg := fmt.Sprintf("failed to remove file from server: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
-	}
+	// if err := os.Remove(f.ServerPath); err != nil {
+	// 	msg := fmt.Sprintf("failed to remove file from server: %v", err)
+	// 	http.Error(w, msg, http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// TODO: use/create a.Svc.DeleteFile() instead of os.Remove()
+	// using the os package directly is way too risky.
+
 	// remove from database
 	if err := a.Svc.Db.RemoveFile(f.ID); err != nil {
 		msg := fmt.Sprintf("failed to remove file from database: %v", err)

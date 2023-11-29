@@ -99,7 +99,7 @@ func (q *Query) Prepare(query string) error {
 // used only in singleton mode. will be a no-op when used
 // otherwise
 func (q *Query) WhichDB(dbName string) {
-	if q.Singleton {
+	if q.Singleton && q.DBPath != "" {
 		q.CurDB = filepath.Join(q.DBPath, dbName)
 	}
 }

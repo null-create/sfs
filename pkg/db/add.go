@@ -10,6 +10,7 @@ import (
 )
 
 func (q *Query) AddFile(f *svc.File) error {
+	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
@@ -51,6 +52,7 @@ func (q *Query) AddFiles(fs []*svc.File) error {
 
 // add a user to the user database
 func (q *Query) AddUser(u *auth.User) error {
+	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
 
@@ -94,6 +96,7 @@ func (q *Query) AddUsers(usrs []*auth.User) error {
 }
 
 func (q *Query) AddDir(d *svc.Directory) error {
+	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
@@ -134,6 +137,7 @@ func (q *Query) AddDirs(dirs []*svc.Directory) error {
 
 // add drive info to drive database
 func (q *Query) AddDrive(drv *svc.Drive) error {
+	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
 

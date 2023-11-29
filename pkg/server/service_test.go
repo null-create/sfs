@@ -255,19 +255,19 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	// create a test instance
 	testSvc, err := SvcLoad(c.SvcRoot, true)
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 	// create a test user
 	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", c.SvcRoot, false)
 	if err := testSvc.AddUser(testUsr); err != nil {
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 	origName := testUsr.Name
 
 	// check that its in the db
 	u, err := testSvc.FindUser(testUsr.ID)
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
@@ -276,13 +276,13 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	// update name and save
 	testUsr.Name = "bill buttlicker II"
 	if err := testSvc.UpdateUser(testUsr); err != nil {
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 
 	// test that the new name is the same as whats in the DB
 	u, err = testSvc.FindUser(testUsr.ID)
 	if err != nil {
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)

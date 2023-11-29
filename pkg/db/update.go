@@ -16,6 +16,8 @@ func (q *Query) UpdateFile(f *svc.File) error {
 	}
 	defer q.Stmt.Close()
 
+	q.WhichDB("files")
+
 	if _, err := q.Stmt.Exec(
 		&f.ID,
 		&f.Name,
@@ -44,6 +46,8 @@ func (q *Query) UpdateDir(d *svc.Directory) error {
 		return fmt.Errorf("failed to prepare statement: %v", err)
 	}
 	defer q.Stmt.Close()
+
+	q.WhichDB("files")
 
 	if _, err := q.Stmt.Exec(
 		&d.ID,
@@ -74,6 +78,8 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 	}
 	defer q.Stmt.Close()
 
+	q.WhichDB("drives")
+
 	if _, err := q.Stmt.Exec(
 		&drv.ID,
 		&drv.OwnerName,
@@ -101,6 +107,8 @@ func (q *Query) UpdateUser(u *auth.User) error {
 		return fmt.Errorf("failed to prepare statement: %v", err)
 	}
 	defer q.Stmt.Close()
+
+	q.WhichDB("users")
 
 	if _, err := q.Stmt.Exec(
 		&u.ID,
