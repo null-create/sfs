@@ -458,6 +458,7 @@ func (s *Service) RemoveDrive(driveID string) error {
 	if err := s.Db.RemoveDrive(driveID); err != nil {
 		return err
 	}
+	log.Printf("[INFO] drive %s removed", driveID)
 	return nil
 }
 
@@ -620,8 +621,6 @@ func (s *Service) updateUser(user *auth.User) error {
 		return fmt.Errorf("failed to update user in database: %v", err)
 	}
 	s.Users[user.ID] = user
-	s.Db.DBPath = filepath.Join(s.SvcRoot, "dbs")
-
 	log.Printf("[INFO] user (id=%s) updated", user.ID)
 	return nil
 }
