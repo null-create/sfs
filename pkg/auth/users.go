@@ -32,7 +32,7 @@ type User struct {
 
 	// path to the the drive root for their filesystem, ie:
 	// sfs/users/user-who-ever/root
-	Root string `json:"root"`
+	DrvRoot string `json:"root"`
 }
 
 func valid(name, userName, email, svcRoot string) bool {

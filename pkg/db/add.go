@@ -77,7 +77,7 @@ func (q *Query) AddUser(u *auth.User) error {
 		&u.DriveID,
 		&u.TotalFiles,
 		&u.TotalDirs,
-		&u.Root,
+		&u.DrvRoot,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}

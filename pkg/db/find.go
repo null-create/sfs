@@ -46,7 +46,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 		&user.DriveID,
 		&user.TotalFiles,
 		&user.TotalDirs,
-		&user.Root,
+		&user.DrvRoot,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows returned: %v", err)
@@ -108,7 +108,7 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 			&user.DriveID,
 			&user.TotalFiles,
 			&user.TotalDirs,
-			&user.Root,
+			&user.DrvRoot,
 		); err != nil {
 			if err == sql.ErrNoRows {
 				log.Printf("[DEBUG] no rows returned: %v", err)
