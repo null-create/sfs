@@ -44,6 +44,29 @@ func NewSyncIndex(userID string) *SyncIndex {
 	}
 }
 
+func (s *SyncIndex) isInit() bool {
+	if s.ToUpdate == nil {
+		return false
+	}
+	if s.LastSync == nil {
+		return false
+	}
+	return true
+}
+
+func (s *SyncIndex) IsMapped() bool {
+	if !s.isInit() {
+		return false
+	}
+	if len(s.LastSync) == 0 {
+		return false
+	}
+	if len(s.ToUpdate) == 0 {
+		return false
+	}
+	return true
+}
+
 // write out a sync index to a JSON file
 func (s *SyncIndex) SaveToJSON() error {
 	data, err := json.MarshalIndent(s, "", "  ")
@@ -52,6 +75,15 @@ func (s *SyncIndex) SaveToJSON() error {
 	}
 	fn := fmt.Sprintf("%s-sync-index-%s.json", s.UserID, time.Now().Format("2006-01-02T15-04-05"))
 	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
+}
+
+// checks last sync for file.
+// won't be in toupdate if it's not in lastsync first
+func (s *SyncIndex) HasFile(fileID string) bool {
+	if _, exists := s.LastSync[fileID]; !exists {
+		return false
+	}
+	return true
 }
 
 // get a slice of files to sync from the index.ToUpdate map
