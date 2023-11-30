@@ -525,12 +525,15 @@ func (s *Service) removeUser(driveID string) error {
 			if err != nil {
 				return err
 			}
+			if d.Root == nil {
+				d.Root = root
+			}
 			// remove all files and directories
-			if err := d.Root.Clean(root.Path); err != nil {
+			if err := d.Root.Clean(d.DriveRoot); err != nil {
 				return err
 			}
 			//remove users root dir itself
-			if err := os.Remove(d.DriveRoot); err != nil {
+			if err := os.RemoveAll(d.DriveRoot); err != nil {
 				return err
 			}
 			// remove drive from database

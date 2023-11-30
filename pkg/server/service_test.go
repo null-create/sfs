@@ -262,7 +262,6 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	if err := testSvc.AddUser(testUsr); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
-	origName := testUsr.Name
 
 	// check that its in the db
 	u, err := testSvc.FindUser(testUsr.ID)
@@ -292,7 +291,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 	// remove test user drive
-	tmpDir := filepath.Join(c.SvcRoot, "users", origName)
+	tmpDir := filepath.Join(c.SvcRoot, "users")
 	if err := Clean(tmpDir); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}

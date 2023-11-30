@@ -3,7 +3,6 @@ package db
 import (
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -22,24 +21,10 @@ func (q *Query) DropTable(tableName string) error {
 	return nil
 }
 
-// remove a table and create a new one by the same name
-func (q *Query) ResetTable(tableName string) error {
-	if err := q.DropTable(tableName); err != nil {
-		return err
-	}
-	tablePath := filepath.Join(q.DBPath, tableName)
-	if err := NewDB(tableName, tablePath); err != nil {
-		return err
-	}
-	log.Printf("[INFO] %s table reset", tableName)
-	return nil
-}
-
 func (q *Query) RemoveUser(userID string) error {
+	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
-
-	q.WhichDB("users")
 
 	_, err := q.Conn.Exec(RemoveUserQuery, userID, userID)
 	if err != nil {
@@ -49,6 +34,7 @@ func (q *Query) RemoveUser(userID string) error {
 }
 
 func (q *Query) RemoveUsers(users []*auth.User) error {
+	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
 
@@ -62,6 +48,7 @@ func (q *Query) RemoveUsers(users []*auth.User) error {
 }
 
 func (q *Query) RemoveFile(fileID string) error {
+	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
@@ -73,6 +60,7 @@ func (q *Query) RemoveFile(fileID string) error {
 }
 
 func (q *Query) RemoveFiles(fs []*svc.File) error {
+	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
@@ -86,6 +74,7 @@ func (q *Query) RemoveFiles(fs []*svc.File) error {
 }
 
 func (q *Query) RemoveDirectory(dirID string) error {
+	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
@@ -97,6 +86,7 @@ func (q *Query) RemoveDirectory(dirID string) error {
 }
 
 func (q *Query) RemoveDirectories(dirs []*svc.Directory) error {
+	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
@@ -110,6 +100,7 @@ func (q *Query) RemoveDirectories(dirs []*svc.Directory) error {
 }
 
 func (q *Query) RemoveDrive(driveID string) error {
+	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
 
@@ -121,6 +112,7 @@ func (q *Query) RemoveDrive(driveID string) error {
 }
 
 func (q *Query) RemoveDrives(drvs []*svc.Drive) error {
+	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
 

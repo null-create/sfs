@@ -101,6 +101,8 @@ func (q *Query) Prepare(query string) error {
 func (q *Query) WhichDB(dbName string) {
 	if q.Singleton && q.DBPath != "" {
 		q.CurDB = filepath.Join(q.DBPath, dbName)
+	} else {
+		log.Print("[WARNING] q.DBpath was not set")
 	}
 }
 

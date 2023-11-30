@@ -25,14 +25,13 @@ func (q *Query) UserExists(userID string) (bool, error) {
 
 // get user data from database
 func (q *Query) GetUser(userID string) (*auth.User, error) {
+	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
 
 	if q.Debug {
 		log.Printf("[DEBUG] querying user %s", userID)
 	}
-
-	q.WhichDB("users")
 
 	user := new(auth.User)
 	if err := q.Conn.QueryRow(FindUserQuery, userID).Scan(
