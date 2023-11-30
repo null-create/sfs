@@ -439,6 +439,28 @@ func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 	return drv, nil
 }
 
+// remove a drive and all its files and directories, as well
+// as its info from the database
+func (s *Service) RemoveDrive(driveID string) error {
+	drv, err := s.Db.GetDrive(driveID)
+	if err != nil {
+		return err
+	}
+	if drv == nil {
+		log.Printf("[INFO] drive %s not found", driveID)
+		return nil
+	}
+	// remove drive files/directories
+	if err := drv.Root.Clean(drv.Root.Path); err != nil {
+		return err
+	}
+	// remove drive from db
+	if err := s.Db.RemoveDrive(driveID); err != nil {
+		return err
+	}
+	return nil
+}
+
 // --------- users --------------------------------
 
 func (s *Service) TotalUsers() int {
