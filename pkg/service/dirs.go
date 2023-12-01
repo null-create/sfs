@@ -515,16 +515,16 @@ func (d *Directory) WalkF(fileID string) *File {
 }
 
 func walkF(dir *Directory, fileID string) *File {
-	if f, found := dir.Files[fileID]; found {
-		return f
+	if file, found := dir.Files[fileID]; found {
+		return file
 	}
 	if len(dir.Dirs) == 0 {
 		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
-		if sd := walkF(subDirs, fileID); sd != nil {
-			return sd
+		if file := walkF(subDirs, fileID); file != nil {
+			return file
 		}
 	}
 	return nil
