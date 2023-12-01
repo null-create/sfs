@@ -674,3 +674,17 @@ func (s *Service) Sync(driveID string) (*svc.SyncIndex, error) {
 	}
 	return drive.SyncIndex, nil
 }
+
+// --------- directories --------------------------------
+
+func (s *Service) FindDir(dirID string) (*svc.Directory, error)     { return nil, nil }
+func (s *Service) AddDir(dirID string, newDir *svc.Directory) error { return nil }
+func (s *Service) RemoveDir(dirID string) error                     { return nil }
+
+// ---------- files --------------------------------
+
+func (s *Service) FindFile(userID string, fileID string) (*svc.File, error)       { return nil, nil }
+func (s *Service) FindFiles(userID string, fileIds []string) ([]*svc.File, error) { return nil, nil }
+func (s *Service) AddFile(userID string, dirID string, file *svc.File) error      { return nil }
+func (s *Service) UpdateFile(userID string, fileID string, data []byte) error     { return nil }
+func (s *Service) DeleteFile(userID string, fileID string) error                  { return nil }
