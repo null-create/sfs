@@ -158,9 +158,9 @@ func loadStateFile(user string) ([]byte, error) {
 }
 
 // load client from state file, if possible
-func LoadClient(user string) (*Client, error) {
+func LoadClient(usersName string) (*Client, error) {
 	// load client state
-	data, err := loadStateFile(user)
+	data, err := loadStateFile(usersName)
 	if err != nil {
 		return nil, err
 	}
@@ -169,17 +169,21 @@ func LoadClient(user string) (*Client, error) {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
-	// // start db connection
+	// start db connection
 	client.Db = db.NewQuery(filepath.Join(client.Conf.Root, client.Conf.User, "dbs"), true)
 
 	// load user
-	if client.User == nil {
-		user, err := client.GetUser()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user: %v", err)
-		}
-		client.User = user
+	user, err := client.GetUser()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
+	// get users drive
+	drive, err := client.GetDrive(user.DriveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get drive: %v", err)
+	}
+	client.User = user
+	client.Drive = drive
 
 	// add transfer component
 	client.Transfer = transfer.NewTransfer()
