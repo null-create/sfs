@@ -67,6 +67,11 @@ func (s *SyncIndex) IsMapped() bool {
 	return true
 }
 
+// resets ToUpdate
+func (s *SyncIndex) Reset() {
+	s.ToUpdate = make(map[string]*File, 0)
+}
+
 // write out a sync index to a JSON file
 func (s *SyncIndex) SaveToJSON() error {
 	data, err := json.MarshalIndent(s, "", "  ")
