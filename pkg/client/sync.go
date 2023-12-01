@@ -1,5 +1,10 @@
 package client
 
+/*
+File for coordinating file/directory transfers between the client and the server
+May need to build SyncIndex.ToUpdate map, or transfer individual files or directories
+*/
+
 import (
 	"fmt"
 	"log"
@@ -7,19 +12,6 @@ import (
 
 	svc "github.com/sfs/pkg/service"
 )
-
-/*
-File for coordinating file/directory transfers between the client and the server
-May need to build SyncIndex.ToUpdate map, or transfer individual files or directories
-
-Some functions may need to be connected to the client struct. Maybe not. We'll see.
-
-Will probably need to create some functions that "fan-out" or "fan-in" goroutines,
-depending on the number of items to push or pull from the server.
-
-Will also probably need to make use of the batches, queues, and some functions
-(like BuildQ()) defined in sync.go within in the core service module.
-*/
 
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
