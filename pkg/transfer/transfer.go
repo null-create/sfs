@@ -105,7 +105,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // download a file from the given URL.
 //
 // intended to run in its own goroutine
-func (t *Transfer) Download(destPath, fileURL string) error {
+func (t *Transfer) Download(destPath string, fileURL string) error {
 	// listen for server requests
 	ln, err := t.Listener("tcp", ":8080") // TODO: port should be a config setting
 	if err != nil {
