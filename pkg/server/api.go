@@ -257,17 +257,14 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 	newFile.LastSync = time.Now().UTC()
 	newFile.CheckSum, err = svc.CalculateChecksum(newFile.ServerPath, "sha256")
 	if err != nil {
-		msg := fmt.Sprintf("failed to calculate checksum %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
+		log.Printf("failed to calculate checksum %v", err)
 	}
-
-	a.Svc.Db.WhichDB("files")
 	if err := a.Svc.Db.AddFile(newFile); err != nil {
 		msg := fmt.Sprintf("failed to add file to database: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+	w.Write([]byte(fmt.Sprintf("file %s has been added to the server", newFile.Name)))
 }
 
 // update the file
@@ -296,7 +293,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 	f.LastSync = time.Now().UTC()
 	// we ignore the error since we don't want to return it to the user
 	if err = f.UpdateChecksum(); err != nil {
-		log.Printf("failed to update checksum: %v", err)
+		log.Printf("[WARNING] failed to update checksum: %v", err)
 	}
 
 	// update DB
@@ -305,6 +302,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+	w.Write([]byte(fmt.Sprintf("file %s updated", f.Name)))
 }
 
 // upload or update a file on/to the server
