@@ -244,3 +244,25 @@ func (c *Client) RemoveDir(dirID string) error {
 func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
 	return c.Drive.RemoveDirs(dirs)
 }
+
+// ----- drive --------------------------------
+
+func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
+	if c.Drive == nil {
+		log.Print("[WARNING] drive not found! attempting to load...")
+		drive, err := c.Db.GetDrive(driveID)
+		if err != nil {
+			return nil, err
+		}
+		root, err := c.Db.GetDirectory(drive.RootID)
+		if err != nil {
+			return nil, err
+		}
+		drive.Root = root
+		if drive.SyncIndex == nil {
+			drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
+		}
+		c.Drive = drive
+	}
+	return c.Drive, nil
+}
