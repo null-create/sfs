@@ -16,7 +16,7 @@ import (
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
 func (c *Client) Push() error {
-	if len(c.Drive.SyncIndex.ToUpdate) == 0 {
+	if len(c.Drive.SyncIndex.ToUpdate) == 0 || c.Drive.SyncIndex.ToUpdate == nil {
 		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
 	}
 	queue := svc.BuildQ(c.Drive.SyncIndex)
@@ -43,11 +43,10 @@ func (c *Client) Push() error {
 // with the client, and pull any files that are out of date on the client side
 // create goroutines for each download and 'fan-in' once all are complete
 func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
-	if svrIdx == nil || len(svrIdx.ToUpdate) == 0 {
+	if len(svrIdx.ToUpdate) == 0 || svrIdx == nil {
 		log.Print("[INFO] nothing to pull")
 		return nil
 	}
-
 	queue := svc.BuildQ(svrIdx)
 	if len(queue.Queue) == 0 || queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
@@ -55,7 +54,7 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
 			go func() {
-				if err := c.Transfer.Download(file.ServerPath, file.Endpoint); err != nil {
+				if err := c.Transfer.Download(file.ClientPath, file.Endpoint); err != nil {
 					log.Printf("[WARNING] failed to download file: %s\nerr: %v", file.Name, err)
 				}
 			}()
