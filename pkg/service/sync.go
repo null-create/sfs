@@ -44,20 +44,7 @@ func NewSyncIndex(userID string) *SyncIndex {
 	}
 }
 
-func (s *SyncIndex) isInit() bool {
-	if s.ToUpdate == nil {
-		return false
-	}
-	if s.LastSync == nil {
-		return false
-	}
-	return true
-}
-
 func (s *SyncIndex) IsMapped() bool {
-	if !s.isInit() {
-		return false
-	}
 	if len(s.LastSync) == 0 {
 		return false
 	}
