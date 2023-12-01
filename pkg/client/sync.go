@@ -19,12 +19,10 @@ func (c *Client) Push() error {
 	if len(c.Drive.SyncIndex.ToUpdate) == 0 {
 		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
 	}
-	// build file/dir queue for uploading
 	queue := svc.BuildQ(c.Drive.SyncIndex)
-	if len(queue.Queue) == 0 || queue == nil { // the "or" might be a bit redundant
+	if len(queue.Queue) == 0 || queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
-	// 'fan-out' individual upload goroutines to the server
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
 			// TODO: some apis are contingent on http method: file post/put is new vs update
@@ -37,6 +35,7 @@ func (c *Client) Push() error {
 			}()
 		}
 	}
+	c.Drive.SyncIndex.Reset() // clear ToUpdate
 	return nil
 }
 
@@ -48,9 +47,9 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 		log.Print("[INFO] nothing to pull")
 		return nil
 	}
-	// build file/dir queue for downloading
+
 	queue := svc.BuildQ(svrIdx)
-	if len(queue.Queue) == 0 || queue == nil { // the "or" might be a bit redundant
+	if len(queue.Queue) == 0 || queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	for _, batch := range queue.Queue {
@@ -64,3 +63,6 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 	}
 	return nil
 }
+
+// get the server's current sync index for this user
+func (c *Client) GetServerSyncIdx() (*svc.SyncIndex, error) { return nil, nil }
