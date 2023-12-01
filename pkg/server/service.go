@@ -651,30 +651,26 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // --------- sync --------------------------------
 
-/*
-run a sync operation for a user.
-*/
-func (s *Service) Sync(driveID string, clientIdx *svc.SyncIndex) error {
+// retrieve a sync index for a given drive. used by the client
+// to compare against and initiate a sync operation, if necessary
+// will be used as the first step in a sync operation on the client side.
+func (s *Service) Sync(driveID string) (*svc.SyncIndex, error) {
 	// check for drive existance
 	drive, err := s.Db.GetDrive(driveID)
 	if err != nil {
-		return fmt.Errorf("failed to get drive: %v", err)
+		return nil, fmt.Errorf("failed to get drive: %v", err)
 	}
 	if drive == nil {
-		return fmt.Errorf("drive not found")
+		return nil, fmt.Errorf("drive not found")
 	}
 	// build sync index if necessary
 	if len(drive.SyncIndex.LastSync) == 0 || drive.SyncIndex == nil {
+		log.Printf("[WARNING] sync index for %s not found. creating...", driveID)
 		ownerID, err := drive.GetOwnerID()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(ownerID))
 	}
-	// compare against clientIdx and return the difference between the two
-	// indicies, if any
-	// clients will handle pushes/pulls to their respective API's once this
-	// index is returned to them
-
-	return nil
+	return drive.SyncIndex, nil
 }
