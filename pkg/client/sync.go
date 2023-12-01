@@ -35,12 +35,12 @@ func (c *Client) Push() error {
 	// 'fan-out' individual upload goroutines to the server
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
-			// TODO: replace file.ServerPath with destURL/server API for this file
 			// TODO: some apis are contingent on http method: file post/put is new vs update
-			// need a way to handle these cases on the fly
+			// need a way to handle these cases on the fly.
+			// maybe add a field to File struct?
 			go func() {
-				if err := c.Transfer.Upload(http.MethodPost, file, file.ServerPath); err != nil {
-					log.Printf("[WARNING] failed to upload file: %s", file.ID)
+				if err := c.Transfer.Upload(http.MethodPost, file, file.Endpoint); err != nil {
+					log.Printf("[WARNING] failed to upload file: %s\nerr: %v", file.ID, err)
 				}
 			}()
 		}
@@ -51,16 +51,24 @@ func (c *Client) Push() error {
 // get a sync index from the server, compare with the local one
 // with the client, and pull any files that are out of date on the client side
 // create goroutines for each download and 'fan-in' once all are complete
-func (c *Client) Pull() error { return nil }
-
-// background daemon that listens for requests from the server to
-// download files. returns a channel that is used to shut down the daemon
-// if needed
-func (c *Client) ListenerDaemon() (chan bool, error) {
-	// 1. establish connection with server
-	// 2. start a blocking net listener for pings from the server
-	// 3. if we get a request, get the request type (get from server or push to server),
-	//    then generate a list of files or directories to be sent to the server or pulled from
-	//    the server
-	return nil, nil
+func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
+	if svrIdx == nil || len(svrIdx.ToUpdate) == 0 {
+		log.Print("[INFO] nothing to pull")
+		return nil
+	}
+	// build file/dir queue for downloading
+	queue := svc.BuildQ(svrIdx)
+	if len(queue.Queue) == 0 || queue == nil { // the "or" might be a bit redundant
+		return fmt.Errorf("unable to build queue: no files found for syncing")
+	}
+	for _, batch := range queue.Queue {
+		for _, file := range batch.Files {
+			go func() {
+				if err := c.Transfer.Download(file.ServerPath, file.Endpoint); err != nil {
+					log.Printf("[WARNING] failed to download file: %s\nerr: %v", file.Name, err)
+				}
+			}()
+		}
+	}
+	return nil
 }
