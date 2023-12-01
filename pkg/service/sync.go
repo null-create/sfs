@@ -56,7 +56,12 @@ func (s *SyncIndex) IsMapped() bool {
 
 // resets ToUpdate
 func (s *SyncIndex) Reset() {
-	s.ToUpdate = make(map[string]*File, 0)
+	if len(s.ToUpdate) == 0 {
+		return
+	}
+	for key := range s.ToUpdate {
+		delete(s.ToUpdate, key)
+	}
 }
 
 // write out a sync index to a JSON file
@@ -120,6 +125,21 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 		return idx
 	}
 	return nil
+}
+
+// compares a given syncindex against a newly generated one and returns the differnece
+// between the two, favoring the newer one for any last sync times
+func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
+	diff := NewSyncIndex(orig.UserID)
+	for fileID, lastSync := range new.LastSync {
+		if orig.HasFile(fileID) {
+			if orig.LastSync[fileID].Sub(lastSync) > 0 {
+				diff.ToUpdate[fileID] = nil // CHANGE THIS. need to get actual *svc.File
+			}
+			diff.LastSync[fileID] = lastSync
+		}
+	}
+	return diff
 }
 
 // if all files in the given slice are greater than
@@ -191,6 +211,8 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 // build the queue for file uploads or downloads during a Sync event
 //
 // idx should have ToUpdate populated
+//
+// returns nil if no files are found from the given index
 func BuildQ(idx *SyncIndex) *Queue {
 	files := idx.GetFiles()
 	if files == nil {
