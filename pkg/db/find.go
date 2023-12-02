@@ -174,13 +174,58 @@ func (q *Query) GetFileID(filePath string) (string, error) {
 	return fileID, nil
 }
 
-// populate a slice of *svc.File structs from the database
+// populate a slice of *svc.File structs from *all*
+// files in the files database
 func (q *Query) GetFiles() ([]*svc.File, error) {
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
 	rows, err := q.Conn.Query(FindAllFilesQuery)
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	var fs []*svc.File
+	for rows.Next() {
+		file := new(svc.File)
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.Owner,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				log.Printf("[DEBUG] no rows returned: %v", err)
+				continue
+			}
+			return nil, fmt.Errorf("[ERROR] unable to scan rows: %v", err)
+		}
+		fs = append(fs, file)
+	}
+	if len(fs) == 0 {
+		log.Print("[DEBUG] no files returned")
+	}
+	return fs, nil
+}
+
+// populate a slice of *svc.File structs for all files
+// associated with the given user
+func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindAllUsersFilesQuery, userID)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
