@@ -582,6 +582,34 @@ func walkD(dir *Directory, dirID string) *Directory {
 	return nil
 }
 
+/*
+WalkDs() recursively traverses sub directories starting at a
+given directory (or root) constructing a map of all sub directories.
+
+Returns nil if nothing is not found
+*/
+func (d *Directory) WalkDs() map[string]*Directory {
+	return walkDs(d, make(map[string]*Directory))
+}
+
+func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
+	if len(dir.Dirs) == 0 {
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		return nil
+	}
+	for _, subDir := range dir.Dirs {
+		if _, exists := dirMap[subDir.ID]; !exists {
+			dirMap[subDir.ID] = subDir
+		}
+	}
+	for _, subDirs := range dir.Dirs {
+		if dirs := walkDs(subDirs, dirMap); dirs != nil {
+			return dirs
+		}
+	}
+	return nil
+}
+
 func buildSync(dir *Directory, idx *SyncIndex) *SyncIndex {
 	for _, file := range dir.Files {
 		if _, exists := idx.LastSync[file.ID]; !exists {
