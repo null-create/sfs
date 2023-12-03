@@ -122,13 +122,9 @@ func watchAll(path string, m *Monitor) error {
 		if err != nil {
 			return err
 		}
-		if _, err := os.Stat(filePath); err == nil {
-			// WatchFile handles whether this is a directory or a file
-			// we just don't want to miss anything
-			m.WatchFile(filePath)
-		} else if err != nil {
-			return err
-		}
+		// m.WatchFile handles whether this is a directory or a file.
+		// we just don't want to miss anything.
+		m.WatchFile(filePath)
 		return nil
 	})
 	if err != nil {
@@ -160,10 +156,19 @@ func (m *Monitor) Start(dirpath string) error {
 	return watchAll(dirpath, m)
 }
 
+func (m *Monitor) IsDir(path string) (bool, error) {
+	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
 // add a file to the events map. will be a no-op if the
 // given path is not a file path.
 func (m *Monitor) WatchFile(filePath string) {
-	if stat, err := os.Stat(filePath); err == nil && stat.IsDir() {
+	if isDir, err := m.IsDir(filePath); isDir {
 		log.Printf("[WARNING] filepath is a directory, not a file: %s", filePath)
 		return
 	} else if err != nil {
