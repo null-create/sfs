@@ -79,10 +79,8 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 	}
 
 	// initialize a new client for the new user
-	client, err := newClient(newUser)
-	if err != nil {
-		return nil, err
-	}
+	client := NewClient(newUser)
+
 	newUser.DriveID = client.Drive.ID
 	if err := client.Db.AddUser(newUser); err != nil {
 		return nil, err
@@ -93,14 +91,6 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 
-	return client, nil
-}
-
-func newClient(user *auth.User) (*Client, error) {
-	client := NewClient(user)
-	if err := client.SaveState(); err != nil {
-		return nil, err
-	}
 	return client, nil
 }
 
