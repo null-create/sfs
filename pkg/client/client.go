@@ -31,6 +31,7 @@ type Client struct {
 	// server api endpoints.
 	// file objects have their own API field, this is for storing
 	// general operation endpoints like sync operations
+	// key == file or dir uuid, val == associated server API endpoint
 	Endpoints map[string]string `json:"endpoints"`
 
 	// listener that checks for file or directory events
