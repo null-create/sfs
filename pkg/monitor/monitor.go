@@ -65,6 +65,10 @@ func watchFile(path string, stop chan bool) chan Event {
 		log.Printf("[ERROR] failed to get file info for %s :%v\nunable to monitor", path, err)
 		return nil
 	}
+	if initialStat.IsDir() {
+		log.Printf("[WARNING] this is a directory, not a file: %s", path)
+		return nil
+	}
 
 	// event channel
 	evt := make(chan Event)
@@ -122,8 +126,9 @@ func watchAll(path string, m *Monitor) error {
 		if err != nil {
 			return err
 		}
-		// make sure this a file
-		if stat, err := os.Stat(filePath); !stat.IsDir() {
+		if _, err := os.Stat(filePath); err == nil {
+			// WatchFile handles whether this is a directory or a file
+			// we just don't want to miss anything
 			m.WatchFile(filePath)
 		} else if err != nil {
 			return err
@@ -159,8 +164,16 @@ func (m *Monitor) Start(dirpath string) error {
 	return watchAll(dirpath, m)
 }
 
-// add a file to the events map
+// add a file to the events map. will be a no-op if the
+// given path is not a file path.
 func (m *Monitor) WatchFile(filePath string) {
+	if stat, err := os.Stat(filePath); err == nil && stat.IsDir() {
+		log.Printf("[WARNING] filepath is a directory, not a file: %s", filePath)
+		return
+	} else if err != nil {
+		log.Printf("[WARNING] failed to read file path: %s\nerr: %v", filePath, err)
+		return
+	}
 	if !m.Exists(filePath) {
 		stop := make(chan bool)
 		m.OffSwitches[filePath] = stop
