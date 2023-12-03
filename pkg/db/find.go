@@ -368,6 +368,36 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	return d, nil
 }
 
+// find a drive using the given userID
+func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
+	q.WhichDB("drives")
+	q.Connect()
+	defer q.Close()
+
+	d := new(svc.Drive)
+	if err := q.Conn.QueryRow(FindDriveByUserID, userID).Scan(
+		&d.ID,
+		&d.OwnerName,
+		&d.OwnerID,
+		&d.TotalSize,
+		&d.UsedSpace,
+		&d.FreeSpace,
+		&d.Protected,
+		&d.Key,
+		&d.AuthType,
+		&d.DriveRoot,
+		&d.RootID,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows returned: %v", err)
+			return nil, nil
+		}
+		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+	}
+
+	return nil, nil
+}
+
 func (q *Query) GetDrives() ([]*svc.Drive, error) { return nil, nil }
 
 // get the drive ID for a given userID

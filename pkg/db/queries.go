@@ -244,6 +244,7 @@ const (
 	FindFileQuery               string = `SELECT * FROM Files WHERE id = ?;`
 	FindDirQuery                string = `SELECT * FROM Directories WHERE id = ?;`
 	FindDriveQuery              string = `SELECT * FROM Drives WHERE id = ?;`
+	FindDriveByUserID           string = `SELECT * FROM Drives WHERE owner = ?;`
 	FindUserQuery               string = `SELECT * FROM Users WHERE id = ?;`
 	FindUsersDriveIDQuery       string = `SELECT drive_id FROM Users Where id = ?;`
 	FindUsersIDWithDriveIDQuery string = `SELECT owner FROM Drives WHERE id = ?;`
