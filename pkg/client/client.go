@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -19,8 +20,8 @@ type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
 
-	UserID string     `json:"user_id"`        // usersID for this client
 	User   *auth.User `json:"user"`           // user object
+	UserID string     `json:"user_id"`        // usersID for this client
 	Root   string     `json:"root"`           // path to root drive for users files and directories
 	SfDir  string     `json:"state_file_dir"` // path to state file
 
@@ -40,6 +41,9 @@ type Client struct {
 
 	// file transfer component
 	Transfer *transfer.Transfer `json:"-"`
+
+	// http client
+	Client *http.Client `json:"-"`
 }
 
 // creates a new client object. does not create actual service directories or
@@ -66,6 +70,9 @@ func NewClient(user *auth.User) *Client {
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		Handlers:  make(map[string]EHandler),
 		Transfer:  transfer.NewTransfer(),
+		Client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 	c.BuildHandlers()
 	if err := c.Monitor.Start(root.Path); err != nil {
