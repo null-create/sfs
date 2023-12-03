@@ -29,11 +29,12 @@ type Client struct {
 	Db    *db.Query  `json:"db"`    // local db connection
 
 	// server api endpoints.
-	// key == fileID, value is the associated endpoint
+	// file objects have their own API field, this is for storing
+	// general operation endpoints like sync operations
 	Endpoints map[string]string `json:"endpoints"`
 
 	// listener that checks for file or directory events
-	Monitor *monitor.Monitor `json:"-"` // json ignore tags
+	Monitor *monitor.Monitor `json:"-"`
 
 	// map of active event handlers for individual files
 	// key == filepath, value == new EventHandler() function
@@ -54,10 +55,10 @@ func NewClient(user *auth.User) *Client {
 
 	// set up local client services
 	svcRoot := filepath.Join(conf.Root, conf.User)
-	root := svc.NewDirectory("root", conf.User, filepath.Join(svcRoot, "root"))
+	root := svc.NewRootDirectory("root", conf.User, filepath.Join(svcRoot, "root"))
 	drv := svc.NewDrive(auth.NewUUID(), conf.User, user.ID, root.Path, root.ID, root)
 
-	// intialize client and start monitoring service
+	// intialize client
 	c := &Client{
 		StartTime: time.Now().UTC(),
 		Conf:      conf,
@@ -65,6 +66,7 @@ func NewClient(user *auth.User) *Client {
 		User:      user,
 		Root:      filepath.Join(svcRoot, "root"),
 		SfDir:     filepath.Join(svcRoot, "state"),
+		Endpoints: make(map[string]string),
 		Monitor:   monitor.NewMonitor(drv.Root.Path),
 		Drive:     drv,
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
@@ -74,12 +76,33 @@ func NewClient(user *auth.User) *Client {
 			Timeout: 30 * time.Second,
 		},
 	}
+
+	// build services endpoints map
+	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
+	files := c.Drive.GetFiles()
+	for _, f := range files {
+		c.Endpoints[f.ID] = f.Endpoint
+	}
+	subDirs := c.Drive.GetDirs()
+	for _, d := range subDirs {
+		c.Endpoints[d.ID] = d.Endpoint
+	}
+	c.Endpoints["drive"] = c.Drive.Root.Endpoint
+	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync")
+	c.Endpoints["root"] = EndpointRootWithPort
+
+	// build and start handlers
 	c.BuildHandlers()
 	if err := c.Monitor.Start(root.Path); err != nil {
 		log.Fatal("failed to start monitor", err)
 	}
 	if err := c.StartHandlers(); err != nil {
 		log.Fatal("failed to start event handlers", err)
+	}
+
+	// save initial state
+	if err := c.SaveState(); err != nil {
+		log.Fatal("failed to save state")
 	}
 	return c
 }

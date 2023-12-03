@@ -6,12 +6,16 @@ May need to build SyncIndex.ToUpdate map, or transfer individual files or direct
 */
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 
 	svc "github.com/sfs/pkg/service"
 )
+
+const EndpointRoot = "http://localhost"
 
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
@@ -64,4 +68,28 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 }
 
 // get the server's current sync index for this user
-func (c *Client) GetServerSyncIdx() (*svc.SyncIndex, error) { return nil, nil }
+func (c *Client) GetServerIdx() *svc.SyncIndex {
+	// make a new request
+	buffer := &bytes.Buffer{}
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], buffer)
+	if err != nil {
+		log.Printf("[WARNING] failed prepare http request\nerr: %v", err)
+		return nil
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		log.Printf("[WARNING] failed to get execute http request\nerr: %v", err)
+		return nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		b, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			log.Printf("[WARNING] failed to parse server sync index response\nerr: %v", err)
+			return nil
+		}
+		log.Printf("[WARNING] failed to get server sync index\nerr: %s", string(b))
+		return nil
+	}
+
+	return nil
+}

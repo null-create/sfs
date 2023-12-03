@@ -74,14 +74,11 @@ func NewDrive(driveID string, ownerName string, ownerID string, rootPath string,
 		ID:        driveID,
 		OwnerName: ownerName,
 		OwnerID:   ownerID,
-
 		TotalSize: MAX_SIZE,
 		UsedSpace: 0,
 		FreeSpace: MAX_SIZE,
-
 		Protected: false,
 		Key:       "default",
-
 		DriveRoot: rootPath,
 		RootID:    rootID,
 		Root:      root,
@@ -258,6 +255,16 @@ func (d *Drive) GetDir(dirID string) *Directory {
 			return d.Root
 		}
 		return d.Root.WalkD(dirID)
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+// get a map of all directories for this user
+func (d *Drive) GetDirs() map[string]*Directory {
+	if !d.Protected {
+		return d.Root.WalkDs()
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
 	}

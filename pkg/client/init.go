@@ -72,7 +72,7 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 
-	// set up new user
+	// set up new user and initialize a new drive
 	newUser, err := newUser(clientName, svcDir, e)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,6 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 		return nil, err
 	}
 	newUser.DriveID = client.Drive.ID
-	client.Db.WhichDB("users")
 	if err := client.Db.AddUser(newUser); err != nil {
 		return nil, err
 	}

@@ -16,8 +16,6 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// TODO: add general logging
-
 type API struct {
 	StartTime time.Time
 	Svc       *Service // SFS service instance

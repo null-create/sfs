@@ -50,7 +50,7 @@ func NewTransfer() *Transfer {
 func (t *Transfer) PrepareReq(method, contentType, destURL string) (*http.Request, error) {
 	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] failed to create HTTP request: %v", err)
+		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
 	}
 	req.Header.Set("Content-Type", contentType)
 	return req, nil
@@ -74,7 +74,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		file.Load()
 	}
 	if _, err = fileWriter.Write(file.Content); err != nil {
-		return fmt.Errorf("[ERROR] failed to write file data: %v", err)
+		return fmt.Errorf("failed to write file data: %v", err)
 	}
 
 	// prepare and send the request to the destination
@@ -91,11 +91,11 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
 	resp, err := t.Client.Do(req.WithContext(ctx))
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to send HTTP request: %v", err)
+		return fmt.Errorf("failed to send HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("[ERROR] server returned non-OK status: %v", resp.Status)
+		return fmt.Errorf("server returned non-OK status: %v", resp.Status)
 	}
 	log.Printf("...done")
 
@@ -109,14 +109,14 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 	// listen for server requests
 	ln, err := t.Listener("tcp", ":8080") // TODO: port should be a config setting
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to start client listener: %v", err)
+		return fmt.Errorf("failed to start client listener: %v", err)
 	}
 	defer ln.Close()
 
 	// blocks until connection is established
 	conn, err := ln.Accept()
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to create connection: %v", err)
+		return fmt.Errorf("failed to create connection: %v", err)
 	}
 	defer conn.Close()
 
@@ -124,12 +124,12 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 	fileNameBuffer := make([]byte, 0, 1024)
 	n, err := conn.Read(fileNameBuffer)
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to read file name from server: %v", err)
+		return fmt.Errorf("failed to read file name from server: %v", err)
 	}
 	fileName := string(fileNameBuffer[:n])
 	file, err := os.Create(filepath.Join(destPath, fileName))
 	if err != nil {
-		return fmt.Errorf("[ERROR] failed to create file: %v", err)
+		return fmt.Errorf("failed to create file: %v", err)
 	}
 	defer file.Close()
 
@@ -140,7 +140,7 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 		n, err := conn.Read(buffer)
 		if err != nil {
 			if err != io.EOF {
-				return fmt.Errorf("[ERROR] failed to receive file data from server: %v", err)
+				return fmt.Errorf("failed to receive file data from server: %v", err)
 			}
 			break
 		}

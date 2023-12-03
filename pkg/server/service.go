@@ -649,6 +649,86 @@ func (s *Service) UpdateUser(user *auth.User) error {
 	return nil
 }
 
+// --------- directories --------------------------------
+
+// find a directory in the database
+func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
+	return s.Db.GetDirectory(dirID)
+}
+
+// add a sub-directory to the given drive directory
+func (s *Service) AddDir(dirID string, newDir *svc.Directory) error {
+	dir, err := s.Db.GetDirectory(dirID)
+	if err != nil {
+		return err
+	}
+	if err := dir.AddSubDir(newDir); err != nil {
+		return err
+	}
+	// add new directory to database
+	if err := s.Db.AddDir(newDir); err != nil {
+		return err
+	}
+	return nil
+}
+
+// remove a directory
+func (s *Service) RemoveDir(dirID string) error {
+	dir, err := s.Db.GetDirectory(dirID)
+	if err != nil {
+		return err
+	}
+	return dir.RemoveSubDir(dirID)
+}
+
+// ---------- files --------------------------------
+
+// find a file in the database
+func (s *Service) FindFile(userID string, fileID string) (*svc.File, error) {
+	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
+	if err != nil {
+		return nil, err
+	}
+	file := drive.GetFile(fileID)
+	if file == nil {
+		return nil, fmt.Errorf("file %s not found", fileID)
+	}
+	return file, nil
+}
+
+// get all files for this user
+func (s *Service) FindFiles(userID string, fileIds []string) (map[string]*svc.File, error) {
+	drive, err := s.Db.GetDriveByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	files := drive.GetFiles()
+	if len(files) == 0 {
+		log.Printf("[INFO] no files for user %s", userID)
+	}
+	return files, nil
+}
+
+// add a file to the service
+func (s *Service) AddFile(userID string, dirID string, file *svc.File) error {
+	drive, err := s.Db.GetDriveByUserID(userID)
+	if err != nil {
+		return err
+	}
+	if err := drive.AddFile(dirID, file); err != nil {
+		return err
+	}
+	// add file to the database
+	if err := s.Db.AddFile(file); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) UpdateFile(userID string, fileID string, data []byte) error { return nil }
+
+func (s *Service) DeleteFile(userID string, fileID string) error { return nil }
+
 // --------- sync --------------------------------
 
 // retrieve a sync index for a given drive. used by the client
@@ -674,17 +754,3 @@ func (s *Service) Sync(driveID string) (*svc.SyncIndex, error) {
 	}
 	return drive.SyncIndex, nil
 }
-
-// --------- directories --------------------------------
-
-func (s *Service) FindDir(dirID string) (*svc.Directory, error)     { return nil, nil }
-func (s *Service) AddDir(dirID string, newDir *svc.Directory) error { return nil }
-func (s *Service) RemoveDir(dirID string) error                     { return nil }
-
-// ---------- files --------------------------------
-
-func (s *Service) FindFile(userID string, fileID string) (*svc.File, error)       { return nil, nil }
-func (s *Service) FindFiles(userID string, fileIds []string) ([]*svc.File, error) { return nil, nil }
-func (s *Service) AddFile(userID string, dirID string, file *svc.File) error      { return nil }
-func (s *Service) UpdateFile(userID string, fileID string, data []byte) error     { return nil }
-func (s *Service) DeleteFile(userID string, fileID string) error                  { return nil }

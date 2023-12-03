@@ -17,17 +17,6 @@ import (
 // enusre -rw-r----- permissions
 const PERMS = 0640 // go's default is 0666
 
-// used to store the association between a file's name and its UUID
-//
-// key = UUID, value = file name (TODO: or file path?)
-type NameMap map[string]string
-
-func newNameMap(file string, uuid string) NameMap {
-	nm := make(NameMap, 1)
-	nm[uuid] = file
-	return nm
-}
-
 type File struct {
 	m sync.Mutex
 
@@ -43,7 +32,7 @@ type File struct {
 
 	// synchronization and file integrity fields
 	LastSync   time.Time `json:"last_sync"`
-	Path       string    `json:"path"`
+	Path       string    `json:"path"` // temp. will be replaced by server/client path at some point
 	ServerPath string    `json:"server_path"`
 	ClientPath string    `json:"client_path"`
 	Endpoint   string    `json:"endpoint"` // unique API endpoint
@@ -62,28 +51,23 @@ func NewFile(fileName string, owner string, path string) *File {
 		log.Printf("[DEBUG] Error calculating checksum: %v", err)
 	}
 
-	// add custom endpoint to this file
 	uuid := NewUUID()
-	endpoint := fmt.Sprintf("http://localhost:8080/v1/files/%s", uuid)
 
 	return &File{
-		Name:  fileName,
-		ID:    uuid,
-		NMap:  newNameMap(fileName, uuid),
-		Owner: owner,
-
-		Protected: false,
-		Key:       "default",
-
+		Name:       fileName,
+		ID:         uuid,
+		NMap:       newNameMap(fileName, uuid),
+		Owner:      owner,
+		Protected:  false,
+		Key:        "default",
 		LastSync:   time.Now().UTC(),
 		Path:       path,
-		ServerPath: path,     // temporary
-		ClientPath: path,     // temporary
-		Endpoint:   endpoint, // server API endpoint
-
-		CheckSum:  cs,
-		Algorithm: "sha256",
-		Content:   make([]byte, 0),
+		ServerPath: path,
+		ClientPath: path,
+		Endpoint:   fmt.Sprint(Endpoint, "/v1/files/", uuid),
+		CheckSum:   cs,
+		Algorithm:  "sha256",
+		Content:    make([]byte, 0),
 	}
 }
 

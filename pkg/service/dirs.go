@@ -53,6 +53,9 @@ type Directory struct {
 	// key is file uuid, value is file pointer
 	Files map[string]*File `json:"files"`
 
+	// server API endpoint for this directory
+	Endpoint string `json:"endpoint"`
+
 	// map of subdirectories.
 	// key is the directory ID (UUID), value is the directory pointer
 	Dirs map[string]*Directory `json:"directories"`
@@ -81,6 +84,7 @@ func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
+		Endpoint:  fmt.Sprint(Endpoint, "/v1/dirs/", uuid),
 		Parent:    nil,
 		Root:      true,
 		Path:      rootPath,
@@ -124,6 +128,10 @@ func (d *Directory) HasParent() bool {
 		return false
 	}
 	return true
+}
+
+func (d *Directory) IsRoot() bool {
+	return d.Root
 }
 
 // Remove all *internal data structure representations* of files and directories

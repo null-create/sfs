@@ -7,17 +7,12 @@ import (
 )
 
 type Conf struct {
-	// users name
-	User string `env:"CLIENT"`
-	// users ID
-	UserID string `env:"CLIENT"` // this is generated at creation time. won't be in the initial .env file
-	// users email
-	Email string `env:"CLIENT_EMAIL"`
-	// client service root
-	// ie. ../sfs/client/run/user-name
-	Root string `env:"CLIENT_ROOT"`
-	// testing root directory
-	TestRoot string `env:"CLIENT_TESTING"`
+	User     string `env:"CLIENT"`         // users name
+	UserID   string `env:"CLIENT"`         // this is generated at creation time. won't be in the initial .env file
+	Email    string `env:"CLIENT_EMAIL"`   // users email
+	Root     string `env:"CLIENT_ROOT"`    // client service root (ie. ../sfs/client/run/user-name)
+	TestRoot string `env:"CLIENT_TESTING"` // testing root directory
+	Port     int    `env:"CLIENT_PORT"`    // port for http client
 }
 
 func ClientConfig() *Conf {
