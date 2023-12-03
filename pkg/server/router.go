@@ -189,10 +189,15 @@ func adminRouter() http.Handler {
 			r.Get("/", api.GetUser)        // get info about a user
 			r.Put("/", api.Placeholder)    // update a user
 			r.Delete("/", api.Placeholder) // delete a user)
+
 		})
 		r.Route("/new", func(r chi.Router) {
 			r.Use(NewUser)
 			r.Post("/", api.Placeholder) // add a new user
+		})
+		r.Route("/all", func(r chi.Router) {
+			// get a list of all active users
+			r.Get("/", api.GetAllUsers)
 		})
 	})
 	return r
