@@ -205,8 +205,8 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 }
 
 // get json blobs of all files available on the server
+// TODO: implement a user-specific get-all-files db call
 func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
-	// TODO: replace with user-specific get-files db call
 	if files, err := a.Svc.Db.GetFiles(); err == nil {
 		if len(files) == 0 {
 			w.Write([]byte("no files found"))
