@@ -263,7 +263,6 @@ func (d *Directory) Unlock(password string) bool {
 // updates internal file map and file's sync time
 func (d *Directory) addFile(file *File) {
 	if _, exists := d.Files[file.ID]; !exists {
-		// TODO: update file absolute paths here? want to keep current
 		d.Files[file.ID] = file
 		d.Files[file.ID].LastSync = time.Now().UTC()
 		log.Printf("[DEBUG] file %s (%s) added", file.Name, file.ID)
@@ -305,9 +304,9 @@ func (d *Directory) AddFiles(files []*File) {
 func (d *Directory) updateFile(f *File, data []byte) error {
 	if file, exists := d.Files[f.ID]; exists {
 		if err := file.Save(data); err != nil {
-			file.LastSync = time.Now().UTC()
 			return err
 		}
+		file.LastSync = time.Now().UTC()
 	} else {
 		log.Printf("[DEBUG] file (%v) not found", f.ID)
 	}
@@ -328,7 +327,6 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 	return nil
 }
 
-// removes internal file object from file map
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
 		delete(d.Files, file.ID)
@@ -340,7 +338,7 @@ func (d *Directory) removeFile(fileID string) error {
 	return nil
 }
 
-// Removes actual file plus internal File object
+// removes file from internal file map. does not remove physical file.
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
@@ -352,9 +350,9 @@ func (d *Directory) RemoveFile(fileID string) error {
 	return nil
 }
 
-// return a copy of the files map *for this directory*
+// return a copy of the files map for *this* directory.
 //
-// does not return files from subdirectories
+// does not return files from subdirectories.
 func (d *Directory) GetFileMap() map[string]*File {
 	if len(d.Files) == 0 {
 		log.Printf("[DEBUG] dir (%s) has no files", d.ID)
@@ -369,7 +367,7 @@ func (d *Directory) GetFiles() ([]*File, error) {
 		return nil, fmt.Errorf("no files found")
 	}
 	var i int
-	files := make([]*File, len(fileMap))
+	files := make([]*File, 0, len(fileMap))
 	for _, f := range fileMap {
 		files[i] = f
 		i++
