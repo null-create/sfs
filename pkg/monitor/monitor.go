@@ -65,10 +65,6 @@ func watchFile(path string, stop chan bool) chan Event {
 		log.Printf("[ERROR] failed to get file info for %s :%v\nunable to monitor", path, err)
 		return nil
 	}
-	if initialStat.IsDir() {
-		log.Printf("[WARNING] this is a directory, not a file: %s", path)
-		return nil
-	}
 
 	// event channel
 	evt := make(chan Event)
