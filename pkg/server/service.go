@@ -725,9 +725,42 @@ func (s *Service) AddFile(userID string, dirID string, file *svc.File) error {
 	return nil
 }
 
-func (s *Service) UpdateFile(userID string, fileID string, data []byte) error { return nil }
+// update a file in the service
+func (s *Service) UpdateFile(userID string, fileID string, data []byte) error {
+	drive, err := s.Db.GetDriveByUserID(userID)
+	if err != nil {
+		return err
+	}
+	file, err := s.Db.GetFile(fileID)
+	if err != nil {
+		return err
+	}
+	if err := drive.Root.UpdateFile(file, data); err != nil {
+		return err
+	}
+	if err := s.Db.UpdateFile(file); err != nil {
+		return err
+	}
+	return nil
+}
 
-func (s *Service) DeleteFile(userID string, fileID string) error { return nil }
+func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
+	drive, err := s.Db.GetDriveByUserID(userID)
+	if err != nil {
+		return err
+	}
+	file, err := s.Db.GetFile(fileID)
+	if err != nil {
+		return err
+	}
+	if err := drive.RemoveFile(dirID, file); err != nil {
+		return err
+	}
+	if err := s.Db.RemoveFile(fileID); err != nil {
+		return err
+	}
+	return nil
+}
 
 // --------- sync --------------------------------
 
