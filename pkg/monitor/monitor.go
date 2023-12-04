@@ -169,7 +169,7 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 // given path is not a file path.
 func (m *Monitor) WatchFile(filePath string) {
 	if isDir, err := m.IsDir(filePath); isDir {
-		log.Printf("[WARNING] filepath is a directory, not a file: %s", filePath)
+		log.Printf("[WARNING] path is a directory, not a file: %s", filePath)
 		return
 	} else if err != nil {
 		log.Printf("[WARNING] failed to read file path: %s\nerr: %v", filePath, err)
