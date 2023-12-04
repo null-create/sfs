@@ -70,7 +70,7 @@ func InitClientDBs(dbPath string) error {
 		return fmt.Errorf("service database directory not empty! %v", entries)
 	}
 
-	dbs := []string{"users", "files", "directories"}
+	dbs := []string{"users", "files", "drives", "directories"}
 	for _, dbName := range dbs {
 		if err := NewDB(dbName, filepath.Join(dbPath, dbName)); err != nil {
 			return err

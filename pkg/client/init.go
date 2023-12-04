@@ -68,7 +68,7 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 	}
 
 	// make each database
-	if err := db.InitClientDBs(svcPaths[0]); err != nil {
+	if err := db.InitDBs(svcPaths[0]); err != nil {
 		return nil, err
 	}
 
@@ -80,9 +80,16 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 
 	// initialize a new client for the new user
 	client := NewClient(newUser)
-
 	newUser.DriveID = client.Drive.ID
+
+	// save user and drive to db
 	if err := client.Db.AddUser(newUser); err != nil {
+		return nil, err
+	}
+	if err := client.Db.AddDrive(client.Drive); err != nil {
+		return nil, err
+	}
+	if err := client.Db.AddDir(client.Drive.Root); err != nil {
 		return nil, err
 	}
 
@@ -159,20 +166,34 @@ func LoadClient(usersName string) (*Client, error) {
 	}
 
 	// start db connection
-	client.Db = db.NewQuery(filepath.Join(client.Conf.Root, client.Conf.User, "dbs"), true)
+	// client.Db = db.NewQuery(filepath.Join(client.Conf.Root, client.Conf.User, "dbs"), true)
 
 	// load user
 	user, err := client.GetUser()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
-	// get users drive
-	drive, err := client.GetDrive(user.DriveID)
+
+	// load drive
+	drive, err := client.Db.GetDrive(user.DriveID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get drive: %v", err)
+		return nil, err
 	}
-	client.User = user
+
+	// get root directory for the drive and create a sync index if necessary
+	root, err := client.Db.GetDirectory(drive.RootID)
+	if err != nil {
+		return nil, err
+	}
+	if root == nil {
+		return nil, fmt.Errorf("no root directory for drive %v", drive.ID)
+	}
+	drive.Root = root
+	if drive.SyncIndex == nil {
+		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
+	}
 	client.Drive = drive
+	client.Root = drive.Root.Path
 
 	// add transfer component
 	client.Transfer = transfer.NewTransfer()
