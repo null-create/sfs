@@ -337,11 +337,15 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
+		// remove physical file
+		if err := os.Remove(file.ServerPath); err != nil {
+			return err
+		}
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 		log.Printf("[DEBUG] file %s removed", file.ID)
 	} else {
-		return fmt.Errorf("[ERROR] file %s not found", file.ID)
+		return fmt.Errorf("file %s not found", file.ID)
 	}
 	return nil
 }
@@ -350,7 +354,7 @@ func (d *Directory) removeFile(fileID string) error {
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove file: %s", err)
+			return fmt.Errorf("unable to remove file: %s", err)
 		}
 	} else {
 		log.Printf("[DEBUG] directory protected. unlock before removing files")
