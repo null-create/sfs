@@ -161,7 +161,7 @@ func (c *Client) GetUser() (*auth.User, error) {
 		}
 		user, err := c.Db.GetUser(c.UserID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get user from database")
+			return nil, fmt.Errorf("failed to get user from database: %v", err)
 		}
 		return user, nil
 	}
