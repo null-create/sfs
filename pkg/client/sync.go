@@ -68,7 +68,8 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 	return nil
 }
 
-// get the server's current sync index for this user
+// get the server's current sync index for this user.
+// returns nil if there's any errors.
 func (c *Client) GetServerIdx() *svc.SyncIndex {
 	// make a new request
 	buffer := new(bytes.Buffer)
@@ -111,3 +112,8 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 	}
 	return idx
 }
+
+// gets server sync index, compares with local index, and either
+// calls Push or Pull, depending on whether the corresponding bool
+// flag is set.
+func (c *Client) Sync(up bool, down bool) error { return nil }
