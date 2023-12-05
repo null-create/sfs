@@ -53,12 +53,11 @@ func NewUser(name string, userName string, email string, svcRoot string, isAdmin
 		Password:  "default",
 		Email:     email,
 		LastLogin: time.Now().UTC(),
-
-		Admin: isAdmin,
-
-		SvcRoot: svcRoot,
-		SfPath:  "", // set the first time the state is saved
-		DriveID: "", // set during first time set up
+		Admin:     isAdmin,
+		SvcRoot:   svcRoot,
+		SfPath:    "", // set the first time the state is saved
+		DriveID:   "", // set during first time set up
+		DrvRoot:   "", // set during first time
 	}
 }
 
