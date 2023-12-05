@@ -108,7 +108,7 @@ func TestFilePutAPI(t *testing.T) {
 
 	// transfer file
 	log.Print("[TEST] uploading file...")
-	transfer := transfer.NewTransfer()
+	transfer := transfer.NewTransfer(8080)
 	if err := transfer.Upload(http.MethodPut, file, endpoint); err != nil {
 		shutDown <- true // shut down test server
 		Fail(t, GetTestingDir(), err)

@@ -767,7 +767,7 @@ func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
 // retrieve a sync index for a given drive. used by the client
 // to compare against and initiate a sync operation, if necessary
 // will be used as the first step in a sync operation on the client side.
-func (s *Service) Sync(driveID string) (*svc.SyncIndex, error) {
+func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 	// check for drive existance
 	drive, err := s.Db.GetDrive(driveID)
 	if err != nil {

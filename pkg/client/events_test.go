@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -31,13 +32,13 @@ func TestStartHandler(t *testing.T) {
 	}
 
 	// randomly pick a file to monitor
-	files, err := c.Drive.Root.GetFiles()
-	if err != nil {
+	files := c.Drive.Root.GetFiles()
+	if files == nil {
 		if err2 := Clean(t, GetTestingDir()); err2 != nil {
 			log.Printf("[ERROR] %v", err)
 			log.Fatal(err2)
 		}
-		Fail(t, tmpDir, err)
+		Fail(t, tmpDir, fmt.Errorf("no files found"))
 	}
 	f := files[RandInt(len(files)-1)]
 

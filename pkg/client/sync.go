@@ -7,6 +7,7 @@ May need to build SyncIndex.ToUpdate map, or transfer individual files or direct
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -70,12 +71,14 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 // get the server's current sync index for this user
 func (c *Client) GetServerIdx() *svc.SyncIndex {
 	// make a new request
-	buffer := &bytes.Buffer{}
+	buffer := new(bytes.Buffer)
 	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], buffer)
 	if err != nil {
 		log.Printf("[WARNING] failed prepare http request\nerr: %v", err)
 		return nil
 	}
+
+	// attempt to get the server's sync index
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		log.Printf("[WARNING] failed to get execute http request\nerr: %v", err)
@@ -91,5 +94,20 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 		return nil
 	}
 
-	return nil
+	// parse response body
+	respBody := make([]byte, resp.ContentLength)
+	_, err = resp.Body.Read(respBody)
+	if err != nil {
+		log.Printf("[WARNING] failed to parse server response \nerr: %v", err.Error())
+		return nil
+	}
+	defer resp.Body.Close()
+
+	// unmarshal response body
+	idx := new(svc.SyncIndex)
+	if err := json.Unmarshal(respBody, &idx); err != nil {
+		log.Printf("[WARNING] failed to parse server sync index: %v", err.Error())
+		return nil
+	}
+	return idx
 }

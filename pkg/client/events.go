@@ -31,9 +31,7 @@ func (c *Client) StopMonitoring() error {
 // add a file listener to the map if the file isn't already present.
 // will be a no-op if its already being watched.
 func (c *Client) WatchFile(filePath string) {
-	if !c.Monitor.Exists(filePath) {
-		c.Monitor.WatchFile(filePath)
-	}
+	c.Monitor.WatchFile(filePath)
 }
 
 // add a new event handler for the given file
@@ -81,7 +79,7 @@ func (c *Client) StartHandler(filePath string) error {
 func (c *Client) StartHandlers() error {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		log.Print("[WARNING] no files to build handlers for")
+		log.Print("[WARNING] no files to start handlers for")
 		return nil
 	}
 	for _, f := range files {

@@ -72,7 +72,7 @@ func NewClient(user *auth.User) *Client {
 		Drive:     drv,
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		Handlers:  make(map[string]EHandler),
-		Transfer:  transfer.NewTransfer(),
+		Transfer:  transfer.NewTransfer(conf.Port),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -88,7 +88,7 @@ func NewClient(user *auth.User) *Client {
 	for _, d := range subDirs {
 		c.Endpoints[d.ID] = d.Endpoint
 	}
-	c.Endpoints["drive"] = c.Drive.Root.Endpoint
+	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
 	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync")
 	c.Endpoints["root"] = EndpointRootWithPort
 

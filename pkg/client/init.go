@@ -165,9 +165,6 @@ func LoadClient(usersName string) (*Client, error) {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
-	// start db connection
-	// client.Db = db.NewQuery(filepath.Join(client.Conf.Root, client.Conf.User, "dbs"), true)
-
 	// load user
 	user, err := client.GetUser()
 	if err != nil {
@@ -196,7 +193,7 @@ func LoadClient(usersName string) (*Client, error) {
 	client.Root = drive.Root.Path
 
 	// add transfer component
-	client.Transfer = transfer.NewTransfer()
+	client.Transfer = transfer.NewTransfer(client.Conf.Port)
 
 	// start client file monitoring services
 	client.Monitor = monitor.NewMonitor(client.Root)

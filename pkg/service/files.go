@@ -17,6 +17,9 @@ import (
 // enusre -rw-r----- permissions
 const PERMS = 0640 // go's default is 0666
 
+// server's root endpoint, since we're running on LAN
+const Endpoint = "http://localhost"
+
 type File struct {
 	m sync.Mutex
 

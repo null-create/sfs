@@ -65,7 +65,8 @@ func NewEvents(buffered bool) *Events {
 }
 
 func (e *Events) Reset() {
-	e.Events = make(EList, 0)
+	e.Events = nil
+	e.Events = make(EList, 0) // reinitialize
 	e.StartSync = false
 	e.Total = 0
 }

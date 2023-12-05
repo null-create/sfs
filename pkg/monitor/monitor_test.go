@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -173,9 +174,9 @@ func TestMonitorWatchAll(t *testing.T) {
 	}
 
 	// get the files to monitor
-	files, err := tmp.GetFiles()
-	if err != nil {
-		Fail(t, GetTestingDir(), err)
+	files := tmp.GetFiles()
+	if files == nil {
+		Fail(t, GetTestingDir(), fmt.Errorf("no files found"))
 	}
 
 	// alter a bunch of the files at random

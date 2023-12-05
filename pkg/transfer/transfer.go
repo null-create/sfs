@@ -24,20 +24,19 @@ type Transfer struct {
 	Start  time.Time
 	Buffer *bytes.Buffer
 
-	// dedicated listener for downloads and the background daemon
+	// dedicated listener for downloads
 	Listener func(network string, address string) (net.Listener, error)
-
-	Src  string // local file path of the file to be uploaded
-	Dest string // local destination for file downloads
+	Port     int // port to listen to for downloads
 
 	Client *http.Client
 }
 
-func NewTransfer() *Transfer {
+func NewTransfer(port int) *Transfer {
 	return &Transfer{
 		Start:    time.Now().UTC(),
-		Buffer:   &bytes.Buffer{},
+		Buffer:   new(bytes.Buffer),
 		Listener: net.Listen,
+		Port:     port,
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
@@ -69,15 +68,13 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		return err
 	}
 
-	// load data into file writer
+	// load data into file writer, then prepare and send the request to the destination
 	if len(file.Content) == 0 {
 		file.Load()
 	}
 	if _, err = fileWriter.Write(file.Content); err != nil {
 		return fmt.Errorf("failed to write file data: %v", err)
 	}
-
-	// prepare and send the request to the destination
 	req, err := t.PrepareReq(method, bodyWriter.FormDataContentType(), destURL)
 	if err != nil {
 		return err
@@ -88,6 +85,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	ctx = context.WithValue(ctx, Owner, file.Owner)
 	ctx = context.WithValue(ctx, Path, file.ServerPath)
 
+	// upload and confirm success
 	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
 	resp, err := t.Client.Do(req.WithContext(ctx))
 	if err != nil {
@@ -107,7 +105,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // intended to run in its own goroutine
 func (t *Transfer) Download(destPath string, fileURL string) error {
 	// listen for server requests
-	ln, err := t.Listener("tcp", ":8080") // TODO: port should be a config setting
+	ln, err := t.Listener("tcp", fmt.Sprint(t.Port))
 	if err != nil {
 		return fmt.Errorf("failed to start client listener: %v", err)
 	}

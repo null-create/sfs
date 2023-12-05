@@ -372,19 +372,21 @@ func (d *Directory) GetFileMap() map[string]*File {
 	return d.Files
 }
 
-// get a slice of all files starting from this directory
-func (d *Directory) GetFiles() ([]*File, error) {
+// get a slice of all files starting from this directory.
+// returns a nil slice if no files are found.
+func (d *Directory) GetFiles() []*File {
 	fileMap := d.WalkFs()
 	if len(fileMap) == 0 {
-		return nil, fmt.Errorf("no files found")
+		log.Printf("[INFO] dir (%s) has no files", d.ID)
+		return nil
 	}
 	var i int
-	files := make([]*File, 0, len(fileMap))
+	files := make([]*File, len(fileMap))
 	for _, f := range fileMap {
 		files[i] = f
 		i++
 	}
-	return files, nil
+	return files
 }
 
 // find a file within the given directory or subdirectories.
