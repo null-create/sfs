@@ -143,15 +143,13 @@ func NewRouter() *chi.Mux {
 
 		// sync operations
 		r.Route("/sync", func(r chi.Router) {
-			// r.Use(SyncCtx)
-
-			// fetch file last sync times for all
-			// user files (in all directories) from server
-			// to start a client side sync operation
-			r.Get("/", api.Placeholder)
-			// send a newly generated last sync index to the
-			// server to initiate a client/server file sync.
-			r.Post("/", api.Placeholder)
+			r.Route("/{driveID}", func(r chi.Router) {
+				// fetch file last sync times for all
+				// user files (in all directories) from server
+				r.Get("/", api.Sync)
+				// send a newly generated last sync index to the server
+				r.Post("/", api.Sync)
+			})
 		})
 	})
 
