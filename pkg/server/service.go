@@ -649,6 +649,25 @@ func (s *Service) UpdateUser(user *auth.User) error {
 	return nil
 }
 
+// ---------- drives-------------------------------------
+
+func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
+	drive, err := s.Db.GetDrive(driveID)
+	if err != nil {
+		return nil, err
+	}
+	// get root dir for this drive
+	root, err := s.Db.GetDirectory(drive.RootID)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: populate all subdirectories, if possible
+	// allDirs := root.WalkDs()
+
+	drive.Root = root
+	return drive, nil
+}
+
 // --------- directories --------------------------------
 
 // find a directory in the database
@@ -767,6 +786,7 @@ func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
 // retrieve a sync index for a given drive. used by the client
 // to compare against and initiate a sync operation, if necessary
 // will be used as the first step in a sync operation on the client side.
+// sync index will be nil if not found.
 func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 	// check for drive existance
 	drive, err := s.Db.GetDrive(driveID)
@@ -774,7 +794,8 @@ func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 		return nil, fmt.Errorf("failed to get drive: %v", err)
 	}
 	if drive == nil {
-		return nil, fmt.Errorf("drive not found")
+		log.Printf("[WARNING] drive %s not found", driveID)
+		return nil, nil
 	}
 	// build sync index if necessary
 	if len(drive.SyncIndex.LastSync) == 0 || drive.SyncIndex == nil {

@@ -424,3 +424,32 @@ func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 // -------- drives --------------------------------
 
 // -------- sync ----------------------------------
+
+func (a *API) Sync(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		driveID := chi.URLParam(r, "driveID")
+		if driveID == "" {
+			http.Error(w, "missing drive ID", http.StatusBadRequest)
+			return
+		}
+		// attempt to get the sync index for this drive
+		idx, err := a.Svc.GetSyncIdx(driveID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to retrieve sync index: %v", err), http.StatusInternalServerError)
+			return
+		}
+		if idx == nil { // no drive found
+			http.Error(w, fmt.Sprintf("drive %s not found", driveID), http.StatusNotFound)
+			return
+		}
+		data, err := idx.ToJSON()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to encode sync index: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Write(data)
+	} else if r.Method == http.MethodPost {
+		// TODO:
+		w.Write([]byte("not implemented yet"))
+	}
+}
