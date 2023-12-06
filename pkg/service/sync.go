@@ -64,6 +64,15 @@ func (s *SyncIndex) Reset() {
 	}
 }
 
+// converts to json format for transfer
+func (s *SyncIndex) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(s, "", " ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 // write out a sync index to a JSON file
 func (s *SyncIndex) SaveToJSON() error {
 	data, err := json.MarshalIndent(s, "", "  ")
