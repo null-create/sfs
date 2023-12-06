@@ -138,7 +138,7 @@ func loadStateFile(user string) ([]byte, error) {
 		return nil, err
 	}
 	if len(entries) == 0 {
-		log.Fatal("no state file found for client!")
+		return nil, fmt.Errorf("no state file found for client")
 	} else if len(entries) > 1 {
 		log.Printf("[WARNING] more than one state file found for client! will default to most recent entry")
 		for i, entry := range entries {
@@ -162,7 +162,7 @@ func LoadClient(usersName string) (*Client, error) {
 		return nil, err
 	}
 	client := new(Client)
-	if err := json.Unmarshal(data, client); err != nil {
+	if err := json.Unmarshal(data, &client); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
