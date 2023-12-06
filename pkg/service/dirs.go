@@ -26,10 +26,11 @@ NOTE:
 */
 
 type Directory struct {
-	ID    string  `json:"id"` // dir UUID
-	NMap  NameMap `json:"nmap"`
-	Name  string  `json:"name"`  // dir name
-	Owner string  `json:"owner"` // owner UUID
+	ID      string  `json:"id"`       // dir UUID
+	NMap    NameMap `json:"nmap"`     // name map
+	Name    string  `json:"name"`     // dir name
+	Owner   string  `json:"owner"`    // owner UUID
+	DriveID string  `json:"drive_id"` // drive ID this directory belongs to
 
 	// size in MB
 	Size float64 `json:"size"`
@@ -39,7 +40,8 @@ type Directory struct {
 	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
 
-	Protected bool   `json:"protected"` //
+	// security attributes
+	Protected bool   `json:"protected"`
 	AuthType  string `json:"auth_type"`
 	Key       string `json:"key"`
 
@@ -50,22 +52,21 @@ type Directory struct {
 	// Last time this directory was modified
 	LastSync time.Time `json:"last_sync"`
 
-	// key is file uuid, value is file pointer
-	Files map[string]*File `json:"files"`
-
 	// server API endpoint for this directory
 	Endpoint string `json:"endpoint"`
 
+	// map of files in this directory.
+	// key is file uuid, value is file pointer
+	Files map[string]*File `json:"files"`
+
 	// map of subdirectories.
-	// key is the directory ID (UUID), value is the directory pointer
+	// key is the directory uuid, value is the directory pointer
 	Dirs map[string]*Directory `json:"directories"`
 
 	// pointer to parent directory (if not root).
 	Parent *Directory
 
 	// disignator for whether this directory is considerd the "root" directory
-	// if Root is True, then Drive will not be nil (Parent will be nil!) and
-	// should point to the parent Drive struct
 	Root     bool   `json:"root"`
 	RootPath string `json:"rootPath"`
 }
@@ -73,18 +74,21 @@ type Directory struct {
 // create a new root directory object. does not create physical directory.
 func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 	uuid := NewUUID()
+	cfg := NewSvcCfg()
+	dirEndpoint := fmt.Sprintf(fmt.Sprint(Endpoint, ":", cfg.Port), "/v1/dirs/", uuid)
 	return &Directory{
 		ID:        uuid,
 		NMap:      newNameMap(name, uuid),
 		Name:      name,
 		Owner:     owner,
+		DriveID:   "CHANGE ME",
 		Protected: false,
 		Key:       "default",
 		Overwrite: false,
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
-		Endpoint:  fmt.Sprint(Endpoint, "/v1/dirs/", uuid),
+		Endpoint:  dirEndpoint,
 		Parent:    nil,
 		Root:      true,
 		Path:      rootPath,
@@ -98,17 +102,21 @@ func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 // I'm sure I won't regret this.
 func NewDirectory(name string, owner string, path string) *Directory {
 	uuid := NewUUID()
+	cfg := NewSvcCfg()
+	dirEndpoint := fmt.Sprintf(fmt.Sprintf(Endpoint, cfg.Port), "/v1/dirs/", uuid)
 	return &Directory{
 		ID:        uuid,
 		NMap:      newNameMap(name, uuid),
 		Name:      name,
 		Owner:     owner,
+		DriveID:   "CHANGE ME",
 		Protected: false,
 		Key:       "default",
 		Overwrite: false,
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
+		Endpoint:  dirEndpoint,
 		Root:      false,
 		Path:      path,
 	}

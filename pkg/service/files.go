@@ -55,6 +55,7 @@ func NewFile(fileName string, owner string, path string) *File {
 	}
 
 	uuid := NewUUID()
+	cfg := NewSvcCfg()
 
 	return &File{
 		Name:       fileName,
@@ -67,7 +68,7 @@ func NewFile(fileName string, owner string, path string) *File {
 		Path:       path,
 		ServerPath: path,
 		ClientPath: path,
-		Endpoint:   fmt.Sprint(Endpoint, "/v1/files/", uuid),
+		Endpoint:   fmt.Sprintf(fmt.Sprint(Endpoint, ":", cfg.Port), "/v1/files/", uuid),
 		CheckSum:   cs,
 		Algorithm:  "sha256",
 		Content:    make([]byte, 0),
