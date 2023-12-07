@@ -75,7 +75,6 @@ type Directory struct {
 func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 	uuid := NewUUID()
 	cfg := NewSvcCfg()
-	dirEndpoint := fmt.Sprintf(fmt.Sprint(Endpoint, ":", cfg.Port), "/v1/dirs/", uuid)
 	return &Directory{
 		ID:        uuid,
 		NMap:      newNameMap(name, uuid),
@@ -88,7 +87,7 @@ func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
-		Endpoint:  dirEndpoint,
+		Endpoint:  fmt.Sprintf(fmt.Sprint(Endpoint, ":", cfg.Port), "/v1/dirs/", uuid),
 		Parent:    nil,
 		Root:      true,
 		Path:      rootPath,
@@ -103,7 +102,6 @@ func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 func NewDirectory(name string, owner string, path string) *Directory {
 	uuid := NewUUID()
 	cfg := NewSvcCfg()
-	dirEndpoint := fmt.Sprintf(fmt.Sprintf(Endpoint, cfg.Port), "/v1/dirs/", uuid)
 	return &Directory{
 		ID:        uuid,
 		NMap:      newNameMap(name, uuid),
@@ -116,7 +114,7 @@ func NewDirectory(name string, owner string, path string) *Directory {
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
-		Endpoint:  dirEndpoint,
+		Endpoint:  fmt.Sprintf(fmt.Sprint(Endpoint, cfg.Port), "/v1/dirs/", uuid),
 		Root:      false,
 		Path:      path,
 	}
