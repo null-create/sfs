@@ -768,6 +768,10 @@ func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
 	if err != nil {
 		return err
 	}
+	if drive == nil {
+		log.Printf("[WARNING] drive not found for user %s", userID)
+		return nil
+	}
 	file, err := s.Db.GetFile(fileID)
 	if err != nil {
 		return err
