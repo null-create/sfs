@@ -423,6 +423,25 @@ func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 
 // -------- drives --------------------------------
 
+func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
+	driveID := chi.URLParam(r, "driveID")
+	if driveID == "" {
+		http.Error(w, "missing drive ID", http.StatusBadRequest)
+		return
+	}
+	drive, err := a.Svc.GetDrive(driveID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to retrieve drive: %v", err), http.StatusInternalServerError)
+		return
+	}
+	data, err := drive.ToJSON()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to codify drive info to JSON: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
+}
+
 // -------- sync ----------------------------------
 
 func (a *API) Sync(w http.ResponseWriter, r *http.Request) {
