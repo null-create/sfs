@@ -90,3 +90,13 @@ func Copy(src, dst string) error {
 	}
 	return nil
 }
+
+// check if a file exists
+func Exists(filename string) bool {
+	if _, err := os.Stat(filename); err != nil && err == os.ErrNotExist {
+		return false
+	} else if err != nil && err != os.ErrNotExist {
+		log.Fatalf("unable to get file status: %v", err)
+	}
+	return true
+}
