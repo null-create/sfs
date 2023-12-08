@@ -12,11 +12,31 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
+	"time"
 
 	svc "github.com/sfs/pkg/service"
 )
 
 const EndpointRoot = "http://localhost"
+
+// gets server sync index, compares with local index, and either
+// calls Push or Pull, depending on whether the corresponding bool
+// flag is set.
+func (c *Client) sync(up bool) error {
+	if up {
+		c.Push()
+	} else {
+		c.Pull()
+	}
+	return nil
+}
+
+// resets client side sync mechanisms
+func (c *Client) reset() {
+	c.Drive.SyncIndex.Reset() // clear ToUpdate
+	c.Monitor.ResetDoc()      // resets sync doc
+}
 
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
@@ -40,14 +60,18 @@ func (c *Client) Push() error {
 			}()
 		}
 	}
-	c.Drive.SyncIndex.Reset() // clear ToUpdate
+	c.reset()
 	return nil
 }
 
-// get a sync index from the server, compare with the local one
-// with the client, and pull any files that are out of date on the client side
-// create goroutines for each download and 'fan-in' once all are complete
-func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
+// gets a sync index from the server, compares with the local one,
+// and pulls any files that are out of date on the client side from the server.
+// create goroutines for each download and 'fans-in' once all are complete.
+func (c *Client) Pull() error {
+	svrIdx := c.GetServerIdx()
+	if svrIdx == nil {
+		return fmt.Errorf("no sync index")
+	}
 	if len(svrIdx.ToUpdate) == 0 || svrIdx == nil {
 		log.Print("[INFO] nothing to pull")
 		return nil
@@ -65,6 +89,7 @@ func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
 			}()
 		}
 	}
+	c.reset()
 	return nil
 }
 
@@ -113,7 +138,28 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 	return idx
 }
 
-// gets server sync index, compares with local index, and either
-// calls Push or Pull, depending on whether the corresponding bool
-// flag is set.
-func (c *Client) Sync(up bool, down bool) error { return nil }
+// periodically checks sync doc for whether a sync
+// operation should be performed
+func (c *Client) Sync(stop chan bool) {
+	go func() {
+		for {
+			select {
+			case <-stop:
+				log.Print("[INFO] stopping sync thread...")
+				return
+			default:
+				contents, err := os.ReadFile(c.Monitor.SyncDoc)
+				if err != nil {
+					log.Printf("[WARNING] failed to read sync doc: %v\n stopping sync thread...", err)
+					return
+				}
+				if string(contents) == "1" {
+					// TODO: change bool flag.
+					// this should probably be handled internally by c.sync()
+					c.sync(true)
+				}
+				time.Sleep(time.Millisecond * 500) // wait before checking again
+			}
+		}
+	}()
+}

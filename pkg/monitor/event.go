@@ -3,6 +3,8 @@ package monitor
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -40,11 +42,12 @@ type EList []Event
 const THRESHOLD = 10
 
 type Events struct {
-	threshold int   // buffer limit
-	Buffered  bool  // whether this event list is buffered
-	Total     int   // current total events
-	StartSync bool  // flag to indicate whether a sync operation should start
-	Events    EList // event object list
+	threshold int    // buffer limit
+	Buffered  bool   // whether this event list is buffered
+	Total     int    // current total events
+	StartSync bool   // flag to indicate whether a sync operation should start
+	SyncDoc   string // util doc file to indicate whether a sync operation should start
+	Events    EList  // event object list
 }
 
 // new Events tracker. if buffered sync
@@ -57,9 +60,11 @@ func NewEvents(buffered bool) *Events {
 	} else {
 		threshold = 1
 	}
+	sdPath := filepath.Join(GetWd(), ".sync.txt")
 	return &Events{
 		threshold: threshold,
 		Buffered:  buffered,
+		SyncDoc:   sdPath,
 		Events:    make(EList, 0),
 	}
 }
@@ -110,4 +115,29 @@ func (e *Events) GetPaths() ([]string, error) {
 		paths = append(paths, evt.Path)
 	}
 	return paths, nil
+}
+
+// ------- sync doc --------------------------------
+
+// sets the value in the sync doc to 1 to indicate that a sync
+// operation should be performed
+func (e *Events) Notify() {
+	e.trunc()
+
+	file, err := os.Open(e.SyncDoc)
+	if err != nil {
+		log.Fatalf("failed to open sync doc: %v", err)
+	}
+	defer file.Close()
+	_, err = file.Write([]byte("1"))
+	if err != nil {
+		log.Fatalf("failed to write to sync doc: %v", err)
+	}
+}
+
+func (e *Events) trunc() {
+	err := os.Truncate(e.SyncDoc, 0)
+	if err != nil {
+		log.Fatalf("[WARNING] failed to truncate sync doc: %v", err)
+	}
 }

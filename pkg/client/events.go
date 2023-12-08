@@ -102,9 +102,9 @@ func (c *Client) BuildHandlers() {
 		log.Print("[WARNING] no files to build handlers for")
 		return
 	}
-	for _, file := range files {
-		if _, exists := c.Handlers[file.ID]; !exists {
-			c.Handlers[file.ID] = EventHandler
+	for fileID := range files {
+		if _, exists := c.Handlers[fileID]; !exists {
+			c.Handlers[fileID] = EventHandler
 		}
 	}
 }
@@ -131,8 +131,8 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 				}
 				if evts.StartSync {
 					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
-					// TODO: signal client.Push() ...somehow
-					evts.Reset()
+					evts.Notify() // sets sync doc to indicate sync operation
+					evts.Reset()  // resets events buffer
 				}
 			default:
 				continue

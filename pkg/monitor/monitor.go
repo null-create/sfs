@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -25,8 +26,16 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 const WAIT = time.Millisecond * 500
 
 type Monitor struct {
+	// mutex lock to protect the sync document
+	mu sync.Mutex
+
 	// path to the users drive root to monitor
 	Path string
+
+	// path to the .txt file containing the flag to
+	// indicate whether the events handler has indicated that
+	// a sync operation should be performed.
+	SyncDoc string
 
 	// map of channels to active listeners.
 	// key is the absolute file path, value is the channel to the watchFile() thread
@@ -43,8 +52,10 @@ type Monitor struct {
 }
 
 func NewMonitor(drvRoot string) *Monitor {
+	syncDoc := filepath.Join(drvRoot, ".sync.txt")
 	return &Monitor{
 		Path:        drvRoot,
+		SyncDoc:     syncDoc,
 		Events:      make(map[string]chan Event),
 		OffSwitches: make(map[string]chan bool),
 	}
@@ -165,6 +176,24 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 	return false, nil
 }
 
+// make the tmp doc for event handlers to mark when
+// a sync operation is supposed to happen.
+func (m *Monitor) makeSyncDoc(fileID string, path string) error {
+	fn := fmt.Sprintf(".sync-%s.txt", fileID)
+	if _, err := os.Stat(filepath.Join(path, fn)); err != nil && os.IsNotExist(err) {
+		if _, err2 := os.Create(fn); err2 != nil {
+			return fmt.Errorf("failed to create sync doc: %v", err2)
+		}
+		return fmt.Errorf("failed to get file info: %v", err)
+	}
+	return nil
+}
+
+func (m *Monitor) remSyncDoc(path string) error {
+
+	return nil
+}
+
 // add a file to the events map. will be a no-op if the
 // given path is not a file path.
 func (m *Monitor) WatchFile(filePath string) {
@@ -238,5 +267,7 @@ func (m *Monitor) ShutDown() error {
 	for _, path := range paths {
 		m.OffSwitches[path] <- true
 	}
+	// delete sync doc
+
 	return nil
 }
