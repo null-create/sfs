@@ -189,9 +189,9 @@ func (m *Monitor) makeSyncDoc(fileID string, path string) error {
 	return nil
 }
 
-func (m *Monitor) remSyncDoc(path string) error {
-
-	return nil
+// delete the sync doc
+func (m *Monitor) remSyncDoc() error {
+	return os.Remove(m.SyncDoc)
 }
 
 // add a file to the events map. will be a no-op if the
@@ -268,6 +268,9 @@ func (m *Monitor) ShutDown() error {
 		m.OffSwitches[path] <- true
 	}
 	// delete sync doc
+	if err := m.remSyncDoc(); err != nil {
+		return fmt.Errorf("failed to remove sync doc: %v", err)
+	}
 
 	return nil
 }
