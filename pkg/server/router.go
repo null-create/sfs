@@ -87,9 +87,9 @@ func NewRouter() *chi.Mux {
 		r.Route("/files", func(r chi.Router) {
 			r.Route("/{fileID}", func(r chi.Router) {
 				r.Use(FileCtx)
-				r.Get("/", api.Placeholder)    // get a file from the server
-				r.Put("/", api.PutFile)        // update a file on the server
-				r.Delete("/", api.Placeholder) // delete a file on the server
+				r.Get("/", api.GetFile)       // get a file from the server
+				r.Put("/", api.PutFile)       // update a file on the server
+				r.Delete("/", api.DeleteFile) // delete a file on the server
 			})
 			r.Route("/all", func(r chi.Router) {
 				r.Get("/", api.GetAllFiles) // get info about all user-specific files
@@ -127,7 +127,7 @@ func NewRouter() *chi.Mux {
 		r.Route("/drive", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
 				r.Use(DriveCtx)
-				r.Get("/", api.Placeholder) // "home" page for files.
+				r.Get("/", api.GetDrive) // "home" page for files.
 			})
 		})
 
@@ -179,6 +179,8 @@ func adminRouter() http.Handler {
 	// r.Use(AdminOnly)
 
 	// initialize API handlers
+	// TODO: handl NEW_SERVER better.
+	// shouldn't be new by default.
 	api := NewAPI(isMode("NEW_SERVICE"), true)
 
 	r.Route("/users", func(r chi.Router) {
