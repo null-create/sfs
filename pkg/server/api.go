@@ -322,22 +322,18 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// remove physical file
-	// if err := os.Remove(f.ServerPath); err != nil {
-	// 	msg := fmt.Sprintf("failed to remove file from server: %v", err)
-	// 	http.Error(w, msg, http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// TODO: use/create a.Svc.DeleteFile() instead of os.Remove()
-	// using the os package directly is way too risky.
-
+	if err := a.Svc.DeleteFile("CHANGEME", "CHANGEME", f.ID); err != nil {
+		msg := fmt.Sprintf("failed to delete file: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
 	// remove from database
 	if err := a.Svc.Db.RemoveFile(f.ID); err != nil {
 		msg := fmt.Sprintf("failed to remove file from database: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	log.Printf("[INFO] filed (%s) deleted from server", f.Path)
+	log.Printf("[INFO] file (%s) deleted from server", f.Path)
 	w.Write([]byte(fmt.Sprintf("file (%s) deleted", f.Name)))
 }
 
