@@ -14,10 +14,9 @@ const (
 	FileCreate EventType = "create"
 	FileDelete EventType = "delete"
 	FileChange EventType = "change"
-
-	DirCreate EventType = "create"
-	DirDelete EventType = "delete"
-	DirChange EventType = "change"
+	DirCreate  EventType = "create"
+	DirDelete  EventType = "delete"
+	DirChange  EventType = "change"
 )
 
 type Event struct {

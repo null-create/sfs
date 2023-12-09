@@ -141,6 +141,7 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 // periodically checks sync doc for whether a sync
 // operation should be performed
 func (c *Client) Sync(stop chan bool) {
+	log.Print("[INFO] starting sync monitoring thread...")
 	go func() {
 		for {
 			select {

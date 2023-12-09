@@ -511,7 +511,7 @@ func (s *Service) addUser(user *auth.User) error {
 		return fmt.Errorf("failed to add drive to database: %v", err)
 	}
 	if err := s.Db.AddDir(d.Root); err != nil {
-		return fmt.Errorf("failed to add directory to database: %v", err)
+		return fmt.Errorf("failed to add drive root directory to database: %v", err)
 	}
 	s.Users[user.ID] = user
 	return nil

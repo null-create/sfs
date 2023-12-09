@@ -26,7 +26,9 @@ func ServerConfig() *SvrCnf {
 }
 
 type SvcCfg struct {
-	SvcRoot string `env:"SERVICE_ROOT,required"`
+	SvcRoot    string `env:"SERVICE_ROOT,required"`
+	NewService bool   `env:"NEW_SERVICE,required"`
+	IsAdmin    bool   `env:"ADMIN_MODE,required"`
 }
 
 func ServiceConfig() *SvcCfg {

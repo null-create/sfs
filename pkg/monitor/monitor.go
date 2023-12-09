@@ -164,6 +164,7 @@ func (m *Monitor) Start(dirpath string) error {
 		log.Printf("[WARNING] no files or subdirectories in %s", dirpath)
 		return nil
 	}
+	m.makeSyncDoc()
 	return watchAll(dirpath, m)
 }
 
@@ -178,10 +179,9 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 
 // make the tmp doc for event handlers to mark when
 // a sync operation is supposed to happen.
-func (m *Monitor) makeSyncDoc(fileID string, path string) error {
-	fn := fmt.Sprintf(".sync-%s.txt", fileID)
-	if _, err := os.Stat(filepath.Join(path, fn)); err != nil && os.IsNotExist(err) {
-		if _, err2 := os.Create(fn); err2 != nil {
+func (m *Monitor) makeSyncDoc() error {
+	if _, err := os.Stat(m.SyncDoc); err != nil && os.IsNotExist(err) {
+		if _, err2 := os.Create(m.SyncDoc); err2 != nil {
 			return fmt.Errorf("failed to create sync doc: %v", err2)
 		}
 		return fmt.Errorf("failed to get file info: %v", err)
@@ -271,6 +271,5 @@ func (m *Monitor) ShutDown() error {
 	if err := m.remSyncDoc(); err != nil {
 		return fmt.Errorf("failed to remove sync doc: %v", err)
 	}
-
 	return nil
 }
