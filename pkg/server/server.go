@@ -19,7 +19,9 @@ type Server struct {
 // instantiate a new HTTP server with an sfs service instance
 // contained within the router
 func NewServer() *Server {
-	rtr := NewRouter()    // instantiate router
+	// instantiate router.
+	// router contains (and intializes) the server-side SNS service instance.
+	rtr := NewRouter()
 	svr := ServerConfig() // get server configs
 
 	return &Server{
