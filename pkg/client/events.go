@@ -67,7 +67,6 @@ func (c *Client) StartHandler(filePath string) error {
 		if err != nil {
 			return err
 		}
-		// TODO: handle handlers off switch return
 		if _, err := handler(evt, off, fileID, evts); err != nil {
 			return err
 		}
@@ -131,8 +130,9 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 				}
 				if evts.StartSync {
 					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
-					evts.Notify() // sets sync doc to indicate sync operation
-					evts.Reset()  // resets events buffer
+					evts.Notify()            // sets sync doc to indicate sync operation
+					evts.Reset()             // resets events buffer
+					time.Sleep(monitor.WAIT) // wait before resuming event handler
 				}
 			default:
 				continue
