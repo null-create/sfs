@@ -3,11 +3,15 @@ package service
 import (
 	"testing"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/alecthomas/assert/v2"
 )
 
 // NOTE: test is flaky
 func TestToUpdate(t *testing.T) {
+	env.BuildEnv(false)
+
 	d := MakeTmpDirs(t)
 
 	// get initial index

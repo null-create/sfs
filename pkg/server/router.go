@@ -19,7 +19,6 @@ GET     /v1/drive/{userID}        // "home". return a root directory listing
 // ----- users (admin only)
 
 GET     /v1/users/{userID}       // get info about a user
-
 POST    /v1/users/new            // create a new user
 PUT     /v1/users/{userID}       // update a user
 DELETE  /v1/users/{userID}       // delete a user
@@ -27,7 +26,6 @@ DELETE  /v1/users/{userID}       // delete a user
 // ----- files
 
 GET    /v1/files/{fileID}/i    // get info about a file
-
 POST   /v1/files/new           // send a new file to the server
 GET    /v1/files/{fileID}      // download a file from the server
 PUT    /v1/files/{fileID}      // update a file on the server
@@ -36,7 +34,6 @@ DELETE /v1/files/{fileID}      // delete a file on the server
 // ---- directories
 
 GET    /v1/i/dirs/{dirID}    // get list of files and subdirectories for this directory
-
 POST   /v1/dirs/new          // create a directory on the server
 GET    /v1/dirs/{dirID}      // download a .zip (or other compressed format) file of this directory and its contents
 PUT    /v1/dirs/{dirID}      // update a directory on the server
@@ -44,9 +41,8 @@ DELETE /v1/dirs/{dirID}      // delete a directory on the server
 
 // ----- sync operations
 
-GET    /v1/sync              // fetch file last sync times from server
-
-POST   /v1/sync              // send a last sync index object to the server
+GET    /v1/sync/{driveID}    // fetch file last sync times from server
+POST   /v1/sync/{driveID}    // send a last sync index object to the server
                              // generated from the local client directories to
 								             // initiate a client/server file sync.
 */

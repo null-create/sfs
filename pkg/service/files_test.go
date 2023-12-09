@@ -3,6 +3,8 @@ package service
 import (
 	"testing"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/alecthomas/assert/v2"
 )
 
@@ -12,6 +14,8 @@ const (
 )
 
 func TestFileIO(t *testing.T) {
+	env.BuildEnv(false)
+
 	total := RandInt(5)
 	testFiles, err := MakeTestFiles(t, total)
 	if err != nil {
@@ -47,6 +51,8 @@ func TestFileIO(t *testing.T) {
 }
 
 func TestGetFileSize(t *testing.T) {
+	env.BuildEnv(false)
+
 	total := RandInt(5)
 	testFiles, err := MakeTestFiles(t, total)
 	if err != nil {
@@ -66,6 +72,8 @@ func TestGetFileSize(t *testing.T) {
 }
 
 func TestFileSecurityFeatures(t *testing.T) {
+	env.BuildEnv(false)
+
 	testFiles, err := MakeTestFiles(t, 1)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -111,6 +119,8 @@ func TestFileSecurityFeatures(t *testing.T) {
 }
 
 func TestFileChecksum(t *testing.T) {
+	env.BuildEnv(false)
+
 	testFiles, err := MakeTestFiles(t, 1)
 	if err != nil {
 		t.Fatalf("%v", err)

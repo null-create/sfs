@@ -4,10 +4,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/alecthomas/assert/v2"
 )
 
 func TestQueueOrder(t *testing.T) {
+	env.BuildEnv(false)
+
 	testQ := NewQ()
 
 	testBatch1 := NewBatch()
@@ -39,6 +43,8 @@ func TestQueueOrder(t *testing.T) {
 }
 
 func TestBuildQueue(t *testing.T) {
+	env.BuildEnv(false)
+
 	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)
@@ -62,6 +68,8 @@ func TestBuildQueue(t *testing.T) {
 }
 
 func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
+	env.BuildEnv(false)
+
 	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)
@@ -85,6 +93,8 @@ func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
 }
 
 func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
+	env.BuildEnv(false)
+
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)

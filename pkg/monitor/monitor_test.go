@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/env"
 )
 
 // creates a new listener goroutine and checks received events
@@ -49,6 +50,8 @@ func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
 }
 
 func TestMonitorWithOneFile(t *testing.T) {
+	env.BuildEnv(false)
+
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
 	file, err := MakeTmpTxtFile(fn, RandInt(1000))
@@ -85,6 +88,8 @@ func TestMonitorWithOneFile(t *testing.T) {
 }
 
 func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
+	env.BuildEnv(false)
+
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
 	file, err := MakeTmpTxtFile(fn, RandInt(1000))
@@ -123,6 +128,8 @@ func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 }
 
 func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
+	env.BuildEnv(false)
+
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
 	file, err := MakeTmpTxtFile(fn, RandInt(1000))
@@ -162,6 +169,8 @@ func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 // }
 
 func TestMonitorWatchAll(t *testing.T) {
+	env.BuildEnv(false)
+
 	tmp := MakeTmpDirs(t)
 
 	// initialize new monitor with watching goroutines

@@ -17,7 +17,7 @@ import (
 
 // create a new client without a user
 func TestNewClient(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
@@ -68,7 +68,7 @@ func TestNewClient(t *testing.T) {
 
 // load a client with a pre-existing user
 func TestLoadClient(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	e := env.NewE()
 	tmpDir, err := e.Get("CLIENT_ROOT")
@@ -118,7 +118,7 @@ func TestLoadClient(t *testing.T) {
 }
 
 func TestLoadClientSaveState(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
@@ -155,7 +155,7 @@ func TestLoadClientSaveState(t *testing.T) {
 }
 
 func TestClientUpdateUser(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
@@ -187,7 +187,7 @@ func TestClientUpdateUser(t *testing.T) {
 }
 
 func TestClientDeleteUser(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
@@ -218,7 +218,7 @@ func TestClientDeleteUser(t *testing.T) {
 }
 
 func TestClientBuildSyncIndex(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
@@ -268,7 +268,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 // this test is flaky because we don't always alter
 // files with each run. might need to not make it so random.
 func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
-	env.BuildEnv(true)
+	env.BuildEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()

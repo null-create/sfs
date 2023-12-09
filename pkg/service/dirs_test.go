@@ -6,10 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/alecthomas/assert/v2"
 )
 
 func TestSecurityFeatures(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDirs := MakeTestDirs(t, 2)
 	td := testDirs[0]
 	td2 := testDirs[1]
@@ -61,6 +65,8 @@ func TestSecurityFeatures(t *testing.T) {
 }
 
 func TestAddFiles(t *testing.T) {
+	env.BuildEnv(false)
+
 	total := RandInt(10)
 	testDirs := MakeTestDirs(t, 1)
 	assert.Equal(t, 0, len(testDirs[0].Files))
@@ -84,6 +90,8 @@ func TestAddFiles(t *testing.T) {
 }
 
 func TestRemoveFiles(t *testing.T) {
+	env.BuildEnv(false)
+
 	total := RandInt(10)
 	testDirs := MakeTestDirs(t, 1)
 	assert.Equal(t, 0, len(testDirs[0].Files))
@@ -112,6 +120,8 @@ func TestRemoveFiles(t *testing.T) {
 }
 
 func TestAddSubDir(t *testing.T) {
+	env.BuildEnv(false)
+
 	dir1 := NewDirectory("tmp", "me", filepath.Join(GetTestingDir(), "tmp1"))
 	dir2 := NewDirectory("tmp2", "me", filepath.Join(GetTestingDir(), "tmp2"))
 	if err := dir1.AddSubDir(dir2); err != nil {
@@ -126,6 +136,8 @@ func TestAddSubDir(t *testing.T) {
 }
 
 func TestAddSubDirs(t *testing.T) {
+	env.BuildEnv(false)
+
 	total := RandInt(100)                // root test subdir
 	testDirs := MakeTestDirs(t, total+1) // subdirs to add + 1 for a test root
 
@@ -143,6 +155,8 @@ func TestAddSubDirs(t *testing.T) {
 }
 
 func TestRemoveSubDirs(t *testing.T) {
+	env.BuildEnv(false)
+
 	total := RandInt(100)
 	// root test subdir
 	testRoot := NewRootDirectory("tmp", "me", GetTestingDir())
@@ -162,6 +176,8 @@ func TestRemoveSubDirs(t *testing.T) {
 }
 
 func TestGetDirSize(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := NewDirectory("testDir", "me", GetTestingDir())
 	tf, err := MakeTestFiles(t, 1)
 	if err != nil {
@@ -181,6 +197,8 @@ func TestGetDirSize(t *testing.T) {
 }
 
 func TestWalkF(t *testing.T) {
+	env.BuildEnv(false)
+
 	d := MakeTmpDirs(t)
 	fileToFind := NewFile("findMe", "bill", filepath.Join(d.Path, "findMe"))
 	d.addFile(fileToFind)
@@ -196,6 +214,8 @@ func TestWalkF(t *testing.T) {
 }
 
 func TestWalkD(t *testing.T) {
+	env.BuildEnv(false)
+
 	testingDir := GetTestingDir()
 	testDir1 := NewDirectory("testDir1", "me", filepath.Join(testingDir, "testDir1"))
 	testDir2 := NewDirectory("testDir2", "me", filepath.Join(testingDir, "testDir2"))
@@ -227,6 +247,8 @@ func TestWalkD(t *testing.T) {
 }
 
 func TestWalkS(t *testing.T) {
+	env.BuildEnv(false)
+
 	tmpDir := MakeTmpDirs(t)
 
 	idx := tmpDir.WalkS(NewSyncIndex("me"))
@@ -247,6 +269,8 @@ func TestWalkS(t *testing.T) {
 }
 
 func TestWalkU(t *testing.T) {
+	env.BuildEnv(false)
+
 	tmpDir := MakeTmpDirs(t)
 
 	idx := tmpDir.WalkS(NewSyncIndex("me"))
@@ -276,6 +300,8 @@ func TestWalkU(t *testing.T) {
 }
 
 func TestWalkO(t *testing.T) {
+	env.BuildEnv(false)
+
 	tmpDir := MakeTmpDirs(t)
 
 	// create a test function to pass to WalkF()
@@ -296,6 +322,8 @@ func TestWalkO(t *testing.T) {
 }
 
 func TestWalkFiles(t *testing.T) {
+	env.BuildEnv(false)
+
 	tmpDir := MakeTmpDirs(t)
 	files := tmpDir.WalkFs()
 	assert.NotEqual(t, nil, files)

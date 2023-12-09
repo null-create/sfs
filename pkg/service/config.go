@@ -8,13 +8,13 @@ import (
 )
 
 type ServiceConfig struct {
-	Port string `env:"SERVER_PORT"`
+	Port string `env:"SERVER_PORT,required"`
 }
 
 func NewSvcCfg() *ServiceConfig {
-	cfg := new(ServiceConfig)
+	var cfg ServiceConfig
 	if err := envdecode.StrictDecode(&cfg); err != nil {
 		log.Fatalf(fmt.Sprintf("failed to decode service config: %v", err))
 	}
-	return cfg
+	return &cfg
 }

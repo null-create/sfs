@@ -5,12 +5,15 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/env"
 )
 
 // 1mb. somewhat arbitrary. hand tuned after some tests
 const TEST_MAX = 1e+6
 
 func TestBatchLimit(t *testing.T) {
+	env.BuildEnv(true)
+
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)
@@ -44,6 +47,8 @@ func TestBatchLimit(t *testing.T) {
 }
 
 func TestBatchWithUnevenFileSizes(t *testing.T) {
+	env.BuildEnv(true)
+
 	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
 		Fatal(t, err)

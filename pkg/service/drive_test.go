@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/env"
 )
 
 // make a dummy file system. does NOT create assoiatedfiles!
@@ -42,6 +43,8 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 // ----------------------------------------------------------------
 
 func TestDriveSecurityFeatures(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := GetTestingDir()
 	tmpDir := filepath.Join(testDir, "testDir")
 

@@ -6,12 +6,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sfs/pkg/env"
 	svc "github.com/sfs/pkg/service"
 
 	"github.com/alecthomas/assert/v2"
 )
 
 func TestAddAndFindFile(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := GetTestingDir()
 
 	// test db and query
@@ -46,6 +49,8 @@ func TestAddAndFindFile(t *testing.T) {
 }
 
 func TestAddAndFindMultipleFiles(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := GetTestingDir()
 
 	// test db and query
@@ -89,6 +94,8 @@ func TestAddAndFindMultipleFiles(t *testing.T) {
 }
 
 func TestAddAndFindDirectory(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := GetTestingDir()
 
 	// test db and query
@@ -116,6 +123,8 @@ func TestAddAndFindDirectory(t *testing.T) {
 }
 
 func TestAddAndFindDrive(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := GetTestingDir()
 
 	// make testing objects
@@ -142,6 +151,8 @@ func TestAddAndFindDrive(t *testing.T) {
 }
 
 func TestAddAndFindUser(t *testing.T) {
+	env.BuildEnv(false)
+
 	testDir := GetTestingDir()
 
 	// make testing objects
