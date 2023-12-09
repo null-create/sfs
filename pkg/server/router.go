@@ -53,8 +53,10 @@ POST   /v1/sync              // send a last sync index object to the server
 
 // instantiate a new chi router
 func NewRouter() *chi.Mux {
+	cfg := ServiceConfig()
+
 	// initialize API handlers
-	api := NewAPI(isMode("NEW_SERVICE"), isMode("ADMIN_MODE"))
+	api := NewAPI(cfg.NewService, cfg.IsAdmin)
 
 	// instantiate router
 	r := chi.NewRouter()
@@ -131,16 +133,6 @@ func NewRouter() *chi.Mux {
 			})
 		})
 
-		// users
-		r.Route("/users", func(r chi.Router) {
-			r.Route("/all", func(r chi.Router) {
-				// get a list of all active users
-				// NOTE: this will be part of the admin router
-				// once its ready
-				r.Get("/", api.GetAllUsers)
-			})
-		})
-
 		// sync operations
 		r.Route("/sync", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
@@ -174,14 +166,14 @@ func NewRouter() *chi.Mux {
 
 // A completely separate router for administrator routes
 func adminRouter() http.Handler {
+	cfg := ServiceConfig()
+
 	r := chi.NewRouter()
 
 	// r.Use(AdminOnly)
 
 	// initialize API handlers
-	// TODO: handl NEW_SERVER better.
-	// shouldn't be new by default.
-	api := NewAPI(isMode("NEW_SERVICE"), true)
+	api := NewAPI(cfg.NewService, true)
 
 	r.Route("/users", func(r chi.Router) {
 		r.Route("/{userID}", func(r chi.Router) {
