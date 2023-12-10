@@ -52,7 +52,10 @@ type Monitor struct {
 }
 
 func NewMonitor(drvRoot string) *Monitor {
+	// create sync doc
 	syncDoc := filepath.Join(drvRoot, ".sync.txt")
+	NewSD(syncDoc)
+
 	return &Monitor{
 		Path:        drvRoot,
 		SyncDoc:     syncDoc,
@@ -164,7 +167,7 @@ func (m *Monitor) Start(dirpath string) error {
 		log.Printf("[WARNING] no files or subdirectories in %s", dirpath)
 		return nil
 	}
-	m.makeSyncDoc()
+	m.MakeSyncDoc()
 	return watchAll(dirpath, m)
 }
 
@@ -175,23 +178,6 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 		return false, err
 	}
 	return false, nil
-}
-
-// make the tmp doc for event handlers to mark when
-// a sync operation is supposed to happen.
-func (m *Monitor) makeSyncDoc() error {
-	if _, err := os.Stat(m.SyncDoc); err != nil && os.IsNotExist(err) {
-		if _, err2 := os.Create(m.SyncDoc); err2 != nil {
-			return fmt.Errorf("failed to create sync doc: %v", err2)
-		}
-		return fmt.Errorf("failed to get file info: %v", err)
-	}
-	return nil
-}
-
-// delete the sync doc
-func (m *Monitor) remSyncDoc() error {
-	return os.Remove(m.SyncDoc)
 }
 
 // add a file to the events map. will be a no-op if the
@@ -268,7 +254,7 @@ func (m *Monitor) ShutDown() error {
 		m.OffSwitches[path] <- true
 	}
 	// delete sync doc
-	if err := m.remSyncDoc(); err != nil {
+	if err := m.DeleteDoc(); err != nil {
 		return fmt.Errorf("failed to remove sync doc: %v", err)
 	}
 	return nil
