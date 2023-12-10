@@ -201,7 +201,7 @@ func loadStateFile(sfPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read state file: %v", err)
 	}
-	svc := &Service{}
+	svc := new(Service)
 	if err := json.Unmarshal(file, svc); err != nil {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
 	}
@@ -349,8 +349,8 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
-	// instantiate DB connections
-	svc.Db = db.NewQuery(svc.DbDir, true)
+	// // instantiate DB connections
+	// svc.Db = db.NewQuery(svc.DbDir, true)
 	// attempt to populate from users database if state file had no user data
 	// make sure we have a path to the db dir and current state file for this session
 	if len(svc.Users) == 0 {
