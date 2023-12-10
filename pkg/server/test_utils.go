@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -167,4 +168,11 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	tmpRoot.AddSubDir(d)
 
 	return tmpRoot
+}
+
+// make testing drive
+func MakeTmpDrive(t *testing.T) *svc.Drive {
+	root := MakeTmpDirs(t)
+	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	return drive
 }
