@@ -20,7 +20,7 @@ func (q *Query) UpdateFile(f *svc.File) error {
 	if _, err := q.Stmt.Exec(
 		&f.ID,
 		&f.Name,
-		&f.Owner,
+		&f.OwnerID,
 		&f.Protected,
 		&f.Key,
 		&f.LastSync,

@@ -137,7 +137,7 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	if err := q.Conn.QueryRow(FindFileQuery, fileID).Scan(
 		&file.ID,
 		&file.Name,
-		&file.Owner,
+		&file.OwnerID,
 		&file.Protected,
 		&file.Key,
 		&file.LastSync,
@@ -193,7 +193,7 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 		if err := rows.Scan(
 			&file.ID,
 			&file.Name,
-			&file.Owner,
+			&file.OwnerID,
 			&file.Protected,
 			&file.Key,
 			&file.LastSync,
@@ -237,7 +237,7 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 		if err := rows.Scan(
 			&file.ID,
 			&file.Name,
-			&file.Owner,
+			&file.OwnerID,
 			&file.Protected,
 			&file.Key,
 			&file.LastSync,
@@ -368,7 +368,8 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	return d, nil
 }
 
-// find a drive using the given userID
+// find a drive using the given userID.
+// drive will be nil if not found.
 func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	q.WhichDB("drives")
 	q.Connect()
