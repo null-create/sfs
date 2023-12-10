@@ -708,6 +708,9 @@ func (s *Service) FindFile(userID string, fileID string) (*svc.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	if drive == nil {
+		return nil, fmt.Errorf("no drive found for user %s", userID)
+	}
 	file := drive.GetFile(fileID)
 	if file == nil {
 		return nil, fmt.Errorf("file %s not found", fileID)
@@ -721,6 +724,9 @@ func (s *Service) FindFiles(userID string, fileIds []string) (map[string]*svc.Fi
 	if err != nil {
 		return nil, err
 	}
+	if drive == nil {
+		return nil, fmt.Errorf("no drive found for user %s", userID)
+	}
 	files := drive.GetFiles()
 	if len(files) == 0 {
 		log.Printf("[INFO] no files for user %s", userID)
@@ -733,6 +739,9 @@ func (s *Service) AddFile(userID string, dirID string, file *svc.File) error {
 	drive, err := s.Db.GetDriveByUserID(userID)
 	if err != nil {
 		return err
+	}
+	if drive == nil {
+		return fmt.Errorf("no drive found for user %s", userID)
 	}
 	if err := drive.AddFile(dirID, file); err != nil {
 		return err
@@ -749,6 +758,9 @@ func (s *Service) UpdateFile(userID string, fileID string, data []byte) error {
 	drive, err := s.Db.GetDriveByUserID(userID)
 	if err != nil {
 		return err
+	}
+	if drive == nil {
+		return fmt.Errorf("no drive found for user %s", userID)
 	}
 	file, err := s.Db.GetFile(fileID)
 	if err != nil {
