@@ -105,7 +105,7 @@ func (s *SyncIndex) GetFiles() []*File {
 	return syncFiles
 }
 
-// ----------------------------------------------------------------
+// ------ index building ----------------------------------------------
 
 /*
 build a new sync index starting with a given directory which
@@ -150,6 +150,8 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	}
 	return diff
 }
+
+// ------- transfers --------------------------------
 
 // if all files in the given slice are greater than
 // the current capacity of this batch, then none of them
@@ -228,12 +230,12 @@ func BuildQ(idx *SyncIndex) *Queue {
 		return nil
 	}
 	if len(files) == 0 {
-		log.Printf("[DEBUG] no files matched for syncing")
+		log.Printf("[INFO] no files matched for syncing")
 		return nil
 	}
 	// if every individual file exceeds b.MAX, none will able to
 	// be added to the standard batch queue and we like to avoid infinite loops,
-	// so we need to create a large file queue
+	// so we'll need to just create a large file queue instead.
 	if wontFit(files, MAX) {
 		log.Print("[WARNING] all files exceeded b.MAX. creating large file queue")
 		return LargeFileQ(files)
@@ -248,4 +250,38 @@ func LargeFileQ(files []*File) *Queue {
 	q := NewQ()
 	q.Enqueue(b)
 	return q
+}
+
+// --------- sync between hard drives ----------------
+
+// get paths for source and destination disks
+// create a sync index of the source disk, then
+// build a queue for physical *copying*, not tranferring
+// via HTTP.
+func SyncDisks(srcDir *Directory) error {
+	srcIdx := BuildSyncIndex(srcDir)
+	if srcIdx == nil {
+		return fmt.Errorf("failed to create sync index from source disk")
+	}
+	srcIdx = BuildToUpdate(srcDir, srcIdx)
+	// build sync queue
+	queue := BuildQ(srcIdx)
+	if queue == nil || len(queue.Queue) == 0 {
+		log.Print("[WARNING] no files matched for syincing. skipping.")
+		return nil
+	}
+	// copy files
+	for _, batch := range queue.Queue {
+		for _, file := range batch.Files {
+			go func() {
+				// TODO: maybe add separate disk field in file struct?
+				if err := Copy(file.Path, "CHANGEME"); err != nil {
+					log.Printf("[ERROR] failed to copy file (id=%s) from %s to %s", file.Path, "CHANGEME", err)
+				}
+			}()
+		}
+	}
+	// TODO: verify that the files were copied correctly
+	// srcFiles := srcIdx.GetFiles()
+	return nil
 }
