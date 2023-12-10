@@ -82,7 +82,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 
 	// add file info context to request
 	ctx := context.WithValue(req.Context(), File, filepath.Base(file.Path))
-	ctx = context.WithValue(ctx, Owner, file.Owner)
+	ctx = context.WithValue(ctx, Owner, file.OwnerID)
 	ctx = context.WithValue(ctx, Path, file.ServerPath)
 
 	// upload and confirm success

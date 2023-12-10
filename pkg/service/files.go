@@ -24,10 +24,11 @@ type File struct {
 	m sync.Mutex
 
 	// metadata
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	NMap  NameMap `json:"name_map"`
-	Owner string  `json:"owner"`
+	ID      string  `json:"id"`       // file id
+	Name    string  `json:"name"`     // file name
+	NMap    NameMap `json:"name_map"` // file name map
+	OwnerID string  `json:"owner"`    // file owner ID
+	DirID   string  `json:"dir_id"`   // id of the directory this file belongs to
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -48,7 +49,7 @@ type File struct {
 }
 
 // Content is loaded elsewhere
-func NewFile(fileName string, owner string, path string) *File {
+func NewFile(fileName string, ownerID string, path string) *File {
 	cs, err := CalculateChecksum(path, "sha256")
 	if err != nil {
 		log.Printf("[DEBUG] Error calculating checksum: %v", err)
@@ -61,7 +62,7 @@ func NewFile(fileName string, owner string, path string) *File {
 		Name:       fileName,
 		ID:         uuid,
 		NMap:       newNameMap(fileName, uuid),
-		Owner:      owner,
+		OwnerID:    ownerID,
 		Protected:  false,
 		Key:        "default",
 		LastSync:   time.Now().UTC(),
@@ -95,12 +96,23 @@ func (f *File) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (f *File) UpdateMetadata() error {
+func (f *File) UpdateCs() error {
 	if err := f.UpdateChecksum(); err != nil {
 		return err
 	}
 	f.LastSync = time.Now().UTC()
 	return nil
+}
+
+func (f *File) AddDirID(dirID string) {
+	if !f.Protected {
+		if f.DirID == "" {
+			log.Printf("[WARNING] file (id=%s) had no directory ID attached to it", f.ID)
+		}
+		f.DirID = dirID
+	} else {
+		log.Printf("[INFO] file (id=%s) is protected", f.ID)
+	}
 }
 
 // ----------- simple security features
@@ -134,7 +146,7 @@ func (f *File) ChangePassword(password string, newPassword string) {
 
 func (f *File) Load() {
 	if f.Path == "" {
-		log.Fatalf("[ERROR] no path specified")
+		log.Fatalf("no path specified")
 	}
 	if !f.Protected {
 		f.m.Lock()
@@ -142,13 +154,13 @@ func (f *File) Load() {
 
 		file, err := os.Open(f.Path)
 		if err != nil {
-			log.Fatalf("[ERROR] unable to open file %s: %v", f.Path, err)
+			log.Fatalf("unable to open file %s: %v", f.Path, err)
 		}
 		defer file.Close()
 
 		data, err := os.ReadFile(file.Name())
 		if err != nil {
-			log.Fatalf("[ERROR] unable to read file %s: %v", f.Name, err)
+			log.Fatalf("unable to read file %s: %v", f.Name, err)
 		}
 		f.Content = data
 	} else {
@@ -167,13 +179,13 @@ func (f *File) Save(data []byte) error {
 		// otherwise the file will be truncated
 		file, err := os.Create(f.Path)
 		if err != nil {
-			return fmt.Errorf("[ERROR] unable to create file %s: %v", f.Name, err)
+			return fmt.Errorf("unable to create file %s: %v", f.Name, err)
 		}
 		defer file.Close()
 
 		_, err = file.Write(data)
 		if err != nil {
-			return fmt.Errorf("[ERROR] unable to write file %s: %v", f.Path, err)
+			return fmt.Errorf("unable to write file %s: %v", f.Path, err)
 		}
 		// update sync time
 		f.LastSync = time.Now().UTC()
@@ -233,7 +245,7 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 	case "sha256":
 		h = sha256.New()
 	default:
-		return "", fmt.Errorf("[ERROR] unsupported hash type: %s", hashType)
+		return "", fmt.Errorf("unsupported hash type: %s", hashType)
 	}
 
 	if _, err := io.Copy(h, file); err != nil {
@@ -258,7 +270,7 @@ func (f *File) ValidateChecksum() {
 func (f *File) UpdateChecksum() error {
 	newCs, err := CalculateChecksum(f.Path, f.Algorithm)
 	if err != nil {
-		return fmt.Errorf("[ERROR] CalculateChecksum failed: %v", err)
+		return fmt.Errorf("CalculateChecksum failed: %v", err)
 	}
 	f.CheckSum = newCs
 	return nil
