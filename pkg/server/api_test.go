@@ -36,28 +36,28 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 	res, err := client.Get(endpoint)
 	if err != nil {
 		shutDown <- true
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)
 		if err != nil {
-			t.Fatal(err)
+			Fail(t, GetTestingDir(), err)
 		}
 		msg := fmt.Sprintf(
 			"response code was not 200: %d\n response: %v\n",
 			res.StatusCode, string(b),
 		)
-		t.Fatal(fmt.Errorf(msg))
+		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
 
 	// retrieve data from the request
 	b, err := httputil.DumpResponse(res, true)
 	if err != nil {
 		shutDown <- true
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
-	log.Printf("[TEST] retrieved file data: %v", string(b))
+	log.Printf("[TEST] retrieved file data: \n%v\n", string(b))
 
 	log.Print("[TEST] shutting down test server...")
 	shutDown <- true
@@ -96,10 +96,21 @@ func TestFilePutAPI(t *testing.T) {
 		testServer.TestRun(shutDown)
 	}()
 
+	// create test svc instance to manage temp testing files
+	testSvc, err := Init(false, false)
+	if err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+
 	// create tmp file to try and send it to the server
 	log.Print("[TEST] creating tmp file...")
 	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
 	if err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+	if err := testSvc.AddFile(file.OwnerID, "CHANGEME", file); err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
 	}
@@ -109,7 +120,7 @@ func TestFilePutAPI(t *testing.T) {
 	// transfer file
 	log.Print("[TEST] uploading file...")
 	transfer := transfer.NewTransfer(8080)
-	if err := transfer.Upload(http.MethodPut, file, endpoint); err != nil {
+	if err := transfer.Upload(http.MethodPost, file, endpoint); err != nil {
 		shutDown <- true // shut down test server
 		Fail(t, GetTestingDir(), err)
 	}
@@ -117,13 +128,11 @@ func TestFilePutAPI(t *testing.T) {
 	log.Print("[TEST] retrieving info about file from server...")
 
 	// confirm file's presence via a GET
-	fileEndpoint := fmt.Sprint(LocalHost, fmt.Sprintf("/v1/files/%s", file.ID))
-
 	client := http.Client{Timeout: time.Second * 600}
-	res, err := client.Get(fileEndpoint)
+	res, err := client.Get(file.Endpoint)
 	if err != nil {
 		shutDown <- true
-		t.Fatal(err)
+		Fail(t, GetTestingDir(), err)
 	}
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
@@ -131,7 +140,7 @@ func TestFilePutAPI(t *testing.T) {
 			"response code was not 200: %d\n header object: %v\n",
 			res.StatusCode, res.Header,
 		)
-		t.Fatal(fmt.Errorf(msg))
+		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
 
 	shutDown <- true // shut down test server

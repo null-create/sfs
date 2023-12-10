@@ -88,7 +88,7 @@ func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 	}
 	defer file.Close()
 
-	f := svc.NewFile(filepath.Base(filePath), "me", filePath)
+	f := svc.NewFile(filepath.Base(filePath), "some-rand-id", filePath)
 	for i := 0; i < textReps; i++ {
 		_, err := file.WriteString(txtData)
 		if err != nil {
@@ -101,8 +101,7 @@ func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 // make a bunch of temp .txt files of varying sizes.
 // under pkg/files/testing/tmp
 func MakeABunchOfTxtFiles(total int, loc string) ([]*svc.File, error) {
-
-	files := make([]*svc.File, 0)
+	files := make([]*svc.File, 0, total)
 	for i := 0; i < total; i++ {
 		fileName := fmt.Sprintf("tmp-%d.txt", i)
 		filePath := filepath.Join(loc, fileName)

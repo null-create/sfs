@@ -259,6 +259,7 @@ func LargeFileQ(files []*File) *Queue {
 // build a queue for physical *copying*, not tranferring
 // via HTTP.
 func SyncDisks(srcDir *Directory) error {
+	// build sync index
 	srcIdx := BuildSyncIndex(srcDir)
 	if srcIdx == nil {
 		return fmt.Errorf("failed to create sync index from source disk")
@@ -275,8 +276,8 @@ func SyncDisks(srcDir *Directory) error {
 		for _, file := range batch.Files {
 			go func() {
 				// TODO: maybe add separate disk field in file struct?
-				if err := Copy(file.Path, "CHANGEME"); err != nil {
-					log.Printf("[ERROR] failed to copy file (id=%s) from %s to %s", file.Path, "CHANGEME", err)
+				if err := file.Copy(fmt.Sprint(srcDir.Path, file.Name)); err != nil {
+					log.Printf("[WARNING] failed to copy file (id=%s) \n%v", file.ID, err)
 				}
 			}()
 		}
