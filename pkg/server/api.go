@@ -158,14 +158,14 @@ uploads and downloads
 // are the case, otherwise returns a file pointer.
 func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 	fileID := chi.URLParam(r, "fileID")
-	f, err := a.Svc.Db.GetFile(fileID)
+	file, err := a.Svc.Db.GetFile(fileID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
-	} else if f == nil {
+	} else if file == nil {
 		return nil
 	}
-	return f
+	return file
 }
 
 // get file metadata
