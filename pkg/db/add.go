@@ -109,7 +109,7 @@ func (q *Query) AddDir(d *svc.Directory) error {
 	if _, err := q.Stmt.Exec(
 		&d.ID,
 		&d.Name,
-		&d.Owner,
+		&d.OwnerID,
 		&d.Size,
 		&d.Path,
 		&d.Protected,

@@ -115,7 +115,7 @@ but we assume this is the root, and that there is no parent directory!
 utilizes the directory's d.WalkS() function
 */
 func BuildSyncIndex(root *Directory) *SyncIndex {
-	idx := NewSyncIndex(root.Owner)
+	idx := NewSyncIndex(root.OwnerID)
 	if idx := root.WalkS(idx); idx != nil {
 		return idx
 	}

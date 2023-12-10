@@ -29,7 +29,7 @@ type Directory struct {
 	ID      string  `json:"id"`       // dir UUID
 	NMap    NameMap `json:"nmap"`     // name map
 	Name    string  `json:"name"`     // dir name
-	Owner   string  `json:"owner"`    // owner UUID
+	OwnerID string  `json:"owner"`    // owner UUID
 	DriveID string  `json:"drive_id"` // drive ID this directory belongs to
 
 	// size in MB
@@ -79,7 +79,7 @@ func NewRootDirectory(name string, owner string, rootPath string) *Directory {
 		ID:        uuid,
 		NMap:      newNameMap(name, uuid),
 		Name:      name,
-		Owner:     owner,
+		OwnerID:   owner,
 		DriveID:   "CHANGE ME",
 		Protected: false,
 		Key:       "default",
@@ -106,7 +106,7 @@ func NewDirectory(name string, owner string, path string) *Directory {
 		ID:        uuid,
 		NMap:      newNameMap(name, uuid),
 		Name:      name,
-		Owner:     owner,
+		OwnerID:   owner,
 		DriveID:   "CHANGE ME",
 		Protected: false,
 		Key:       "default",
