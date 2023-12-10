@@ -16,6 +16,14 @@ import (
 	"github.com/go-chi/chi"
 )
 
+/*
+file for API implementations
+
+these are the entry points into the SFS service via
+http requests, and will have appropriate middleware calls
+prior to most of these functions being called directly.
+*/
+
 type API struct {
 	StartTime time.Time
 	Svc       *Service // SFS service instance
