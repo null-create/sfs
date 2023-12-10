@@ -38,6 +38,9 @@ func TestGetServerSyncIndex(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 
+	// NOTE: failing because the server doesn't have a drive
+	// for this client. will need to create one somehow.
+
 	// retrieve index from server API and confirm non-empty fields
 	idx := client.GetServerIdx()
 	if idx == nil {
