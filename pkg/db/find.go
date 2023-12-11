@@ -395,11 +395,8 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-
-	return nil, nil
+	return d, nil
 }
-
-func (q *Query) GetDrives() ([]*svc.Drive, error) { return nil, nil }
 
 // get the drive ID for a given userID
 func (q *Query) GetDriveID(userID string) (string, error) {

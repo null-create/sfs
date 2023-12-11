@@ -45,7 +45,7 @@ const (
 		CREATE TABLE IF NOT EXISTS Drives (
 			id VARCHAR(50) PRIMARY KEY,
 			name VARCHAR(255),
-			owner VARCHAR(50),
+			owner_id VARCHAR(50),
 			total_space DECIMAL(18, 2),
 			used_space DECIMAL(18, 2),
 			free_space DECIMAL(18, 2),
@@ -116,7 +116,7 @@ const (
 		INSERT OR IGNORE INTO Drives (
 			id,
 			name,
-			owner,
+			owner_id,
 			total_space,
 			used_space,
 			free_space,
@@ -183,7 +183,7 @@ const (
 		UPDATE Drives
 		SET id = ?,
 				name = ?,
-				owner = ?,
+				owner_id = ?,
 				total_space = ?,
 				used_space = ?,
 				free_space = ?,
@@ -230,23 +230,21 @@ const (
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	FindAllQuery       string = `SELECT * FROM ?;`
-	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?;`
-	FindQuery          string = `SELECT * FROM ? WHERE id = ?;`
-
-	FindAllUsersQuery      string = `SELECT * FROM Users;`
-	FindAllDrivesQuery     string = `SELECT * FROM Drives;`
-	FindAllDirsQuery       string = `SELECT * FROM Directories;`
-	FindAllFilesQuery      string = `SELECT * FROM Files;`
-	FindAllUsersFilesQuery string = `SELECT * FROM Files WHERE owner = ?;`
-
+	FindAllQuery                string = `SELECT * FROM ?;`
+	FindWithLimitQuery          string = `SELECT * FROM ? LIMIT ?;`
+	FindQuery                   string = `SELECT * FROM ? WHERE id = ?;`
+	FindAllUsersQuery           string = `SELECT * FROM Users;`
+	FindAllDrivesQuery          string = `SELECT * FROM Drives;`
+	FindAllDirsQuery            string = `SELECT * FROM Directories;`
+	FindAllFilesQuery           string = `SELECT * FROM Files;`
+	FindAllUsersFilesQuery      string = `SELECT * FROM Files WHERE owner = ?;`
 	FindFileIDQuery             string = `SELECT id FROM Files WHERE path = ?;`
 	FindFileQuery               string = `SELECT * FROM Files WHERE id = ?;`
 	FindDirQuery                string = `SELECT * FROM Directories WHERE id = ?;`
 	FindDriveQuery              string = `SELECT * FROM Drives WHERE id = ?;`
-	FindDriveByUserID           string = `SELECT * FROM Drives WHERE owner = ?;`
+	FindDriveByUserID           string = `SELECT * FROM Drives WHERE owner_id = ?;`
 	FindUserQuery               string = `SELECT * FROM Users WHERE id = ?;`
-	FindUsersDriveIDQuery       string = `SELECT drive_id FROM Users Where id = ?;`
+	FindUsersDriveIDQuery       string = `SELECT drive_id FROM Users WHERE id = ?;`
 	FindUsersIDWithDriveIDQuery string = `SELECT owner FROM Drives WHERE id = ?;`
 
 	// ---------- SELECT statements for confirming existance -------------------

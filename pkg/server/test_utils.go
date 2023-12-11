@@ -170,9 +170,17 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	return tmpRoot
 }
 
-// make testing drive
+// make testing drive with test files, directories, and subdirectories.
+// all test files will be within the test directory.
 func MakeTmpDrive(t *testing.T) *svc.Drive {
 	root := MakeTmpDirs(t)
 	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
 	return drive
+}
+
+// make a tmp empty drive
+func MakeEmptyTmpDrive(t *testing.T) *svc.Drive {
+	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), GetTestingDir())
+	testDrv := svc.NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
+	return testDrv
 }

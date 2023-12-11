@@ -38,6 +38,14 @@ func NewFile(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
+
+		// TODO: file security checks. don't be stupid.
+		// retreive file contents from request body, execute a
+		// checksum on a temp file, then compare against original request?
+		// don't know if orig request has the source file checksum, might need
+		// to add that to the new file request body so we can compare it on the
+		// server end and make sure its the same.
+
 		// create new file object and add to request context
 		newFile := svc.NewFile(fileName, owner, path)
 		newCtx := context.WithValue(ctx, File, newFile)

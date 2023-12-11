@@ -248,9 +248,14 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 	return nil
 }
 
-// find a directory
+// find a directory.
+// returns nil if not found (or if drive has no root directory)
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
+		if d.Root == nil {
+			log.Printf("[WARNING] drive (id=%s) has no root dir", d.ID)
+			return nil
+		}
 		if d.Root.ID == dirID {
 			return d.Root
 		}
@@ -321,7 +326,7 @@ func (d *Drive) RemoveDirs(dirs []*Directory) error {
 // ----- cleanup --------------------------------
 
 // removes all users files and directories from their drive
-func (d *Drive) Remove() error {
+func (d *Drive) ClearDrive() error {
 	if !d.Protected {
 		if err := d.Root.Clean(d.Root.Path); err != nil {
 			return err

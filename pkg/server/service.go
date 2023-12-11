@@ -462,6 +462,19 @@ func (s *Service) RemoveDrive(driveID string) error {
 	return nil
 }
 
+// add drive to the service instance
+func (s *Service) AddDrive(drv *svc.Drive) error {
+	// add drive to db
+	if err := s.Db.AddDrive(drv); err != nil {
+		return err
+	}
+	// add root directory to db
+	if err := s.Db.AddDir(drv.Root); err != nil {
+		return err
+	}
+	return nil
+}
+
 // --------- users --------------------------------
 
 func (s *Service) TotalUsers() int {
@@ -664,6 +677,30 @@ func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	// TODO: populate all subdirectories, if possible
 	// allDirs := root.WalkDs()
 
+	// NOTE: root's file/dir maps are nil here
+
+	drive.Root = root
+	return drive, nil
+}
+
+func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
+	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
+	if err != nil {
+		return nil, err
+	}
+	if drive == nil {
+		return nil, fmt.Errorf("no drive found for user %s", userID)
+	}
+	// get root dir for this drive
+	root, err := s.Db.GetDirectory(drive.RootID)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: populate all subdirectories, if possible
+	// allDirs := root.WalkDs()
+
+	// NOTE: root's file/dir maps are nil here
+
 	drive.Root = root
 	return drive, nil
 }
@@ -704,7 +741,7 @@ func (s *Service) RemoveDir(dirID string) error {
 
 // find a file in the database
 func (s *Service) FindFile(userID string, fileID string) (*svc.File, error) {
-	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
+	drive, err := s.GetDriveByUserID(userID) // get drive for this ID
 	if err != nil {
 		return nil, err
 	}
@@ -720,7 +757,7 @@ func (s *Service) FindFile(userID string, fileID string) (*svc.File, error) {
 
 // get all files for this user
 func (s *Service) FindFiles(userID string, fileIds []string) (map[string]*svc.File, error) {
-	drive, err := s.Db.GetDriveByUserID(userID)
+	drive, err := s.GetDriveByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -736,7 +773,7 @@ func (s *Service) FindFiles(userID string, fileIds []string) (map[string]*svc.Fi
 
 // add a file to the service
 func (s *Service) AddFile(userID string, dirID string, file *svc.File) error {
-	drive, err := s.Db.GetDriveByUserID(userID)
+	drive, err := s.GetDriveByUserID(userID)
 	if err != nil {
 		return err
 	}
@@ -755,7 +792,7 @@ func (s *Service) AddFile(userID string, dirID string, file *svc.File) error {
 
 // update a file in the service
 func (s *Service) UpdateFile(userID string, fileID string, data []byte) error {
-	drive, err := s.Db.GetDriveByUserID(userID)
+	drive, err := s.GetDriveByUserID(userID)
 	if err != nil {
 		return err
 	}
