@@ -196,6 +196,22 @@ func TestGetDirSize(t *testing.T) {
 	}
 }
 
+func TestWalk(t *testing.T) {
+	env.BuildEnv(false)
+
+	tmpRoot := MakeTmpDirs(t)
+	items := tmpRoot.Walk()
+
+	files := items.GetFiles()
+	if len(files) == 0 {
+		Fail(t, GetTestingDir(), fmt.Errorf("no test files found"))
+	}
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
 func TestWalkF(t *testing.T) {
 	env.BuildEnv(false)
 

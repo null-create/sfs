@@ -524,7 +524,7 @@ func (d *Directory) FindDir(dirID string) *Directory {
 
 // ------------------------------------------------------------
 
-// walk populates all files and subdirectory maps (and their files and subdirectories,
+// Walk() populates all files and subdirectory maps (and their files and subdirectories,
 // and so on) until we reach the end of the local directory tree.
 // should be used when instantiating a root directory object.
 func (d *Directory) Walk() *Directory {
@@ -532,64 +532,46 @@ func (d *Directory) Walk() *Directory {
 		log.Print("[WARNING] can't traverse directory without a path")
 		return nil
 	}
-	if d.Dirs == nil {
-		d.Dirs = make(map[string]*Directory)
-	}
-	if d.Files == nil {
-		d.Files = make(map[string]*File)
-	}
-	return walk(d)
-}
-
-func walk(d *Directory) *Directory {
-	if err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		d, err = profileDir(cwd, d)
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		log.Printf("[ERROR] failed to walk directory: %v", err)
+	if d.Files == nil || d.Dirs == nil {
+		log.Printf(
+			"[WARNING] can't traverse directory with nil maps: \nfiles=%v dirs=%v",
+			d.Files, d.Dirs,
+		)
 		return nil
 	}
-	return d
+	return walk(d.RootPath, d)
 }
 
-// generate file and dir objects for everything in the current directory,
-// then attatch to d
-func profileDir(path string, d *Directory) (*Directory, error) {
+// walk recursively walks the directory tree and populates all files and subdirectories.
+func walk(path string, d *Directory) *Directory {
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		return d, err
+		log.Printf("[ERROR] could not read directory: %v", err)
+		return d
 	}
 	if len(entries) == 0 {
-		return d, nil
+		log.Printf("[INFO] dir (id=%s) has no entries: ", d.ID)
+		return d
 	}
 	for _, entry := range entries {
-		// is this a directory or file?
-		item, err := os.Stat(filepath.Join(path, entry.Name()))
-		if err != nil {
-			return d, err
-		}
 		entryPath := filepath.Join(path, entry.Name())
+		item, err := os.Stat(entryPath)
+		if err != nil {
+			return d
+		}
 		if item.IsDir() {
 			dir := NewDirectory(item.Name(), d.OwnerID, entryPath)
+			dir.Parent = d
 			if err := d.AddSubDir(dir); err != nil {
-				return d, err
+				return d
 			}
+			return walk(entryPath, dir)
 		} else {
 			file := NewFile(item.Name(), d.OwnerID, entryPath)
 			d.AddFile(file)
 		}
 	}
-	return d, nil
+	return d
 }
 
 /*
