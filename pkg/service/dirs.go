@@ -539,12 +539,12 @@ func (d *Directory) Walk() *Directory {
 		)
 		return nil
 	}
-	return walk(d.RootPath, d)
+	return walk(d)
 }
 
-// walk recursively walks the directory tree and populates all files and subdirectories.
-func walk(path string, d *Directory) *Directory {
-	entries, err := os.ReadDir(path)
+// walk recursively walks the directory tree and populates all files and subdirectory maps
+func walk(d *Directory) *Directory {
+	entries, err := os.ReadDir(d.Path)
 	if err != nil {
 		log.Printf("[ERROR] could not read directory: %v", err)
 		return d
@@ -554,18 +554,20 @@ func walk(path string, d *Directory) *Directory {
 		return d
 	}
 	for _, entry := range entries {
-		entryPath := filepath.Join(path, entry.Name())
+		entryPath := filepath.Join(d.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
+			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
 			return d
 		}
 		if item.IsDir() {
 			dir := NewDirectory(item.Name(), d.OwnerID, entryPath)
 			dir.Parent = d
 			if err := d.AddSubDir(dir); err != nil {
+				log.Printf("[ERROR] could not add directory: %v", err)
 				return d
 			}
-			return walk(entryPath, dir)
+			return walk(dir)
 		} else {
 			file := NewFile(item.Name(), d.OwnerID, entryPath)
 			d.AddFile(file)
