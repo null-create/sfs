@@ -53,7 +53,19 @@ func GetStateDir() string {
 //
 // calls Clean() followed by t.Fatalf()
 func Fatal(t *testing.T, err error) {
-	Clean(t, GetTestingDir())
+	if err2 := Clean(t, GetTestingDir()); err2 != nil {
+		log.Fatalf("failed to clean testing dir: %v", err)
+	}
+	t.Fatalf("[ERROR] %v", err)
+}
+
+// handle test failures
+//
+// like Fatal but you can specify the directory to clean
+func Fail(t *testing.T, dir string, err error) {
+	if err2 := Clean(t, dir); err2 != nil {
+		log.Fatalf("failed to clean testing dir: %v", err)
+	}
 	t.Fatalf("[ERROR] %v", err)
 }
 
