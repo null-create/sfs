@@ -164,7 +164,7 @@ func (q *Query) GetFileID(filePath string) (string, error) {
 	defer q.Close()
 
 	var fileID string
-	if err := q.Conn.QueryRow(FindFileIDQuery, filePath).Scan(&fileID); err != nil {
+	if err := q.Conn.QueryRow(FindFileIDWithPathQuery, filePath).Scan(&fileID); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows returned (path=%s): %v", filePath, err)
 			return "", nil
