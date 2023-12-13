@@ -677,7 +677,7 @@ func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	// populate all subdirectories, if possible
 	// NOTE: Walk() creates NEW dir/file object representations,
 	// ID's will be different than what's in DB!
-	root = root.Walk()
+	// root = root.Walk()
 	drive.Root = root
 	return drive, nil
 }
@@ -696,7 +696,9 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 		return nil, err
 	}
 	// populate all subdirectories, if possible
-	root = root.Walk()
+	// NOTE: Walk() creates NEW dir/file object representations,
+	// ID's will be different than what's in DB!
+	// root = root.Walk()
 	drive.Root = root
 	return drive, nil
 }
