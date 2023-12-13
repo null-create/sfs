@@ -238,8 +238,9 @@ const (
 	FindAllDirsQuery            string = `SELECT * FROM Directories;`
 	FindAllFilesQuery           string = `SELECT * FROM Files;`
 	FindAllUsersFilesQuery      string = `SELECT * FROM Files WHERE owner = ?;`
-	FindFileIDQuery             string = `SELECT id FROM Files WHERE path = ?;`
+	FindFileIDWithPathQuery     string = `SELECT id FROM Files WHERE path = ?;`
 	FindFileQuery               string = `SELECT * FROM Files WHERE id = ?;`
+	FindFileByPathQuery         string = `SELECT * FROM Files WHERE path = ?;`
 	FindDirQuery                string = `SELECT * FROM Directories WHERE id = ?;`
 	FindDriveQuery              string = `SELECT * FROM Drives WHERE id = ?;`
 	FindDriveByUserID           string = `SELECT * FROM Drives WHERE owner_id = ?;`
