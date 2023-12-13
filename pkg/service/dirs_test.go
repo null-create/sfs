@@ -199,11 +199,15 @@ func TestGetDirSize(t *testing.T) {
 func TestWalk(t *testing.T) {
 	env.BuildEnv(false)
 
-	tmpRoot := MakeTmpDirs(t)
+	// make test files with no test object
+	MakeTmpDirs(t)
+
+	// create tempy test object and attemp to populate
+	tmpRoot := MakeEmptyTmpDir()
 	items := tmpRoot.Walk()
 
 	files := items.GetFiles()
-	if len(files) == 0 {
+	if len(files) == 0 || files == nil {
 		Fail(t, GetTestingDir(), fmt.Errorf("no test files found"))
 	}
 
