@@ -674,11 +674,10 @@ func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: populate all subdirectories, if possible
-	// allDirs := root.WalkDs()
-
-	// NOTE: root's file/dir maps are nil here
-
+	// populate all subdirectories, if possible
+	// NOTE: Walk() creates NEW dir/file object representations,
+	// ID's will be different than what's in DB!
+	root = root.Walk()
 	drive.Root = root
 	return drive, nil
 }
@@ -696,11 +695,8 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: populate all subdirectories, if possible
-	// allDirs := root.WalkDs()
-
-	// NOTE: root's file/dir maps are nil here
-
+	// populate all subdirectories, if possible
+	root = root.Walk()
 	drive.Root = root
 	return drive, nil
 }
