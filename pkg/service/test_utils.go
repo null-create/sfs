@@ -102,6 +102,11 @@ func MakeTmpDir(t *testing.T, path string) (*Directory, error) {
 	return dir, nil
 }
 
+// make an empty tmp directory object. no physical files or directories.
+func MakeEmptyTmpDir() *Directory {
+	return NewDirectory("tmp", "me", GetTestingDir())
+}
+
 // create a temporary root directory with files and a subdirectory,
 // also with files, under pkg/files/testing/tmp
 func MakeTmpDirs(t *testing.T) *Directory {
