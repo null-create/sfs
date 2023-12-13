@@ -82,26 +82,18 @@ func NewFile(fileName string, ownerID string, path string) *File {
 func (f *File) Size() int64 {
 	info, err := os.Stat(f.Path)
 	if err != nil {
-		log.Fatalf("[ERROR] unable to determine file size: %v", err)
+		log.Fatalf("unable to determine file size: %v", err)
 	}
 	return info.Size()
 }
 
-// convert file object to json byte slice
+// convert file object to json-formatted byte slice
 func (f *File) ToJSON() ([]byte, error) {
 	data, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
-}
-
-func (f *File) UpdateCs() error {
-	if err := f.UpdateChecksum(); err != nil {
-		return err
-	}
-	f.LastSync = time.Now().UTC()
-	return nil
 }
 
 func (f *File) AddDirID(dirID string) {
@@ -121,7 +113,7 @@ func (f *File) Lock(password string) {
 	if password == f.Key {
 		f.Protected = true
 	} else {
-		log.Print("[DEBUG] wrong password")
+		log.Print("[INFO] wrong password")
 	}
 }
 
@@ -129,16 +121,16 @@ func (f *File) Unlock(password string) {
 	if password == f.Key {
 		f.Protected = false
 	} else {
-		log.Print("[DEBUG] wrong password")
+		log.Print("[INFO] wrong password")
 	}
 }
 
 func (f *File) ChangePassword(password string, newPassword string) {
 	if password == f.Key {
 		f.Key = newPassword
-		log.Print("[DEBUG] password updated!")
+		log.Print("[INFO] password updated!")
 	} else {
-		log.Print("[DEBUG] wrong password")
+		log.Print("[INFO] wrong password")
 	}
 }
 
@@ -164,7 +156,7 @@ func (f *File) Load() {
 		}
 		f.Content = data
 	} else {
-		log.Printf("[DEBUG] file (id=%s) is protected", f.ID)
+		log.Printf("[INFO] file (id=%s) is protected", f.ID)
 	}
 }
 
@@ -190,7 +182,7 @@ func (f *File) Save(data []byte) error {
 		// update sync time
 		f.LastSync = time.Now().UTC()
 	} else {
-		log.Print("[DEBUG] file is protected")
+		log.Print("[INFO] file is protected")
 	}
 	return nil
 }
@@ -198,10 +190,11 @@ func (f *File) Save(data []byte) error {
 // clears *f.Content* not the actual external file contents!
 func (f *File) Clear() error {
 	if !f.Protected {
-		f.Content = []byte{}
-		log.Printf("[DEBUG] in-memory file content cleared (external file not altered)")
+		f.Content = nil
+		f.Content = make([]byte, 0)
+		log.Printf("[INFO] in-memory file content cleared (external file not altered)")
 	} else {
-		log.Print("[DEBUG] file is protected")
+		log.Print("[INFO] file is protected")
 	}
 	return nil
 }
@@ -259,7 +252,7 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 func (f *File) ValidateChecksum() {
 	cs, err := CalculateChecksum(f.Path, f.Algorithm)
 	if err != nil {
-		log.Printf("[DEBUG] unable to calculate checksum: %v", err)
+		log.Printf("[WARNING] unable to calculate checksum: %v", err)
 		return
 	}
 	if cs != f.CheckSum {
@@ -273,5 +266,6 @@ func (f *File) UpdateChecksum() error {
 		return fmt.Errorf("CalculateChecksum failed: %v", err)
 	}
 	f.CheckSum = newCs
+	f.LastSync = time.Now().UTC()
 	return nil
 }
