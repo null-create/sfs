@@ -526,7 +526,13 @@ func (d *Directory) FindDir(dirID string) *Directory {
 
 // Walk() populates all files and subdirectory maps (and their files and subdirectories,
 // and so on) until we reach the end of the local directory tree.
-// should be used when instantiating a root directory object.
+// should be used only when instantiating a root directory object
+// for the *first* time, as it will generate new file and directory objects
+// with their own ID's, and will need to be treated as individual items rather than
+// ephemeral ones.
+//
+// In other words, just use this *once* during the initial set up
+// of a drive in a directory that already has (or may have) files and subdirectories.
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
 		log.Print("[WARNING] can't traverse directory without a path")
