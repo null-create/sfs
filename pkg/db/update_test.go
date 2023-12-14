@@ -59,7 +59,7 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 	log.Printf("added directory: %s", tmpDir.ID)
 
 	// update the directory
-	tmpDir.Name = "pron"
+	tmpDir.DirName = "pron"
 
 	if err := q.UpdateDir(tmpDir); err != nil {
 		Fatal(t, fmt.Errorf("failed to update directory: %v", err))
@@ -70,7 +70,7 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 		Fatal(t, err)
 	}
 
-	assert.Equal(t, tmpDir.Name, d.Name)
+	assert.Equal(t, tmpDir.DirName, d.DirName)
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Fatal(err)

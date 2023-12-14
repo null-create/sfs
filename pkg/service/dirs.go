@@ -28,7 +28,7 @@ NOTE:
 type Directory struct {
 	ID      string  `json:"id"`       // dir UUID
 	NMap    NameMap `json:"nmap"`     // name map
-	Name    string  `json:"name"`     // dir name
+	DirName string  `json:"name"`     // dir name
 	OwnerID string  `json:"owner"`    // owner UUID
 	DriveID string  `json:"drive_id"` // drive ID this directory belongs to
 
@@ -72,13 +72,13 @@ type Directory struct {
 }
 
 // create a new root directory object. does not create physical directory.
-func NewRootDirectory(name string, ownerID string, rootPath string) *Directory {
+func NewRootDirectory(dirName string, ownerID string, rootPath string) *Directory {
 	uuid := NewUUID()
 	cfg := NewSvcCfg()
 	return &Directory{
 		ID:        uuid,
-		NMap:      newNameMap(name, uuid),
-		Name:      name,
+		NMap:      newNameMap(dirName, uuid),
+		DirName:   dirName,
 		OwnerID:   ownerID,
 		DriveID:   "CHANGE ME",
 		Protected: false,
@@ -99,14 +99,14 @@ func NewRootDirectory(name string, ownerID string, rootPath string) *Directory {
 // This is mainly because I wanted an easier way to facilitate
 // testing without having to create an entire mocked system.
 // I'm sure I won't regret this.
-func NewDirectory(name string, owner string, path string) *Directory {
+func NewDirectory(dirName string, ownerID string, path string) *Directory {
 	uuid := NewUUID()
 	cfg := NewSvcCfg()
 	return &Directory{
 		ID:        uuid,
-		NMap:      newNameMap(name, uuid),
-		Name:      name,
-		OwnerID:   owner,
+		NMap:      newNameMap(dirName, uuid),
+		DirName:   dirName,
+		OwnerID:   ownerID,
 		DriveID:   "CHANGE ME",
 		Protected: false,
 		Key:       "default",
@@ -293,7 +293,7 @@ func (d *Directory) AddFile(file *File) {
 			log.Printf("[DEBUG] file %s (%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
+		log.Printf("[DEBUG] directory %s (%s) locked", d.DirName, d.ID)
 	}
 }
 
@@ -311,7 +311,7 @@ func (d *Directory) AddFiles(files []*File) {
 			}
 		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
+		log.Printf("[DEBUG] directory %s (%s) locked", d.DirName, d.ID)
 	}
 }
 
@@ -336,7 +336,7 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) locked", d.Name, d.ID)
+		log.Printf("[DEBUG] directory %s (%s) locked", d.DirName, d.ID)
 	}
 	return nil
 }
@@ -409,9 +409,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.Parent = d
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
-		log.Printf("[DEBUG] dir %s (%s) added", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) added", dir.DirName, dir.ID)
 	} else {
-		return fmt.Errorf("[DEBUG] dir %s (%s) already exists", dir.Name, dir.ID)
+		return fmt.Errorf("[DEBUG] dir %s (%s) already exists", dir.DirName, dir.ID)
 	}
 	return nil
 }
@@ -426,7 +426,7 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] dir %s is protected", d.Name)
+		log.Printf("[DEBUG] dir %s is protected", d.DirName)
 	}
 	return nil
 }
@@ -595,7 +595,7 @@ func walkF(dir *Directory, fileID string) *File {
 		return file
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
@@ -644,7 +644,7 @@ func (d *Directory) WalkD(dirID string) *Directory {
 
 func walkD(dir *Directory, dirID string) *Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
 		return nil
 	}
 	if d, ok := dir.Dirs[dirID]; ok {
@@ -670,7 +670,7 @@ func (d *Directory) WalkDs() map[string]*Directory {
 
 func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
 		return nil
 	}
 	for _, subDir := range dir.Dirs {
@@ -708,10 +708,10 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildSync(dir, idx)
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no files", dir.DirName, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -749,10 +749,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildUpdate(dir, idx)
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no files", dir.DirName, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -774,10 +774,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 // functions should have the following signature: func(file *File) error
 func (d *Directory) WalkO(op func(file *File) error) error {
 	if len(d.Files) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no files", d.Name, d.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no files", d.DirName, d.ID)
 	}
 	if len(d.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.Name, d.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.DirName, d.ID)
 		return nil
 	}
 	return walkO(d, op)
@@ -789,15 +789,15 @@ func walkO(dir *Directory, op func(f *File) error) error {
 			if err := op(file); err != nil {
 				// we don't exit right away because this exception may only apply
 				// to a single file.
-				log.Printf("[DEBUG] unable to run operation on %s \n%v\n continuing...", dir.Name, err)
+				log.Printf("[DEBUG] unable to run operation on %s \n%v\n continuing...", dir.DirName, err)
 				continue
 			}
 		}
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) has no files", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no files", dir.DirName, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {

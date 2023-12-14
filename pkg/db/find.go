@@ -273,7 +273,7 @@ func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 	d := new(svc.Directory)
 	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
 		&d.ID,
-		&d.Name,
+		&d.DirName,
 		&d.OwnerID,
 		&d.Size,
 		&d.Path,
@@ -310,7 +310,7 @@ func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 		dir := new(svc.Directory)
 		if err := q.Conn.QueryRow(FindAllQuery, "Directories").Scan(
 			&dir.ID,
-			&dir.Name,
+			&dir.DirName,
 			&dir.OwnerID,
 			&dir.Size,
 			&dir.Path,
