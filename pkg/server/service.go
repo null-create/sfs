@@ -664,6 +664,76 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // ---------- drives-------------------------------------
 
+// Walk() populates a drive's root directory with all the users
+// files and subdirectories by searching the DB with the name
+// of each file or directory Walk() discoveres as it traverses the
+// users SFS filesystem.
+func (s *Service) Walk(dir *svc.Directory) *svc.Directory {
+	if dir.Path == "" {
+		log.Print("[WARNING] can't traverse directory without a path")
+		return nil
+	}
+	if dir.Files == nil || dir.Dirs == nil {
+		log.Printf(
+			"[WARNING] can't traverse directory with nil maps: \nfiles=%v dirs=%v",
+			dir.Files, dir.Dirs,
+		)
+		return nil
+	}
+	return s.walk(dir)
+}
+
+func (s *Service) walk(dir *svc.Directory) *svc.Directory {
+	entries, err := os.ReadDir(dir.Path)
+	if err != nil {
+		log.Printf("[ERROR] could not read directory: %v", err)
+		return dir
+	}
+	if len(entries) == 0 {
+		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
+		return dir
+	}
+	for _, entry := range entries {
+		entryPath := filepath.Join(dir.Path, entry.Name())
+		item, err := os.Stat(entryPath)
+		if err != nil {
+			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			return dir
+		}
+		if item.IsDir() {
+			d, err := s.Db.GetDirectoryByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				continue
+			}
+			if d == nil {
+				log.Printf("[WARNING] directory (%s) does not exist in db", item.Name())
+				continue
+			}
+			dir.Parent = d
+			if err := dir.AddSubDir(dir); err != nil {
+				log.Printf("[ERROR] could not add directory: %v", err)
+				continue
+			}
+			return s.walk(d)
+		} else {
+			file, err := s.Db.GetFileByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				continue
+			}
+			if file == nil {
+				log.Printf("[WARNING] file (%s) not found in db", item.Name())
+				continue
+			}
+			dir.AddFile(file)
+		}
+	}
+	return dir
+}
+
+// retrives a drive and its root directory from the DB, then uses the
+// DB to populate the drive as it recusively traverses the users SFS file system.
 func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	drive, err := s.Db.GetDrive(driveID)
 	if err != nil {
@@ -674,11 +744,10 @@ func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-	// populate all subdirectories, if possible
-	// NOTE: Walk() creates NEW dir/file object representations,
-	// ID's will be different than what's in DB!
-	// root = root.Walk()
+
 	drive.Root = root
+	// populate all subdirectories, if possible
+
 	return drive, nil
 }
 
@@ -698,7 +767,7 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	// populate all subdirectories, if possible
 	// NOTE: Walk() creates NEW dir/file object representations,
 	// ID's will be different than what's in DB!
-	// root = root.Walk()
+	root = root.Walk()
 	drive.Root = root
 	return drive, nil
 }
