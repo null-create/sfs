@@ -157,6 +157,36 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
+// get a file by name. returns nil if no file is found in the db.
+func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	file := new(svc.File)
+	if err := q.Conn.QueryRow(FindFileByNameQuery, fileName).Scan(
+		&file.ID,
+		&file.Name,
+		&file.OwnerID,
+		&file.Protected,
+		&file.Key,
+		&file.LastSync,
+		&file.Path,
+		&file.ServerPath,
+		&file.ClientPath,
+		&file.Endpoint,
+		&file.CheckSum,
+		&file.Algorithm,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows returned (file name=%s): %v", fileName, err)
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get file metadata: %v", err)
+	}
+	return file, nil
+}
+
 // retrieves a file ID using a given file path
 func (q *Query) GetFileID(filePath string) (string, error) {
 	q.WhichDB("files")
@@ -287,6 +317,36 @@ func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows found with dir id: %s", dirID)
+			return nil, nil
+		}
+		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+	}
+	return d, nil
+}
+
+// find a directory by name. returns nil if no directory is found.
+func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	d := new(svc.Directory)
+	if err := q.Conn.QueryRow(FindDirByNameQuery, dirName).Scan(
+		&d.ID,
+		&d.DirName,
+		&d.OwnerID,
+		&d.Size,
+		&d.Path,
+		&d.Protected,
+		&d.AuthType,
+		&d.Key,
+		&d.Overwrite,
+		&d.LastSync,
+		&d.Root,
+		&d.RootPath,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows found for dir: %s", dirName)
 			return nil, nil
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)

@@ -230,16 +230,23 @@ const (
 
 	// ---------- SELECT statements for searching -------------------------------
 
-	FindAllQuery                string = `SELECT * FROM ?;`
-	FindWithLimitQuery          string = `SELECT * FROM ? LIMIT ?;`
-	FindQuery                   string = `SELECT * FROM ? WHERE id = ?;`
-	FindAllUsersQuery           string = `SELECT * FROM Users;`
-	FindAllDrivesQuery          string = `SELECT * FROM Drives;`
-	FindAllDirsQuery            string = `SELECT * FROM Directories;`
-	FindAllFilesQuery           string = `SELECT * FROM Files;`
+	// general
+	FindAllQuery       string = `SELECT * FROM ?;`
+	FindWithLimitQuery string = `SELECT * FROM ? LIMIT ?;`
+	FindQuery          string = `SELECT * FROM ? WHERE id = ?;`
+
+	// find all
+	FindAllUsersQuery  string = `SELECT * FROM Users;`
+	FindAllDrivesQuery string = `SELECT * FROM Drives;`
+	FindAllDirsQuery   string = `SELECT * FROM Directories;`
+	FindAllFilesQuery  string = `SELECT * FROM Files;`
+
+	// find specific
+	FindDirByNameQuery          string = `SELECT * FROM Directories WHERE name = ?;`
 	FindAllUsersFilesQuery      string = `SELECT * FROM Files WHERE owner = ?;`
 	FindFileIDWithPathQuery     string = `SELECT id FROM Files WHERE path = ?;`
 	FindFileQuery               string = `SELECT * FROM Files WHERE id = ?;`
+	FindFileByNameQuery         string = `SELECT * FROM Files WHERE name = ?;`
 	FindFileByPathQuery         string = `SELECT * FROM Files WHERE path = ?;`
 	FindDirQuery                string = `SELECT * FROM Directories WHERE id = ?;`
 	FindDriveQuery              string = `SELECT * FROM Drives WHERE id = ?;`
