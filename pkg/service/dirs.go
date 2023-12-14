@@ -130,7 +130,7 @@ func (d *Directory) ToJSON() ([]byte, error) {
 
 func (d *Directory) HasParent() bool {
 	if d.Parent == nil {
-		log.Print("[ERROR] parent directory cannot be nil")
+		log.Print("[WARNING] parent directory cannot be nil")
 		return false
 	}
 	return true
@@ -143,10 +143,11 @@ func (d *Directory) IsRoot() bool {
 // Remove all *internal data structure representations* of files and directories
 // *Does not* remove actual files or sub directories themselves!
 func (d *Directory) clear() {
+	d.Files = nil
+	d.Dirs = nil
 	d.Files = make(map[string]*File, 0)
 	d.Dirs = make(map[string]*Directory, 0)
-
-	log.Printf("[DEBUG] dirID(%s) all directories and files deleted", d.ID)
+	log.Printf("[INFO] dirID (%s) all directories and files deleted", d.ID)
 }
 
 // used to securely run clear()
@@ -157,7 +158,7 @@ func (d *Directory) Clear(password string) {
 		if password == d.Key {
 			d.clear()
 		} else {
-			log.Print("[DEBUG] wrong password. contents not deleted")
+			log.Print("[INFO] wrong password. contents not deleted")
 		}
 	}
 }
