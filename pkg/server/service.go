@@ -673,9 +673,9 @@ func (s *Service) Walk(dir *svc.Directory) *svc.Directory {
 		log.Print("[WARNING] can't traverse directory without a path")
 		return nil
 	}
-	if dir.Files == nil || dir.Dirs == nil {
+	if dir.IsNil() {
 		log.Printf(
-			"[WARNING] can't traverse directory with nil maps: \nfiles=%v dirs=%v",
+			"[WARNING] can't traverse directory with emptyr or nil maps: \nfiles=%v dirs=%v",
 			dir.Files, dir.Dirs,
 		)
 		return nil
@@ -686,7 +686,7 @@ func (s *Service) Walk(dir *svc.Directory) *svc.Directory {
 func (s *Service) walk(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
-		log.Printf("[ERROR] could not read directory: %v", err)
+		log.Printf("[ERROR]: %v", err)
 		return dir
 	}
 	if len(entries) == 0 {
@@ -700,6 +700,7 @@ func (s *Service) walk(dir *svc.Directory) *svc.Directory {
 			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
 			return dir
 		}
+		// add directory then recurse
 		if item.IsDir() {
 			d, err := s.Db.GetDirectoryByName(item.Name())
 			if err != nil {
@@ -707,7 +708,6 @@ func (s *Service) walk(dir *svc.Directory) *svc.Directory {
 				continue
 			}
 			if d == nil {
-				log.Printf("[WARNING] directory (%s) does not exist in db", item.Name())
 				continue
 			}
 			dir.Parent = d
@@ -716,17 +716,39 @@ func (s *Service) walk(dir *svc.Directory) *svc.Directory {
 				continue
 			}
 			return s.walk(d)
-		} else {
+		} else { // add file
 			file, err := s.Db.GetFileByName(item.Name())
 			if err != nil {
-				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				log.Printf("[WARNING] could not get file (%s) from db: %v", item.Name(), err)
 				continue
 			}
 			if file == nil {
-				log.Printf("[WARNING] file (%s) not found in db", item.Name())
 				continue
 			}
 			dir.AddFile(file)
+		}
+	}
+	return dir
+}
+
+// discover populates the given directory with the users file and
+// sub directories for the given root directory. populates the database
+// with the users file and sub directories and returns the the directory object.
+func (s *Service) Discover(dir *svc.Directory) *svc.Directory {
+	// traverse directory and populate internal structures
+	dir = dir.Walk()
+
+	// send everything to the database
+	files := dir.GetFiles()
+	for _, file := range files {
+		if err := s.Db.AddFile(file); err != nil {
+			return nil
+		}
+	}
+	dirs := dir.WalkDs()
+	for _, d := range dirs {
+		if err := s.Db.AddDir(d); err != nil {
+			return nil
 		}
 	}
 	return dir
@@ -744,10 +766,7 @@ func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	drive.Root = root
-	// populate all subdirectories, if possible
-
+	drive.Root = s.Walk(root)
 	return drive, nil
 }
 
@@ -765,10 +784,7 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 		return nil, err
 	}
 	// populate all subdirectories, if possible
-	// NOTE: Walk() creates NEW dir/file object representations,
-	// ID's will be different than what's in DB!
-	root = root.Walk()
-	drive.Root = root
+	drive.Root = s.Walk(root)
 	return drive, nil
 }
 
