@@ -136,6 +136,20 @@ func (d *Directory) HasParent() bool {
 	return true
 }
 
+func (d *Directory) IsNil() bool {
+	if d.Files == nil && d.Dirs == nil {
+		return true
+	}
+	return false
+}
+
+func (d *Directory) IsEmpty() bool {
+	if d.Files == nil && d.Dirs == nil || len(d.Files) == 0 && len(d.Dirs) == 0 {
+		return true
+	}
+	return false
+}
+
 func (d *Directory) IsRoot() bool {
 	return d.Root
 }
@@ -170,12 +184,10 @@ func clean(dirPath string) error {
 		return err
 	}
 	defer d.Close()
-
 	names, err := d.Readdirnames(-1)
 	if err != nil {
 		return fmt.Errorf("unable to read directory: %v", err)
 	}
-
 	for _, name := range names {
 		if err = os.RemoveAll(filepath.Join(dirPath, name)); err != nil {
 			return fmt.Errorf("unable to remove file or directory: %v", err)
@@ -184,13 +196,15 @@ func clean(dirPath string) error {
 	return nil
 }
 
-// calls d.clean() which removes all files and subdirectories
-// from a drive starting at the given path
+// calls clean() which removes all files and subdirectories
+// from a drive starting at the given path. also
+// calls dir.clear() which removes internal data structure references.
 func (d *Directory) Clean(dirPath string) error {
 	if !d.Protected {
 		if err := clean(dirPath); err != nil {
 			return err
 		}
+		d.clear()
 		return nil
 	} else {
 		log.Printf("[DEBUG] drive is protected.")
@@ -212,9 +226,7 @@ func (d *Directory) HasDir(dirID string) bool {
 	return false
 }
 
-// Returns the size of a directory with all its contents, including subdirectories
-//
-// TODO: implement our own version of Walk for this function
+// returns the size of a directory with all its contents, including subdirectories
 func (d *Directory) DirSize() (float64, error) {
 	var size float64
 	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
@@ -525,15 +537,17 @@ func (d *Directory) FindDir(dirID string) *Directory {
 
 // ------------------------------------------------------------
 
-// Walk() populates all files and subdirectory maps (and their files and subdirectories,
-// and so on) until we reach the end of the local directory tree.
-// should be used only when instantiating a root directory object
-// for the *first* time, as it will generate new file and directory objects
-// with their own ID's, and will need to be treated as individual items rather than
-// ephemeral ones.
-//
-// In other words, just use this *once* during the initial set up
-// of a drive in a directory that already has (or may have) files and subdirectories.
+/*
+Walk() populates all files and subdirectory maps (and their files and subdirectories,
+and so on) until we reach the end of the local directory tree.
+should be used only when instantiating a root directory object
+for the *first* time, as it will generate new file and directory objects
+with their own ID's, and will need to be treated as individual items rather than
+ephemeral ones.
+
+In other words, just use this *once* during the initial set up
+of a drive in a directory that already has (or may have) files and subdirectories.
+*/
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
 		log.Print("[WARNING] can't traverse directory without a path")
