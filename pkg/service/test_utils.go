@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/sfs/pkg/auth"
 )
 
 //---------- test fixtures & utils --------------------------------
@@ -324,4 +326,20 @@ func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 	}
 
 	return testFiles
+}
+
+// make testing drive with test files, directories, and subdirectories.
+// all test files will be within the test directory.
+func MakeTmpDrive(t *testing.T) *Drive {
+	root := MakeTmpDirs(t)
+	drive := NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	return drive
+}
+
+// make a tmp empty drive.
+// doesn't physical create test files or directories.
+func MakeEmptyTmpDrive(t *testing.T) *Drive {
+	tmpRoot := NewRootDirectory("tmp", auth.NewUUID(), GetTestingDir())
+	testDrv := NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
+	return testDrv
 }

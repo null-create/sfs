@@ -7,6 +7,9 @@ import (
 	"github.com/joeshaw/envdecode"
 )
 
+// server's root endpoint, since we're running on LAN
+const Endpoint = "http://localhost"
+
 type ServiceConfig struct {
 	Port string `env:"SERVER_PORT,required"`
 }

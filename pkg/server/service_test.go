@@ -84,7 +84,7 @@ func TestLoadServiceFromStateFile(t *testing.T) {
 
 func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
 	testRoot := filepath.Join(GetTestingDir(), "tmp")
-	testSvc, err := SvcInit(testRoot, true)
+	testSvc, err := SvcInit(testRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -97,7 +97,7 @@ func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
 	assert.NotEqual(t, 0, len(entries))
 
 	// load a new service instance from these resources
-	svc, err := SvcLoad(testSvc.SvcRoot, true)
+	svc, err := SvcLoad(testSvc.SvcRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -120,7 +120,7 @@ func TestCreateNewService(t *testing.T) {
 	}
 
 	testRoot := filepath.Join(GetTestingDir(), "tmp")
-	testSvc, err := SvcInit(testRoot, true)
+	testSvc, err := SvcInit(testRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -205,7 +205,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	// create test service instance
 	conf := ServiceConfig()
 	testFolder := filepath.Join(conf.SvcRoot, "users")
-	testSvc, err := SvcLoad(conf.SvcRoot, true)
+	testSvc, err := SvcLoad(conf.SvcRoot)
 	if err != nil {
 		Fail(t, testFolder, err)
 	}
@@ -253,7 +253,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	BuildEnv(true)
 	c := ServiceConfig()
 	// create a test instance
-	testSvc, err := SvcLoad(c.SvcRoot, true)
+	testSvc, err := SvcLoad(c.SvcRoot)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -293,6 +293,25 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	// remove test user drive
 	tmpDir := filepath.Join(c.SvcRoot, "users")
 	if err := Clean(tmpDir); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestDiscover(t *testing.T) {
+	BuildEnv(true)
+
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	MakeTmpDirs(t)
+	tmpDrive := MakeEmptyTmpDrive(t)
+
+	testSvc.Discover(tmpDrive.Root)
+	// examinedRoot := testSvc.Discover(tmpRoot)
+
+	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }

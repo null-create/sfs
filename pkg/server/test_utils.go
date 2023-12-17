@@ -178,7 +178,8 @@ func MakeTmpDrive(t *testing.T) *svc.Drive {
 	return drive
 }
 
-// make a tmp empty drive
+// make a tmp empty drive.
+// doesn't physical create test files or directories.
 func MakeEmptyTmpDrive(t *testing.T) *svc.Drive {
 	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), GetTestingDir())
 	testDrv := svc.NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)

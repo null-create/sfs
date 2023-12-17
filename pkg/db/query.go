@@ -20,68 +20,21 @@ type Query struct {
 
 	Singleton bool // flag for whether this is being use as a singleton
 
-	Conn  *sql.DB              // db connection
-	Stmt  *sql.Stmt            // SQL statement (when used as a one time object)
-	Stmts map[string]*sql.Stmt // SQL statements (when used as a singleton)
+	Conn *sql.DB   // db connection
+	Stmt *sql.Stmt // SQL statement
+	DBs  []string  // list of available databases to both client and server
 }
 
 // returns a new query object.
 func NewQuery(dbPath string, isSingleton bool) *Query {
-	q := &Query{
+	dbs := []string{"users", "drives", "directories", "files"}
+	return &Query{
 		DBPath:    dbPath,
 		CurDB:     "",
 		Debug:     false,
 		Singleton: isSingleton,
-		Stmts:     make(map[string]*sql.Stmt),
+		DBs:       dbs,
 	}
-	// TODO: need a way to indicate this mode to other finds/gets/etc so as to not
-	// redundantly prepare queries prior to execution.
-	// if isSingleton {
-	// 	q.Stmts = prepQueries(dbPath)
-	// }
-	return q
-}
-
-func prepQueries(dbPath string) map[string]*sql.Stmt {
-	conn, err := sql.Open("sqlite3", dbPath)
-	if err != nil {
-		log.Fatalf("unable to open database: %v", err)
-	}
-	defer conn.Close()
-
-	queries := []string{
-		CreateFileTable,
-		CreateDirectoryTable,
-		CreateDriveTable,
-		CreateUserTable,
-		DropTableQuery,
-		AddFileQuery,
-		AddDirQuery,
-		AddDriveQuery,
-		AddUserQuery,
-		FindAllUsersQuery,
-		FindAllDrivesQuery,
-		FindAllDirsQuery,
-		FindAllFilesQuery,
-		FindFileQuery,
-		FindDirQuery,
-		FindDriveQuery,
-		FindUserQuery,
-		UpdateFileQuery,
-		UpdateDirQuery,
-		UpdateDriveQuery,
-		UpdateUserQuery,
-	}
-
-	stmts := make(map[string]*sql.Stmt, len(queries))
-	for _, query := range queries {
-		s, err := conn.Prepare(query)
-		if err != nil {
-			log.Fatalf("failed to prepare query: %v", err)
-		}
-		stmts[query] = s
-	}
-	return stmts
 }
 
 // prepare an SQL statement.
@@ -92,6 +45,16 @@ func (q *Query) Prepare(query string) error {
 	}
 	q.Stmt = stmt
 	return nil
+}
+
+// make sure this is a valid database
+func (q *Query) ValidDb(dbName string) bool {
+	for _, db := range q.DBs {
+		if dbName == db {
+			return true
+		}
+	}
+	return false
 }
 
 // sets the file path to the db we want to connect to.

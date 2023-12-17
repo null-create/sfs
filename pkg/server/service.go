@@ -142,7 +142,7 @@ func Init(new bool, admin bool) (*Service, error) {
 	c := ServiceConfig()
 	if !new {
 		// ---- load from state file and dbs
-		svc, err := SvcLoad(c.SvcRoot, false)
+		svc, err := SvcLoad(c.SvcRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load service config: %v", err)
 		}
@@ -152,7 +152,7 @@ func Init(new bool, admin bool) (*Service, error) {
 		return svc, nil
 	} else {
 		// ----- initialize new sfs service
-		svc, err := SvcInit(c.SvcRoot, false)
+		svc, err := SvcInit(c.SvcRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -170,6 +170,8 @@ func setAdmin(svc *Service) {
 	svc.AdminKey = cfg.AdminKey
 }
 
+// searches for the service state file.
+// will returna an empty string if there was an error
 func findStateFile(svcRoot string) (string, error) {
 	sfPath := filepath.Join(svcRoot, "state")
 	entries, err := os.ReadDir(sfPath)
@@ -184,8 +186,6 @@ func findStateFile(svcRoot string) (string, error) {
 		}
 	}
 	for _, entry := range entries {
-		// NOTE: this might not be the most *current* version,
-		// just the one that's present at the moment.
 		if strings.Contains(entry.Name(), "sfs-state") {
 			return filepath.Join(sfPath, entry.Name()), nil
 		}
@@ -252,7 +252,7 @@ root/
 */
 
 // initialize a new service and corresponding databases
-func SvcInit(svcRoot string, debug bool) (*Service, error) {
+func SvcInit(svcRoot string) (*Service, error) {
 	// make root service directory (wherever it should located)
 	log.Print("creating root service directory...")
 	if err := os.Mkdir(svcRoot, 0644); err != nil {
@@ -338,7 +338,7 @@ func svcLoad(sfPath string) (*Service, error) {
 // read in an external service state file
 //
 // populates users map through querying the users database
-func SvcLoad(svcPath string, debug bool) (*Service, error) {
+func SvcLoad(svcPath string) (*Service, error) {
 	// ensure (at least) the necessary dbs
 	// and state files are present
 	sfPath, err := preChecks(svcPath)
@@ -362,6 +362,10 @@ func SvcLoad(svcPath string, debug bool) (*Service, error) {
 	}
 	return svc, nil
 }
+
+// TODO: SFS reset function to clear dbs (not delete tables, just all data),
+// reset sfs state file, and user root directory. primarily for testing.
+func (s *Service) Reset(svcPath string) error { return nil }
 
 // --------- drives --------------------------------
 
@@ -664,26 +668,56 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // ---------- drives-------------------------------------
 
-// Walk() populates a drive's root directory with all the users
+// discover populates the given directory with the users file and
+// sub directories for the given root directory, and updates the database
+// with the users file and sub directories and returns the the directory object.
+//
+// this should ideally be used for starting a new sfs service in a
+// users root directly that already has files and/or subdirectories.
+func (s *Service) Discover(dir *svc.Directory) *svc.Directory {
+	// traverse users SFS file system and populate internal structures
+	dir = dir.Walk()
+
+	// send everything to the database
+	files := dir.WalkFs()
+	for _, file := range files {
+		if err := s.Db.AddFile(file); err != nil {
+			return nil
+		}
+	}
+	dirs := dir.WalkDs()
+	for _, d := range dirs {
+		if err := s.Db.AddDir(d); err != nil {
+			return nil
+		}
+	}
+	// add root directory itself
+	if err := s.Db.AddDir(dir); err != nil {
+		return nil
+	}
+	return dir
+}
+
+// Populate() populates a drive's root directory with all the users
 // files and subdirectories by searching the DB with the name
-// of each file or directory Walk() discoveres as it traverses the
+// of each file or directory Populate() discoveres as it traverses the
 // users SFS filesystem.
-func (s *Service) Walk(dir *svc.Directory) *svc.Directory {
-	if dir.Path == "" {
+func (s *Service) Populate(root *svc.Directory) *svc.Directory {
+	if root.Path == "" {
 		log.Print("[WARNING] can't traverse directory without a path")
 		return nil
 	}
-	if dir.IsNil() {
+	if root.IsNil() {
 		log.Printf(
 			"[WARNING] can't traverse directory with emptyr or nil maps: \nfiles=%v dirs=%v",
-			dir.Files, dir.Dirs,
+			root.Files, root.Dirs,
 		)
 		return nil
 	}
-	return s.walk(dir)
+	return s.populate(root)
 }
 
-func (s *Service) walk(dir *svc.Directory) *svc.Directory {
+func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
 		log.Printf("[ERROR]: %v", err)
@@ -702,20 +736,21 @@ func (s *Service) walk(dir *svc.Directory) *svc.Directory {
 		}
 		// add directory then recurse
 		if item.IsDir() {
-			d, err := s.Db.GetDirectoryByName(item.Name())
+			subDir, err := s.Db.GetDirectoryByName(item.Name())
 			if err != nil {
 				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
 				continue
 			}
-			if d == nil {
+			if subDir == nil {
 				continue
 			}
-			dir.Parent = d
-			if err := dir.AddSubDir(dir); err != nil {
+			dir.Parent = subDir
+			subDir = s.populate(subDir)
+			if err := dir.AddSubDir(subDir); err != nil {
 				log.Printf("[ERROR] could not add directory: %v", err)
 				continue
 			}
-			return s.walk(d)
+			return dir
 		} else { // add file
 			file, err := s.Db.GetFileByName(item.Name())
 			if err != nil {
@@ -726,29 +761,6 @@ func (s *Service) walk(dir *svc.Directory) *svc.Directory {
 				continue
 			}
 			dir.AddFile(file)
-		}
-	}
-	return dir
-}
-
-// discover populates the given directory with the users file and
-// sub directories for the given root directory. populates the database
-// with the users file and sub directories and returns the the directory object.
-func (s *Service) Discover(dir *svc.Directory) *svc.Directory {
-	// traverse directory and populate internal structures
-	dir = dir.Walk()
-
-	// send everything to the database
-	files := dir.GetFiles()
-	for _, file := range files {
-		if err := s.Db.AddFile(file); err != nil {
-			return nil
-		}
-	}
-	dirs := dir.WalkDs()
-	for _, d := range dirs {
-		if err := s.Db.AddDir(d); err != nil {
-			return nil
 		}
 	}
 	return dir
@@ -766,7 +778,7 @@ func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-	drive.Root = s.Walk(root)
+	drive.Root = s.Populate(root)
 	return drive, nil
 }
 
@@ -783,8 +795,7 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	if err != nil {
 		return nil, err
 	}
-	// populate all subdirectories, if possible
-	drive.Root = s.Walk(root)
+	drive.Root = s.Populate(root)
 	return drive, nil
 }
 
@@ -797,27 +808,45 @@ func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
 
 // add a sub-directory to the given drive directory
 func (s *Service) AddDir(dirID string, newDir *svc.Directory) error {
-	dir, err := s.Db.GetDirectory(dirID)
+	root, err := s.Db.GetDirectory(dirID)
 	if err != nil {
 		return err
 	}
-	if err := dir.AddSubDir(newDir); err != nil {
+	if err := root.AddSubDir(newDir); err != nil {
 		return err
 	}
-	// add new directory to database
 	if err := s.Db.AddDir(newDir); err != nil {
 		return err
 	}
 	return nil
 }
 
-// remove a directory
-func (s *Service) RemoveDir(dirID string) error {
-	dir, err := s.Db.GetDirectory(dirID)
+// remove a directory from a user's drive service.
+func (s *Service) RemoveDir(driveID string, dirID string) error {
+	// "root" is the user's drive directory.
+	// it's assumed dirID is a sub-directory within the drive.
+	root, err := s.Db.GetDirectory(driveID)
 	if err != nil {
 		return err
 	}
-	return dir.RemoveSubDir(dirID)
+	if root == nil {
+		log.Printf("[WARNING] root %s not found in database", driveID)
+		return nil
+	}
+	if root.ID == dirID {
+		log.Printf(
+			"[WARNING] can't delete user's drive instance. \ndriveID=%s dirID=%s",
+			driveID, dirID,
+		)
+		return nil
+	}
+	if err := root.RemoveSubDir(dirID); err != nil {
+		return err
+	}
+	if err := s.Db.RemoveDirectory(dirID); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ---------- files --------------------------------

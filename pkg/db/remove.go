@@ -9,15 +9,26 @@ import (
 )
 
 // delete a table if it exists
-func (q *Query) DropTable(tableName string) error {
+func (q *Query) DropTable(dbName string) error {
+	q.WhichDB(dbName)
 	q.Connect()
 	defer q.Close()
 
-	_, err := q.Conn.Exec(DropTableQuery, tableName)
-	if err != nil {
-		return fmt.Errorf("failed to drop table %s: %v", tableName, err)
+	var query string
+	switch dbName {
+	case "users":
+		query = DropUserTableQuery
+	case "drives":
+		query = DropDrivesTableQuery
+	case "directories":
+		query = DropDirectoriesTableQuery
+	case "files":
+		query = DropFilesTableQuery
 	}
-	log.Printf("[INFO] %s table deleted", tableName)
+	_, err := q.Conn.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %v", err)
+	}
 	return nil
 }
 
@@ -121,6 +132,52 @@ func (q *Query) RemoveDrives(drvs []*svc.Drive) error {
 		if err != nil {
 			return fmt.Errorf("failed to remove file (id=%s): %v", drv.ID, err)
 		}
+	}
+	return nil
+}
+
+// attempts ot map a given db to its core table.
+// returns an empty string if none can be matched.
+func (q *Query) getTable(dbName string) string {
+	if dbName == "" {
+		log.Printf("[WARNING] no database provided")
+		return ""
+	}
+	switch dbName {
+	case "users":
+		return "Users"
+	case "drives":
+		return "Drives"
+	case "directories":
+		return "Directories"
+	case "files":
+		return "Files"
+	}
+	return ""
+}
+
+// "clears" a database by dropping the associated table for the given
+// database name and recreates it entirely.
+func (q *Query) ClearTable(dbName string) error {
+	q.WhichDB(dbName)
+	q.Connect()
+	defer q.Close()
+
+	tableName := q.getTable(dbName)
+	if tableName == "" {
+		return fmt.Errorf("no table found for given DB: %s", dbName)
+	}
+	switch tableName {
+	case "Users":
+		NewTable(q.DBPath, CreateUserTable)
+	case "Drives":
+		NewTable(q.DBPath, CreateDriveTable)
+	case "Directories":
+		NewTable(q.DBPath, CreateDirectoryTable)
+	case "Files":
+		NewTable(q.DBPath, CreateFileTable)
+	default:
+		log.Fatalf("unsupported table name: %s", tableName)
 	}
 	return nil
 }

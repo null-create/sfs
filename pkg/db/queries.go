@@ -74,8 +74,6 @@ const (
 			UNIQUE(id)
 		);`
 
-	DropTableQuery string = `DROP TABLE IF EXISTS ?;`
-
 	// ------- file, user, directory, and drive additions ----------------
 
 	AddFileQuery string = `
@@ -227,6 +225,20 @@ const (
 	RemoveUserQuery string = `
 		DELETE FROM Users WHERE id = ? 
 		AND EXISTS (SELECT 1 FROM Users WHERE id=?);`
+
+	// drop tables
+
+	DropUserTableQuery string = `
+		DROP TABLE IF EXISTS Users;`
+
+	DropDrivesTableQuery string = `
+		DROP TABLE IF EXISTS Drives;`
+
+	DropDirectoriesTableQuery string = `
+		DROP TABLE IF Exists Directories;`
+
+	DropFilesTableQuery string = `
+		DROP TABLE IF EXISTS Files;`
 
 	// ---------- SELECT statements for searching -------------------------------
 

@@ -17,9 +17,6 @@ import (
 // enusre -rw-r----- permissions
 const PERMS = 0640 // go's default is 0666
 
-// server's root endpoint, since we're running on LAN
-const Endpoint = "http://localhost"
-
 type File struct {
 	m sync.Mutex
 
@@ -69,7 +66,7 @@ func NewFile(fileName string, ownerID string, path string) *File {
 		Path:       path,
 		ServerPath: path,
 		ClientPath: path,
-		Endpoint:   fmt.Sprintf(fmt.Sprint(Endpoint, ":", cfg.Port), "/v1/files/", uuid),
+		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/files/", uuid),
 		CheckSum:   cs,
 		Algorithm:  "sha256",
 		Content:    make([]byte, 0),

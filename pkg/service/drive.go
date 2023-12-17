@@ -105,7 +105,7 @@ func (d *Drive) SaveState() error {
 	}
 	fn := fmt.Sprintf("user-%s-.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
 	fp := filepath.Join(d.DriveRoot, fn)
-	return os.WriteFile(fp, data, 0644)
+	return os.WriteFile(fp, data, PERMS)
 }
 
 func (d *Drive) GetOwnerID() (string, error) {

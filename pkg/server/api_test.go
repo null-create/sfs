@@ -63,28 +63,14 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 	shutDown <- true
 }
 
-func TestFileGetAPI(t *testing.T) {
+func TestNewFileAPI(t *testing.T) {
 	BuildEnv(true)
 
-	// shut down signal to the server
-	shutDown := make(chan bool)
-
-	// add temp file to try and retrieve
-
-	// start testing server
-	log.Print("starting test server...")
-	testServer := NewServer()
-	go func() {
-		testServer.TestRun(shutDown)
-	}()
-
-	shutDown <- true // shut down test server
-
-	// remove tmp file
-}
-
-func TestFilePutAPI(t *testing.T) {
-	BuildEnv(true)
+	// create test svc instance to manage temp testing files
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
 
 	// shut down signal to the server
 	shutDown := make(chan bool)
@@ -96,9 +82,9 @@ func TestFilePutAPI(t *testing.T) {
 		testServer.TestRun(shutDown)
 	}()
 
-	// create test svc instance to manage temp testing files
-	testSvc, err := Init(false, false)
-	if err != nil {
+	// create tmp/test server-side drive
+	testDrv := MakeEmptyTmpDrive(t)
+	if err := testSvc.AddDrive(testDrv); err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
 	}
@@ -110,7 +96,8 @@ func TestFilePutAPI(t *testing.T) {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
 	}
-	if err := testSvc.AddFile(file.OwnerID, "CHANGEME", file); err != nil {
+	file.OwnerID = testDrv.OwnerID
+	if err := testSvc.AddFile(file.OwnerID, testDrv.RootID, file); err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
 	}
@@ -136,10 +123,11 @@ func TestFilePutAPI(t *testing.T) {
 	}
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
-		msg := fmt.Sprintf(
-			"response code was not 200: %d\n header object: %v\n",
-			res.StatusCode, res.Header,
-		)
+		b, err := httputil.DumpResponse(res, true)
+		if err != nil {
+			Fail(t, GetTestingDir(), fmt.Errorf("resp was not 200, but failed to parse response: %v", err))
+		}
+		msg := fmt.Sprintf("response code was not 200: %d\n %s\n", res.StatusCode, string(b))
 		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
 
@@ -149,6 +137,26 @@ func TestFilePutAPI(t *testing.T) {
 	if err := Clean(GetTestingDir()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func TestFileGetAPI(t *testing.T) {
+	BuildEnv(true)
+
+	// shut down signal to the server
+	shutDown := make(chan bool)
+
+	// add temp file to try and retrieve
+
+	// start testing server
+	log.Print("starting test server...")
+	testServer := NewServer()
+	go func() {
+		testServer.TestRun(shutDown)
+	}()
+
+	shutDown <- true // shut down test server
+
+	// remove tmp file
 }
 
 func TestFileDeleteAPI(t *testing.T) {

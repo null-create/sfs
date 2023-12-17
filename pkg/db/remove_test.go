@@ -106,3 +106,28 @@ func TestAddAndRemoveUser(t *testing.T) {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
+
+func TestClearTable(t *testing.T) {
+	testDir := GetTestingDir()
+
+	// test db and query
+	NewTable(filepath.Join(testDir, "Users"), CreateUserTable)
+	q := NewQuery(filepath.Join(testDir, "Users"), false)
+	q.Debug = true
+	q.DBPath = filepath.Join(testDir, "Users")
+
+	tmpUser := auth.NewUser("bill", "bill", "bill@bill.com", testDir, false)
+
+	if err := q.AddUser(tmpUser); err != nil {
+		Fatal(t, fmt.Errorf("failed to add user: %v", err))
+	}
+	log.Printf("[TEST] added user: %s", tmpUser.ID)
+
+	if err := q.ClearTable("users"); err != nil {
+		Fatal(t, fmt.Errorf("failed to clear table: %v", err))
+	}
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}

@@ -68,3 +68,19 @@ func TestDriveSecurityFeatures(t *testing.T) {
 	testDrive.SetNewPassword("anotherPassword", "newPassword", true)
 	assert.Equal(t, "newPassword", testDrive.Key)
 }
+
+func TestPopulateDrive(t *testing.T) {
+	env.BuildEnv(true)
+
+	// make test files without creating file/dir objects
+	MakeTmpDirs(t)
+
+	// create a test root & populate with test files
+	tmpDrive := MakeEmptyTmpDrive(t)
+	tmpDrive.Root = tmpDrive.Root.Walk()
+
+	// clean up test files
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+}

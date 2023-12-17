@@ -87,7 +87,7 @@ func NewRootDirectory(dirName string, ownerID string, rootPath string) *Director
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
-		Endpoint:  fmt.Sprintf(fmt.Sprint(Endpoint, ":", cfg.Port), "/v1/dirs/", uuid),
+		Endpoint:  fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
 		Parent:    nil,
 		Root:      true,
 		Path:      rootPath,
@@ -114,7 +114,7 @@ func NewDirectory(dirName string, ownerID string, path string) *Directory {
 		LastSync:  time.Now().UTC(),
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
-		Endpoint:  fmt.Sprintf(fmt.Sprint(Endpoint, cfg.Port), "/v1/dirs/", uuid),
+		Endpoint:  fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
 		Root:      false,
 		Path:      path,
 	}
@@ -424,15 +424,16 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
 		log.Printf("[DEBUG] dir %s (%s) added", dir.DirName, dir.ID)
 	} else {
-		return fmt.Errorf("[DEBUG] dir %s (%s) already exists", dir.DirName, dir.ID)
+		return fmt.Errorf("dir %s (%s) already exists", dir.DirName, dir.ID)
 	}
 	return nil
 }
 
-// add a single sub directory to the current directory
+// add a single sub directory to the current directory.
+// sets dir's parent pointer to the directory this
+// function is attached to.
 //
-// creates a new directory using dir's internal file path and
-// initializes a directory structure
+// does not create physical directory.
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		if err := d.addSubDir(dir); err != nil {
@@ -444,7 +445,8 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 	return nil
 }
 
-// add a slice of directory objects to the current directory
+// add a slice of directory objects to the current directory.
+// does not create physical directories.
 func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	if len(dirs) == 0 {
 		log.Printf("[DEBUG] dir list is empty")
@@ -464,8 +466,8 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 
 func (d *Directory) removeDir(dirID string) error {
 	if dir, exists := d.Dirs[dirID]; exists {
-		if err := os.Remove(dir.Path); err != nil {
-			return fmt.Errorf("[ERROR] unable to remove directory %s: %v", dirID, err)
+		if err := os.RemoveAll(dir.Path); err != nil {
+			return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
 		}
 		delete(d.Dirs, dirID)
 		log.Printf("[INFO] directory (id=%s)  removed", dirID)
@@ -475,7 +477,9 @@ func (d *Directory) removeDir(dirID string) error {
 	return nil
 }
 
-// removes a subdirecty and *all of its child directories*
+// removes a physical sub-directy and *all of its child directories*
+// as well as the clearing the internal data structures.
+//
 // use with caution!
 func (d *Directory) RemoveSubDir(dirID string) error {
 	if !d.Protected {
@@ -485,7 +489,6 @@ func (d *Directory) RemoveSubDir(dirID string) error {
 		// remove from subdir map & update sync time
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
-
 		log.Printf("[DEBUG] directory %s deleted", dirID)
 	} else {
 		log.Printf("[DEBUG] directory %s is protected", dirID)
@@ -501,7 +504,6 @@ func (d *Directory) RemoveSubDirs() error {
 		if err := d.Clean(d.Path); err != nil {
 			return err
 		}
-		d.Clear(d.Key)
 		log.Printf("[DEBUG] dir(%s) all sub directories deleted", d.ID)
 	} else {
 		log.Printf("[DEBUG] dir(%s) is protected. no sub directories deleted", d.ID)
@@ -553,7 +555,7 @@ func (d *Directory) Walk() *Directory {
 		log.Print("[WARNING] can't traverse directory without a path")
 		return nil
 	}
-	if d.Files == nil || d.Dirs == nil {
+	if d.IsNil() {
 		log.Printf(
 			"[WARNING] can't traverse directory with nil maps: \nfiles=%v dirs=%v",
 			d.Files, d.Dirs,
@@ -582,13 +584,11 @@ func walk(d *Directory) *Directory {
 			return d
 		}
 		if item.IsDir() {
-			dir := NewDirectory(item.Name(), d.OwnerID, entryPath)
-			dir.Parent = d
+			dir := walk(NewDirectory(item.Name(), d.OwnerID, entryPath))
 			if err := d.AddSubDir(dir); err != nil {
 				log.Printf("[ERROR] could not add directory: %v", err)
 				return d
 			}
-			return walk(dir)
 		} else {
 			file := NewFile(item.Name(), d.OwnerID, entryPath)
 			d.AddFile(file)
