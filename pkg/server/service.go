@@ -750,7 +750,6 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 				log.Printf("[ERROR] could not add directory: %v", err)
 				continue
 			}
-			return dir
 		} else { // add file
 			file, err := s.Db.GetFileByName(item.Name())
 			if err != nil {
