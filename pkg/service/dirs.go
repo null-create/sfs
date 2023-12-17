@@ -584,7 +584,8 @@ func walk(d *Directory) *Directory {
 			return d
 		}
 		if item.IsDir() {
-			dir := walk(NewDirectory(item.Name(), d.OwnerID, entryPath))
+			dir := NewDirectory(item.Name(), d.OwnerID, entryPath)
+			dir = walk(dir)
 			if err := d.AddSubDir(dir); err != nil {
 				log.Printf("[ERROR] could not add directory: %v", err)
 				return d
