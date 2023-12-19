@@ -261,16 +261,18 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update checksum
-	newFile.LastSync = time.Now().UTC()
-	newFile.CheckSum, err = svc.CalculateChecksum(newFile.ServerPath, "sha256")
-	if err != nil {
+	if err := newFile.UpdateChecksum(); err != nil {
 		log.Printf("[WARNING] failed to calculate checksum %v", err)
 	}
+	newFile.LastSync = time.Now().UTC()
+
+	// save to DB
 	if err := a.Svc.Db.AddFile(newFile); err != nil {
 		msg := fmt.Sprintf("failed to add file to database: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+
 	msg := fmt.Sprintf("file %s has been added to the server", newFile.Name)
 	log.Print(fmt.Sprintf("[INFO] %s", msg))
 

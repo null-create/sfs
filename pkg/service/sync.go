@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+/*
+A SyncIndex is a data structure usued to keep track of a user's
+files and directories within their SFS file system, and coordinate which files
+should be updated, removed, or added between the client and server (or between hard disks,
+if this is the service mode that's active)
+*/
 type SyncIndex struct {
 	// userID of of the user this sync index belongs to
 	UserID string `json:"user"`
@@ -45,20 +51,11 @@ func NewSyncIndex(userID string) *SyncIndex {
 }
 
 func (s *SyncIndex) IsMapped() bool {
-	if len(s.LastSync) == 0 {
-		return false
-	}
-	if len(s.ToUpdate) == 0 {
-		return false
-	}
-	return true
+	return len(s.LastSync) == 0
 }
 
 // resets ToUpdate
 func (s *SyncIndex) Reset() {
-	if len(s.ToUpdate) == 0 {
-		return
-	}
 	for key := range s.ToUpdate {
 		delete(s.ToUpdate, key)
 	}
@@ -250,39 +247,4 @@ func LargeFileQ(files []*File) *Queue {
 	q := NewQ()
 	q.Enqueue(b)
 	return q
-}
-
-// --------- sync between hard drives ----------------
-
-// get paths for source and destination disks
-// create a sync index of the source disk, then
-// build a queue for physical *copying*, not tranferring
-// via HTTP.
-func SyncDisks(srcDir *Directory) error {
-	// build sync index
-	srcIdx := BuildSyncIndex(srcDir)
-	if srcIdx == nil {
-		return fmt.Errorf("failed to create sync index from source disk")
-	}
-	srcIdx = BuildToUpdate(srcDir, srcIdx)
-	// build sync queue
-	queue := BuildQ(srcIdx)
-	if queue == nil || len(queue.Queue) == 0 {
-		log.Print("[WARNING] no files matched for syincing. skipping.")
-		return nil
-	}
-	// copy files
-	for _, batch := range queue.Queue {
-		for _, file := range batch.Files {
-			go func() {
-				// TODO: maybe add separate disk field in file struct?
-				if err := file.Copy(fmt.Sprint(srcDir.Path, file.Name)); err != nil {
-					log.Printf("[WARNING] failed to copy file (id=%s) \n%v", file.ID, err)
-				}
-			}()
-		}
-	}
-	// TODO: verify that the files were copied correctly
-	// srcFiles := srcIdx.GetFiles()
-	return nil
 }

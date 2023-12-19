@@ -50,14 +50,7 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 		)
 		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
-
-	// retrieve data from the request
-	b, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		shutDown <- true
-		Fail(t, GetTestingDir(), err)
-	}
-	log.Printf("[TEST] retrieved file data: \n%v\n", string(b))
+	log.Printf("[TEST] response code: %d", res.StatusCode)
 
 	log.Print("[TEST] shutting down test server...")
 	shutDown <- true
@@ -65,12 +58,6 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 
 func TestNewFileAPI(t *testing.T) {
 	BuildEnv(true)
-
-	// create test svc instance to manage temp testing files
-	testSvc, err := Init(false, false)
-	if err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
 
 	// shut down signal to the server
 	shutDown := make(chan bool)
@@ -82,22 +69,10 @@ func TestNewFileAPI(t *testing.T) {
 		testServer.TestRun(shutDown)
 	}()
 
-	// create tmp/test server-side drive
-	testDrv := MakeEmptyTmpDrive(t)
-	if err := testSvc.AddDrive(testDrv); err != nil {
-		shutDown <- true
-		Fail(t, GetTestingDir(), err)
-	}
-
 	// create tmp file to try and send it to the server
 	log.Print("[TEST] creating tmp file...")
 	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
 	if err != nil {
-		shutDown <- true
-		Fail(t, GetTestingDir(), err)
-	}
-	file.OwnerID = testDrv.OwnerID
-	if err := testSvc.AddFile(file.OwnerID, testDrv.RootID, file); err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
 	}
@@ -111,26 +86,6 @@ func TestNewFileAPI(t *testing.T) {
 		shutDown <- true // shut down test server
 		Fail(t, GetTestingDir(), err)
 	}
-
-	log.Print("[TEST] retrieving info about file from server...")
-
-	// confirm file's presence via a GET
-	client := http.Client{Timeout: time.Second * 600}
-	res, err := client.Get(file.Endpoint)
-	if err != nil {
-		shutDown <- true
-		Fail(t, GetTestingDir(), err)
-	}
-	if res.StatusCode != http.StatusOK {
-		shutDown <- true
-		b, err := httputil.DumpResponse(res, true)
-		if err != nil {
-			Fail(t, GetTestingDir(), fmt.Errorf("resp was not 200, but failed to parse response: %v", err))
-		}
-		msg := fmt.Sprintf("response code was not 200: %d\n %s\n", res.StatusCode, string(b))
-		Fail(t, GetTestingDir(), fmt.Errorf(msg))
-	}
-
 	shutDown <- true // shut down test server
 
 	// clean up
@@ -142,10 +97,14 @@ func TestNewFileAPI(t *testing.T) {
 func TestFileGetAPI(t *testing.T) {
 	BuildEnv(true)
 
+	// so we can add the test file directly to the db ahead of time
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
 	// shut down signal to the server
 	shutDown := make(chan bool)
-
-	// add temp file to try and retrieve
 
 	// start testing server
 	log.Print("starting test server...")
@@ -154,9 +113,49 @@ func TestFileGetAPI(t *testing.T) {
 		testServer.TestRun(shutDown)
 	}()
 
+	// add temp file to try and retrieve
+	log.Print("[TEST] creating tmp file...")
+	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
+	if err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+	if err := testSvc.AddFile(file.OwnerID, file.DirID, file); err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// atttempt to retrieve file via its API endpoint
+	log.Print("[TEST] attempting to retrieve file via its API endpoint...")
+	client := http.Client{Timeout: time.Second * 600}
+	res, err := client.Get(file.Endpoint)
+	if err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+	if res.StatusCode != http.StatusOK {
+		shutDown <- true
+		b, err := httputil.DumpResponse(res, true)
+		if err != nil {
+			Fail(t, GetTestingDir(), err)
+		}
+		msg := fmt.Sprintf(
+			"response code was not 200: %d\n response: %v\n",
+			res.StatusCode, string(b),
+		)
+		Fail(t, GetTestingDir(), fmt.Errorf(msg))
+	}
+
+	log.Printf("[TEST] response code: %d", res.StatusCode)
+
+	// get file info from response body and display
+
 	shutDown <- true // shut down test server
 
 	// remove tmp file
+	if err := Clean(GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestFileDeleteAPI(t *testing.T) {

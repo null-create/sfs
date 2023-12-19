@@ -17,6 +17,8 @@ import (
 // enusre -rw-r----- permissions
 const PERMS = 0640 // go's default is 0666
 
+type ChecksumMismatch error
+
 type File struct {
 	m sync.Mutex
 
@@ -45,11 +47,12 @@ type File struct {
 	Content []byte
 }
 
-// Content is loaded elsewhere
+// creates a new file struct instance.
+// file contents are not loaded into memory.
 func NewFile(fileName string, ownerID string, path string) *File {
 	cs, err := CalculateChecksum(path, "sha256")
 	if err != nil {
-		log.Printf("[DEBUG] Error calculating checksum: %v", err)
+		log.Printf("[WARNING] error calculating checksum: %v", err)
 	}
 
 	uuid := NewUUID()
@@ -246,15 +249,15 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 	return checksum, nil
 }
 
-func (f *File) ValidateChecksum() {
+func (f *File) ValidateChecksum() error {
 	cs, err := CalculateChecksum(f.Path, f.Algorithm)
 	if err != nil {
-		log.Printf("[WARNING] unable to calculate checksum: %v", err)
-		return
+		return fmt.Errorf("unable to calculate checksum: %v", err)
 	}
 	if cs != f.CheckSum {
-		log.Printf("[WARNING] checksum mismatch! orig: %s, new: %s", cs, f.CheckSum)
+		return fmt.Errorf("checksum mismatch! orig: %s, new: %s", cs, f.CheckSum)
 	}
+	return nil
 }
 
 func (f *File) UpdateChecksum() error {

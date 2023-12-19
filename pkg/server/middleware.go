@@ -28,27 +28,20 @@ func NewFile(h http.Handler) http.Handler {
 		// get raw file info from request context
 		ctx := r.Context()
 		fileName := ctx.Value(File).(string)
-		owner := ctx.Value(User).(string)
+		ownerID := ctx.Value(User).(string)
 		path := ctx.Value(Path).(string)
-		if fileName == "" || owner == "" || path == "" {
+		if fileName == "" || ownerID == "" || path == "" {
 			msg := fmt.Sprintf(
 				"missing fields: filename=%s owner=%s path=%s",
-				fileName, owner, path,
+				fileName, ownerID, path,
 			)
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
-		// TODO: file security checks. don't be stupid.
-		// retreive file contents from request body, execute a
-		// checksum on a temp file, then compare against original request?
-		// don't know if orig request has the source file checksum, might need
-		// to add that to the new file request body so we can compare it on the
-		// server end and make sure its the same.
-
 		// create new file object and add to request context
-		newFile := svc.NewFile(fileName, owner, path)
-		newCtx := context.WithValue(ctx, File, newFile)
+		newFile := svc.NewFile(fileName, ownerID, path)
+		newCtx := context.WithValue(r.Clone(ctx).Context(), File, newFile)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }

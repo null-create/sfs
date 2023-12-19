@@ -137,17 +137,11 @@ func (d *Directory) HasParent() bool {
 }
 
 func (d *Directory) IsNil() bool {
-	if d.Files == nil && d.Dirs == nil {
-		return true
-	}
-	return false
+	return d.Files == nil && d.Dirs == nil
 }
 
 func (d *Directory) IsEmpty() bool {
-	if d.Files == nil && d.Dirs == nil || len(d.Files) == 0 && len(d.Dirs) == 0 {
-		return true
-	}
-	return false
+	return len(d.Files) == 0 && len(d.Dirs) == 0
 }
 
 func (d *Directory) IsRoot() bool {
@@ -565,7 +559,7 @@ func (d *Directory) Walk() *Directory {
 	return walk(d)
 }
 
-// walk recursively walks the directory tree and populates all files and subdirectory maps
+// walk recursively descends the directory tree and populates all files and subdirectory maps
 func walk(d *Directory) *Directory {
 	entries, err := os.ReadDir(d.Path)
 	if err != nil {
@@ -631,11 +625,9 @@ func (d *Directory) WalkFs() map[string]*File {
 }
 
 func walkFs(dir *Directory, files map[string]*File) map[string]*File {
-	if len(dir.Files) > 0 {
-		for _, file := range dir.Files {
-			if _, exists := files[file.ID]; !exists {
-				files[file.ID] = file
-			}
+	for _, file := range dir.Files {
+		if _, exists := files[file.ID]; !exists {
+			files[file.ID] = file
 		}
 	}
 	if len(dir.Dirs) == 0 {
@@ -693,9 +685,7 @@ func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory 
 		if _, exists := dirMap[subDir.ID]; !exists {
 			dirMap[subDir.ID] = subDir
 		}
-	}
-	for _, subDirs := range dir.Dirs {
-		if dirs := walkDs(subDirs, dirMap); dirs != nil {
+		if dirs := walkDs(subDir, dirMap); dirs != nil {
 			return dirs
 		}
 	}

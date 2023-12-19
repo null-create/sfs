@@ -208,7 +208,7 @@ const (
 				root = ?
 		WHERE id = ?;`
 
-	// Removal queries remove the row iff they exist
+	// ----------- Removal queries remove the row iff they exist
 
 	RemoveFileQuery string = `
 		DELETE FROM Files WHERE id = ? 
@@ -226,8 +226,6 @@ const (
 		DELETE FROM Users WHERE id = ? 
 		AND EXISTS (SELECT 1 FROM Users WHERE id=?);`
 
-	// drop tables
-
 	DropUserTableQuery string = `
 		DROP TABLE IF EXISTS Users;`
 
@@ -235,7 +233,7 @@ const (
 		DROP TABLE IF EXISTS Drives;`
 
 	DropDirectoriesTableQuery string = `
-		DROP TABLE IF Exists Directories;`
+		DROP TABLE IF EXISTS Directories;`
 
 	DropFilesTableQuery string = `
 		DROP TABLE IF EXISTS Files;`

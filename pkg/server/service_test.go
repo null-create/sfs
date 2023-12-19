@@ -309,9 +309,43 @@ func TestDiscover(t *testing.T) {
 	tmpDrive := MakeEmptyTmpDrive(t)
 
 	testSvc.Discover(tmpDrive.Root)
-	// examinedRoot := testSvc.Discover(tmpRoot)
+	if len(tmpDrive.Root.Dirs) == 0 {
+		Fail(t, GetTestingDir(), fmt.Errorf("no test directories found"))
+	}
 
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestServiceReset(t *testing.T) {
+	BuildEnv(true)
+
+	// create a test service in admin mode (since reset requires admin)
+	testSvc, err := Init(false, true)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	assert.True(t, testSvc.AdminMode)
+
+	// add a bunch of test users.
+	// testSvc will allocate drives for each test user.
+	for i := 0; i < 10; i++ {
+		usersDir := filepath.Join(testSvc.UserDir, fmt.Sprintf("bill-%d", i+1))
+		user := auth.NewUser(fmt.Sprintf("bill-%d", i+1), "billderper", "derper@derp.com", usersDir, false)
+		if err := testSvc.AddUser(user); err != nil {
+			Fail(t, testSvc.SvcRoot, err)
+		}
+	}
+
+	// run reset, then verify the sfs/users folder is empty,
+	// and that each of the tables no longer have the test users
+	// that were just generated
+	if err := testSvc.Reset(testSvc.SvcRoot); err != nil {
+		Fail(t, testSvc.SvcRoot, err)
+	}
+
+	if err := Clean(fmt.Sprintf(testSvc.SvcRoot, "users")); err != nil {
+		t.Fatal(err)
 	}
 }

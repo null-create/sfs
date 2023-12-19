@@ -63,7 +63,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	defer bodyWriter.Close()
 
 	// create a form file field for the file
-	fileWriter, err := bodyWriter.CreateFormFile("file", filepath.Base(file.Path))
+	fileWriter, err := bodyWriter.CreateFormFile("myFile", filepath.Base(file.Path))
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		file.Load()
 	}
 	if _, err = fileWriter.Write(file.Content); err != nil {
-		return fmt.Errorf("failed to write file data: %v", err)
+		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
 	req, err := t.PrepareReq(method, bodyWriter.FormDataContentType(), destURL)
 	if err != nil {
@@ -95,7 +95,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("server returned non-OK status: %v", resp.Status)
 	}
-	log.Printf("...done")
+	log.Printf("[INFO] ...done")
 
 	return nil
 }

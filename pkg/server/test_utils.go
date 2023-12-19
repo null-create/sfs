@@ -152,7 +152,49 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-	moreFiles := make([]*svc.File, 0)
+	moreFiles := make([]*svc.File, 0, 10)
+	for i := 0; i < 10; i++ {
+		fname := fmt.Sprintf("tmp-%d.txt", i)
+		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(1000))
+		if err != nil {
+			Fatal(t, err)
+		}
+		moreFiles = append(moreFiles, f)
+	}
+
+	// build the directories
+	sd.AddFiles(moreFiles)
+	d.AddSubDir(sd)
+	tmpRoot.AddSubDir(d)
+
+	return tmpRoot
+}
+
+// create a temporary root directory with files and a subdirectory,
+// also with files, under a specified path.
+//
+// returns complete test root with directory and files
+func MakeTmpDirsWithPath(t *testing.T, path string) *svc.Directory {
+	// make our temporary directory
+	d, err := MakeTmpDir(t, filepath.Join(path, "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// create some temp files and associated file pointers
+	files, err := MakeABunchOfTxtFiles(10, d.Path)
+	if err != nil {
+		Fatal(t, err)
+	}
+	tmpRoot := svc.NewRootDirectory("root", "me", filepath.Join(path, "tmp"))
+	tmpRoot.AddFiles(files)
+
+	// add a subdirectory with files so we can test traversal
+	sd, err := MakeTmpDir(t, filepath.Join(tmpRoot.Path, "tmpSubDir"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	moreFiles := make([]*svc.File, 0, 10)
 	for i := 0; i < 10; i++ {
 		fname := fmt.Sprintf("tmp-%d.txt", i)
 		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(1000))
@@ -178,10 +220,26 @@ func MakeTmpDrive(t *testing.T) *svc.Drive {
 	return drive
 }
 
-// make a tmp empty drive.
+// make testing drive with test files, directories, and subdirectories
+// under a specified path.
+func MakeTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
+	root := MakeTmpDirsWithPath(t, path)
+	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	return drive
+}
+
+// make a tmp empty drive in the testing directory.
 // doesn't physical create test files or directories.
 func MakeEmptyTmpDrive(t *testing.T) *svc.Drive {
 	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), GetTestingDir())
 	testDrv := svc.NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
+	return testDrv
+}
+
+// make a tmp empty drive with a specified path.
+// doesn't physical create test files or directories.
+func MakeEmptyTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
+	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), path)
+	testDrv := svc.NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, path, tmpRoot.ID, tmpRoot)
 	return testDrv
 }

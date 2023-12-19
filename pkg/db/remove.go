@@ -8,6 +8,48 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
+// attempts ot map a given db to its core table.
+// returns an empty string if none can be matched.
+func (q *Query) getTable(dbName string) string {
+	if dbName == "" {
+		log.Printf("[WARNING] no database provided")
+		return ""
+	}
+	switch dbName {
+	case "users":
+		return "Users"
+	case "drives":
+		return "Drives"
+	case "directories":
+		return "Directories"
+	case "files":
+		return "Files"
+	}
+	return ""
+}
+
+func (q *Query) getResetQueries(tableName string) (string, string) {
+	var dropQuery string
+	var createQuery string
+	switch tableName {
+	case "Users":
+		dropQuery = DropUserTableQuery
+		createQuery = CreateUserTable
+	case "Drives":
+		dropQuery = DropDrivesTableQuery
+		createQuery = CreateDriveTable
+	case "Directories":
+		dropQuery = DropDirectoriesTableQuery
+		createQuery = CreateDirectoryTable
+	case "Files":
+		dropQuery = DropFilesTableQuery
+		createQuery = CreateFileTable
+	default:
+		log.Fatalf("unsupported table name: %s", tableName)
+	}
+	return dropQuery, createQuery
+}
+
 // delete a table if it exists
 func (q *Query) DropTable(dbName string) error {
 	q.WhichDB(dbName)
@@ -136,26 +178,6 @@ func (q *Query) RemoveDrives(drvs []*svc.Drive) error {
 	return nil
 }
 
-// attempts ot map a given db to its core table.
-// returns an empty string if none can be matched.
-func (q *Query) getTable(dbName string) string {
-	if dbName == "" {
-		log.Printf("[WARNING] no database provided")
-		return ""
-	}
-	switch dbName {
-	case "users":
-		return "Users"
-	case "drives":
-		return "Drives"
-	case "directories":
-		return "Directories"
-	case "files":
-		return "Files"
-	}
-	return ""
-}
-
 // "clears" a database by dropping the associated table for the given
 // database name and recreates it entirely.
 func (q *Query) ClearTable(dbName string) error {
@@ -167,17 +189,16 @@ func (q *Query) ClearTable(dbName string) error {
 	if tableName == "" {
 		return fmt.Errorf("no table found for given DB: %s", dbName)
 	}
-	switch tableName {
-	case "Users":
-		NewTable(q.DBPath, CreateUserTable)
-	case "Drives":
-		NewTable(q.DBPath, CreateDriveTable)
-	case "Directories":
-		NewTable(q.DBPath, CreateDirectoryTable)
-	case "Files":
-		NewTable(q.DBPath, CreateFileTable)
-	default:
-		log.Fatalf("unsupported table name: %s", tableName)
+	// drop the table
+	dropQuery, createQuery := q.getResetQueries(tableName)
+	_, err := q.Conn.Exec(dropQuery)
+	if err != nil {
+		return err
+	}
+	// re-create the table
+	_, err = q.Conn.Exec(createQuery)
+	if err != nil {
+		return err
 	}
 	return nil
 }
