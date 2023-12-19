@@ -67,7 +67,7 @@ func NewTransfer(port int) *Transfer {
 	}
 }
 
-func (t *Transfer) PrepareReq(method, contentType, destURL string) (*http.Request, error) {
+func (t *Transfer) PrepareReq(method string, contentType string, destURL string) (*http.Request, error) {
 	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
