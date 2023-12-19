@@ -345,7 +345,7 @@ func TestServiceReset(t *testing.T) {
 		Fail(t, testSvc.SvcRoot, err)
 	}
 
-	if err := Clean(fmt.Sprintf(testSvc.SvcRoot, "users")); err != nil {
+	if err := Clean(testSvc.UserDir); err != nil {
 		t.Fatal(err)
 	}
 }
