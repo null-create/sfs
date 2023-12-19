@@ -17,6 +17,27 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
+// struct to use for populating context.Context
+type FileContext struct {
+	Name     string
+	OwnerID  string
+	Path     string
+	Checksum string
+}
+
+func NewFileContext(name string, ownerID string, path string, cs string) FileContext {
+	return FileContext{
+		Name:     name,
+		OwnerID:  ownerID,
+		Path:     path,
+		Checksum: cs,
+	}
+}
+
+func (fctx FileContext) IsEmpty() bool {
+	return fctx.Name == "" && fctx.OwnerID == "" && fctx.Path == "" && fctx.Checksum == ""
+}
+
 // transfer handles the uploading and downloading of individual files.
 // transfer operations are intended to run in their own goroutine as part
 // of sync operations with the server
@@ -81,9 +102,8 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	}
 
 	// add file info context to request
-	ctx := context.WithValue(req.Context(), File, filepath.Base(file.Path))
-	ctx = context.WithValue(ctx, Owner, file.OwnerID)
-	ctx = context.WithValue(ctx, Path, file.ServerPath)
+	fileCtx := NewFileContext(file.Name, file.OwnerID, file.Path, file.CheckSum)
+	ctx := context.WithValue(req.Context(), File, fileCtx)
 
 	// upload and confirm success
 	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
@@ -112,6 +132,7 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 	defer ln.Close()
 
 	// blocks until connection is established
+	log.Print("[INFO] listening for download request...")
 	conn, err := ln.Accept()
 	if err != nil {
 		return fmt.Errorf("failed to create connection: %v", err)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
+	"github.com/sfs/pkg/transfer"
 
 	"github.com/go-chi/chi"
 )
@@ -27,20 +28,18 @@ func NewFile(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get raw file info from request context
 		ctx := r.Context()
-		fileName := ctx.Value(File).(string)
-		ownerID := ctx.Value(User).(string)
-		path := ctx.Value(Path).(string)
-		if fileName == "" || ownerID == "" || path == "" {
+		fileCtx := ctx.Value(File).(transfer.FileContext)
+		if fileCtx.IsEmpty() {
 			msg := fmt.Sprintf(
 				"missing fields: filename=%s owner=%s path=%s",
-				fileName, ownerID, path,
+				fileCtx.Name, fileCtx.OwnerID, fileCtx.OwnerID,
 			)
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
 		// create new file object and add to request context
-		newFile := svc.NewFile(fileName, ownerID, path)
+		newFile := svc.NewFile(fileCtx.Name, fileCtx.OwnerID, fileCtx.OwnerID)
 		newCtx := context.WithValue(r.Clone(ctx).Context(), File, newFile)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
