@@ -17,27 +17,6 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// struct to use for populating context.Context
-type FileContext struct {
-	Name     string
-	OwnerID  string
-	Path     string
-	Checksum string
-}
-
-func NewFileContext(name string, ownerID string, path string, cs string) FileContext {
-	return FileContext{
-		Name:     name,
-		OwnerID:  ownerID,
-		Path:     path,
-		Checksum: cs,
-	}
-}
-
-func (fctx FileContext) IsEmpty() bool {
-	return fctx.Name == "" && fctx.OwnerID == "" && fctx.Path == "" && fctx.Checksum == ""
-}
-
 // transfer handles the uploading and downloading of individual files.
 // transfer operations are intended to run in their own goroutine as part
 // of sync operations with the server
@@ -103,11 +82,11 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 
 	// add file info context to request
 	fileCtx := NewFileContext(file.Name, file.OwnerID, file.Path, file.CheckSum)
-	ctx := context.WithValue(req.Context(), File, fileCtx)
+	newCtx := context.WithValue(req.Clone(context.Background()).Context(), File, fileCtx)
 
 	// upload and confirm success
 	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
-	resp, err := t.Client.Do(req.WithContext(ctx))
+	resp, err := t.Client.Do(req.WithContext(newCtx))
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
 	}
