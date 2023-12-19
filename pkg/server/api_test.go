@@ -77,12 +77,10 @@ func TestNewFileAPI(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	endpoint := fmt.Sprint(LocalHost, "/v1/files/new")
-
 	// transfer file
 	log.Print("[TEST] uploading file...")
 	transfer := transfer.NewTransfer(8080)
-	if err := transfer.Upload(http.MethodPost, file, endpoint); err != nil {
+	if err := transfer.Upload(http.MethodPost, file, fmt.Sprint(LocalHost, "/v1/files/new")); err != nil {
 		shutDown <- true // shut down test server
 		Fail(t, GetTestingDir(), err)
 	}
