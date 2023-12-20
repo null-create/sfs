@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -147,6 +149,7 @@ func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
 
 // ----- drive --------------------------------
 
+// retrieves drive with root directory attached.
 func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 	if c.Drive == nil {
 		log.Print("[WARNING] drive not found! attempting to load...")
@@ -167,4 +170,104 @@ func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 		c.Drive = drive
 	}
 	return c.Drive, nil
+}
+
+// discover populates the given root directory with the users file and
+// sub directories, updates the database as it does so, and returns
+// the the directory object when finished.
+//
+// this should ideally be used for starting a new sfs service in a
+// users root directly that already has files and/or subdirectories.
+func (c *Client) Discover(dir *svc.Directory) *svc.Directory {
+	// traverse users SFS file system and populate internal structures
+	dir = dir.Walk()
+
+	// send everything to the database
+	files := dir.WalkFs()
+	for _, file := range files {
+		if err := c.Db.AddFile(file); err != nil {
+			return nil
+		}
+	}
+	dirs := dir.WalkDs()
+	for _, d := range dirs {
+		if err := c.Db.AddDir(d); err != nil {
+			return nil
+		}
+	}
+	// add root directory itself
+	if err := c.Db.AddDir(dir); err != nil {
+		return nil
+	}
+	return dir
+}
+
+// Populate() populates a drive's root directory with all the users
+// files and subdirectories by searching the DB with the name
+// of each file or directory Populate() discoveres as it traverses the
+// users SFS filesystem.
+//
+// Note that Populate() ignores files and subdirectories it doesn't find in the
+// database as its traversing the file system. This may or may not be a good thing.
+func (c *Client) Populate(root *svc.Directory) *svc.Directory {
+	if root.Path == "" {
+		log.Print("[WARNING] can't traverse directory without a path")
+		return nil
+	}
+	if root.IsNil() {
+		log.Printf(
+			"[WARNING] can't traverse directory with emptyr or nil maps: \nfiles=%v dirs=%v",
+			root.Files, root.Dirs,
+		)
+		return nil
+	}
+	return c.populate(root)
+}
+
+func (c *Client) populate(dir *svc.Directory) *svc.Directory {
+	entries, err := os.ReadDir(dir.Path)
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return dir
+	}
+	if len(entries) == 0 {
+		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
+		return dir
+	}
+	for _, entry := range entries {
+		entryPath := filepath.Join(dir.Path, entry.Name())
+		item, err := os.Stat(entryPath)
+		if err != nil {
+			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			return dir
+		}
+		// add directory then recurse
+		if item.IsDir() {
+			subDir, err := c.Db.GetDirectoryByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				continue
+			}
+			if subDir == nil {
+				continue
+			}
+			subDir.Parent = dir
+			subDir = c.populate(subDir)
+			if err := dir.AddSubDir(subDir); err != nil {
+				log.Printf("[ERROR] could not add directory: %v", err)
+				continue
+			}
+		} else { // add file
+			file, err := c.Db.GetFileByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				continue
+			}
+			if file == nil {
+				continue
+			}
+			dir.AddFile(file)
+		}
+	}
+	return dir
 }
