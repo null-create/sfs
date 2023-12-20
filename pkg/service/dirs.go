@@ -128,6 +128,14 @@ func (d *Directory) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
+func UnmarshalDirStr(data string) (*Directory, error) {
+	dir := new(Directory)
+	if err := json.Unmarshal([]byte(data), &dir); err != nil {
+		return nil, err
+	}
+	return dir, nil
+}
+
 func (d *Directory) HasParent() bool {
 	if d.Parent == nil {
 		log.Print("[WARNING] parent directory cannot be nil")
