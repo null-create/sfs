@@ -156,11 +156,15 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 // add file to a directory
 func (d *Drive) AddFile(dirID string, file *File) error {
 	if !d.Protected {
-		dir := d.GetDir(dirID)
-		if dir == nil {
-			return fmt.Errorf("dir (id=%s) not found", dirID)
+		if dirID == d.Root.ID {
+			d.Root.AddFile(file)
+		} else {
+			dir := d.GetDir(dirID)
+			if dir == nil {
+				return fmt.Errorf("dir (id=%s) not found", dirID)
+			}
+			dir.AddFile(file)
 		}
-		dir.AddFile(file)
 		d.Root.Size += float64(file.Size())
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
@@ -190,33 +194,50 @@ func (d *Drive) GetFiles() map[string]*File {
 
 // update a file
 func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
-	dir := d.GetDir(dirID)
-	if dir == nil {
-		return fmt.Errorf("dir (id=%s) not found", dirID)
-	}
-	if err := dir.UpdateFile(file, data); err != nil {
-		return err
+	if !d.Protected {
+		if d.Root.ID == dirID {
+			if err := d.Root.UpdateFile(file, data); err != nil {
+				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
+			}
+		} else {
+			dir := d.GetDir(dirID)
+			if dir == nil {
+				return fmt.Errorf("dir (id=%s) not found", dirID)
+			}
+			if err := dir.UpdateFile(file, data); err != nil {
+				return err
+			}
+		}
+	} else {
+		log.Printf("[INFO] drive is protected")
 	}
 	return nil
 }
 
-// remove file from a directory
+// remove file from a directory. removes physical file and
+// updates internal data structures.
 func (d *Drive) RemoveFile(dirID string, file *File) error {
-	// if the driveID is this drive's root directory
-	if dirID == d.RootID {
-		if err := d.Root.RemoveFile(file.ID); err != nil {
-			return err
+	if !d.Protected {
+		// if the driveID is this drive's root directory
+		if dirID == d.RootID {
+			if err := d.Root.RemoveFile(file.ID); err != nil {
+				return err
+			}
+		} else {
+			// check subdirectories
+			dir := d.GetDir(dirID)
+			if dir == nil {
+				return fmt.Errorf("dir (id=%s) not found", dirID)
+			}
+			if err := dir.RemoveFile(file.ID); err != nil {
+				return err
+			}
+			d.Root.Size -= float64(file.Size())
+			return nil
 		}
+	} else {
+		log.Printf("[INFO] drive is protected")
 	}
-	// check subdirectories
-	dir := d.GetDir(dirID)
-	if dir == nil {
-		return fmt.Errorf("dir (id=%s) not found", dirID)
-	}
-	if err := dir.RemoveFile(file.ID); err != nil {
-		return err
-	}
-	d.Root.Size -= float64(file.Size())
 	return nil
 }
 
