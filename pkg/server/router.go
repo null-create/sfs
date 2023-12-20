@@ -93,7 +93,7 @@ func NewRouter() *chi.Mux {
 				r.Get("/", api.GetAllFiles) // get info about all user-specific files
 			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
-				r.Use(NewFile)
+				r.Use(NewFileCtx)
 				r.Post("/", api.PutFile)
 			})
 			r.Route("/i/{fileID}", func(r chi.Router) {
@@ -181,7 +181,7 @@ func adminRouter() http.Handler {
 
 		})
 		r.Route("/new", func(r chi.Router) {
-			r.Use(NewUser)
+			r.Use(NewUserCtx)
 			r.Post("/", api.Placeholder) // add a new user
 		})
 		r.Route("/all", func(r chi.Router) {
