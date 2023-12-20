@@ -202,6 +202,13 @@ func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 
 // remove file from a directory
 func (d *Drive) RemoveFile(dirID string, file *File) error {
+	// if the driveID is this drive's root directory
+	if dirID == d.RootID {
+		if err := d.Root.RemoveFile(file.ID); err != nil {
+			return err
+		}
+	}
+	// check subdirectories
 	dir := d.GetDir(dirID)
 	if dir == nil {
 		return fmt.Errorf("dir (id=%s) not found", dirID)

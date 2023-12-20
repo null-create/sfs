@@ -201,7 +201,7 @@ func (d *Directory) Clean(dirPath string) error {
 		d.clear()
 		return nil
 	} else {
-		log.Printf("[DEBUG] drive is protected.")
+		log.Printf("[INFO] drive is protected.")
 	}
 	return nil
 }
@@ -255,7 +255,7 @@ func (d *Directory) GetParent() *Directory {
 func (d *Directory) SetPassword(password string, newPassword string) error {
 	if password == d.Key {
 		d.Key = newPassword
-		log.Printf("[DEBUG] password updated")
+		log.Printf("[INFO] password updated")
 		return nil
 	}
 	return fmt.Errorf("[ERROR] wrong password")
@@ -266,7 +266,7 @@ func (d *Directory) Lock(password string) bool {
 		d.Protected = true
 		return true
 	}
-	log.Printf("[DEBUG] wrong password")
+	log.Printf("[INFO] wrong password")
 	return false
 }
 
@@ -275,7 +275,7 @@ func (d *Directory) Unlock(password string) bool {
 		d.Protected = false
 		return true
 	}
-	log.Printf("[DEBUG] wrong password")
+	log.Printf("[INFO] wrong password")
 	return false
 }
 
@@ -286,9 +286,9 @@ func (d *Directory) addFile(file *File) {
 	if _, exists := d.Files[file.ID]; !exists {
 		d.Files[file.ID] = file
 		d.Files[file.ID].LastSync = time.Now().UTC()
-		log.Printf("[DEBUG] file %s (%s) added", file.Name, file.ID)
+		log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
 	} else {
-		log.Printf("[DEBUG] file %s (%s) already exists", file.Name, file.ID)
+		log.Printf("[INFO] file %s (%s) already exists", file.Name, file.ID)
 	}
 }
 
@@ -297,16 +297,16 @@ func (d *Directory) AddFile(file *File) {
 		if !d.HasFile(file.ID) {
 			d.addFile(file)
 		} else {
-			log.Printf("[DEBUG] file %s (%s) already present in directory", file.Name, file.ID)
+			log.Printf("[INFO] file %s (%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) locked", d.DirName, d.ID)
+		log.Printf("[INFO] directory %s (%s) locked", d.DirName, d.ID)
 	}
 }
 
 func (d *Directory) AddFiles(files []*File) {
 	if len(files) == 0 {
-		log.Printf("[DEBUG] no files recieved")
+		log.Printf("[INFO] no files recieved")
 		return
 	}
 	if !d.Protected {
@@ -314,11 +314,11 @@ func (d *Directory) AddFiles(files []*File) {
 			if !d.HasFile(f.ID) {
 				d.addFile(f)
 			} else {
-				log.Printf("[DEBUG] file (%v) already exists)", f.ID)
+				log.Printf("[INFO] file (%v) already exists)", f.ID)
 			}
 		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) locked", d.DirName, d.ID)
+		log.Printf("[INFO] directory %s (%s) locked", d.DirName, d.ID)
 	}
 }
 
@@ -329,7 +329,7 @@ func (d *Directory) updateFile(f *File, data []byte) error {
 		}
 		file.LastSync = time.Now().UTC()
 	} else {
-		log.Printf("[DEBUG] file (%v) not found", f.ID)
+		log.Printf("[INFO] file (%v) not found", f.ID)
 	}
 	return nil
 }
@@ -343,34 +343,33 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] directory %s (%s) locked", d.DirName, d.ID)
+		log.Printf("[INFO] directory %s (%s) locked", d.DirName, d.ID)
 	}
 	return nil
 }
 
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
-		// remove physical file
 		if err := os.Remove(file.ServerPath); err != nil {
 			return err
 		}
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("[DEBUG] file %s removed", file.ID)
+		log.Printf("[INFO] file %s removed", file.ID)
 	} else {
 		return fmt.Errorf("file %s not found", file.ID)
 	}
 	return nil
 }
 
-// removes file from internal file map. does not remove physical file.
+// removes file from internal file map and deletes physical file.
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
 			return fmt.Errorf("unable to remove file: %s", err)
 		}
 	} else {
-		log.Printf("[DEBUG] directory protected. unlock before removing files")
+		log.Printf("[INFO] directory protected. unlock before removing files")
 	}
 	return nil
 }
@@ -380,7 +379,7 @@ func (d *Directory) RemoveFile(fileID string) error {
 // does not return files from subdirectories.
 func (d *Directory) GetFileMap() map[string]*File {
 	if len(d.Files) == 0 {
-		log.Printf("[DEBUG] dir (%s) has no files", d.ID)
+		log.Printf("[WARNING] dir (%s) has no files", d.ID)
 	}
 	return d.Files
 }

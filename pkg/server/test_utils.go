@@ -181,27 +181,23 @@ func MakeTmpDirsWithPath(t *testing.T, path string) *svc.Directory {
 		Fatal(t, err)
 	}
 
-	// create some temp files and associated file pointers
+	// create tmp service root directory with some files
+	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", filepath.Join(path, "tmp"))
 	files, err := MakeABunchOfTxtFiles(10, d.Path)
 	if err != nil {
 		Fatal(t, err)
 	}
-	tmpRoot := svc.NewRootDirectory("root", "me", filepath.Join(path, "tmp"))
+
 	tmpRoot.AddFiles(files)
 
-	// add a subdirectory with files so we can test traversal
+	// add a subdirectory also with files
 	sd, err := MakeTmpDir(t, filepath.Join(tmpRoot.Path, "tmpSubDir"))
 	if err != nil {
 		Fatal(t, err)
 	}
-	moreFiles := make([]*svc.File, 0, 10)
-	for i := 0; i < 10; i++ {
-		fname := fmt.Sprintf("tmp-%d.txt", i)
-		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(1000))
-		if err != nil {
-			Fatal(t, err)
-		}
-		moreFiles = append(moreFiles, f)
+	moreFiles, err := MakeABunchOfTxtFiles(10, sd.Path)
+	if err != nil {
+		Fatal(t, err)
 	}
 
 	// build the directories

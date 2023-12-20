@@ -62,19 +62,15 @@ func NewUser(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-		newCtx := context.WithValue(context.Background(), User, newUser)
+		newCtx := context.WithValue(r.Context(), User, newUser)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
 
 // retrieve jwt token from request & verify
-func AuthenticateUser(authReq string) (*auth.User, error) {
+func AuthenticateUser(reqToken string) (*auth.User, error) {
 	// verify request token
 	tok := auth.NewT()
-	reqToken, err := tok.Extract(authReq)
-	if err != nil {
-		return nil, err
-	}
 	userID, err := tok.Verify(reqToken)
 	if err != nil {
 		return nil, err
@@ -82,7 +78,7 @@ func AuthenticateUser(authReq string) (*auth.User, error) {
 	// attempt to find data about the user from the the user db
 	user, err := findUser(userID, getDBConn("Users"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query database for user: %v", err)
 	} else if user == nil {
 		return nil, fmt.Errorf("user (id=%s) not found", userID)
 	}
@@ -97,13 +93,14 @@ func AuthUserHandler(h http.Handler) http.Handler {
 			http.Error(w, "header had no request token", http.StatusBadRequest)
 			return
 		}
-		_, err := AuthenticateUser(authReq)
+		user, err := AuthenticateUser(authReq)
 		if err != nil {
 			msg := fmt.Sprintf("failed to get authenticated user: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-		h.ServeHTTP(w, r)
+		newCtx := context.WithValue(r.Context(), User, user)
+		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
 
@@ -157,6 +154,9 @@ func DirCtx(h http.Handler) http.Handler {
 	})
 }
 
+// standard user context for established users.
+// in conjunction with AuthUserHandler, which is part of the router's
+// standard middleware stack.
 func UserCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "userID")

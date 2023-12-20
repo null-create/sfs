@@ -50,7 +50,7 @@ POST   /v1/sync/{driveID}    // send a last sync index object to the server
 func NewRouter() *chi.Mux {
 	cfg := ServiceConfig()
 
-	// initialize API handlers
+	// initialize API handlers and SFS service instance
 	api := NewAPI(cfg.NewService, cfg.IsAdmin)
 
 	// instantiate router
@@ -96,7 +96,7 @@ func NewRouter() *chi.Mux {
 				r.Use(NewFile)
 				r.Post("/", api.PutFile)
 			})
-			r.Route("/{fileID}/i", func(r chi.Router) {
+			r.Route("/i/{fileID}", func(r chi.Router) {
 				r.Use(FileCtx)
 				r.Get("/", api.GetFileInfo) // get info about a file
 			})
@@ -125,7 +125,8 @@ func NewRouter() *chi.Mux {
 		r.Route("/drive", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
 				r.Use(DriveCtx)
-				r.Get("/", api.GetDrive) // "home" page for files.
+				// "home" page data for all user's files, directories, etc.
+				r.Get("/", api.GetDrive)
 			})
 		})
 
@@ -188,5 +189,8 @@ func adminRouter() http.Handler {
 			r.Get("/", api.GetAllUsers)
 		})
 	})
+
+	// TODO: other db query routes.
+
 	return r
 }
