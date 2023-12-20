@@ -8,7 +8,7 @@ import (
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 // add json header to requests. added to middleware stack

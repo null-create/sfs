@@ -13,7 +13,7 @@ import (
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 /*
@@ -196,24 +196,13 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
-	fileID := chi.URLParam(r, "fileID")
-	if fileID == "" {
-		http.Error(w, "missing file ID", http.StatusBadRequest)
-		return
-	}
-
-	// find file
-	file := a.findF(w, r, fileID)
-	if file == nil {
-		msg := fmt.Sprintf("file (id=%s) not found", fileID)
-		http.Error(w, msg, http.StatusNotFound)
-		return
-	}
+	file := r.Context().Value(File).(*svc.File)
 
 	// Set the response header for the download
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 	w.Header().Set("Content-Type", "application/octet-stream")
 
+	// TODO: re-evaluate this. may need a more explicit upload implementation
 	http.ServeFile(w, r, file.ServerPath)
 }
 

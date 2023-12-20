@@ -94,6 +94,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if err != nil {
 		return err
 	}
+
 	// upload and confirm success
 	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
 	resp, err := t.Client.Do(req)
@@ -110,6 +111,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		}
 		return fmt.Errorf("failed to upload file: %v", fmt.Sprintf("\n%s\n", string(b)))
 	}
+
 	log.Printf("[INFO] ...done")
 	b, err := httputil.DumpResponse(resp, true)
 	if err != nil {

@@ -566,7 +566,7 @@ func walk(d *Directory) *Directory {
 		return d
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries: ", d.ID)
+		log.Printf("[INFO] dir (id=%s) has no entries. nothing to search. ", d.ID)
 		return d
 	}
 	for _, entry := range entries {
@@ -604,7 +604,7 @@ func walkF(dir *Directory, fileID string) *File {
 		return file
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
@@ -630,7 +630,7 @@ func walkFs(dir *Directory, files map[string]*File) map[string]*File {
 		}
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("dir (id=%s) has no subdirectories", dir.ID)
+		log.Printf("[INFO] dir (id=%s) has no subdirectories. nothing to search", dir.ID)
 		return files
 	}
 	for _, subDir := range dir.Dirs {
@@ -651,7 +651,7 @@ func (d *Directory) WalkD(dirID string) *Directory {
 
 func walkD(dir *Directory, dirID string) *Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
 		return nil
 	}
 	if d, ok := dir.Dirs[dirID]; ok {
@@ -677,7 +677,7 @@ func (d *Directory) WalkDs() map[string]*Directory {
 
 func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
 		return nil
 	}
 	for _, subDir := range dir.Dirs {
@@ -713,10 +713,10 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildSync(dir, idx)
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) has no files", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", dir.DirName, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {

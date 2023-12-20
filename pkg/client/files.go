@@ -131,8 +131,8 @@ func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
 
 // ----- directories --------------------------------
 
-func (c *Client) AddDir(dir *svc.Directory) error {
-	return c.Drive.AddDir(dir)
+func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
+	return c.Drive.AddSubDir(dirID, dir)
 }
 
 func (c *Client) AddDirs(dirs []*svc.Directory) error {

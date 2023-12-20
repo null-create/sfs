@@ -243,20 +243,40 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 
 // ------ directory management --------------------------------
 
-func (d *Drive) addDir(dir *Directory) error {
-	if err := d.Root.AddSubDir(dir); err != nil {
-		return err
+func (d *Drive) addSubDir(dirID string, dir *Directory) error {
+	// add sub directory to root if that's where it's supposed to be
+	if dirID == d.Root.ID {
+		if err := d.Root.AddSubDir(dir); err != nil {
+			return err
+		}
+	} else {
+		// otherwise attempt to retrive the directory we want to
+		// add the subdirectory to
+		dirs := d.Root.WalkDs()
+		if dirs == nil {
+			// add this directory to the to root since there's no
+			// sub directories available
+			if err := d.Root.AddSubDir(dir); err != nil {
+				return err
+			}
+		} else {
+			for _, dir := range dirs {
+				if dir.ID == dirID {
+					if err := dir.AddSubDir(dir); err != nil {
+						return err
+					}
+				}
+			}
+		}
 	}
 	return nil
 }
 
-// add a directory. currently defaults to drive.Root
-func (d *Drive) AddDir(dir *Directory) error {
+// add a directory within the drives root
+func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 	if !d.Protected {
-		if _, exists := d.Root.Dirs[dir.ID]; !exists {
-			if err := d.addDir(dir); err != nil {
-				return err
-			}
+		if err := d.addSubDir(dirID, dir); err != nil {
+			return err
 		}
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
@@ -310,9 +330,8 @@ func (d *Drive) removeDir(dirID string) error {
 		if err := os.RemoveAll(dir.Path); err != nil {
 			return err
 		}
-		parent := dir.Parent
-		if parent != nil {
-			delete(parent.Dirs, dir.ID)
+		if dir.Parent != nil {
+			delete(dir.Parent.Dirs, dir.ID)
 		}
 		log.Printf("[DEBUG] directory (id=%s) removed", dirID)
 	} else {
