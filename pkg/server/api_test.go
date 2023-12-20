@@ -97,6 +97,54 @@ func TestNewFileAPI(t *testing.T) {
 	}
 }
 
+func TestGetSingleFileInfoAPI(t *testing.T) {
+	BuildEnv(true)
+
+	// shut down signal to the server
+	shutDown := make(chan bool)
+
+	// start testing server
+	log.Print("[TEST] starting test server...")
+	testServer := NewServer()
+	go func() {
+		testServer.TestRun(shutDown)
+	}()
+
+	// attempt to retrieve file info about one file from the server
+	log.Printf("[TEST] retrieving test file data...")
+	// NOTE: this endpoint was pulled straight from the DB and might not always
+	// work. may have to manually update if needed.
+	client := new(http.Client)
+	res, err := client.Get("http://localhost:8080/v1/files/i/4e539b7b-9ed7-11ee-aef3-0a0027000014")
+	if err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+	if res.StatusCode != http.StatusOK {
+		shutDown <- true
+		b, err := httputil.DumpResponse(res, true)
+		if err != nil {
+			Fail(t, GetTestingDir(), err)
+		}
+		msg := fmt.Sprintf(
+			"response code was not 200: %d\n response: %v\n",
+			res.StatusCode, string(b),
+		)
+		Fail(t, GetTestingDir(), fmt.Errorf(msg))
+	}
+
+	// display response/results
+	log.Printf("[TEST] response code: %d", res.StatusCode)
+	b, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	log.Printf("[TEST] response: %v", string(b))
+
+	log.Print("[TEST] shutting down test server...")
+	shutDown <- true
+}
+
 func TestFileGetAPI(t *testing.T) {
 	BuildEnv(true)
 
