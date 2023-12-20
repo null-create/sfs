@@ -20,9 +20,11 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
+// -------- new item/user context --------------------------------
+
 // attempts to get filename, owner, and path from a requets
 // context, then create a new file object to use for downloading
-func NewFile(h http.Handler) http.Handler {
+func NewFileCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get raw file info from request header
@@ -45,20 +47,20 @@ func NewFile(h http.Handler) http.Handler {
 	})
 }
 
-func NewUser(h http.Handler) http.Handler {
+func NewUserCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get raw file info from request header
 		userToken := r.Header.Get("Authorization")
 		userInfo, err := tokenValidator.Verify(userToken)
 		if err != nil {
-			msg := fmt.Sprintf("failed to verify file token: %v", err)
+			msg := fmt.Sprintf("failed to verify user token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
 		newUser, err := auth.UnmarshalUser(userInfo)
 		if err != nil {
-			msg := fmt.Sprintf("failed to unmarshal file data: %v", err)
+			msg := fmt.Sprintf("failed to unmarshal user data: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
@@ -66,6 +68,29 @@ func NewUser(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
+
+func NewDirectoryCtx(h http.Handler) http.Handler {
+	tokenValidator := auth.NewT()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		dirToken := r.Header.Get("Authorization")
+		dirInfo, err := tokenValidator.Verify(dirToken)
+		if err != nil {
+			msg := fmt.Sprintf("failed to verify directory token: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		newDir, err := svc.UnmarshalDirStr(dirInfo)
+		if err != nil {
+			msg := fmt.Sprintf("failed to unmarshal directory data: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Directory, newDir)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
+// ------- authentication --------------------------------
 
 // retrieve jwt token from request & verify
 func AuthenticateUser(reqToken string) (*auth.User, error) {
@@ -104,7 +129,7 @@ func AuthUserHandler(h http.Handler) http.Handler {
 	})
 }
 
-// ------ context --------------------------------
+// ------ standard context --------------------------------
 
 func FileCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
