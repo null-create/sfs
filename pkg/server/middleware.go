@@ -109,6 +109,10 @@ func AuthUserHandler(h http.Handler) http.Handler {
 func FileCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileID := chi.URLParam(r, "fileID")
+		if fileID == "" {
+			http.Error(w, "fileID not set", http.StatusBadRequest)
+			return
+		}
 		file, err := findFile(fileID, getDBConn("Files"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -125,6 +129,10 @@ func FileCtx(h http.Handler) http.Handler {
 func DriveCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		driveID := chi.URLParam(r, "driveID")
+		if driveID == "" {
+			http.Error(w, "driveID not set", http.StatusBadRequest)
+			return
+		}
 		drive, err := findDrive(driveID, getDBConn("Drives"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,6 +149,10 @@ func DriveCtx(h http.Handler) http.Handler {
 func DirCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		dirID := chi.URLParam(r, "dirID")
+		if dirID == "" {
+			http.Error(w, "dirID not set", http.StatusBadRequest)
+			return
+		}
 		dir, err := findDir(dirID, getDBConn("Directories"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -160,6 +172,10 @@ func DirCtx(h http.Handler) http.Handler {
 func UserCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "userID")
+		if userID == "" {
+			http.Error(w, "userID not set", http.StatusBadRequest)
+			return
+		}
 		user, err := findUser(userID, getDBConn("Users"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
