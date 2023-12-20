@@ -168,15 +168,12 @@ func (f *File) Load() {
 	}
 }
 
-// update (or create) a file.
-// does not load file contents into memory (i.e. fill f.Content)
+// update (or create) a file. updates checksum and last sync time.
 func (f *File) Save(data []byte) error {
 	if !f.Protected {
 		f.m.Lock()
 		defer f.m.Unlock()
 
-		// If the file doesn't exist, it will be created,
-		// otherwise the file will be truncated
 		file, err := os.Create(f.Path)
 		if err != nil {
 			return fmt.Errorf("unable to create file %s: %v", f.Name, err)
@@ -187,7 +184,9 @@ func (f *File) Save(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("unable to write file %s: %v", f.Path, err)
 		}
-		// update sync time
+		if err := f.UpdateChecksum(); err != nil {
+			return fmt.Errorf("failed to update checksum: %v", err)
+		}
 		f.LastSync = time.Now().UTC()
 	} else {
 		log.Print("[INFO] file is protected")

@@ -150,6 +150,7 @@ func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// TODO: finish this
 }
 
 // -------- files -----------------------------------------
@@ -162,15 +163,11 @@ uploads and downloads
 
 // check the db for the existence of a file.
 //
-// handles errors and not found cases. returns nil if either of these
-// are the case, otherwise returns a file pointer.
-func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
-	fileID := chi.URLParam(r, "fileID")
+// returns nil if file isn't found. handles db errors.
+func (a *API) findF(w http.ResponseWriter, r *http.Request, fileID string) *svc.File {
 	file, err := a.Svc.Db.GetFile(fileID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
-	} else if file == nil {
 		return nil
 	}
 	return file
@@ -178,13 +175,17 @@ func (a *API) findF(w http.ResponseWriter, r *http.Request) *svc.File {
 
 // get file metadata
 func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
-	f := a.findF(w, r)
-	if f == nil {
-		fileID := chi.URLParam(r, "fileID")
+	fileID := chi.URLParam(r, "fileID")
+	if fileID == "" {
+		http.Error(w, "missing file ID", http.StatusBadRequest)
+		return
+	}
+	file := a.findF(w, r, fileID)
+	if file == nil {
 		http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 		return
 	}
-	data, err := f.ToJSON()
+	data, err := file.ToJSON()
 	if err != nil {
 		msg := fmt.Sprintf("failed to convert to JSON: %s", err.Error())
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -195,19 +196,25 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
-	f := a.findF(w, r)
-	if f == nil {
-		fileID := chi.URLParam(r, "fileID")
+	fileID := chi.URLParam(r, "fileID")
+	if fileID == "" {
+		http.Error(w, "missing file ID", http.StatusBadRequest)
+		return
+	}
+
+	// find file
+	file := a.findF(w, r, fileID)
+	if file == nil {
 		msg := fmt.Sprintf("file (id=%s) not found", fileID)
 		http.Error(w, msg, http.StatusNotFound)
 		return
 	}
 
 	// Set the response header for the download
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", f.Name))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 	w.Header().Set("Content-Type", "application/octet-stream")
 
-	http.ServeFile(w, r, f.ServerPath)
+	http.ServeFile(w, r, file.ServerPath)
 }
 
 // get json blobs of all files available on the server
@@ -233,10 +240,7 @@ func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
-	// retrieve new file object from context before copying data
-	newFile := r.Context().Value(File).(*svc.File)
-
+func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
 	// retrieve file
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
@@ -268,74 +272,55 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 }
 
 // update the file
-func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
-	formFile, _, err := r.FormFile("myFile")
-	if err != nil {
-		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
-	}
-	defer formFile.Close()
-
-	// update file
+func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
+	// retrieve and update the file
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, formFile)
+	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
 		msg := fmt.Sprintf("failed to download form file data: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	if err := f.Save(buf.Bytes()); err != nil {
+	if err := file.Save(buf.Bytes()); err != nil {
 		msg := fmt.Sprintf("failed to download file to server: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	f.LastSync = time.Now().UTC()
-	// we ignore the error since we don't want to return it to the user
-	if err = f.UpdateChecksum(); err != nil {
-		log.Printf("[WARNING] failed to update checksum: %v", err)
-	}
-
 	// update DB
-	if err := a.Svc.Db.UpdateFile(f); err != nil {
+	if err := a.Svc.Db.UpdateFile(file); err != nil {
 		msg := fmt.Sprintf("failed to update file database: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("file %s updated", f.Name)))
+	msg := fmt.Sprintf("file %s updated", file.Name)
+	log.Printf("[INFO] %s", msg)
+	w.Write([]byte(msg))
 }
 
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
+	f := r.Context().Value(File).(*svc.File)
 	if r.Method == http.MethodPut { // update the file
-		f := r.Context().Value(File).(*svc.File)
 		a.putFile(w, r, f)
 	} else if r.Method == http.MethodPost { // create a new file.
-		a.newFile(w, r)
+		a.newFile(w, r, f)
 	}
 }
 
 // delete a file from the server
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	f := a.findF(w, r)
-	if f == nil {
-		http.Error(w, "file not found", http.StatusNotFound)
-		return
-	}
-	// remove physical file
-	if err := a.Svc.DeleteFile("CHANGEME", "CHANGEME", f.ID); err != nil {
+	// retrieve file object from the request context
+	file := r.Context().Value(File).(*svc.File)
+
+	// remove physical file, update databse, and all users drive components.
+	if err := a.Svc.DeleteFile(file.OwnerID, file.DirID, file.ID); err != nil {
 		msg := fmt.Sprintf("failed to delete file: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	// remove from database
-	if err := a.Svc.Db.RemoveFile(f.ID); err != nil {
-		msg := fmt.Sprintf("failed to remove file from database: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
-	}
-	log.Printf("[INFO] file (%s) deleted from server", f.Path)
-	w.Write([]byte(fmt.Sprintf("file (%s) deleted", f.Name)))
+
+	log.Printf("[INFO] file (%s) deleted from server", file.Path)
+	w.Write([]byte(fmt.Sprintf("file (%s) deleted", file.Name)))
 }
 
 // ------- directories --------------------------------

@@ -69,9 +69,11 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 	return req, nil
 }
 
-// prepare and transfer a file for upload or download
+// prepare and transfer a file for upload or download to the server.
+// server will handle whether this is a new file or an update to an existing file,
+// usually determined by the method.
 //
-// intended to run within its own goroutine
+// intended to run within its own goroutine.
 func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	bodyWriter := multipart.NewWriter(t.Buffer)
 	defer bodyWriter.Close()
@@ -114,59 +116,48 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		log.Printf("[WARNING] failed to parse http response: %v", err)
 		return nil
 	}
-	log.Printf("[INFO] server response: %v", string(b))
+	log.Printf("[INFO] \n%v\n", string(b))
 	return nil
 }
 
-// download a file from the given URL.
+// download a known file from the given URL (associated server API endpoint).
 //
-// intended to run in its own goroutine
+// intended to run in its own goroutine.
+// download a known file that is only on the server, and is new to the client
 func (t *Transfer) Download(destPath string, fileURL string) error {
-	// listen for server requests
-	ln, err := t.Listener("tcp", fmt.Sprint(t.Port))
+	// attempt to retrieve the file from the server
+	resp, err := t.Client.Get(fileURL)
 	if err != nil {
-		return fmt.Errorf("failed to start client listener: %v", err)
+		return fmt.Errorf("failed to execute http request: %v", err)
 	}
-	defer ln.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			log.Printf("[WARNING] failed to parse response: %v", err)
+		} else {
+			log.Printf("[INFO] failed to retrieve file: %v", string(b))
+		}
+		return nil
+	}
+	defer resp.Body.Close()
 
-	// blocks until connection is established
-	log.Print("[INFO] listening for download request...")
-	conn, err := ln.Accept()
+	// create destination file
+	file, err := os.Create(destPath)
 	if err != nil {
-		return fmt.Errorf("failed to create connection: %v", err)
-	}
-	defer conn.Close()
-
-	// get file name & create local file
-	fileNameBuffer := make([]byte, 0, 1024)
-	n, err := conn.Read(fileNameBuffer)
-	if err != nil {
-		return fmt.Errorf("failed to read file name from server: %v", err)
-	}
-	fileName := string(fileNameBuffer[:n])
-	file, err := os.Create(filepath.Join(destPath, fileName))
-	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
+		return fmt.Errorf("failed to create destination file: %v", err)
 	}
 	defer file.Close()
 
-	// start downloading
-	log.Printf("[INFO] downloading file %v ...", file)
-	buffer := make([]byte, 0, 1024)
-	for {
-		n, err := conn.Read(buffer)
-		if err != nil {
-			if err != io.EOF {
-				return fmt.Errorf("failed to receive file data from server: %v", err)
-			}
-			break
-		}
-		_, err = file.Write(buffer[:n])
-		if err != nil {
-			return fmt.Errorf("failed to write file data: %v", err)
-		}
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to download file: %v", err)
 	}
-	log.Printf("...done")
+	_, err = file.Write(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to download file: %v", err)
+	}
 
+	log.Printf("[INFO] file downloaded")
 	return nil
 }

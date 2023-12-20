@@ -66,7 +66,7 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	// retrieve the payload as a string
 	data := claims["sub"].(string)
 	if data == "" {
-		return "", fmt.Errorf("no file info found in token claims")
+		return "", fmt.Errorf("no info found in token claims")
 	}
 	return data, nil
 }

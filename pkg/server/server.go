@@ -74,14 +74,14 @@ func (s *Server) Run() {
 			}
 		}()
 
-		log.Printf("shutting down server...")
+		log.Printf("[INFO] shutting down server...")
 		if err := s.Svr.Shutdown(shutdownCtx); err != nil {
 			log.Fatal(err)
 		}
 		serverStopCtx()
 	}()
 
-	log.Printf("starting server...")
+	log.Printf("[INFO] starting server...")
 	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
@@ -104,14 +104,14 @@ func (s *Server) TestRun(turnOff chan bool) {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Print("shutdown timed out. forcing exit.")
+				log.Print("[WARNING] shutdown timed out. forcing exit.")
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
 			}
 		}()
 
-		log.Printf("shutting down server...")
+		log.Printf("[INFO] shutting down server...")
 		err := s.Svr.Shutdown(shutdownCtx)
 		if err != nil {
 			log.Fatal(err)
@@ -119,7 +119,7 @@ func (s *Server) TestRun(turnOff chan bool) {
 		serverStopCtx()
 	}()
 
-	log.Printf("starting server...")
+	log.Printf("[INFO] starting server...")
 	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

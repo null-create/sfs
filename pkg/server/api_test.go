@@ -29,11 +29,8 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 
 	// attempt to retrieve all file info from the server
 	log.Printf("[TEST] retrieving file data...")
-
-	endpoint := fmt.Sprint(LocalHost, "/v1/files/all")
-
 	client := http.Client{Timeout: time.Second * 600}
-	res, err := client.Get(endpoint)
+	res, err := client.Get(fmt.Sprint(LocalHost, "/v1/files/all"))
 	if err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
@@ -50,6 +47,8 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 		)
 		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
+
+	// display response/results
 	log.Printf("[TEST] response code: %d", res.StatusCode)
 	b, err := httputil.DumpResponse(res, true)
 	if err != nil {
@@ -151,9 +150,13 @@ func TestFileGetAPI(t *testing.T) {
 		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
 
-	log.Printf("[TEST] response code: %d", res.StatusCode)
-
 	// get file info from response body and display
+	log.Printf("[TEST] response code: %d", res.StatusCode)
+	b, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		Fatal(t, err)
+	}
+	log.Printf("[TEST] response: %s", string(b))
 
 	shutDown <- true // shut down test server
 
