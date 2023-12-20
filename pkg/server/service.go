@@ -961,6 +961,8 @@ func (s *Service) UpdateFile(userID string, fileID string, data []byte) error {
 	return nil
 }
 
+// delete a file in the service. uses the users drive to delete the file.
+// removes physical file and updates database.
 func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
 	drive, err := s.Db.GetDriveByUserID(userID)
 	if err != nil {
