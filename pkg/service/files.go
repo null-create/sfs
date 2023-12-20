@@ -76,6 +76,14 @@ func NewFile(fileName string, ownerID string, path string) *File {
 	}
 }
 
+func UnmarshalFileStr(fileInfo string) (*File, error) {
+	file := new(File)
+	if err := json.Unmarshal([]byte(fileInfo), &file); err != nil {
+		return nil, err
+	}
+	return file, nil
+}
+
 // returns file size in bytes
 //
 // uses os.Stat() - "length in bytes for regular files; system-dependent for others"

@@ -58,16 +58,17 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	if !token.Valid {
 		return "", fmt.Errorf("invalid token")
 	}
-
+	// retrieve jwt claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return "", fmt.Errorf("failed to parse jwt claims")
 	}
-	userID := claims["sub"].(string)
-	if userID == "" {
-		return "", fmt.Errorf("no user ID found in token claims")
+	// retrieve the payload as a string
+	data := claims["sub"].(string)
+	if data == "" {
+		return "", fmt.Errorf("no file info found in token claims")
 	}
-	return userID, nil
+	return data, nil
 }
 
 // create a new token using a given payload/string

@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
-	"github.com/sfs/pkg/transfer"
 
 	"github.com/go-chi/chi"
 )
@@ -25,53 +23,46 @@ func ContentTypeJson(h http.Handler) http.Handler {
 // attempts to get filename, owner, and path from a requets
 // context, then create a new file object to use for downloading
 func NewFile(h http.Handler) http.Handler {
+	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// get raw file info from request context
-		ctx := r.Context()
-		fileCtx := ctx.Value(File).(transfer.FileContext)
-		if fileCtx.IsEmpty() {
-			msg := fmt.Sprintf(
-				"missing fields: filename=%s owner=%s path=%s",
-				fileCtx.Name, fileCtx.OwnerID, fileCtx.OwnerID,
-			)
-			http.Error(w, msg, http.StatusBadRequest)
+		// get raw file info from request header
+		fileToken := r.Header.Get("Authorization")
+		fileInfo, err := tokenValidator.Verify(fileToken)
+		if err != nil {
+			msg := fmt.Sprintf("failed to verify file token: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-
+		newFile, err := svc.UnmarshalFileStr(fileInfo)
+		if err != nil {
+			msg := fmt.Sprintf("failed to unmarshal file data: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
 		// create new file object and add to request context
-		newFile := svc.NewFile(fileCtx.Name, fileCtx.OwnerID, fileCtx.OwnerID)
-		newCtx := context.WithValue(r.Clone(ctx).Context(), File, newFile)
+		newCtx := context.WithValue(r.Context(), File, newFile)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
 
 func NewUser(h http.Handler) http.Handler {
+	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c := ServiceConfig()
-
-		ctx := r.Context()
-		newUserName := ctx.Value(Name).(string)
-		newUserAlias := ctx.Value(User).(string)
-		newUserEmail := ctx.Value(Email).(string)
-		isAdmin := ctx.Value(Admin).(bool)
-		if newUserName == "" || newUserAlias == "" || newUserEmail == "" {
-			msg := fmt.Sprintf(
-				"missing fields: name=%s username=%s email=%s",
-				newUserName, newUserAlias, newUserEmail,
-			)
-			http.Error(w, msg, http.StatusBadRequest)
+		// get raw file info from request header
+		userToken := r.Header.Get("Authorization")
+		userInfo, err := tokenValidator.Verify(userToken)
+		if err != nil {
+			msg := fmt.Sprintf("failed to verify file token: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-
-		newDriveRoot := filepath.Join(c.SvcRoot, "users", newUserName)
-
-		newUser := auth.NewUser(
-			newUserName, newUserAlias, newUserEmail, newDriveRoot, isAdmin,
-		)
-		// this basically just repackages the previous
-		// context with a new user object
-		newCtx := context.WithValue(ctx, User, newUser)
-
+		newUser, err := auth.UnmarshalUser(userInfo)
+		if err != nil {
+			msg := fmt.Sprintf("failed to unmarshal file data: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		newCtx := context.WithValue(context.Background(), User, newUser)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }

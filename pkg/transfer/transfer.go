@@ -2,7 +2,6 @@ package transfer
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -14,6 +13,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -46,12 +46,25 @@ func NewTransfer(port int) *Transfer {
 	}
 }
 
-func (t *Transfer) PrepareReq(method string, contentType string, destURL string) (*http.Request, error) {
+func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.File, destURL string) (*http.Request, error) {
 	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
 	}
 	req.Header.Set("Content-Type", contentType)
+
+	// create file info token to attach to request header
+	tokenizer := auth.NewT()
+	fileData, err := file.ToJSON()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file json string: %v", err)
+	}
+	fileToken, err := tokenizer.Create(string(fileData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file token: %v", err)
+	}
+	req.Header.Set("Authorization", fileToken)
+
 	return req, nil
 }
 
@@ -67,7 +80,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if err != nil {
 		return err
 	}
-
 	// load data into file writer, then prepare and send the request to the destination
 	if len(file.Content) == 0 {
 		file.Load()
@@ -75,24 +87,20 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if _, err = fileWriter.Write(file.Content); err != nil {
 		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
-	req, err := t.PrepareReq(method, bodyWriter.FormDataContentType(), destURL)
+	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, destURL)
 	if err != nil {
 		return err
 	}
-
-	// add file info context to request
-	fileCtx := NewFileContext(file.Name, file.OwnerID, file.Path, file.CheckSum)
-	newCtx := context.WithValue(req.Clone(context.Background()).Context(), File, fileCtx)
-
 	// upload and confirm success
 	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
-	resp, err := t.Client.Do(req.WithContext(newCtx))
+	resp, err := t.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("server returned non-OK status: %v", resp.Status)
+		log.Printf("[WARNING] server returned non-OK status: %v", resp.Status)
+		return nil
 	}
 	log.Printf("[INFO] ...done")
 
