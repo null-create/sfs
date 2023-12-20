@@ -251,11 +251,10 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// update checksum
+	// update checksum (also updates the files last sync time.)
 	if err := newFile.UpdateChecksum(); err != nil {
 		log.Printf("[WARNING] failed to calculate checksum %v", err)
 	}
-	newFile.LastSync = time.Now().UTC()
 
 	// save to DB
 	if err := a.Svc.Db.AddFile(newFile); err != nil {
@@ -263,7 +262,6 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
 	msg := fmt.Sprintf("%s has been added to the server", newFile.Name)
 	log.Printf("[INFO] %s", msg)
 	w.Write([]byte(msg))

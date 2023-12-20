@@ -51,6 +51,11 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 		Fail(t, GetTestingDir(), fmt.Errorf(msg))
 	}
 	log.Printf("[TEST] response code: %d", res.StatusCode)
+	b, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	log.Printf("[TEST] response: %v", string(b))
 
 	log.Print("[TEST] shutting down test server...")
 	shutDown <- true
