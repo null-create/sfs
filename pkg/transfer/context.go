@@ -51,6 +51,10 @@ func NewUserContext(name string, alias string, email string, isAdmin bool) UserC
 	}
 }
 
+func (uctx UserContext) IsEmpty() bool {
+	return uctx.Name == "" && uctx.Alias == "" && uctx.Email == ""
+}
+
 func (uctx UserContext) ToJSON() []byte {
 	data, err := json.MarshalIndent(uctx, "", " ")
 	if err != nil {

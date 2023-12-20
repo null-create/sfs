@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 )
 
 /*
@@ -63,15 +62,16 @@ func NewRouter() *chi.Mux {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	// custom middleware
-	// r.Use(AuthUserHandler)
-
-	r.Use(render.SetContentType(render.ContentTypeJSON))
-
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
 	r.Use(middleware.Timeout(time.Minute))
+
+	// custom middleware
+	// r.Use(AuthUserHandler)
+	r.Use(ContentTypeJson)
+
+	// r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// placeholder for sfs "homepage"
 	// this will eventually display a simple service index page

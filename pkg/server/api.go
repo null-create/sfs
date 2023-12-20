@@ -234,28 +234,19 @@ func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
-	formFile, _, err := r.FormFile("myFile")
-	if err != nil {
-		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
-	}
-	defer formFile.Close()
-
 	// retrieve new file object from context before copying data
-	ctx := r.Context()
-	newFile := ctx.Value(File).(*svc.File)
+	newFile := r.Context().Value(File).(*svc.File)
 
 	// retrieve file
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, formFile)
+	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
-		msg := fmt.Sprintf("failed to retrive form file data: %v", err)
+		msg := fmt.Sprintf("failed to copy file data into buffer: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
 	if err := newFile.Save(buf.Bytes()); err != nil {
-		msg := fmt.Sprintf("failed to download file to server: %v", err)
+		msg := fmt.Sprintf("failed to save file to server: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
@@ -273,9 +264,8 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg := fmt.Sprintf("file %s has been added to the server", newFile.Name)
-	log.Print(fmt.Sprintf("[INFO] %s", msg))
-
+	msg := fmt.Sprintf("%s has been added to the server", newFile.Name)
+	log.Printf("[INFO] %s", msg)
 	w.Write([]byte(msg))
 }
 
@@ -320,8 +310,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, f *svc.File) {
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPut { // update the file
-		ctx := r.Context()
-		f := ctx.Value(File).(*svc.File)
+		f := r.Context().Value(File).(*svc.File)
 		a.putFile(w, r, f)
 	} else if r.Method == http.MethodPost { // create a new file.
 		a.newFile(w, r)

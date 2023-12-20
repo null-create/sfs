@@ -79,15 +79,14 @@ func AuthenticateUser(authReq string) (*auth.User, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// attempt to find data about the user from the the user db
-	u, err := findUser(userID, getDBConn("Users"))
+	user, err := findUser(userID, getDBConn("Users"))
 	if err != nil {
 		return nil, err
-	} else if u == nil {
+	} else if user == nil {
 		return nil, fmt.Errorf("user (id=%s) not found", userID)
 	}
-	return u, nil
+	return user, nil
 }
 
 // get user info
@@ -100,7 +99,8 @@ func AuthUserHandler(h http.Handler) http.Handler {
 		}
 		_, err := AuthenticateUser(authReq)
 		if err != nil {
-			http.Error(w, "failed to get authenticated user", http.StatusInternalServerError)
+			msg := fmt.Sprintf("failed to get authenticated user: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
 		h.ServeHTTP(w, r)

@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"path/filepath"
 	"time"
@@ -100,10 +101,20 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[WARNING] server returned non-OK status: %v", resp.Status)
-		return nil
+		b, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			log.Printf("[WARNING] failed to parse http response: %v", err)
+			return nil
+		}
+		return fmt.Errorf("failed to upload file: %v", fmt.Sprintf("\n%s\n", string(b)))
 	}
 	log.Printf("[INFO] ...done")
-
+	b, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		log.Printf("[WARNING] failed to parse http response: %v", err)
+		return nil
+	}
+	log.Printf("[INFO] server response: %v", string(b))
 	return nil
 }
 
@@ -152,7 +163,7 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 		}
 		_, err = file.Write(buffer[:n])
 		if err != nil {
-			return fmt.Errorf("[ERROR] failed to write file data: %v", err)
+			return fmt.Errorf("failed to write file data: %v", err)
 		}
 	}
 	log.Printf("...done")
