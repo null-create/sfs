@@ -1,10 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -171,6 +174,11 @@ func TestFileGetAPI(t *testing.T) {
 	}
 	file := files[RandInt(len(files)-1)]
 
+	// make sure this file is in the db
+	if err := testSvc.AddFile(tmpDrive.OwnerID, tmpDrive.Root.ID, file); err != nil {
+		Fail(t, testSvc.UserDir, err)
+	}
+
 	// ---- start server
 
 	// shut down signal to the server
@@ -185,6 +193,7 @@ func TestFileGetAPI(t *testing.T) {
 
 	// ---- atttempt to retrieve file via its API endpoint
 
+	// contact the server
 	log.Print("[TEST] attempting to retrieve file via its API endpoint...")
 	client := new(http.Client)
 	res, err := client.Get(file.Endpoint)
@@ -205,7 +214,7 @@ func TestFileGetAPI(t *testing.T) {
 		Fail(t, testSvc.UserDir, fmt.Errorf(msg))
 	}
 
-	// get file info from response body and display
+	// get file info from response body
 	log.Printf("[TEST] response code: %d", res.StatusCode)
 	b, err := httputil.DumpResponse(res, true)
 	if err != nil {
@@ -213,13 +222,35 @@ func TestFileGetAPI(t *testing.T) {
 	} else {
 		log.Printf("[TEST] response: %s", string(b))
 	}
+	defer res.Body.Close()
 
-	// TODO: download file and compare contents against original
+	// download file and compare contents against original
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, res.Body)
+	if err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to copy response body: %v", err))
+	}
+	tmpFile, err := os.Create(fmt.Sprintf(GetTestingDir(), "tmp.txt"))
+	if err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to create destination test file: %v", err))
+	}
+	_, err = tmpFile.Write(buf.Bytes())
+	if err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to write data to test file: %v", err))
+	}
+	defer tmpFile.Close()
+
+	// ----- verify file contents
+
+	// ----- clean up
 
 	shutDown <- true // shut down test server
 
-	// remove tmp file
+	// remove tmp files
 	if err := Clean(testSvc.UserDir); err != nil {
+		log.Fatal(err)
+	}
+	if err := Clean(GetTestingDir()); err != nil {
 		log.Fatal(err)
 	}
 }

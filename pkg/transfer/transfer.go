@@ -127,6 +127,8 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // intended to run in its own goroutine.
 // download a known file that is only on the server, and is new to the client
 func (t *Transfer) Download(destPath string, fileURL string) error {
+	// TODO: prepare a specific request for downloads?
+
 	// attempt to retrieve the file from the server
 	resp, err := t.Client.Get(fileURL)
 	if err != nil {
@@ -143,13 +145,14 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 	}
 	defer resp.Body.Close()
 
-	// create destination file
+	// create (or truncate and overwrite) destination file
 	file, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %v", err)
 	}
 	defer file.Close()
 
+	// write out contents
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
@@ -160,6 +163,6 @@ func (t *Transfer) Download(destPath string, fileURL string) error {
 		return fmt.Errorf("failed to download file: %v", err)
 	}
 
-	log.Printf("[INFO] file downloaded")
+	log.Printf("[INFO] %s downloaded", file.Name())
 	return nil
 }

@@ -95,8 +95,8 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 // retrieve jwt token from request & verify
 func AuthenticateUser(reqToken string) (*auth.User, error) {
 	// verify request token
-	tok := auth.NewT()
-	userID, err := tok.Verify(reqToken)
+	tokenValidator := auth.NewT()
+	userID, err := tokenValidator.Verify(reqToken)
 	if err != nil {
 		return nil, err
 	}

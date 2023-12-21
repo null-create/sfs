@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/sfs/pkg/auth"
+	svc "github.com/sfs/pkg/service"
 
 	"github.com/alecthomas/assert/v2"
 )
@@ -311,6 +312,38 @@ func TestDiscover(t *testing.T) {
 	testSvc.Discover(tmpDrive.Root)
 	if len(tmpDrive.Root.Dirs) == 0 {
 		Fail(t, GetTestingDir(), fmt.Errorf("no test directories found"))
+	}
+	if len(tmpDrive.Root.Files) == 0 {
+		Fail(t, GetTestingDir(), fmt.Errorf("no test directories found"))
+	}
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+func TestPopulate(t *testing.T) {
+	BuildEnv(true)
+
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// create a test drive with files and directories
+	// added to the database via Discover()
+	tmpDrive := MakeTmpDrive(t)
+	tmpDrive.Root = testSvc.Discover(tmpDrive.Root)
+
+	// create a new root directory and populate
+	testRoot := svc.NewRootDirectory("test", "some-rand-id", filepath.Join(GetTestingDir(), "tmp"))
+	testRoot = testSvc.Populate(testRoot)
+
+	if len(testRoot.Dirs) == 0 {
+		Fail(t, GetTestingDir(), fmt.Errorf("failed to populate directories"))
+	}
+	if len(testRoot.Files) == 0 {
+		Fail(t, GetTestingDir(), fmt.Errorf("failed to populate files"))
 	}
 
 	if err := Clean(GetTestingDir()); err != nil {

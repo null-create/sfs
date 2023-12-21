@@ -838,18 +838,24 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 
 // --------- directories --------------------------------
 
-// find a directory in the database
+// find a directory in the database and populate it with
+// its files and subdirectories.
 func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
-	return s.Db.GetDirectory(dirID)
+	dir, err := s.Db.GetDirectory(dirID)
+	if err != nil {
+		return nil, err
+	}
+	dir = s.Populate(dir)
+	return dir, nil
 }
 
 // add a sub-directory to the given drive directory
 func (s *Service) AddDir(dirID string, newDir *svc.Directory) error {
-	root, err := s.Db.GetDirectory(dirID)
+	destDir, err := s.Db.GetDirectory(dirID)
 	if err != nil {
 		return err
 	}
-	if err := root.AddSubDir(newDir); err != nil {
+	if err := destDir.AddSubDir(newDir); err != nil {
 		return err
 	}
 	if err := s.Db.AddDir(newDir); err != nil {
