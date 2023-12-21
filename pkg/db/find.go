@@ -301,6 +301,9 @@ func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 	defer q.Close()
 
 	d := new(svc.Directory)
+	d.Files = make(map[string]*svc.File, 0)
+	d.Dirs = make(map[string]*svc.Directory, 0)
+
 	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
 		&d.ID,
 		&d.DirName,
@@ -331,6 +334,9 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 	defer q.Close()
 
 	d := new(svc.Directory)
+	d.Files = make(map[string]*svc.File, 0)
+	d.Dirs = make(map[string]*svc.Directory, 0)
+
 	if err := q.Conn.QueryRow(FindDirByNameQuery, dirName).Scan(
 		&d.ID,
 		&d.DirName,
@@ -368,6 +374,8 @@ func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	dirs := make([]*svc.Directory, 0)
 	for rows.Next() {
 		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
 		if err := q.Conn.QueryRow(FindAllQuery, "Directories").Scan(
 			&dir.ID,
 			&dir.DirName,
@@ -405,6 +413,9 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	defer q.Close()
 
 	d := new(svc.Drive)
+	d.Root.Files = make(map[string]*svc.File, 0)
+	d.Root.Dirs = make(map[string]*svc.Directory, 0)
+
 	if err := q.Conn.QueryRow(FindDriveQuery, driveID).Scan(
 		&d.ID,
 		&d.OwnerName,
@@ -436,6 +447,9 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	defer q.Close()
 
 	d := new(svc.Drive)
+	d.Root.Files = make(map[string]*svc.File, 0)
+	d.Root.Dirs = make(map[string]*svc.Directory, 0)
+
 	if err := q.Conn.QueryRow(FindDriveByUserID, userID).Scan(
 		&d.ID,
 		&d.OwnerName,
