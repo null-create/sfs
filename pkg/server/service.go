@@ -496,13 +496,25 @@ func (s *Service) RemoveDrive(driveID string) error {
 	return nil
 }
 
-// add drive to the service instance
+// add drive and all files and subdirectoris to the service instance
 func (s *Service) AddDrive(drv *svc.Drive) error {
-	// add drive to db
+	// add all files and subdirectories to the database
+	files := drv.Root.WalkFs()
+	for _, f := range files {
+		if err := s.Db.AddFile(f); err != nil {
+			return err
+		}
+	}
+	subDirs := drv.Root.WalkDs()
+	for _, d := range subDirs {
+		if err := s.Db.AddDir(d); err != nil {
+			return err
+		}
+	}
+	// add drive and root dir to db
 	if err := s.Db.AddDrive(drv); err != nil {
 		return err
 	}
-	// add root directory to db
 	if err := s.Db.AddDir(drv.Root); err != nil {
 		return err
 	}
@@ -517,7 +529,6 @@ func (s *Service) TotalUsers() int {
 
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
-	s.Db.WhichDB("users")
 	if _, exists := s.Users[userID]; exists {
 		// make sure they exist in the DB too
 		exists, err := s.Db.UserExists(userID)
@@ -613,6 +624,10 @@ func (s *Service) removeUser(driveID string) error {
 			}
 			// remove drive from database
 			if err := s.Db.RemoveDrive(driveID); err != nil {
+				return err
+			}
+			// remove root directory from db
+			if err := s.Db.RemoveDirectory(root.ID); err != nil {
 				return err
 			}
 			log.Printf("[INFO] drive (id=%s) removed", driveID)
