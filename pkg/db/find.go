@@ -12,14 +12,16 @@ import (
 // Query to check user existence
 func (q *Query) UserExists(userID string) (bool, error) {
 	q.WhichDB("users")
+
 	var exists bool
 	err := q.Conn.QueryRow(ExistsQuery, "Users", userID).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-		return false, fmt.Errorf("couldn't query user (%s): %v", userID, err)
+		return false, fmt.Errorf("failed to query user %s: %v", userID, err)
 	}
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
+
 	return exists, nil
 }
 
@@ -124,6 +126,8 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 
 	return users, nil
 }
+
+// ----- files ----------------------------------
 
 // retrieve file metadata from the database
 //
@@ -292,6 +296,8 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 	return fs, nil
 }
 
+// ----------- directories --------------------------------
+
 // retrieve information about a users directory from the database
 //
 // dir returns nil if no information is available
@@ -402,6 +408,8 @@ func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	return dirs, nil
 }
 
+// ------ drives --------------------------------
+
 // get information about a user drive from the database
 //
 // drive returns nil if no information is available
@@ -474,7 +482,7 @@ func (q *Query) GetDriveID(userID string) (string, error) {
 	err := q.Conn.QueryRow(FindUsersDriveIDQuery, userID).Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
 		return "", fmt.Errorf("failed to query: %v", err)
-	} else if err == sql.ErrNoRows || id == "" {
+	} else if err == sql.ErrNoRows {
 		log.Printf("no drive associated with user %v", userID)
 		return "", nil
 	}

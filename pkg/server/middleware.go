@@ -27,7 +27,6 @@ func ContentTypeJson(h http.Handler) http.Handler {
 func NewFileCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// get raw file info from request header
 		fileToken := r.Header.Get("Authorization")
 		fileInfo, err := tokenValidator.Verify(fileToken)
 		if err != nil {
@@ -50,7 +49,6 @@ func NewFileCtx(h http.Handler) http.Handler {
 func NewUserCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// get raw file info from request header
 		userToken := r.Header.Get("Authorization")
 		userInfo, err := tokenValidator.Verify(userToken)
 		if err != nil {
@@ -120,7 +118,10 @@ func AuthUserHandler(h http.Handler) http.Handler {
 		}
 		user, err := AuthenticateUser(authReq)
 		if err != nil {
-			msg := fmt.Sprintf("failed to get authenticated user: %v", err)
+			// TODO: handle error more explicitly. need to
+			// map return codes to failures; could be client side
+			// or server side.
+			msg := fmt.Sprintf("failed to authenticate user: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}

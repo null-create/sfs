@@ -47,18 +47,6 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("not implemented yet :("))
 }
 
-/*
-NOTE: r *http.Request contains a context field, which
-can be populated using context middleware. if context
-middleware is successful, then we can retrieve values
-like this:
-
-ctx := r.Context()
-
-see: https://pkg.go.dev/net/http#Request.Context
-
-*/
-
 // -------- users (admin only) -----------------------------------------
 
 // add a new user and drive to sfs instance. user existance and
