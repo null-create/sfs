@@ -85,6 +85,10 @@ func NewDrive(driveID string, ownerName string, ownerID string, rootPath string,
 	}
 }
 
+func NewEmptyDrive() *Drive {
+	return &Drive{}
+}
+
 func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }

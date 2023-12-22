@@ -292,8 +292,12 @@ func (d *Directory) Unlock(password string) bool {
 // updates internal file map and file's sync time
 func (d *Directory) addFile(file *File) {
 	if _, exists := d.Files[file.ID]; !exists {
+		file.DirID = d.ID
+		// NOTE: may need to change this since it changes ownership ID's.
+		// need to see if this is necessary.
+		file.OwnerID = d.OwnerID
+		file.LastSync = time.Now().UTC()
 		d.Files[file.ID] = file
-		d.Files[file.ID].LastSync = time.Now().UTC()
 		log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
 	} else {
 		log.Printf("[INFO] file %s (%s) already exists", file.Name, file.ID)
@@ -677,7 +681,7 @@ func walkD(dir *Directory, dirID string) *Directory {
 WalkDs() recursively traverses sub directories starting at a
 given directory (or root) constructing a map of all sub directories.
 
-Returns nil if nothing is not found
+Returns an empty map if nothing is not found
 */
 func (d *Directory) WalkDs() map[string]*Directory {
 	return walkDs(d, make(map[string]*Directory))
@@ -686,17 +690,17 @@ func (d *Directory) WalkDs() map[string]*Directory {
 func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
 	if len(dir.Dirs) == 0 {
 		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
-		return nil
+		return dirMap
 	}
 	for _, subDir := range dir.Dirs {
 		if _, exists := dirMap[subDir.ID]; !exists {
 			dirMap[subDir.ID] = subDir
 		}
-		if dirs := walkDs(subDir, dirMap); dirs != nil {
-			return dirs
+		if dirMap := walkDs(subDir, dirMap); dirMap != nil {
+			return dirMap
 		}
 	}
-	return nil
+	return dirMap
 }
 
 func buildSync(dir *Directory, idx *SyncIndex) *SyncIndex {

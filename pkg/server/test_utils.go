@@ -152,14 +152,9 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-	moreFiles := make([]*svc.File, 0, 10)
-	for i := 0; i < 10; i++ {
-		fname := fmt.Sprintf("tmp-%d.txt", i)
-		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(1000))
-		if err != nil {
-			Fatal(t, err)
-		}
-		moreFiles = append(moreFiles, f)
+	moreFiles, err := MakeABunchOfTxtFiles(10, sd.Path)
+	if err != nil {
+		Fatal(t, err)
 	}
 
 	// build the directories
@@ -187,7 +182,6 @@ func MakeTmpDirsWithPath(t *testing.T, path string) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-
 	tmpRoot.AddFiles(files)
 
 	// add a subdirectory also with files

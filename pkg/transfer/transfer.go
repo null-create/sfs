@@ -116,9 +116,9 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	b, err := httputil.DumpResponse(resp, true)
 	if err != nil {
 		log.Printf("[WARNING] failed to parse http response: %v", err)
-		return nil
+	} else {
+		log.Printf("[INFO] \n%v\n", string(b))
 	}
-	log.Printf("[INFO] \n%v\n", string(b))
 	return nil
 }
 
@@ -126,11 +126,11 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 //
 // intended to run in its own goroutine.
 // download a known file that is only on the server, and is new to the client
-func (t *Transfer) Download(destPath string, fileURL string) error {
+func (t *Transfer) Download(destPath string, srcURL string) error {
 	// TODO: prepare a specific request for downloads?
 
 	// attempt to retrieve the file from the server
-	resp, err := t.Client.Get(fileURL)
+	resp, err := t.Client.Get(srcURL)
 	if err != nil {
 		return fmt.Errorf("failed to execute http request: %v", err)
 	}

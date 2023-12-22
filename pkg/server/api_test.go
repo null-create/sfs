@@ -10,11 +10,16 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/sfs/pkg/transfer"
 )
 
 const LocalHost = "http://localhost:8080"
+
+// NOTE: this endpoint was pulled straight from the DB and might not always
+// work. may have to manually update if needed.
+const ServerFile = "http://localhost:8080/v1/files/i/4e539b7b-9ed7-11ee-aef3-0a0027000014"
 
 func TestGetAllFileInfoAPI(t *testing.T) {
 	BuildEnv(true)
@@ -86,7 +91,11 @@ func TestNewFileAPI(t *testing.T) {
 	// transfer file
 	log.Print("[TEST] uploading file...")
 	transfer := transfer.NewTransfer(8080)
-	if err := transfer.Upload(http.MethodPost, file, fmt.Sprint(LocalHost, "/v1/files/new")); err != nil {
+	if err := transfer.Upload(
+		http.MethodPost,
+		file,
+		fmt.Sprint(LocalHost, "/v1/files/new"),
+	); err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
 	}
@@ -115,10 +124,8 @@ func TestGetSingleFileInfoAPI(t *testing.T) {
 
 	// attempt to retrieve file info about one file from the server
 	log.Printf("[TEST] retrieving test file data...")
-	// NOTE: this endpoint was pulled straight from the DB and might not always
-	// work. may have to manually update if needed.
 	client := new(http.Client)
-	res, err := client.Get("http://localhost:8080/v1/files/i/4e539b7b-9ed7-11ee-aef3-0a0027000014")
+	res, err := client.Get(ServerFile)
 	if err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
@@ -140,9 +147,10 @@ func TestGetSingleFileInfoAPI(t *testing.T) {
 	log.Printf("[TEST] response code: %d", res.StatusCode)
 	b, err := httputil.DumpResponse(res, true)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		log.Printf("[TEST] failed to parse response : %v", err)
+	} else {
+		log.Printf("[TEST] response: %v", string(b))
 	}
-	log.Printf("[TEST] response: %v", string(b))
 
 	log.Print("[TEST] shutting down test server...")
 	shutDown <- true
@@ -156,7 +164,7 @@ func TestFileGetAPI(t *testing.T) {
 	// so we can add the test file directly to the db ahead of time
 	testSvc, err := Init(false, false)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to initialize test service: %v", err))
 	}
 
 	// create tmp test drive. we'll need this
@@ -164,7 +172,7 @@ func TestFileGetAPI(t *testing.T) {
 	// root to be found in the database in order to retrieve it
 	tmpDrive := MakeTmpDriveWithPath(t, testSvc.UserDir)
 	if err := testSvc.AddDrive(tmpDrive); err != nil {
-		Fail(t, testSvc.UserDir, err)
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to create test drive: %v", err))
 	}
 
 	// pick a file from the tmp drive to download
@@ -175,8 +183,12 @@ func TestFileGetAPI(t *testing.T) {
 	file := files[RandInt(len(files)-1)]
 
 	// make sure this file is in the db
-	if err := testSvc.AddFile(tmpDrive.OwnerID, tmpDrive.Root.ID, file); err != nil {
-		Fail(t, testSvc.UserDir, err)
+	testFile, err := testSvc.Db.GetFile(file.ID)
+	if err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to add test file: %v", err))
+	}
+	if testFile == nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("test file was not found in database"))
 	}
 
 	// ---- start server
@@ -195,12 +207,15 @@ func TestFileGetAPI(t *testing.T) {
 
 	// contact the server
 	log.Print("[TEST] attempting to retrieve file via its API endpoint...")
-	client := new(http.Client)
+	client := &http.Client{
+		Timeout: 600 * time.Second,
+	}
 	res, err := client.Get(file.Endpoint)
 	if err != nil {
 		shutDown <- true
-		Fail(t, testSvc.UserDir, err)
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
 	}
+
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)
@@ -216,12 +231,6 @@ func TestFileGetAPI(t *testing.T) {
 
 	// get file info from response body
 	log.Printf("[TEST] response code: %d", res.StatusCode)
-	b, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		log.Printf("[TEST] failed to dump response body: %v", err)
-	} else {
-		log.Printf("[TEST] response: %s", string(b))
-	}
 	defer res.Body.Close()
 
 	// download file and compare contents against original

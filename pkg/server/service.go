@@ -470,6 +470,7 @@ func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 		log.Printf("[INFO] drive %s not found", driveID)
 		return nil, nil
 	}
+	drv.Root = s.Populate(drv.Root)
 	return drv, nil
 }
 
@@ -762,7 +763,7 @@ func (s *Service) Populate(root *svc.Directory) *svc.Directory {
 	}
 	if root.IsNil() {
 		log.Printf(
-			"[WARNING] can't traverse directory with emptyr or nil maps: \nfiles=%v dirs=%v",
+			"[WARNING] can't traverse directory with empty or nil maps: \nfiles=%v dirs=%v",
 			root.Files, root.Dirs,
 		)
 		return nil
@@ -789,12 +790,18 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 		}
 		// add directory then recurse
 		if item.IsDir() {
+			// TODO: make sure subDir's Dir map is initialized!
 			subDir, err := s.Db.GetDirectoryByName(item.Name())
 			if err != nil {
 				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
 				continue
 			}
 			if subDir == nil {
+				continue // not found
+			}
+			// confirm this belongs to the correct owner.
+			if subDir.OwnerID != dir.OwnerID {
+				log.Printf("[WARNING] directory owner ID mismatch. orig: %v, new: %v", dir.OwnerID, subDir.OwnerID)
 				continue
 			}
 			subDir.Parent = dir
@@ -809,7 +816,13 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
 				continue
 			}
+
 			if file == nil {
+				continue // not found
+			}
+			// confirm this belongs to the correct owner.
+			if file.OwnerID != dir.OwnerID {
+				log.Printf("[WARNING] file owner ID mismatch. orig: %v, new: %v", dir.OwnerID, file.OwnerID)
 				continue
 			}
 			dir.AddFile(file)
