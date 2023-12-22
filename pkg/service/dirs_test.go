@@ -210,6 +210,10 @@ func TestWalk(t *testing.T) {
 	if len(files) == 0 || files == nil {
 		Fail(t, GetTestingDir(), fmt.Errorf("no test files found"))
 	}
+	dirs := items.GetSubDirs()
+	if len(dirs) == 0 || dirs == nil {
+		Fail(t, GetTestingDir(), fmt.Errorf("no test directories found"))
+	}
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
