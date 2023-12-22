@@ -180,7 +180,7 @@ func TestFileGetAPI(t *testing.T) {
 	if len(files) == 0 {
 		Fail(t, testSvc.UserDir, fmt.Errorf("no test files found"))
 	}
-	file := files[RandInt(len(files)-1)]
+	testFile := files[RandInt(len(files)-1)]
 
 	// ---- start server
 
@@ -201,7 +201,7 @@ func TestFileGetAPI(t *testing.T) {
 	client := &http.Client{
 		Timeout: 600 * time.Second,
 	}
-	res, err := client.Get(file.Endpoint)
+	res, err := client.Get(testFile.Endpoint)
 	if err != nil {
 		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
@@ -229,7 +229,7 @@ func TestFileGetAPI(t *testing.T) {
 	}
 	defer res.Body.Close()
 
-	// download file and compare contents against original
+	// download file
 	log.Print("[TEST] downloading test file...")
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, res.Body)
@@ -247,6 +247,19 @@ func TestFileGetAPI(t *testing.T) {
 	defer tmpFile.Close()
 
 	// ----- verify file contents
+
+	tmpFileData := make([]byte, 0)
+	_, err = tmpFile.Read(tmpFileData)
+	if err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to read test file data: %v", err))
+	}
+	if len(tmpFileData) == 0 {
+		Fail(t, testSvc.UserDir, fmt.Errorf("no test file data found"))
+	}
+	testFile.Load()
+	if len(tmpFileData) != len(testFile.Content) {
+		Fail(t, testSvc.UserDir, fmt.Errorf("different byte counts. orig = %d, new = %d", testFile.Size(), len(tmpFileData)))
+	}
 
 	// ----- clean up
 
