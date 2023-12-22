@@ -553,7 +553,7 @@ with their own ID's, and will need to be treated as individual items rather than
 ephemeral ones.
 
 In other words, just use this *once* during the initial set up
-of a drive in a directory that already has (or may have) files and subdirectories.
+of a drive in a directory that already has files and subdirectories.
 */
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
@@ -696,9 +696,7 @@ func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory 
 		if _, exists := dirMap[subDir.ID]; !exists {
 			dirMap[subDir.ID] = subDir
 		}
-		if dirMap := walkDs(subDir, dirMap); dirMap != nil {
-			return dirMap
-		}
+		return walkDs(subDir, dirMap)
 	}
 	return dirMap
 }
