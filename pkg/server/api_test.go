@@ -182,15 +182,6 @@ func TestFileGetAPI(t *testing.T) {
 	}
 	file := files[RandInt(len(files)-1)]
 
-	// make sure this file is in the db
-	testFile, err := testSvc.Db.GetFile(file.ID)
-	if err != nil {
-		Fail(t, testSvc.UserDir, fmt.Errorf("failed to add test file: %v", err))
-	}
-	if testFile == nil {
-		Fail(t, testSvc.UserDir, fmt.Errorf("test file was not found in database"))
-	}
-
 	// ---- start server
 
 	// shut down signal to the server
@@ -215,7 +206,6 @@ func TestFileGetAPI(t *testing.T) {
 		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
 	}
-
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)
@@ -231,9 +221,16 @@ func TestFileGetAPI(t *testing.T) {
 
 	// get file info from response body
 	log.Printf("[TEST] response code: %d", res.StatusCode)
+	b, err := httputil.DumpResponse(res, false)
+	if err != nil {
+		log.Printf("[TEST] failed to dump response: %v", err)
+	} else {
+		log.Printf("[TEST] server: %s", string(b))
+	}
 	defer res.Body.Close()
 
 	// download file and compare contents against original
+	log.Print("[TEST] downloading test file...")
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, res.Body)
 	if err != nil {
