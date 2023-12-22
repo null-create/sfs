@@ -104,17 +104,6 @@ func (f *File) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (f *File) AddDirID(dirID string) {
-	if !f.Protected {
-		if f.DirID == "" {
-			log.Printf("[WARNING] file (id=%s) had no directory ID attached to it", f.ID)
-		}
-		f.DirID = dirID
-	} else {
-		log.Printf("[INFO] file (id=%s) is protected", f.ID)
-	}
-}
-
 // ----------- simple security features
 
 func (f *File) Lock(password string) {
@@ -136,7 +125,7 @@ func (f *File) Unlock(password string) {
 func (f *File) ChangePassword(password string, newPassword string) {
 	if password == f.Key {
 		f.Key = newPassword
-		log.Print("[INFO] password updated!")
+		log.Printf("[INFO] %s (id=%s) password updated!", f.Name, f.ID)
 	} else {
 		log.Print("[INFO] wrong password")
 	}
@@ -164,7 +153,7 @@ func (f *File) Load() {
 		}
 		f.Content = data
 	} else {
-		log.Printf("[INFO] file (id=%s) is protected", f.ID)
+		log.Printf("[INFO] %s is protected", f.Name)
 	}
 }
 
@@ -189,7 +178,7 @@ func (f *File) Save(data []byte) error {
 		}
 		f.LastSync = time.Now().UTC()
 	} else {
-		log.Print("[INFO] file is protected")
+		log.Printf("[INFO] %s is protected", f.Name)
 	}
 	return nil
 }
@@ -199,9 +188,9 @@ func (f *File) Clear() error {
 	if !f.Protected {
 		f.Content = nil
 		f.Content = make([]byte, 0)
-		log.Printf("[INFO] in-memory file content cleared (external file not altered)")
+		log.Printf("[INFO] %s in-memory content cleared (external file not altered)", f.Name)
 	} else {
-		log.Print("[INFO] file is protected")
+		log.Printf("[INFO] %s is protected", f.Name)
 	}
 	return nil
 }
@@ -252,7 +241,7 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 		return "", err
 	}
 
-	checksum := fmt.Sprintf("%x", h.Sum(nil))
+	checksum := string(h.Sum(nil))
 	return checksum, nil
 }
 
