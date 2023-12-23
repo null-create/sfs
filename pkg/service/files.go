@@ -133,6 +133,7 @@ func (f *File) ChangePassword(password string, newPassword string) {
 
 // ----------- I/O
 
+// load file contents into memory
 func (f *File) Load() {
 	if f.Path == "" {
 		log.Fatalf("no path specified")

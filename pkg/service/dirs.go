@@ -293,9 +293,6 @@ func (d *Directory) Unlock(password string) bool {
 func (d *Directory) addFile(file *File) {
 	if _, exists := d.Files[file.ID]; !exists {
 		file.DirID = d.ID
-		// NOTE: may need to change this since it changes ownership ID's.
-		// need to see if this is necessary.
-		file.OwnerID = d.OwnerID
 		file.LastSync = time.Now().UTC()
 		d.Files[file.ID] = file
 		log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
@@ -427,9 +424,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.Parent = d
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
-		log.Printf("[DEBUG] dir %s (%s) added", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) added", dir.DirName, dir.ID)
 	} else {
-		return fmt.Errorf("dir %s (%s) already exists", dir.DirName, dir.ID)
+		return fmt.Errorf("dir %s (id=%s) already exists", dir.DirName, dir.ID)
 	}
 	return nil
 }
@@ -441,9 +438,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 // does not create physical directory.
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
-		if err := d.addSubDir(dir); err != nil {
-			return err
-		}
+		d.addSubDir(dir)
 	} else {
 		log.Printf("[DEBUG] dir %s is protected", d.DirName)
 	}
@@ -454,17 +449,15 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 // does not create physical directories.
 func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	if len(dirs) == 0 {
-		log.Printf("[DEBUG] dir list is empty")
+		log.Printf("[INFO] dir list is empty")
 		return nil
 	}
 	if !d.Protected {
 		for _, dir := range dirs {
-			if err := d.addSubDir(dir); err != nil {
-				return err
-			}
+			d.addSubDir(dir)
 		}
 	} else {
-		log.Printf("[DEBUG] directory (id=%s) is protected", d.ID)
+		log.Printf("[INFO] %s (id=%s) is protected", d.DirName, d.ID)
 	}
 	return nil
 }
@@ -477,7 +470,7 @@ func (d *Directory) removeDir(dirID string) error {
 		delete(d.Dirs, dirID)
 		log.Printf("[INFO] directory (id=%s)  removed", dirID)
 	} else {
-		log.Printf("[DEBUG] directory (id=%s) is not found", dirID)
+		log.Printf("[INFOs] directory (id=%s) is not found", dirID)
 	}
 	return nil
 }
@@ -494,9 +487,9 @@ func (d *Directory) RemoveSubDir(dirID string) error {
 		// remove from subdir map & update sync time
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("[DEBUG] directory %s deleted", dirID)
+		log.Printf("[INFO] directory %s deleted", dirID)
 	} else {
-		log.Printf("[DEBUG] directory %s is protected", dirID)
+		log.Printf("[INFO] directory %s is protected", dirID)
 	}
 	return nil
 }
@@ -509,29 +502,28 @@ func (d *Directory) RemoveSubDirs() error {
 		if err := d.Clean(d.Path); err != nil {
 			return err
 		}
-		log.Printf("[DEBUG] dir(%s) all sub directories deleted", d.ID)
+		log.Printf("[INFO] dir(%s) all sub directories deleted", d.ID)
 	} else {
-		log.Printf("[DEBUG] dir(%s) is protected. no sub directories deleted", d.ID)
+		log.Printf("[INFO] dir(%s) is protected. no sub directories deleted", d.ID)
 	}
 	return nil
 }
 
-// directly returns the subdirectory within the *current* directory.
+// directly returns the subdirectory if it exists within the *current* directory.
 func (d *Directory) GetSubDir(dirID string) *Directory {
 	if dir, ok := d.Dirs[dirID]; ok {
 		return dir
 	} else {
-		log.Printf("[DEBUG] dir(%s) not found", dirID)
+		log.Printf("[INFO] dir(%s) not found", dirID)
 		return nil
 	}
 }
 
-// returns a map[string]*Directory of all directories in the *current* directory
-//
-// does not check subdirectories
+// returns a map of all subdirectories starting from the current directory.
+// returns an empty map if nothing is not found
 func (d *Directory) GetSubDirs() map[string]*Directory {
 	if len(d.Dirs) == 0 {
-		log.Print("[DEBUG] sub directory list is empty")
+		log.Printf("[INFO] directory %s is empty", d.ID)
 		return nil
 	}
 	return d.Dirs
@@ -591,10 +583,7 @@ func walk(d *Directory) *Directory {
 		if item.IsDir() {
 			dir := NewDirectory(item.Name(), d.OwnerID, entryPath)
 			dir = walk(dir)
-			if err := d.AddSubDir(dir); err != nil {
-				log.Printf("[ERROR] could not add directory: %v", err)
-				return d
-			}
+			d.AddSubDir(dir)
 		} else {
 			file := NewFile(item.Name(), d.OwnerID, entryPath)
 			d.AddFile(file)
@@ -764,10 +753,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildUpdate(dir, idx)
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) has no files", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", dir.DirName, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -789,10 +778,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 // functions should have the following signature: func(file *File) error
 func (d *Directory) WalkO(op func(file *File) error) error {
 	if len(d.Files) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no files", d.DirName, d.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", d.DirName, d.ID)
 	}
 	if len(d.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", d.DirName, d.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", d.DirName, d.ID)
 		return nil
 	}
 	return walkO(d, op)
@@ -804,20 +793,20 @@ func walkO(dir *Directory, op func(f *File) error) error {
 			if err := op(file); err != nil {
 				// we don't exit right away because this exception may only apply
 				// to a single file.
-				log.Printf("[DEBUG] unable to run operation on %s \n%v\n continuing...", dir.DirName, err)
+				log.Printf("[INFO] unable to run operation on %s \n%v\n continuing...", dir.DirName, err)
 				continue
 			}
 		}
 	} else {
-		log.Printf("[DEBUG] dir %s (%s) has no files", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", dir.DirName, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[DEBUG] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
 		if err := walkO(subDirs, op); err != nil {
-			return fmt.Errorf("failed to walk: %v", err)
+			return err
 		}
 	}
 	return nil

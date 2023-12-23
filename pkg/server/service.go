@@ -470,7 +470,14 @@ func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 		log.Printf("[INFO] drive %s not found", driveID)
 		return nil, nil
 	}
-	drv.Root = s.Populate(drv.Root)
+	root, err := s.Db.GetDirectory(drv.RootID)
+	if err != nil {
+		return nil, err
+	}
+	if root == nil {
+		return nil, fmt.Errorf("root %s not found for drive %s", drv.RootID, drv.ID)
+	}
+	drv.Root = s.Populate(root)
 	return drv, nil
 }
 
@@ -802,14 +809,10 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 			// confirm this belongs to the correct owner.
 			if subDir.OwnerID != dir.OwnerID {
 				log.Printf("[WARNING] directory owner ID mismatch. orig: %v, new: %v", dir.OwnerID, subDir.OwnerID)
-				continue
+				// continue
 			}
-			subDir.Parent = dir
 			subDir = s.populate(subDir)
-			if err := dir.AddSubDir(subDir); err != nil {
-				log.Printf("[ERROR] could not add directory: %v", err)
-				continue
-			}
+			dir.AddSubDir(subDir)
 		} else { // add file
 			file, err := s.Db.GetFileByName(item.Name())
 			if err != nil {
@@ -823,7 +826,7 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 			// confirm this belongs to the correct owner.
 			if file.OwnerID != dir.OwnerID {
 				log.Printf("[WARNING] file owner ID mismatch. orig: %v, new: %v", dir.OwnerID, file.OwnerID)
-				continue
+				// continue
 			}
 			dir.AddFile(file)
 		}
@@ -883,9 +886,7 @@ func (s *Service) AddDir(dirID string, newDir *svc.Directory) error {
 	if err != nil {
 		return err
 	}
-	if err := destDir.AddSubDir(newDir); err != nil {
-		return err
-	}
+	destDir.AddSubDir(newDir)
 	if err := s.Db.AddDir(newDir); err != nil {
 		return err
 	}
