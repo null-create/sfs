@@ -72,7 +72,7 @@ type Directory struct {
 }
 
 // create a new root directory object. does not create physical directory.
-func NewRootDirectory(dirName string, ownerID string, rootPath string) *Directory {
+func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath string) *Directory {
 	uuid := NewUUID()
 	cfg := NewSvcCfg()
 	return &Directory{
@@ -99,7 +99,7 @@ func NewRootDirectory(dirName string, ownerID string, rootPath string) *Director
 // This is mainly because I wanted an easier way to facilitate
 // testing without having to create an entire mocked system.
 // I'm sure I won't regret this.
-func NewDirectory(dirName string, ownerID string, path string) *Directory {
+func NewDirectory(dirName string, ownerID string, driveID string, path string) *Directory {
 	uuid := NewUUID()
 	cfg := NewSvcCfg()
 	return &Directory{
@@ -550,14 +550,14 @@ of a drive in a directory that already has files and subdirectories.
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
 		log.Print("[WARNING] can't traverse directory without a path")
-		return nil
+		return d
 	}
 	if d.IsNil() {
 		log.Printf(
 			"[WARNING] can't traverse directory with nil maps: \nfiles=%v dirs=%v",
 			d.Files, d.Dirs,
 		)
-		return nil
+		return d
 	}
 	return walk(d)
 }
@@ -581,9 +581,9 @@ func walk(d *Directory) *Directory {
 			return d
 		}
 		if item.IsDir() {
-			dir := NewDirectory(item.Name(), d.OwnerID, entryPath)
-			dir = walk(dir)
-			d.AddSubDir(dir)
+			sd := NewDirectory(item.Name(), d.OwnerID, d.DriveID, entryPath)
+			sd = walk(sd)
+			d.AddSubDir(sd)
 		} else {
 			file := NewFile(item.Name(), d.OwnerID, entryPath)
 			d.AddFile(file)

@@ -10,7 +10,7 @@ import (
 )
 
 func TestQueueOrder(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testQ := NewQ()
 
@@ -43,7 +43,7 @@ func TestQueueOrder(t *testing.T) {
 }
 
 func TestBuildQueue(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
@@ -68,7 +68,7 @@ func TestBuildQueue(t *testing.T) {
 }
 
 func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
@@ -93,7 +93,7 @@ func TestBuildQWithLotsOfDifferentFiles(t *testing.T) {
 }
 
 func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {

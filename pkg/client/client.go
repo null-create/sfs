@@ -58,9 +58,10 @@ func NewClient(user *auth.User) *Client {
 	conf := ClientConfig()
 
 	// set up local client services
+	driveID := auth.NewUUID()
 	svcRoot := filepath.Join(conf.Root, conf.User)
-	root := svc.NewRootDirectory("root", conf.User, filepath.Join(svcRoot, "root"))
-	drv := svc.NewDrive(auth.NewUUID(), conf.User, user.ID, root.Path, root.ID, root)
+	root := svc.NewRootDirectory("root", conf.User, driveID, filepath.Join(svcRoot, "root"))
+	drv := svc.NewDrive(driveID, conf.User, user.ID, root.Path, root.ID, root)
 
 	// intialize client
 	c := &Client{

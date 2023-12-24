@@ -83,7 +83,7 @@ func MakeTmpDir(t *testing.T, path string) (*svc.Directory, error) {
 	if err := os.Mkdir(path, 0666); err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
 	}
-	dir := svc.NewDirectory("tmp", "me", path)
+	dir := svc.NewDirectory("tmp", "me", "some-rand-id", path)
 	return dir, nil
 }
 
@@ -101,7 +101,7 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-	tmpRoot := svc.NewRootDirectory("root", "me", filepath.Join(GetTestingDir(), "tmp"))
+	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", "some-rand-id", filepath.Join(GetTestingDir(), "tmp"))
 	tmpRoot.AddFiles(files)
 
 	// add a subdirectory with files so we can test traversal

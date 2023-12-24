@@ -12,11 +12,38 @@ import (
 // used for run-time environment variable manipulation
 type Env map[string]string
 
+// base environment which will need to be customized
+// to the user's preferences
+var BaseEnv = map[string]string{
+	"ADMIN_MODE":           "false",
+	"CLIENT":               "",
+	"CLIENT_USERNAME":      "",
+	"CLIENT_ADDRESS":       "",
+	"CLIENT_EMAIL":         "",
+	"CLIENT_ID":            "",
+	"CLIENT_NEW_SERVICE":   "true",
+	"CLIENT_PASSWORD":      "default",
+	"CLIENT_PORT":          "8080",
+	"CLIENT_ROOT":          "",
+	"CLIENT_TESTING":       "",
+	"JWT_SECRET":           "default",
+	"NEW_SERVICE":          "true",
+	"SERVER_ADDR":          "localhost:8080",
+	"SERVER_ADMIN":         "admin",
+	"SERVER_ADMIN_KEY":     "default",
+	"SERVER_PORT":          "8080",
+	"SERVER_TIMEOUT_IDLE":  "900s",
+	"SERVER_TIMEOUT_READ":  "5s",
+	"SERVER_TIMEOUT_WRITE": "10s",
+	"SERVICE_ROOT":         "",
+	"SERVICE_TEST_ROOT":    "",
+}
+
 func NewE() *Env {
 	if !HasDotEnv() {
 		log.Fatal("no .env file present")
 	}
-	return &Env{}
+	return new(Env)
 }
 
 func HasDotEnv() bool {
@@ -36,8 +63,18 @@ func HasDotEnv() bool {
 	return false
 }
 
+// create a new baseline .env file for all necessary components.
+// saves in the current working directory.
+func BuildEnv() error {
+	if err := godotenv.Write(BaseEnv, ".env"); err != nil {
+		return err
+	}
+	SetEnv(false)
+	return nil
+}
+
 // read .env file and set as environment variables
-func BuildEnv(debug bool) {
+func SetEnv(debug bool) {
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("failed to get working directory: %v", err)

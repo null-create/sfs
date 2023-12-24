@@ -50,7 +50,7 @@ func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
 }
 
 func TestMonitorWithOneFile(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
@@ -88,7 +88,7 @@ func TestMonitorWithOneFile(t *testing.T) {
 }
 
 func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
@@ -128,7 +128,7 @@ func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 }
 
 func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	fn := filepath.Join(GetTestingDir(), "tmp.txt")
 
@@ -169,7 +169,7 @@ func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 // }
 
 func TestMonitorWatchAll(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	tmp := MakeTmpDirs(t)
 

@@ -10,7 +10,7 @@ import (
 )
 
 func TestStartHandler(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	// make sure we clean the right testing directory
 	e := env.NewE()

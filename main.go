@@ -18,7 +18,7 @@ import (
 // TODO:
 // should deterime whether we're running client or server at runtime
 func main() {
-	env.BuildEnv(true)
+	env.SetEnv(true)
 	srv := server.NewServer()
 	srv.Run()
 }

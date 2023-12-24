@@ -12,7 +12,7 @@ import (
 )
 
 func TestSecurityFeatures(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDirs := MakeTestDirs(t, 2)
 	td := testDirs[0]
@@ -65,7 +65,7 @@ func TestSecurityFeatures(t *testing.T) {
 }
 
 func TestAddFiles(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	total := RandInt(10)
 	testDirs := MakeTestDirs(t, 1)
@@ -90,7 +90,7 @@ func TestAddFiles(t *testing.T) {
 }
 
 func TestRemoveFiles(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	total := RandInt(10)
 	testDirs := MakeTestDirs(t, 1)
@@ -120,10 +120,10 @@ func TestRemoveFiles(t *testing.T) {
 }
 
 func TestAddSubDir(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
-	dir1 := NewDirectory("tmp", "me", filepath.Join(GetTestingDir(), "tmp1"))
-	dir2 := NewDirectory("tmp2", "me", filepath.Join(GetTestingDir(), "tmp2"))
+	dir1 := NewDirectory("tmp", "me", "some-rand-id", filepath.Join(GetTestingDir(), "tmp1"))
+	dir2 := NewDirectory("tmp2", "me", "some-rand-id", filepath.Join(GetTestingDir(), "tmp2"))
 	if err := dir1.AddSubDir(dir2); err != nil {
 		Fatal(t, err)
 	}
@@ -136,7 +136,7 @@ func TestAddSubDir(t *testing.T) {
 }
 
 func TestAddSubDirs(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	total := RandInt(100)                // root test subdir
 	testDirs := MakeTestDirs(t, total+1) // subdirs to add + 1 for a test root
@@ -155,11 +155,11 @@ func TestAddSubDirs(t *testing.T) {
 }
 
 func TestRemoveSubDirs(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	total := RandInt(100)
 	// root test subdir
-	testRoot := NewRootDirectory("tmp", "me", GetTestingDir())
+	testRoot := NewRootDirectory("tmp", "some-rand-id", "some-rand-id", GetTestingDir())
 	// subdirs to add
 	testDirs := MakeTestDirs(t, total)
 
@@ -176,9 +176,9 @@ func TestRemoveSubDirs(t *testing.T) {
 }
 
 func TestGetDirSize(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
-	testDir := NewDirectory("testDir", "me", GetTestingDir())
+	testDir := NewDirectory("testDir", "me", "some-rand-id", GetTestingDir())
 	tf, err := MakeTestFiles(t, 1)
 	if err != nil {
 		t.Errorf("[ERROR] unable to create test files: %v", err)
@@ -197,7 +197,7 @@ func TestGetDirSize(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	// make test files with no test object
 	MakeTmpDirs(t)
@@ -221,7 +221,7 @@ func TestWalk(t *testing.T) {
 }
 
 func TestWalkF(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	d := MakeTmpDirs(t)
 	fileToFind := NewFile("findMe", "bill", filepath.Join(d.Path, "findMe"))
@@ -238,14 +238,14 @@ func TestWalkF(t *testing.T) {
 }
 
 func TestWalkD(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testingDir := GetTestingDir()
-	testDir1 := NewDirectory("testDir1", "me", filepath.Join(testingDir, "testDir1"))
-	testDir2 := NewDirectory("testDir2", "me", filepath.Join(testingDir, "testDir2"))
-	testDir3 := NewDirectory("testDir3", "me", filepath.Join(testingDir, "testDir3"))
-	testDir4 := NewDirectory("testDir4", "me", filepath.Join(testingDir, "testDir4"))
-	testDir5 := NewDirectory("testDir5", "me", filepath.Join(testingDir, "testDir5"))
+	testDir1 := NewDirectory("testDir1", "me", "some-rand-id", filepath.Join(testingDir, "testDir1"))
+	testDir2 := NewDirectory("testDir2", "me", "some-rand-id", filepath.Join(testingDir, "testDir2"))
+	testDir3 := NewDirectory("testDir3", "me", "some-rand-id", filepath.Join(testingDir, "testDir3"))
+	testDir4 := NewDirectory("testDir4", "me", "some-rand-id", filepath.Join(testingDir, "testDir4"))
+	testDir5 := NewDirectory("testDir5", "me", "some-rand-id", filepath.Join(testingDir, "testDir5"))
 
 	idToFind := testDir3.ID
 
@@ -271,7 +271,7 @@ func TestWalkD(t *testing.T) {
 }
 
 func TestWalkS(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	tmpDir := MakeTmpDirs(t)
 
@@ -293,7 +293,7 @@ func TestWalkS(t *testing.T) {
 }
 
 func TestWalkU(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	tmpDir := MakeTmpDirs(t)
 
@@ -324,7 +324,7 @@ func TestWalkU(t *testing.T) {
 }
 
 func TestWalkO(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	tmpDir := MakeTmpDirs(t)
 
@@ -346,7 +346,7 @@ func TestWalkO(t *testing.T) {
 }
 
 func TestWalkFiles(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	tmpDir := MakeTmpDirs(t)
 	files := tmpDir.WalkFs()

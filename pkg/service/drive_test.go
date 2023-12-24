@@ -20,7 +20,7 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	}
 
 	testFiles1 := MakeTestDirFiles(t, 5, driveRoot)
-	testRoot := NewRootDirectory("testRoot", "me", driveRoot)
+	testRoot := NewRootDirectory("testRoot", "some-rand-id", "some-rand-id", driveRoot)
 	testRoot.AddFiles(testFiles1)
 
 	testDrive := NewDrive(NewUUID(), "testDrive", "me", driveRoot, NewUUID(), testRoot)
@@ -32,7 +32,7 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	}
 
 	testFiles2 := MakeTestDirFiles(t, 5, sdPath)
-	testDirectory := NewDirectory("test-dir", "me", sdPath)
+	testDirectory := NewDirectory("test-dir", "me", "some-rand-id", sdPath)
 	testDirectory.AddFiles(testFiles2)
 
 	testRoot.AddSubDir(testDirectory)
@@ -43,12 +43,12 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 // ----------------------------------------------------------------
 
 func TestDriveSecurityFeatures(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDir := GetTestingDir()
 	tmpDir := filepath.Join(testDir, "testDir")
 
-	testRoot := NewRootDirectory("testRoot", "me", filepath.Join(tmpDir, "testRoot"))
+	testRoot := NewRootDirectory("testRoot", "some-rand-id", "some-rand-id", filepath.Join(tmpDir, "testRoot"))
 	testDrive := NewDrive(NewUUID(), "test-drive", "me", tmpDir, NewUUID(), testRoot)
 
 	testDrive.Lock("default")
@@ -70,7 +70,7 @@ func TestDriveSecurityFeatures(t *testing.T) {
 }
 
 func TestPopulateDrive(t *testing.T) {
-	env.BuildEnv(true)
+	env.SetEnv(true)
 
 	// make test files without creating file/dir objects
 	MakeTmpDirs(t)

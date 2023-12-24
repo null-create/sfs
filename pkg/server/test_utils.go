@@ -124,7 +124,7 @@ func MakeTmpDir(t *testing.T, path string) (*svc.Directory, error) {
 	if err := os.Mkdir(path, 0666); err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
 	}
-	dir := svc.NewDirectory("tmp", "me", path)
+	dir := svc.NewDirectory("tmp", "me", "some-rand-ide", path)
 	return dir, nil
 }
 
@@ -144,7 +144,7 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-	tmpRoot := svc.NewRootDirectory("root", "me", filepath.Join(GetTestingDir(), "tmp"))
+	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", "some-rand-id", filepath.Join(GetTestingDir(), "tmp"))
 	tmpRoot.AddFiles(files)
 
 	// add a subdirectory with files so we can test traversal
@@ -177,7 +177,7 @@ func MakeTmpDirsWithPath(t *testing.T, path string) *svc.Directory {
 	}
 
 	// create tmp service root directory with some files
-	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", filepath.Join(path, "tmp"))
+	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", "some-rand-id", filepath.Join(path, "tmp"))
 	files, err := MakeABunchOfTxtFiles(10, d.Path)
 	if err != nil {
 		Fatal(t, err)
@@ -221,15 +221,17 @@ func MakeTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
 // make a tmp empty drive in the testing directory.
 // doesn't physical create test files or directories.
 func MakeEmptyTmpDrive(t *testing.T) *svc.Drive {
-	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), GetTestingDir())
-	testDrv := svc.NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
+	tmpDriveID := auth.NewUUID()
+	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), tmpDriveID, GetTestingDir())
+	testDrv := svc.NewDrive(tmpDriveID, "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
 	return testDrv
 }
 
 // make a tmp empty drive with a specified path.
 // doesn't physical create test files or directories.
 func MakeEmptyTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
-	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), path)
-	testDrv := svc.NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, path, tmpRoot.ID, tmpRoot)
+	tmpDriveID := auth.NewUUID()
+	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), tmpDriveID, path)
+	testDrv := svc.NewDrive(tmpDriveID, "me", tmpRoot.OwnerID, path, tmpRoot.ID, tmpRoot)
 	return testDrv
 }

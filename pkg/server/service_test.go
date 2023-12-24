@@ -156,18 +156,18 @@ func TestCreateNewService(t *testing.T) {
 }
 
 func TestAllocateDrive(t *testing.T) {
-	svc := &Service{
+	testSvc := &Service{
 		SvcRoot: GetTestingDir(),
 		UserDir: filepath.Join(GetTestingDir(), "users"),
 	}
 
 	// create a temp "users" directory
-	if err := os.Mkdir(svc.UserDir, 0644); err != nil {
+	if err := os.Mkdir(testSvc.UserDir, 0644); err != nil {
 		t.Fatalf("%v", err)
 	}
 
 	// allocate a new tmp drive
-	d, err := AllocateDrive("test", "me", svc.SvcRoot)
+	d, err := svc.AllocateDrive("test", "me", testSvc.SvcRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -229,7 +229,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	assert.Equal(t, testUsr.ID, u.ID)
 
 	// get a tmp drive to check that things have been removed correctly
-	testDrv, err := testSvc.FindDrive(testUsr.DriveID)
+	testDrv, err := testSvc.LoadDrive(testUsr.DriveID)
 	if err != nil {
 		Fail(t, testFolder, err)
 	}
@@ -301,7 +301,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 func TestDiscover(t *testing.T) {
 	BuildEnv(true)
 
-	testSvc, err := Init(false, false)
+	testSvc, err := Init(true, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -338,7 +338,7 @@ func TestPopulate(t *testing.T) {
 	tmpDrive.Root = testSvc.Discover(tmpDrive.Root)
 
 	// create a new root directory and populate
-	testRoot := svc.NewRootDirectory("test", "some-rand-id", filepath.Join(GetTestingDir(), "tmp"))
+	testRoot := svc.NewRootDirectory("test", "some-rand-id", tmpDrive.Root.ID, filepath.Join(GetTestingDir(), "tmp"))
 	testRoot = testSvc.Populate(testRoot)
 
 	testRootFiles := testRoot.WalkFs()

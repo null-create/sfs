@@ -14,7 +14,7 @@ const (
 )
 
 func TestFileIO(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	total := RandInt(5)
 	testFiles, err := MakeTestFiles(t, total)
@@ -51,7 +51,7 @@ func TestFileIO(t *testing.T) {
 }
 
 func TestGetFileSize(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	total := RandInt(5)
 	testFiles, err := MakeTestFiles(t, total)
@@ -72,7 +72,7 @@ func TestGetFileSize(t *testing.T) {
 }
 
 func TestFileSecurityFeatures(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testFiles, err := MakeTestFiles(t, 1)
 	if err != nil {
@@ -119,7 +119,7 @@ func TestFileSecurityFeatures(t *testing.T) {
 }
 
 func TestFileChecksum(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testFiles, err := MakeTestFiles(t, 1)
 	if err != nil {

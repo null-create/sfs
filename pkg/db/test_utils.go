@@ -36,7 +36,7 @@ func GetTestingDir() string {
 
 func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *auth.User) {
 	tempDir := svc.NewDirectory(
-		"bill", "bill buttlicker", filepath.Join(testDir, "bill"),
+		"bill", "bill buttlicker", "some-rand-id", filepath.Join(testDir, "bill"),
 	)
 	tempDrive := svc.NewDrive(
 		svc.NewUUID(), "bill", svc.NewUUID(), filepath.Join(testDir, "bill"), tempDir.ID, tempDir,

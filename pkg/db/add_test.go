@@ -13,7 +13,7 @@ import (
 )
 
 func TestAddAndFindFile(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDir := GetTestingDir()
 
@@ -49,7 +49,7 @@ func TestAddAndFindFile(t *testing.T) {
 }
 
 func TestAddAndFindMultipleFiles(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDir := GetTestingDir()
 
@@ -94,7 +94,7 @@ func TestAddAndFindMultipleFiles(t *testing.T) {
 }
 
 func TestAddAndFindDirectory(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDir := GetTestingDir()
 
@@ -123,7 +123,7 @@ func TestAddAndFindDirectory(t *testing.T) {
 }
 
 func TestAddAndFindDrive(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDir := GetTestingDir()
 
@@ -151,7 +151,7 @@ func TestAddAndFindDrive(t *testing.T) {
 }
 
 func TestAddAndFindUser(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	testDir := GetTestingDir()
 

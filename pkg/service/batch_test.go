@@ -12,7 +12,7 @@ import (
 const TEST_MAX = 1e+6
 
 func TestBatchLimit(t *testing.T) {
-	env.BuildEnv(true)
+	env.SetEnv(true)
 
 	d, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {
@@ -47,7 +47,7 @@ func TestBatchLimit(t *testing.T) {
 }
 
 func TestBatchWithUnevenFileSizes(t *testing.T) {
-	env.BuildEnv(true)
+	env.SetEnv(true)
 
 	_, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
 	if err != nil {

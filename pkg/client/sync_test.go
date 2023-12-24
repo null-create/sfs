@@ -12,7 +12,7 @@ import (
 
 func TestGetServerSyncIndex(t *testing.T) {
 	// build env and get our temp working directory
-	env.BuildEnv(true)
+	env.SetEnv(true)
 	e := env.NewE()
 	tmpDir, err := e.Get("CLIENT_ROOT")
 	if err != nil {

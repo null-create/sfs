@@ -442,6 +442,46 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	return d, nil
 }
 
+// return all drives from the database
+func (q *Query) GetDrives() ([]*svc.Drive, error) {
+	q.WhichDB("drives")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindAllDrivesQuery)
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	drives := make([]*svc.Drive, 0)
+	for rows.Next() {
+		drive := new(svc.Drive)
+		drive.Root = new(svc.Directory)
+		drive.SyncIndex = new(svc.SyncIndex)
+		if err := rows.Scan(
+			&drive.ID,
+			&drive.OwnerName,
+			&drive.OwnerID,
+			&drive.TotalSize,
+			&drive.UsedSpace,
+			&drive.FreeSpace,
+			&drive.Protected,
+			&drive.Key,
+			&drive.AuthType,
+			&drive.DriveRoot,
+			&drive.RootID,
+		); err != nil {
+			return nil, fmt.Errorf("[ERROR] unable to query for drive: %v", err)
+		}
+		drives = append(drives, drive)
+	}
+	if len(drives) == 0 {
+		log.Print("[INFO] no drives found")
+	}
+	return drives, nil
+}
+
 // find a drive using the given userID.
 // drive will be nil if not found.
 func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {

@@ -33,7 +33,7 @@ func buildTestEnvMap() map[string]string {
 // }
 
 func TestEnvValidate(t *testing.T) {
-	BuildEnv(true)
+	SetEnv(true)
 	e := NewE()
 	assert.NotEqual(t, nil, e)
 

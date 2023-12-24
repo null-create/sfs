@@ -13,6 +13,39 @@ import (
 const MAX_SIZE float64 = 1e+9
 
 /*
+build a new privilaged drive directory for a client on the sfs server
+with base state file info for user and drive json files
+
+must be under ../svcroot/users/<username>
+
+drives should have the following structure:
+
+user/
+|---root/    <---- user files & directories live here
+|---state/
+|   |---userID-d-m-y-hh-mm-ss.json
+|   |---driveID-d-m-y-hh-mm-ss.json
+*/
+func AllocateDrive(name string, ownerID string, svcRoot string) (*Drive, error) {
+	// new user service file paths
+	userRoot := filepath.Join(svcRoot, "users", name)
+	contentsRoot := filepath.Join(userRoot, "root")
+	stateFileDir := filepath.Join(userRoot, "state")
+	// make each directory
+	dirs := []string{userRoot, contentsRoot, stateFileDir}
+	for _, d := range dirs {
+		if err := os.Mkdir(d, 0644); err != nil {
+			return nil, err
+		}
+	}
+	// gen root and drive objects
+	driveID := NewUUID()
+	rt := NewRootDirectory(name, ownerID, driveID, contentsRoot)
+	drv := NewDrive(driveID, name, ownerID, userRoot, rt.ID, rt)
+	return drv, nil
+}
+
+/*
 "Drives" are just abstractions of a protrected root directory,
 managed by Simple File Sync, containing backups of a user's files and other subdirectories
 to facilitate synchronization across multiple devices.
@@ -49,6 +82,7 @@ type Drive struct {
 	AuthType  string `json:"auth_type"`
 
 	// location of the drive on physical server filesystem
+	// i.e., ...sfs/root/users/this-drive
 	DriveRoot string `json:"drive_root"`
 
 	// User's root directory & sync index
@@ -85,10 +119,6 @@ func NewDrive(driveID string, ownerName string, ownerID string, rootPath string,
 	}
 }
 
-func NewEmptyDrive() *Drive {
-	return &Drive{}
-}
-
 func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }
@@ -102,13 +132,14 @@ func (d *Drive) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
+// save drive state to JSON format in current directory.
 func (d *Drive) SaveState() error {
 	data, err := d.ToJSON()
 	if err != nil {
 		return err
 	}
 	fn := fmt.Sprintf("user-%s-.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
-	fp := filepath.Join(d.DriveRoot, fn)
+	fp := filepath.Join(d.DriveRoot, "state", fn)
 	return os.WriteFile(fp, data, PERMS)
 }
 
@@ -176,7 +207,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 	return nil
 }
 
-// find a file
+// find a file. returns nil if not found.
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
 		return d.Root.WalkF(fileID)
@@ -305,7 +336,7 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
 		if d.Root == nil {
-			log.Printf("[WARNING] drive (id=%s) has no root dir", d.ID)
+			log.Printf("[WARNING] drive (id=%s) has no root dir. cant traverse.", d.ID)
 			return nil
 		}
 		if d.Root.ID == dirID {
@@ -334,6 +365,7 @@ func (d *Drive) removeDir(dirID string) error {
 		if err := os.RemoveAll(dir.Path); err != nil {
 			return err
 		}
+		// this should only really apply to any non-root directory
 		if dir.Parent != nil {
 			delete(dir.Parent.Dirs, dir.ID)
 		}
@@ -344,7 +376,10 @@ func (d *Drive) removeDir(dirID string) error {
 	return nil
 }
 
-// remove a directory
+// removed a directory from the drive.
+// removes physical drive and all its children,
+// as well as deletes the directory entry from the
+// sfs filesystem.
 func (d *Drive) RemoveDir(dirID string) error {
 	if !d.Protected {
 		if err := d.removeDir(dirID); err != nil {
@@ -382,7 +417,6 @@ func (d *Drive) ClearDrive() error {
 		if err := d.Root.Clean(d.Root.Path); err != nil {
 			return err
 		}
-		d.Root.Clear(d.Root.Key)
 	} else {
 		log.Printf("[DEBUG] drive protected")
 	}

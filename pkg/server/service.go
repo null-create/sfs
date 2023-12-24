@@ -53,6 +53,10 @@ type Service struct {
 	// so this can be used for measuring disc size and executing
 	// health checks
 	Users map[string]*auth.User `json:"users"`
+
+	// map of populated drives.
+	// key == userID, val == *svc.Drive
+	Drives map[string]*svc.Drive `json:"drives"`
 }
 
 // intialize a new empty service struct
@@ -74,7 +78,9 @@ func NewService(svcRoot string) *Service {
 		Admin:     "admin",
 		AdminKey:  "default",
 
-		Users: make(map[string]*auth.User),
+		// initialize user and drives maps
+		Users:  make(map[string]*auth.User),
+		Drives: make(map[string]*svc.Drive),
 	}
 }
 
@@ -135,6 +141,17 @@ func (s *Service) cleanSfDir(sfDir string) error {
 }
 
 // ------- init ---------------------------------------
+
+// create a new SFS service with databases.
+// requires a configured .env file prior to running.
+func Build() error {
+	c := ServiceConfig()
+	_, err := SvcInit(c.SvcRoot)
+	if err != nil {
+		return fmt.Errorf("failed to initialize new SFS service: %v", err)
+	}
+	return nil
+}
 
 // initialize a new server-side sfs service from either a state file/dbs or
 // create a new service from scratch.
@@ -214,11 +231,11 @@ func loadStateFile(sfPath string) (*Service, error) {
 func loadUsers(svc *Service) (*Service, error) {
 	usrs, err := svc.Db.GetUsers()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
+		return svc, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
 	if len(usrs) == 0 {
 		log.Print("[WARNING] no users found in Users database")
-		return nil, nil
+		return svc, nil
 	}
 	// NOTE: this assumes the physical files for each
 	// user being loaded are already present. calling svc.AddUser()
@@ -229,6 +246,40 @@ func loadUsers(svc *Service) (*Service, error) {
 		} else {
 			log.Printf("[DEBUG] user %v already exists", u.ID)
 		}
+	}
+	return svc, nil
+}
+
+// loads each drive from the database. does not populate the root directory!
+// drives are only populated by a call to s.LoadDrive(driveID).
+// this allows for a "shallow" read of the drive info without having
+// to load the entire drive contents into memory for every user.
+func loadDrives(svc *Service) (*Service, error) {
+	drives, err := svc.Db.GetDrives()
+	if err != nil {
+		return svc, fmt.Errorf("failed to query database for drives: %v", err)
+	}
+	if len(drives) == 0 {
+		log.Print("[INFO] no drives found")
+		return svc, nil
+	}
+	for _, drive := range drives {
+		if _, exists := svc.Drives[drive.ID]; !exists {
+			root, err := svc.Db.GetDirectory(drive.RootID)
+			if err != nil {
+				return svc, fmt.Errorf("failed to get drive root: %v", err)
+			}
+			if root == nil {
+				return svc, fmt.Errorf("drive root directory not found")
+			}
+			drive.Root = root
+			svc.Drives[drive.ID] = drive
+		}
+	}
+	// update state file so we can make each
+	// successive service load quicker.
+	if err := svc.SaveState(); err != nil {
+		return svc, fmt.Errorf("failed to save state: %v", err)
 	}
 	return svc, nil
 }
@@ -349,8 +400,6 @@ func SvcLoad(svcPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
-	// instantiate DB connections
-	// svc.Db = db.NewQuery(svc.DbDir, true)
 	// attempt to populate from users database if state file had no user data
 	// make sure we have a path to the db dir and current state file for this session
 	if len(svc.Users) == 0 {
@@ -360,27 +409,34 @@ func SvcLoad(svcPath string) (*Service, error) {
 			return nil, fmt.Errorf("failed to retrieve user data: %v", err)
 		}
 	}
+	// load drives from the database and populate if the state file
+	// had no drive data.
+	if len(svc.Drives) == 0 {
+		log.Printf("[WARNING] state file had no drive data. attempting to populate from drives database...")
+		_, err := loadDrives(svc)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
+		}
+	}
 	return svc, nil
 }
 
 // re-initialize users map and service state file
-func (s *Service) resetUserMap() error {
+func (s *Service) resetUserMap() {
 	s.Users = nil
 	s.Users = make(map[string]*auth.User)
-	if err := os.Remove(s.StateFile); err != nil {
-		return fmt.Errorf("failed to remove state file: %v", err)
-	}
-	if err := s.SaveState(); err != nil {
-		return fmt.Errorf("failed to save state file: %v", err)
-	}
-	return nil
+}
+
+func (s *Service) resetDrivesMap() {
+	s.Drives = nil
+	s.Drives = make(map[string]*svc.Drive)
 }
 
 // SFS reset function to clear dbs (not delete tables, just all data),
 // reset sfs state file, and user root directory. primarily for testing.
 func (s *Service) Reset(svcPath string) error {
 	if s.AdminMode {
-		// clear databases
+		// clear all databases
 		for _, dbName := range s.Db.DBs {
 			if err := s.Db.ClearTable(dbName); err != nil {
 				return fmt.Errorf("failed to clear databases: %v", err)
@@ -392,8 +448,11 @@ func (s *Service) Reset(svcPath string) error {
 				return fmt.Errorf("failed to remove user files: %v", err)
 			}
 		}
-		if err := s.resetUserMap(); err != nil {
-			return fmt.Errorf("failed to reset user map: %v", err)
+		// reset internal data structures
+		s.resetUserMap()
+		s.resetDrivesMap()
+		if err := s.SaveState(); err != nil {
+			return fmt.Errorf("failed to save state file: %v", err)
 		}
 	} else {
 		log.Print("[INFO] must be in admin mode to reset service")
@@ -403,82 +462,201 @@ func (s *Service) Reset(svcPath string) error {
 
 // --------- drives --------------------------------
 
-/*
-build a new privilaged drive directory for a client on the sfs server
-with base state file info for user and drive json files
-
-must be under ../svcroot/users/<username>
-
-drives should have the following structure:
-
-user/
-|---meta/
-|   |---user.json
-|   |---drive.json
-|---root/    <---- user files & directories live here
-|---state/
-|   |---userID-d-m-y-hh-mm-ss.json
-*/
-func AllocateDrive(name, ownerID, svcRoot string) (*svc.Drive, error) {
-	// new user service file paths
-	allUsers := filepath.Join(svcRoot, "users")
-	userRoot := filepath.Join(allUsers, name)
-	contentsRoot := filepath.Join(userRoot, "root")
-	metaRoot := filepath.Join(userRoot, "meta")
-	// make each directory
-	dirs := []string{userRoot, contentsRoot, metaRoot}
-	for _, d := range dirs {
-		if err := os.Mkdir(d, 0644); err != nil {
-			return nil, err
-		}
-	}
-	// gen root and drive objects
-	rt := svc.NewRootDirectory(name, ownerID, contentsRoot)
-	drv := svc.NewDrive(svc.NewUUID(), name, ownerID, userRoot, rt.ID, rt)
-	return drv, nil
-}
-
-// check for whether a drive exists
+// check for whether a drive exists.
+// will also return true if the database errors out while checking
+// to avoid accidentally allocating new drive resources.
 func (s *Service) DriveExists(driveID string) bool {
-	if d, err := s.Db.GetDrive(driveID); err != nil {
-		// return true to not accidentally allocate a new drive.
-		// just because the DB errored out doesn't mean
-		// the drive or its files don't exist.
-		log.Printf("[WARNING] error getting drive: %v", err)
+	if _, exists := s.Drives[driveID]; exists {
 		return true
 	} else {
-		return d != nil // nil means not found
+		// try database
+		if d, err := s.Db.GetDrive(driveID); err != nil {
+			// return true to not accidentally allocate a new drive.
+			// just because the DB errored out doesn't mean
+			// the drive or its files don't exist.
+			log.Printf("[WARNING] error getting drive: %v", err)
+			return true
+		} else if d != nil {
+			s.Drives[d.ID] = d // add this since we didn't have it before
+			if err := s.SaveState(); err != nil {
+				log.Printf("[WARNING] error saving save while updating drive map: %v", err)
+			}
+			return true
+		}
 	}
+	return false
 }
 
-// save drive state to DB
-func (s *Service) SaveDrive(d *svc.Drive) error {
-	if err := s.Db.UpdateDrive(d); err != nil {
-		return err
+// Discover populates the given root directory with the users file and
+// sub directories, updates the database as it does so, and returns
+// the the directory object when finished.
+//
+// This should ideally be used for starting a new sfs service in a
+// users root directly that already has files and/or subdirectories.
+func (s *Service) Discover(root *svc.Directory) *svc.Directory {
+	// traverse users SFS file system and populate internal structures
+	root = root.Walk()
+	// send everything to the database
+	files := root.WalkFs()
+	for _, file := range files {
+		if err := s.Db.AddFile(file); err != nil {
+			return nil
+		}
+	}
+	dirs := root.WalkDs()
+	for _, d := range dirs {
+		if err := s.Db.AddDir(d); err != nil {
+			return nil
+		}
+	}
+	// add root directory itself
+	if err := s.Db.AddDir(root); err != nil {
+		return nil
+	}
+	return root
+}
+
+// Populate() populates a drive's root directory with all the users
+// files and subdirectories by searching the DB with the name
+// of each file or directory Populate() discoveres as it traverses the
+// users SFS filesystem.
+//
+// Note that Populate() ignores files and subdirectories it doesn't find in the
+// database as its traversing the file system. This may or may not be a good thing.
+func (s *Service) Populate(root *svc.Directory) *svc.Directory {
+	if root.Path == "" {
+		log.Print("[WARNING] can't traverse directory without a path")
+		return nil
+	}
+	if root.IsNil() {
+		log.Printf(
+			"[WARNING] can't traverse directory with empty or nil maps: \nfiles=%v dirs=%v",
+			root.Files, root.Dirs,
+		)
+		return nil
+	}
+	return s.populate(root)
+}
+
+func (s *Service) populate(dir *svc.Directory) *svc.Directory {
+	entries, err := os.ReadDir(dir.Path)
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return dir
+	}
+	if len(entries) == 0 {
+		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
+		return dir
+	}
+	for _, entry := range entries {
+		entryPath := filepath.Join(dir.Path, entry.Name())
+		item, err := os.Stat(entryPath)
+		if err != nil {
+			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			return dir
+		}
+		// add directory then recurse
+		if item.IsDir() {
+			subDir, err := s.Db.GetDirectoryByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				continue
+			}
+			if subDir == nil {
+				continue // not found
+			}
+			subDir = s.populate(subDir)
+			dir.AddSubDir(subDir)
+		} else { // add file
+			file, err := s.Db.GetFileByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				continue
+			}
+			if file == nil {
+				continue // not found
+			}
+			dir.AddFile(file)
+		}
+	}
+	return dir
+}
+
+// retrives a drive from the drive map, or nil if it doesn't exist.
+// doesn't check database. use FindDrive() for a "deeper" search.
+func (s *Service) GetDrive(driveID string) *svc.Drive {
+	if drive, exists := s.Drives[driveID]; exists {
+		return drive
 	}
 	return nil
 }
 
-// search DB for drive info, if available. returns a
-// *svc.Drive pointer if successful, nil or error otherwise
+// attempts to retrieve a drive from the drive map. if not found,
+// will check database and if a drive is found, will add it to the map,
+// update the service state file, and return the drive with the root
+// directory initalized (but not populated)
 func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
-	drv, err := s.Db.GetDrive(driveID)
+	if drive, exists := s.Drives[driveID]; exists {
+		return drive, nil
+	} else {
+		drive, err := s.Db.GetDrive(driveID)
+		if err != nil {
+			return nil, err
+		}
+		root, err := s.Db.GetDirectory(drive.RootID)
+		if err != nil {
+			return nil, err
+		}
+		drive.Root = root
+		s.Drives[drive.ID] = drive
+		if err := s.SaveState(); err != nil {
+			log.Printf("[WARNING] failed to save state while updating drive map: %v", err)
+		}
+		return drive, nil
+	}
+}
+
+// find a drive using a given user ID and populate it.
+func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
+	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
 	if err != nil {
 		return nil, err
 	}
-	if drv == nil {
-		log.Printf("[INFO] drive %s not found", driveID)
-		return nil, nil
+	if drive == nil {
+		return nil, fmt.Errorf("no drive found for user %s", userID)
 	}
-	root, err := s.Db.GetDirectory(drv.RootID)
+	// get root dir for this drive
+	root, err := s.Db.GetDirectory(drive.RootID)
 	if err != nil {
 		return nil, err
 	}
 	if root == nil {
-		return nil, fmt.Errorf("root %s not found for drive %s", drv.RootID, drv.ID)
+		return nil, fmt.Errorf("no root found for drive ID %s", drive.ID)
 	}
-	drv.Root = s.Populate(root)
-	return drv, nil
+	drive.Root = s.Populate(root)
+	return drive, nil
+}
+
+// save drive state to DB
+func (s *Service) SaveDrive(drv *svc.Drive) error {
+	if err := s.Db.UpdateDrive(drv); err != nil {
+		return fmt.Errorf("failed to update drive in database: %v", err)
+	}
+	if err := drv.SaveState(); err != nil {
+		return fmt.Errorf("failed to save drive state: %v", err)
+	}
+	return nil
+}
+
+// loads drive's root directory with and all the users
+// subdirectories and files from the database.
+func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
+	if drive, exists := s.Drives[driveID]; exists {
+		drive.Root = s.Populate(drive.Root)
+		return drive, nil
+	} else {
+		return nil, fmt.Errorf("drive %s not found", driveID)
+	}
 }
 
 // remove a drive and all its files and directories, as well
@@ -500,12 +678,19 @@ func (s *Service) RemoveDrive(driveID string) error {
 	if err := s.Db.RemoveDrive(driveID); err != nil {
 		return err
 	}
+	delete(s.Drives, driveID)
+	if err := s.SaveState(); err != nil {
+		log.Printf("[WARNING] failed to save state file: %v", err)
+	}
 	log.Printf("[INFO] drive %s removed", driveID)
 	return nil
 }
 
 // add drive and all files and subdirectoris to the service instance
 func (s *Service) AddDrive(drv *svc.Drive) error {
+	if drv.Root == nil {
+		return fmt.Errorf("drive does not have root directory")
+	}
 	// add all files and subdirectories to the database
 	files := drv.Root.WalkFs()
 	for _, f := range files {
@@ -526,6 +711,17 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	if err := s.Db.AddDir(drv.Root); err != nil {
 		return err
 	}
+	s.Drives[drv.ID] = drv
+	if err := s.SaveState(); err != nil {
+		log.Printf("[WARNING] failed to save state file: %v", err)
+	}
+	return nil
+}
+
+// runs both populate and discover, compares the results
+// and updates the drive database accordingly.
+func (s *Service) RefreshDrive(driveID string) error {
+
 	return nil
 }
 
@@ -564,7 +760,7 @@ func (s *Service) addUser(user *auth.User) error {
 	}
 
 	// allocate new drive and base service files
-	newDrive, err := AllocateDrive(user.Name, user.Name, s.SvcRoot)
+	newDrive, err := svc.AllocateDrive(user.Name, user.Name, s.SvcRoot)
 	if err != nil {
 		return fmt.Errorf("failed to allocate new drive for user %s \n%v", user.ID, err)
 	}
@@ -724,149 +920,6 @@ func (s *Service) UpdateUser(user *auth.User) error {
 	return nil
 }
 
-// ---------- drives-------------------------------------
-
-// discover populates the given root directory with the users file and
-// sub directories, updates the database as it does so, and returns
-// the the directory object when finished.
-//
-// this should ideally be used for starting a new sfs service in a
-// users root directly that already has files and/or subdirectories.
-func (s *Service) Discover(dir *svc.Directory) *svc.Directory {
-	// traverse users SFS file system and populate internal structures
-	dir = dir.Walk()
-
-	// send everything to the database
-	files := dir.WalkFs()
-	for _, file := range files {
-		if err := s.Db.AddFile(file); err != nil {
-			return nil
-		}
-	}
-	dirs := dir.WalkDs()
-	for _, d := range dirs {
-		if err := s.Db.AddDir(d); err != nil {
-			return nil
-		}
-	}
-	// add root directory itself
-	if err := s.Db.AddDir(dir); err != nil {
-		return nil
-	}
-	return dir
-}
-
-// Populate() populates a drive's root directory with all the users
-// files and subdirectories by searching the DB with the name
-// of each file or directory Populate() discoveres as it traverses the
-// users SFS filesystem.
-//
-// Note that Populate() ignores files and subdirectories it doesn't find in the
-// database as its traversing the file system. This may or may not be a good thing.
-func (s *Service) Populate(root *svc.Directory) *svc.Directory {
-	if root.Path == "" {
-		log.Print("[WARNING] can't traverse directory without a path")
-		return nil
-	}
-	if root.IsNil() {
-		log.Printf(
-			"[WARNING] can't traverse directory with empty or nil maps: \nfiles=%v dirs=%v",
-			root.Files, root.Dirs,
-		)
-		return nil
-	}
-	return s.populate(root)
-}
-
-func (s *Service) populate(dir *svc.Directory) *svc.Directory {
-	entries, err := os.ReadDir(dir.Path)
-	if err != nil {
-		log.Printf("[ERROR]: %v", err)
-		return dir
-	}
-	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
-		return dir
-	}
-	for _, entry := range entries {
-		entryPath := filepath.Join(dir.Path, entry.Name())
-		item, err := os.Stat(entryPath)
-		if err != nil {
-			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
-			return dir
-		}
-		// add directory then recurse
-		if item.IsDir() {
-			// TODO: make sure subDir's Dir map is initialized!
-			subDir, err := s.Db.GetDirectoryByName(item.Name())
-			if err != nil {
-				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
-				continue
-			}
-			if subDir == nil {
-				continue // not found
-			}
-			// confirm this belongs to the correct owner.
-			if subDir.OwnerID != dir.OwnerID {
-				log.Printf("[WARNING] directory owner ID mismatch. orig: %v, new: %v", dir.OwnerID, subDir.OwnerID)
-				// continue
-			}
-			subDir = s.populate(subDir)
-			dir.AddSubDir(subDir)
-		} else { // add file
-			file, err := s.Db.GetFileByName(item.Name())
-			if err != nil {
-				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
-				continue
-			}
-
-			if file == nil {
-				continue // not found
-			}
-			// confirm this belongs to the correct owner.
-			if file.OwnerID != dir.OwnerID {
-				log.Printf("[WARNING] file owner ID mismatch. orig: %v, new: %v", dir.OwnerID, file.OwnerID)
-				// continue
-			}
-			dir.AddFile(file)
-		}
-	}
-	return dir
-}
-
-// retrives a drive and its root directory from the DB, then uses the
-// DB to populate the drive as it recusively traverses the users SFS file system.
-func (s *Service) GetDrive(driveID string) (*svc.Drive, error) {
-	drive, err := s.Db.GetDrive(driveID)
-	if err != nil {
-		return nil, err
-	}
-	// get root dir for this drive
-	root, err := s.Db.GetDirectory(drive.RootID)
-	if err != nil {
-		return nil, err
-	}
-	drive.Root = s.Populate(root)
-	return drive, nil
-}
-
-func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
-	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
-	if err != nil {
-		return nil, err
-	}
-	if drive == nil {
-		return nil, fmt.Errorf("no drive found for user %s", userID)
-	}
-	// get root dir for this drive
-	root, err := s.Db.GetDirectory(drive.RootID)
-	if err != nil {
-		return nil, err
-	}
-	drive.Root = s.Populate(root)
-	return drive, nil
-}
-
 // --------- directories --------------------------------
 
 // find a directory in the database and populate it with
@@ -998,24 +1051,31 @@ func (s *Service) UpdateFile(userID string, fileID string, data []byte) error {
 
 // delete a file in the service. uses the users drive to delete the file.
 // removes physical file and updates database.
-func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
-	drive, err := s.Db.GetDriveByUserID(userID)
-	if err != nil {
-		return err
-	}
+func (s *Service) DeleteFile(driveID string, dirID string, fileID string) error {
+	drive := s.GetDrive(driveID)
 	if drive == nil {
-		log.Printf("[WARNING] drive not found for user %s", userID)
-		return nil
+		return fmt.Errorf("drive %s not found", driveID)
 	}
-	file, err := s.Db.GetFile(fileID)
-	if err != nil {
-		return err
+	// find file to delete
+	file := drive.GetFile(fileID)
+	if file == nil {
+		// try to get file from database before we error out
+		file, err := s.Db.GetFile(fileID)
+		if err != nil {
+			return err
+		}
+		if file == nil {
+			return fmt.Errorf("file %s not found", fileID)
+		}
 	}
 	if err := drive.RemoveFile(dirID, file); err != nil {
 		return err
 	}
 	if err := s.Db.RemoveFile(fileID); err != nil {
 		return err
+	}
+	if err := s.SaveState(); err != nil {
+		log.Printf("[WARNING] failed to save state: %v", err)
 	}
 	return nil
 }
@@ -1027,14 +1087,9 @@ func (s *Service) DeleteFile(userID string, dirID string, fileID string) error {
 // will be used as the first step in a sync operation on the client side.
 // sync index will be nil if not found.
 func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
-	// check for drive existance
-	drive, err := s.Db.GetDrive(driveID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get drive: %v", err)
-	}
+	drive := s.GetDrive(driveID)
 	if drive == nil {
-		log.Printf("[WARNING] drive %s not found", driveID)
-		return nil, nil
+		return nil, fmt.Errorf("drive %s not found", driveID)
 	}
 	// build sync index if necessary
 	if len(drive.SyncIndex.LastSync) == 0 || drive.SyncIndex == nil {

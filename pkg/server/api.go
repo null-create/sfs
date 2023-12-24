@@ -288,7 +288,7 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	// retrieve file object from the request context
 	file := r.Context().Value(File).(*svc.File)
 
-	// remove physical file, update database, and all users drive components.
+	// remove physical file, update database, and updates state file.
 	if err := a.Svc.DeleteFile(file.OwnerID, file.DirID, file.ID); err != nil {
 		msg := fmt.Sprintf("failed to delete file: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -335,8 +335,11 @@ func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// TODO: refactor this to be a single context struct
 	dirName := ctx.Value(Name).(string)
 	parentID := ctx.Value(Parent).(string)
+	driveID := ctx.Value(Drive).(string)
 	path := ctx.Value(Path).(string)
 	owner := ctx.Value(User).(string)
 
@@ -352,7 +355,7 @@ func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	dir := svc.NewDirectory(dirName, owner, path)
+	dir := svc.NewDirectory(dirName, owner, driveID, path)
 
 	// set parent to this directory
 	parent, err := a.Svc.Db.GetDirectory(parentID)
@@ -387,9 +390,9 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing drive ID", http.StatusBadRequest)
 		return
 	}
-	drive, err := a.Svc.GetDrive(driveID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to retrieve drive: %v", err), http.StatusInternalServerError)
+	drive := a.Svc.GetDrive(driveID)
+	if drive == nil {
+		http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)
 		return
 	}
 	data, err := drive.ToJSON()

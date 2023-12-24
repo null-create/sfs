@@ -100,13 +100,13 @@ func MakeTmpDir(t *testing.T, path string) (*Directory, error) {
 	if err := os.Mkdir(path, 0666); err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
 	}
-	dir := NewDirectory("tmp", "me", path)
+	dir := NewDirectory("tmp", "me", "some-rand-id", path)
 	return dir, nil
 }
 
 // make an empty tmp directory object. no physical files or directories.
 func MakeEmptyTmpDir() *Directory {
-	return NewDirectory("tmp", "me", GetTestingDir())
+	return NewDirectory("tmp", "me", "some-rand-id", GetTestingDir())
 }
 
 // create a temporary root directory with files and a subdirectory,
@@ -123,7 +123,7 @@ func MakeTmpDirs(t *testing.T) *Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-	tmpRoot := NewRootDirectory("root", "me", filepath.Join(GetTestingDir(), "tmp"))
+	tmpRoot := NewRootDirectory("root", "some-rand-id", "some-rand-id", filepath.Join(GetTestingDir(), "tmp"))
 	tmpRoot.AddFiles(files)
 
 	// add a subdirectory with files so we can test traversal
@@ -162,7 +162,7 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 	for i := 0; i < total; i++ {
 		tdName := fmt.Sprintf("%s%d", TestDirName, i)
 		tmpDirPath := filepath.Join(testingDir, tdName)
-		testDirs = append(testDirs, NewDirectory(tdName, "me", tmpDirPath))
+		testDirs = append(testDirs, NewDirectory(tdName, "me", "some-rand-id", tmpDirPath))
 	}
 	return testDirs
 }
@@ -339,7 +339,8 @@ func MakeTmpDrive(t *testing.T) *Drive {
 // make a tmp empty drive.
 // doesn't physical create test files or directories.
 func MakeEmptyTmpDrive(t *testing.T) *Drive {
-	tmpRoot := NewRootDirectory("tmp", auth.NewUUID(), GetTestingDir())
-	testDrv := NewDrive(auth.NewUUID(), "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
+	tmpDriveID := auth.NewUUID()
+	tmpRoot := NewRootDirectory("tmp", auth.NewUUID(), tmpDriveID, GetTestingDir())
+	testDrv := NewDrive(tmpDriveID, "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
 	return testDrv
 }

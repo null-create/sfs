@@ -50,7 +50,7 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Directories"), false)
 	q.Debug = true
 
-	tmpDir := svc.NewDirectory("tmp", "bill buttlicker", filepath.Join(testDir, "Directories"))
+	tmpDir := svc.NewDirectory("tmp", "bill buttlicker", "some-rand-id", filepath.Join(testDir, "Directories"))
 
 	// add temp directory
 	if err := q.AddDir(tmpDir); err != nil {

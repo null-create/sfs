@@ -41,7 +41,7 @@ func TestAddAndRemoveDir(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Directories"), false)
 	q.Debug = true
 
-	tmpDir := svc.NewDirectory("temp.txt", "bill", filepath.Join(testDir, "Directories"))
+	tmpDir := svc.NewDirectory("temp.txt", "bill", "some-rand-id", filepath.Join(testDir, "Directories"))
 
 	if err := q.AddDir(tmpDir); err != nil {
 		Fatal(t, fmt.Errorf("failed to add directory: %v", err))

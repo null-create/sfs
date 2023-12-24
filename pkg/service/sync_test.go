@@ -10,7 +10,7 @@ import (
 
 // NOTE: test is flaky
 func TestToUpdate(t *testing.T) {
-	env.BuildEnv(false)
+	env.SetEnv(false)
 
 	d := MakeTmpDirs(t)
 
