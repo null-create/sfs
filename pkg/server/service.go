@@ -616,7 +616,7 @@ func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
 	}
 }
 
-// find a drive using a given user ID and populate it.
+// find and populate a drive instance using a given user ID.
 func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
 	if err != nil {
@@ -933,23 +933,24 @@ func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
 	return dir, nil
 }
 
-// add a sub-directory to the given drive directory
-func (s *Service) AddDir(dirID string, newDir *svc.Directory) error {
-	destDir, err := s.Db.GetDirectory(dirID)
+// add a sub-directory to the given drive directory.
+// makes a physical directory for this new directory object
+// and updates the database.
+func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory) error {
+	drive, err := s.FindDrive(driveID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find drive: %v", err)
 	}
-	destDir.AddSubDir(newDir)
-	if err := s.Db.AddDir(newDir); err != nil {
-		return err
-	}
+	drive.AddSubDir(destDirID, newDir)
 	return nil
 }
 
-// remove a directory from a user's drive service.
+// remove a physical directory from a user's drive service.
+// use with caution!
+//
+// it's assumed dirID is a sub-directory within the drive, and not
+// the drives root directory itself.
 func (s *Service) RemoveDir(driveID string, dirID string) error {
-	// "root" is the user's drive directory.
-	// it's assumed dirID is a sub-directory within the drive.
 	root, err := s.Db.GetDirectory(driveID)
 	if err != nil {
 		return err
@@ -966,10 +967,13 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 		return nil
 	}
 	if err := root.RemoveSubDir(dirID); err != nil {
-		return err
+		return fmt.Errorf("failed to remove sub directory: %v", err)
 	}
 	if err := s.Db.RemoveDirectory(dirID); err != nil {
-		return err
+		return fmt.Errorf("failed to remove directory from database: %v", err)
+	}
+	if err := s.Db.UpdateDir(root); err != nil {
+		return fmt.Errorf("failed to update root directory: %v", err)
 	}
 	return nil
 }
@@ -1099,6 +1103,9 @@ func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 			return nil, err
 		}
 		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(ownerID))
+		if err := drive.SaveState(); err != nil {
+			return nil, fmt.Errorf("failed to save drive state: %v", err)
+		}
 	}
 	return drive.SyncIndex, nil
 }

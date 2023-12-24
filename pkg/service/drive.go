@@ -278,9 +278,17 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 
 // ------ directory management --------------------------------
 
+// makes a physical directory for this drive.
+func (d *Drive) MkDir(dirPath string) error {
+	return os.Mkdir(dirPath, PERMS)
+}
+
 func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 	// add sub directory to root if that's where it's supposed to be
 	if dirID == d.Root.ID {
+		if err := d.MkDir(dir.Path); err != nil {
+			return err
+		}
 		if err := d.Root.AddSubDir(dir); err != nil {
 			return err
 		}
@@ -289,25 +297,26 @@ func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 		// add the subdirectory to
 		dirs := d.Root.WalkDs()
 		if dirs == nil {
-			// add this directory to the to root since there's no
-			// sub directories available
-			if err := d.Root.AddSubDir(dir); err != nil {
-				return err
-			}
+			return fmt.Errorf("root has no subdirectories")
 		} else {
-			for _, dir := range dirs {
-				if dir.ID == dirID {
-					if err := dir.AddSubDir(dir); err != nil {
-						return err
-					}
+			if dir, exists := dirs[dirID]; exists {
+				if err := d.MkDir(dir.Path); err != nil {
+					return err
 				}
+				if err := dir.AddSubDir(dir); err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("dir not found: %v", dirID)
 			}
 		}
 	}
 	return nil
 }
 
-// add a directory within the drives root
+// add a sub directory to a directory within the drive file system.
+// creates a physical sub directory at the path assigned within
+// the directory parameter.
 func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 	if !d.Protected {
 		if err := d.addSubDir(dirID, dir); err != nil {
