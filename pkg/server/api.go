@@ -390,6 +390,7 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing drive ID", http.StatusBadRequest)
 		return
 	}
+	// returns a "shallow" read of the drive. does not populate the root directory.
 	drive := a.Svc.GetDrive(driveID)
 	if drive == nil {
 		http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)

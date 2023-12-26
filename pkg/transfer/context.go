@@ -5,6 +5,9 @@ import (
 	"log"
 )
 
+// TODO: define an interface for these contexts since they all are using the
+// same util function names
+
 // struct to use for populating context.Context
 type FileContext struct {
 	Name     string `json:"name"`
@@ -57,6 +60,36 @@ func (uctx UserContext) IsEmpty() bool {
 
 func (uctx UserContext) ToJSON() []byte {
 	data, err := json.MarshalIndent(uctx, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return data
+}
+
+type DirectoryContext struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	OwnerID string `json:"owner_id"`
+	DriveID string `json:"drive_id"`
+	Path    string `json:"path"`
+}
+
+func NewDirectoryContext(id string, name string, ownerID string, driveID string, path string) DirectoryContext {
+	return DirectoryContext{
+		ID:      id,
+		Name:    name,
+		OwnerID: ownerID,
+		DriveID: driveID,
+		Path:    path,
+	}
+}
+
+func (dc DirectoryContext) IsEmpty() bool {
+	return dc.ID == "" && dc.Name == "" && dc.OwnerID == "" && dc.DriveID == "" && dc.Path == ""
+}
+
+func (dc DirectoryContext) ToJSON() []byte {
+	data, err := json.MarshalIndent(dc, "", " ")
 	if err != nil {
 		log.Fatal(err)
 	}

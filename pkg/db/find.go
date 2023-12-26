@@ -371,7 +371,7 @@ func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query(FindAllQuery, "Directories", limit)
+	rows, err := q.Conn.Query(FindAllDirsQuery)
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
 	}
@@ -380,6 +380,8 @@ func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	dirs := make([]*svc.Directory, 0)
 	for rows.Next() {
 		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
 		if err := q.Conn.QueryRow(FindAllQuery, "Directories").Scan(
 			&dir.ID,
 			&dir.DirName,

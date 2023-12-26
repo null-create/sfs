@@ -582,43 +582,36 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 	return dir
 }
 
-// retrives a drive from the drive map, or nil if it doesn't exist.
-// doesn't check database. use FindDrive() for a "deeper" search.
-func (s *Service) GetDrive(driveID string) *svc.Drive {
-	if drive, exists := s.Drives[driveID]; exists {
-		return drive
-	}
-	return nil
-}
-
 // attempts to retrieve a drive from the drive map. if not found,
 // will check database and if a drive is found, will add it to the map,
 // update the service state file, and return the drive with the root
-// directory initalized (but not populated)
-func (s *Service) FindDrive(driveID string) (*svc.Drive, error) {
+// directory initalized (but not populated).
+// use s.LoadDrive(driveID) for a "deeper" search
+func (s *Service) GetDrive(driveID string) *svc.Drive {
 	if drive, exists := s.Drives[driveID]; exists {
-		return drive, nil
+		return drive
 	} else {
 		drive, err := s.Db.GetDrive(driveID)
 		if err != nil {
-			return nil, err
+			return nil
 		}
 		root, err := s.Db.GetDirectory(drive.RootID)
 		if err != nil {
-			return nil, err
+			return nil
 		}
 		drive.Root = root
 		s.Drives[drive.ID] = drive
 		if err := s.SaveState(); err != nil {
 			log.Printf("[WARNING] failed to save state while updating drive map: %v", err)
 		}
-		return drive, nil
+		return drive
 	}
 }
 
-// find and populate a drive instance using a given user ID.
+// finds and populates a drive instance using a given user ID.
 func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
-	drive, err := s.Db.GetDriveByUserID(userID) // get drive for this ID
+	// get drive for this ID
+	drive, err := s.Db.GetDriveByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -633,6 +626,7 @@ func (s *Service) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	if root == nil {
 		return nil, fmt.Errorf("no root found for drive ID %s", drive.ID)
 	}
+	// populate all subdirectories
 	drive.Root = s.Populate(root)
 	return drive, nil
 }
@@ -648,8 +642,10 @@ func (s *Service) SaveDrive(drv *svc.Drive) error {
 	return nil
 }
 
-// loads drive's root directory with and all the users
-// subdirectories and files from the database.
+// Populates drive's root directory with and all the users
+// subdirectories and files from the database into memory.
+// Should be followed by a call to Drive.Root.Clear() (not clean!)
+// to clear the drive's internal data structures after loading.
 func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	if drive, exists := s.Drives[driveID]; exists {
 		drive.Root = s.Populate(drive.Root)
@@ -937,12 +933,11 @@ func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
 // makes a physical directory for this new directory object
 // and updates the database.
 func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory) error {
-	drive, err := s.FindDrive(driveID)
-	if err != nil {
-		return fmt.Errorf("failed to find drive: %v", err)
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return fmt.Errorf("drive %s not found", driveID)
 	}
-	drive.AddSubDir(destDirID, newDir)
-	return nil
+	return drive.AddSubDir(destDirID, newDir)
 }
 
 // remove a physical directory from a user's drive service.

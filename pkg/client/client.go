@@ -83,8 +83,10 @@ func NewClient(user *auth.User) *Client {
 		},
 	}
 
+	// run discover to populate the database and internal data structures
+	drv.Root = c.Discover(root)
+
 	// build services endpoints map
-	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 	files := c.Drive.GetFiles()
 	for _, f := range files {
 		c.Endpoints[f.ID] = f.Endpoint
@@ -93,6 +95,8 @@ func NewClient(user *auth.User) *Client {
 	for _, d := range subDirs {
 		c.Endpoints[d.ID] = d.Endpoint
 	}
+
+	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
 	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.Drive.ID)
 	c.Endpoints["root"] = EndpointRootWithPort

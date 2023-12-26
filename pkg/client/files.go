@@ -149,7 +149,17 @@ func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
 
 // ----- drive --------------------------------
 
-// retrieves drive with root directory attached.
+// Populates drive's root directory with and all the users
+// subdirectories and files from the database into memory.
+// Should be followed by a call to Drive.Root.Clear() (not clean!)
+// to clear the drive's internal data structures after loading.
+func (c *Client) LoadDrive(driveID string) *svc.Drive {
+	c.Drive.Root = c.Populate(c.Drive.Root)
+	return c.Drive
+}
+
+// retrieves drive with root directory attached, but unpopulated.
+// also updates drive sync index.
 func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 	if c.Drive == nil {
 		log.Print("[WARNING] drive not found! attempting to load...")
@@ -172,34 +182,45 @@ func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 	return c.Drive, nil
 }
 
+// save drive state to DB
+func (c *Client) SaveDrive(drv *svc.Drive) error {
+	if err := c.Db.UpdateDrive(drv); err != nil {
+		return fmt.Errorf("failed to update drive in database: %v", err)
+	}
+	if err := drv.SaveState(); err != nil {
+		return fmt.Errorf("failed to save drive state: %v", err)
+	}
+	return nil
+}
+
 // discover populates the given root directory with the users file and
 // sub directories, updates the database as it does so, and returns
 // the the directory object when finished.
 //
 // this should ideally be used for starting a new sfs service in a
 // users root directly that already has files and/or subdirectories.
-func (c *Client) Discover(dir *svc.Directory) *svc.Directory {
+func (c *Client) Discover(root *svc.Directory) *svc.Directory {
 	// traverse users SFS file system and populate internal structures
-	dir = dir.Walk()
+	root = root.Walk()
 
 	// send everything to the database
-	files := dir.WalkFs()
+	files := root.WalkFs()
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
 			return nil
 		}
 	}
-	dirs := dir.WalkDs()
+	dirs := root.WalkDs()
 	for _, d := range dirs {
 		if err := c.Db.AddDir(d); err != nil {
 			return nil
 		}
 	}
 	// add root directory itself
-	if err := c.Db.AddDir(dir); err != nil {
+	if err := c.Db.AddDir(root); err != nil {
 		return nil
 	}
-	return dir
+	return root
 }
 
 // Populate() populates a drive's root directory with all the users
