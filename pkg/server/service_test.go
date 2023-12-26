@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/env"
 	svc "github.com/sfs/pkg/service"
 
 	"github.com/alecthomas/assert/v2"
 )
 
 func TestServiceConfig(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 	c := ServiceConfig()
 	assert.NotEqual(t, nil, c)
 	assert.True(t, strings.Contains(c.SvcRoot, "C:"))
@@ -201,7 +202,7 @@ func TestAllocateDrive(t *testing.T) {
 }
 
 func TestAddAndRemoveUser(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// create test service instance
 	conf := ServiceConfig()
@@ -251,7 +252,8 @@ func TestAddAndRemoveUser(t *testing.T) {
 }
 
 func TestAddAndUpdateAUser(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
+
 	c := ServiceConfig()
 	// create a test instance
 	testSvc, err := SvcLoad(c.SvcRoot)
@@ -299,7 +301,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 }
 
 func TestDiscover(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	testSvc, err := Init(true, false)
 	if err != nil {
@@ -325,7 +327,7 @@ func TestDiscover(t *testing.T) {
 }
 
 func TestPopulate(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	testSvc, err := Init(false, false)
 	if err != nil {
@@ -356,7 +358,7 @@ func TestPopulate(t *testing.T) {
 }
 
 // func TestServiceReset(t *testing.T) {
-// 	BuildEnv(true)
+// 	env.SetEnv(false)
 
 // 	// create a test service in admin mode (since reset requires admin)
 // 	testSvc, err := Init(false, true)

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/sfs/pkg/env"
 )
 
 // Generate a random integer in the range [1, n)
@@ -34,7 +36,7 @@ func isEmpty(path string) bool {
 
 // parse the NEW_SERVICE env var to see if we are instantiating a new sfs service
 func isMode(k string) bool {
-	env := NewE()
+	env := env.NewE()
 	v, err := env.Get(k)
 	if err != nil {
 		log.Fatalf("failed to get %s env var: %v", k, err)

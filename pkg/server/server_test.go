@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/env"
 )
 
 func TestServerStartUpWithAPing(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// shut down signal to the server
 	shutDown := make(chan bool)

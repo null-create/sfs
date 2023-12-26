@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/transfer"
 )
 
@@ -22,7 +23,7 @@ const LocalHost = "http://localhost:8080"
 const ServerFile = "http://localhost:8080/v1/files/i/4e539b7b-9ed7-11ee-aef3-0a0027000014"
 
 func TestGetAllFileInfoAPI(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// shut down signal to the server
 	shutDown := make(chan bool)
@@ -68,7 +69,7 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 }
 
 func TestNewFileAPI(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// shut down signal to the server
 	shutDown := make(chan bool)
@@ -110,7 +111,7 @@ func TestNewFileAPI(t *testing.T) {
 }
 
 func TestGetSingleFileInfoAPI(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// shut down signal to the server
 	shutDown := make(chan bool)
@@ -157,7 +158,7 @@ func TestGetSingleFileInfoAPI(t *testing.T) {
 }
 
 func TestFileGetAPI(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// ---- set up test service ---------------------------------------
 
@@ -273,12 +274,12 @@ func TestFileGetAPI(t *testing.T) {
 }
 
 func TestFileDeleteAPI(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	// ---- set up test service
 
 	// so we can add the test file directly to the db ahead of time
-	testSvc, err := Init(true, false)
+	testSvc, err := Init(false, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}

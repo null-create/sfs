@@ -11,6 +11,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/env"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -338,7 +339,7 @@ func SvcInit(svcRoot string) (*Service, error) {
 
 	// update NEW_SERVICE variable so future boot ups won't
 	// create a new service every time
-	e := NewE()
+	e := env.NewE()
 	if err := e.Set("NEW_SERVICE", "false"); err != nil {
 		return nil, fmt.Errorf("failed to update service .env file: %v", err)
 	}
