@@ -136,12 +136,12 @@ func UnmarshalDirStr(data string) (*Directory, error) {
 	return dir, nil
 }
 
+func (d *Directory) IsRoot() bool {
+	return d.Root
+}
+
 func (d *Directory) HasParent() bool {
-	if d.Parent == nil {
-		log.Print("[WARNING] parent directory cannot be nil")
-		return false
-	}
-	return true
+	return !d.IsRoot() && d.Parent == nil
 }
 
 func (d *Directory) IsNil() bool {
@@ -150,10 +150,6 @@ func (d *Directory) IsNil() bool {
 
 func (d *Directory) IsEmpty() bool {
 	return len(d.Files) == 0 && len(d.Dirs) == 0
-}
-
-func (d *Directory) IsRoot() bool {
-	return d.Root
 }
 
 // Remove all *internal data structure representations* of files and directories
@@ -246,14 +242,15 @@ func (d *Directory) DirSize() (float64, error) {
 }
 
 /*
+get the parent directory for this directory.
+
 only root directories can have a nil parent pointer
 since they will have a valid *drive pointer to
 point to the parent drive
 */
 func (d *Directory) GetParent() *Directory {
-	if d.Parent == nil && !d.Root {
-		log.Print("[WARNING] no parent for non-root directory!")
-		return nil
+	if !d.HasParent() {
+		log.Fatal("no parent for non-root directory!")
 	}
 	return d.Parent
 }
