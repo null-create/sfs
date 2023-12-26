@@ -410,7 +410,7 @@ func (d *Directory) GetFiles() []*File {
 	return files
 }
 
-// find a file within the given directory or subdirectories.
+// find a file within the given directory or subdirectories, starting at the current directory.
 // returns nil if no such file exists
 func (d *Directory) FindFile(fileID string) *File {
 	return d.WalkF(fileID)
@@ -541,11 +541,8 @@ Walk() populates all files and subdirectory maps (and their files and subdirecto
 and so on) until we reach the end of the local directory tree.
 should be used only when instantiating a root directory object
 for the *first* time, as it will generate new file and directory objects
-with their own ID's, and will need to be treated as individual items rather than
+with their own ID's, and will need to be treated as persistent items rather than
 ephemeral ones.
-
-In other words, just use this *once* during the initial set up
-of a drive in a directory that already has files and subdirectories.
 */
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
