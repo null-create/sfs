@@ -18,7 +18,7 @@ func TestCompress(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	if err := Compress(tmpDir.Path, filepath.Join(tmpDir.Path, "test.zip")); err != nil {
+	if err := Zip(tmpDir.Path, filepath.Join(tmpDir.Path, "test.zip")); err != nil {
 		Fail(t, GetTestingDir(), fmt.Errorf("failed to compress test dir: %v", err))
 	}
 
@@ -44,7 +44,7 @@ func TestUnpack(t *testing.T) {
 	}
 
 	testArchive := filepath.Join(tmpDir.Path, "test.zip")
-	if err := Compress("testing", testArchive); err != nil {
+	if err := Zip("testing", testArchive); err != nil {
 		Fail(t, GetTestingDir(), fmt.Errorf("failed to compress test dir: %v", err))
 	}
 
@@ -56,7 +56,7 @@ func TestUnpack(t *testing.T) {
 		Fail(t, GetTestingDir(), fmt.Errorf("zip file not created"))
 	}
 
-	if err := Unpack(testArchive, filepath.Join("testing", "tmp-result")); err != nil {
+	if err := Unzip(testArchive, filepath.Join("testing", "tmp-result")); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 

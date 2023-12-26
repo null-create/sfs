@@ -20,7 +20,7 @@ func ValidPath(filePath string, dest string) bool {
 	return strings.HasPrefix(filePath, filepath.Clean(dest)+string(os.PathSeparator))
 }
 
-func Compress(sourceDir string, destArchive string) error {
+func Zip(sourceDir string, destArchive string) error {
 	file, err := os.Create(destArchive)
 	if err != nil {
 		panic(err)
@@ -67,7 +67,7 @@ func Compress(sourceDir string, destArchive string) error {
 }
 
 // from: https://stackoverflow.com/questions/20357223/easy-way-to-unzip-file
-func Unpack(src string, dest string) error {
+func Unzip(src string, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
 		return err
