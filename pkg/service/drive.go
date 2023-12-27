@@ -87,7 +87,7 @@ type Drive struct {
 
 	// User's root directory & sync index
 	RootID    string     `json:"root_id"`
-	Root      *Directory `json:"root"`
+	Root      *Directory `json:"-"` // ignored to avoid json cycles. will be populated during instantiation
 	SyncIndex *SyncIndex `json:"sync_index"`
 }
 
