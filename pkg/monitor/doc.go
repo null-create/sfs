@@ -30,14 +30,13 @@ func (m *Monitor) trunc() {
 	}
 }
 
-// make the tmp doc for event handlers to mark when
+// make the flag doc for event handlers to mark when
 // a sync operation is supposed to happen.
 func (m *Monitor) MakeSyncDoc() error {
 	if _, err := os.Stat(m.SyncDoc); err != nil && os.IsNotExist(err) {
 		if _, err2 := os.Create(m.SyncDoc); err2 != nil {
 			return fmt.Errorf("failed to create sync doc: %v", err2)
 		}
-		return fmt.Errorf("failed to get file info: %v", err)
 	}
 	return nil
 }
@@ -47,10 +46,12 @@ func (m *Monitor) DeleteDoc() error {
 	return os.Remove(m.SyncDoc)
 }
 
-func (m *Monitor) IsReady() bool {
+// checks for whether the sync flag is set.
+// if so, then a sync operation should take place.
+func (m *Monitor) StartSync() bool {
 	file, err := os.Open(m.SyncDoc)
 	if err != nil {
-		log.Printf("[WARNING] failed to open sync doc: %v", err)
+		log.Printf("[ERROR] failed to open sync doc: %v", err)
 		return false
 	}
 	defer file.Close()
@@ -58,7 +59,7 @@ func (m *Monitor) IsReady() bool {
 	contents := make([]byte, 0)
 	_, err = file.Read(contents)
 	if err != nil {
-		log.Printf("[WARNING] failed to open sync doc: %v", err)
+		log.Printf("[ERROR] failed to open sync doc: %v", err)
 		return false
 	}
 	return string(contents) == "1"
@@ -85,8 +86,7 @@ func (m *Monitor) SetDoc() {
 func (m *Monitor) ResetDoc() {
 	file, err := os.Open(m.SyncDoc)
 	if err != nil {
-		log.Print("[WARNING] failed to open sync doc: ", err)
-		return
+		log.Fatalf("failed to open sync doc: %v", err)
 	}
 	defer file.Close()
 
@@ -94,6 +94,6 @@ func (m *Monitor) ResetDoc() {
 
 	_, err = file.Write([]byte("0"))
 	if err != nil {
-		log.Print("[WARNING] failed to update sync doc: ", err)
+		log.Fatalf("failed to update sync doc: %v", err)
 	}
 }

@@ -1052,9 +1052,12 @@ func (s *Service) UpdateFile(userID string, fileID string, data []byte) error {
 // delete a file in the service. uses the users drive to delete the file.
 // removes physical file and updates database.
 func (s *Service) DeleteFile(driveID string, dirID string, fileID string) error {
-	drive := s.GetDrive(driveID)
+	drive, err := s.LoadDrive(driveID)
 	if drive == nil {
 		return fmt.Errorf("drive %s not found", driveID)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to load drive %s", driveID)
 	}
 	// find file to delete
 	file := drive.GetFile(fileID)
@@ -1074,6 +1077,8 @@ func (s *Service) DeleteFile(driveID string, dirID string, fileID string) error 
 	if err := s.Db.RemoveFile(fileID); err != nil {
 		return err
 	}
+	// clear out in-memory files and directories
+	drive.Root.Clear(drive.Root.Key)
 	if err := s.SaveState(); err != nil {
 		log.Printf("[WARNING] failed to save state: %v", err)
 	}

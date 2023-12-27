@@ -49,22 +49,19 @@ func TestSaveStateFile(t *testing.T) {
 }
 
 func TestLoadServiceFromStateFile(t *testing.T) {
-	// clean up after any previous failed runs
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	env.SetEnv(false)
+
+	// create a test service instance with a bunch of sub directories,
+	// add to service state, then write out
+	svc, err := Init(true, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
 	}
-	// create a test service instance
-	svc := &Service{
-		SvcRoot:   GetTestingDir(),
-		StateFile: GetTestingDir(),
+	tmpDrv := MakeTmpDrive(t)
+	if err := svc.AddDrive(tmpDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
 	}
-	// make a tmp folder for the state file
-	if err := os.Mkdir(filepath.Join(GetTestingDir(), "state"), 0666); err != nil {
-		Fatal(t, err)
-	}
-	if err := svc.SaveState(); err != nil {
-		Fatal(t, err)
-	}
+
 	// load a new test service instance from the newly generated state file
 	svc2, err := loadStateFile(svc.StateFile)
 	if err != nil {

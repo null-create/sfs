@@ -85,6 +85,12 @@ type Drive struct {
 	// i.e., ...sfs/root/users/this-drive
 	DriveRoot string `json:"drive_root"`
 
+	// Flag for whether Populate() has been called
+	// with the drive's root directory. If so then the
+	// drive's root directory will have its internal data structures
+	// loaded and will make other calls to the users file contents possible.
+	IsLoaded bool `json:"is_loaded"`
+
 	// User's root directory & sync index
 	RootID    string     `json:"root_id"`
 	Root      *Directory `json:"-"` // ignored to avoid json cycles. will be populated during instantiation
@@ -121,6 +127,10 @@ func NewDrive(driveID string, ownerName string, ownerID string, rootPath string,
 
 func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
+}
+
+func (d *Drive) Isloaded() bool {
+	return d.IsLoaded
 }
 
 // save drive state to JSON format

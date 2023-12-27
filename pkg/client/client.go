@@ -54,7 +54,7 @@ type Client struct {
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
 func NewClient(user *auth.User) *Client {
-	// get configs
+	// get client service configs
 	conf := ClientConfig()
 
 	// set up local client services
@@ -84,22 +84,20 @@ func NewClient(user *auth.User) *Client {
 	}
 
 	// run discover to populate the database and internal data structures
+	// with users files and directories
 	drv.Root = c.Discover(root)
+	drv.IsLoaded = true
 
-	// build services endpoints map
-	files := c.Drive.GetFiles()
-	for _, f := range files {
-		c.Endpoints[f.ID] = f.Endpoint
-	}
-	subDirs := c.Drive.GetDirs()
-	for _, d := range subDirs {
-		c.Endpoints[d.ID] = d.Endpoint
+	// add drive itself to DB
+	if err := c.Db.AddDrive(c.Drive); err != nil {
+		log.Fatal(fmt.Errorf("failed to add client drive to database: %v", err))
 	}
 
+	// build services endpoints map (files and directories have endpoints defined
+	// within their respective data structures)
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
 	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.Drive.ID)
-	c.Endpoints["root"] = EndpointRootWithPort
 
 	// build and start handlers
 	c.BuildHandlers()
@@ -149,4 +147,69 @@ func (c *Client) SaveState() error {
 	fn := fmt.Sprintf("client-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05Z"))
 	fp := filepath.Join(c.SfDir, fn)
 	return os.WriteFile(fp, data, svc.PERMS)
+}
+
+// ------- user functions --------------------------------
+
+func (c *Client) AddUser(user *auth.User) error {
+	if c.User == nil {
+		c.User = user
+	} else {
+		return fmt.Errorf("cannot have more than one user: %v", c.User)
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) GetUser() (*auth.User, error) {
+	if c.User == nil {
+		log.Print("[WARNING] client instance has no user object. attempting to get user from the database...")
+		if c.Db == nil {
+			return nil, fmt.Errorf("failed to get user. database not initialized")
+		}
+		user, err := c.Db.GetUser(c.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user from database: %v", err)
+		}
+		return user, nil
+	}
+	return c.User, nil
+}
+
+func (c *Client) UpdateUser(user *auth.User) error {
+	if user.ID == c.User.ID {
+		c.User = user
+	} else {
+		return fmt.Errorf("user (id=%s) is not client user (id=%s)", user.ID, c.User.ID)
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// remove a user and their drive from the client instance.
+// clears all users files and directores, as well as removes the
+// user from the client instance and db.
+func (c *Client) RemoveUser(userID string) error {
+	if c.User == nil {
+		return fmt.Errorf("no user (id=%s) found", userID)
+	} else if c.User.ID == userID {
+		// remove drive and users files
+		c.Drive.ClearDrive()
+		// remove user and info from database
+		if err := c.Db.RemoveUser(c.UserID); err != nil {
+			return err
+		}
+		c.User = nil
+		log.Printf("[INFO] user %s removed", userID)
+	} else {
+		return fmt.Errorf("wrong user ID (id=%s)", userID)
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
 }

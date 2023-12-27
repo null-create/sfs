@@ -83,7 +83,7 @@ func watchFile(path string, stop chan bool) chan Event {
 	// event channel
 	evt := make(chan Event)
 	go func() {
-		log.Print("[INFO] starting monitoring...")
+		log.Printf("[INFO] monitoring %s ...", filepath.Base(path))
 		for {
 			select {
 			case <-stop:
@@ -147,11 +147,11 @@ func watchAll(path string, m *Monitor) error {
 	// make sure  we can shut everything down if need be
 	if len(m.Events) != len(m.OffSwitches) {
 		return fmt.Errorf(
-			"failed to add off switches for all monitors. \nevts = %d, off-switches = %d",
+			"failed to add off switches for all monitors. \nevts=%d, off-switches=%d",
 			len(m.Events), len(m.OffSwitches),
 		)
 	}
-	log.Printf("[INFO] monitor is running. watching (%d) files", len(m.Events))
+	log.Printf("[INFO] monitor is running. watching %d files", len(m.Events))
 	return nil
 }
 
@@ -206,7 +206,8 @@ func (m *Monitor) GetEventChan(filePath string) chan Event {
 	return nil
 }
 
-// get an event listener off switch for a given file
+// get an off switch for a given monitor go routine.
+// off switches, when set to true, will shut down the monitoring process.
 func (m *Monitor) GetOffSwitch(filePath string) chan bool {
 	if offSwitch, exists := m.OffSwitches[filePath]; exists {
 		return offSwitch

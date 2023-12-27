@@ -307,7 +307,6 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 // are the case, otherwise returns a directory pointer.
 func (a *API) findD(w http.ResponseWriter, r *http.Request) *svc.Directory {
 	dirID := chi.URLParam(r, "dirID")
-	a.Svc.Db.WhichDB("Directories")
 	d, err := findDir(dirID, a.Svc.Db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

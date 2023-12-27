@@ -102,6 +102,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[WARNING] server returned non-OK status: %v", resp.Status)
 		b, err := httputil.DumpResponse(resp, true)
@@ -127,8 +128,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // intended to run in its own goroutine.
 // download a known file that is only on the server, and is new to the client
 func (t *Transfer) Download(destPath string, srcURL string) error {
-	// TODO: prepare a specific request for downloads?
-
 	// attempt to retrieve the file from the server
 	resp, err := t.Client.Get(srcURL)
 	if err != nil {
@@ -163,6 +162,6 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 		return fmt.Errorf("failed to download file: %v", err)
 	}
 
-	log.Printf("[INFO] %s downloaded", file.Name())
+	log.Printf("[INFO] %s downloaded to %s", file.Name(), destPath)
 	return nil
 }

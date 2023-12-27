@@ -159,7 +159,7 @@ func (d *Directory) clear() {
 	d.Dirs = nil
 	d.Files = make(map[string]*File, 0)
 	d.Dirs = make(map[string]*Directory, 0)
-	log.Printf("[INFO] dirID (%s) all directories and files deleted", d.ID)
+	log.Printf("[INFO] dirID (%s) all directories and files cleared", d.ID)
 }
 
 // used to securely run clear()
@@ -170,7 +170,7 @@ func (d *Directory) Clear(password string) {
 		if password == d.Key {
 			d.clear()
 		} else {
-			log.Print("[INFO] wrong password. contents not deleted")
+			log.Print("[INFO] wrong password. contents not cleared")
 		}
 	}
 }
@@ -372,7 +372,7 @@ func (d *Directory) removeFile(fileID string) error {
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
-			return fmt.Errorf("unable to remove file: %s", err)
+			return fmt.Errorf("failed to remove file: %s", err)
 		}
 	} else {
 		log.Printf("[INFO] directory protected. unlock before removing files")

@@ -53,7 +53,10 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 		return nil, nil, "", nil, err
 	}
 	if evt == nil || off == nil || fileID == "" {
-		return nil, nil, "", nil, fmt.Errorf("failed to get param: %v %v %s", evt, off, fileID)
+		return nil, nil, "", nil, fmt.Errorf(
+			"failed to get param: evt=%v off=%v fileID=%s",
+			evt, off, fileID,
+		)
 	}
 	// TODO: buffered events should be a client setting
 	evts := monitor.NewEvents(false)
@@ -101,14 +104,15 @@ func (c *Client) BuildHandlers() {
 		log.Print("[WARNING] no files to build handlers for")
 		return
 	}
-	for fileID := range files {
-		if _, exists := c.Handlers[fileID]; !exists {
-			c.Handlers[fileID] = EventHandler
+	for _, file := range files {
+		if _, exists := c.Handlers[file.Path]; !exists {
+			c.Handlers[file.Path] = EventHandler
 		}
 	}
 }
 
-// handles received events and starts transfer operations
+// handles received events from the client's monitor component
+// and starts transfer operations by updating the sync doc flag.
 func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *monitor.Events) (chan bool, error) {
 	stopMonitor := make(chan bool)
 	go func() {

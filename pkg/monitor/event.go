@@ -59,18 +59,17 @@ func NewEvents(buffered bool) *Events {
 	} else {
 		threshold = 1
 	}
-	sdPath := filepath.Join(GetWd(), ".sync.txt")
 	return &Events{
 		threshold: threshold,
 		Buffered:  buffered,
-		SyncDoc:   sdPath,
+		SyncDoc:   filepath.Join(GetWd(), ".sync.txt"),
 		Events:    make(EList, 0),
 	}
 }
 
 func (e *Events) Reset() {
 	e.Events = nil
-	e.Events = make(EList, 0) // reinitialize
+	e.Events = make(EList, 0)
 	e.StartSync = false
 	e.Total = 0
 }
@@ -122,7 +121,6 @@ func (e *Events) GetPaths() ([]string, error) {
 // operation should be performed
 func (e *Events) Notify() {
 	e.trunc()
-
 	file, err := os.Open(e.SyncDoc)
 	if err != nil {
 		log.Fatalf("failed to open sync doc: %v", err)
@@ -132,6 +130,7 @@ func (e *Events) Notify() {
 	if err != nil {
 		log.Fatalf("failed to write to sync doc: %v", err)
 	}
+	log.Print("[INFO] sync doc updated. set to 1")
 }
 
 func (e *Events) trunc() {

@@ -18,7 +18,11 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-const EndpointRoot = "http://localhost"
+const (
+	EndpointRoot = "http://localhost"
+	CheckWait    = time.Millisecond * 500
+	SyncWait     = time.Minute
+)
 
 // gets server sync index, compares with local index, and either
 // calls Push or Pull, depending on whether the corresponding bool
@@ -29,6 +33,7 @@ func (c *Client) sync(up bool) error {
 	} else {
 		c.Pull()
 	}
+	c.reset()
 	return nil
 }
 
@@ -70,10 +75,11 @@ func (c *Client) Push() error {
 func (c *Client) Pull() error {
 	svrIdx := c.GetServerIdx()
 	if svrIdx == nil {
-		return fmt.Errorf("no sync index")
+		log.Print("[WARNING] no sync index available from server. unable to pull files.")
+		return nil
 	}
 	if len(svrIdx.ToUpdate) == 0 || svrIdx == nil {
-		log.Print("[INFO] nothing to pull")
+		log.Print("[INFO] no sync index return from server. nothing to pull")
 		return nil
 	}
 	queue := svc.BuildQ(svrIdx)
@@ -83,8 +89,17 @@ func (c *Client) Pull() error {
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
 			go func() {
+				// download file
 				if err := c.Transfer.Download(file.ClientPath, file.Endpoint); err != nil {
 					log.Printf("[WARNING] failed to download file: %s\nerr: %v", file.Name, err)
+				}
+				// validate checksum
+				if err := file.ValidateChecksum(); err != nil {
+					log.Printf("[WARNING] failed to validate checksum for file %v", file.Name)
+				}
+				// update files DB
+				if err := c.Db.UpdateFile(file); err != nil {
+					log.Printf("[ERROR] failed to update files database: %v", err)
 				}
 			}()
 		}
@@ -114,7 +129,6 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 		b, err := httputil.DumpResponse(resp, true)
 		if err != nil {
 			log.Printf("[WARNING] failed to parse server sync index response\nerr: %v", err)
-			return nil
 		}
 		log.Printf("[WARNING] failed to get server sync index\nerr: %s", string(b))
 		return nil
@@ -155,11 +169,13 @@ func (c *Client) Sync(stop chan bool) {
 					return
 				}
 				if string(contents) == "1" {
-					// TODO: change bool flag.
-					// this should probably be handled internally by c.sync()
+					// TODO: determine whether we should push or pull at sync time.
+					// currently defaults to push.
 					c.sync(true)
+					time.Sleep(SyncWait)
+				} else {
+					time.Sleep(CheckWait)
 				}
-				time.Sleep(time.Millisecond * 500) // wait before checking again
 			}
 		}
 	}()

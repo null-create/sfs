@@ -24,7 +24,7 @@ build() {
 	echo "$1 $2 ..."
 	GOOS=$1 GOARCH=$2 go build \
 		-ldflags "$LDFLAGS" \
-		-o dist/sfs-${3:-""}
+		-o bin/sfs-${3:-""}
 }
 
 build linux arm linux-arm
