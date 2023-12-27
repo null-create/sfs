@@ -7,10 +7,13 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/env"
 	svc "github.com/sfs/pkg/service"
 )
 
 func TestCreateAndUpdateAFile(t *testing.T) {
+	env.SetEnv(false)
+
 	testDir := GetTestingDir()
 
 	// test db and query
@@ -18,7 +21,7 @@ func TestCreateAndUpdateAFile(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Files"), false)
 	q.Debug = true
 
-	tmpFile := svc.NewFile("temp.txt", "bill", filepath.Join(testDir, "Files"))
+	tmpFile := svc.NewFile("temp.txt", "some-rand-id", "bill", filepath.Join(testDir, "Files"))
 
 	// add temp file
 	if err := q.AddFile(tmpFile); err != nil {

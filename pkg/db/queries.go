@@ -10,7 +10,9 @@ const (
 		CREATE TABLE IF NOT EXISTS Files (
 			id VARCHAR(50) PRIMARY KEY,
 			name VARCHAR(255),
-			owner VARCHAR(50),
+			owner_id VARCHAR(50),
+			directory_id VARCHAR(50),
+			drive_id VARCHAR(50),
 			protected BIT,
 			key VARCHAR(100),
 			last_sync DATETIME,
@@ -27,7 +29,8 @@ const (
 		CREATE TABLE IF NOT EXISTS Directories (
 			id VARCHAR(50) PRIMARY KEY,
 			name VARCHAR(255),
-			owner VARCHAR(50),
+			owner_id VARCHAR(50),
+			drive_id VARCHAR(50),
 			size DECIMAL(18, 2),
 			path VARCHAR(255),
 			protected BIT,
@@ -80,7 +83,9 @@ const (
 		INSERT OR IGNORE INTO Files (
 			id, 
 			name, 
-			owner, 
+			owner_id,
+			directory_id, 
+			drive_id, 
 			protected, 
 			key,
 			last_sync, 
@@ -91,13 +96,14 @@ const (
 			checksum, 
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT OR IGNORE INTO Directories (
 			id,
 			name,
-			owner,
+			owner_id,
+			drive_id,
 			size,
 			path,
 			protected,
@@ -108,7 +114,7 @@ const (
 			drive_root, 
 			root_path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
 		INSERT OR IGNORE INTO Drives (
@@ -149,7 +155,9 @@ const (
 		UPDATE Files
 		SET id = ?, 
 				name = ?, 
-				owner = ?, 
+				owner_id = ?,
+				directory_id = ?,
+				drive_id = ?, 
 				protected = ?, 
 				key = ?,
 				last_sync = ?, 
@@ -165,7 +173,8 @@ const (
 		UPDATE Directories
 		SET id = ?,
 				name = ?,
-				owner = ?,
+				owner_id = ?,
+				drive_id = ?,
 				size = ?,
 				path = ?,
 				protected = ?,

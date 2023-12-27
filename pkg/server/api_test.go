@@ -126,6 +126,8 @@ func TestGetSingleFileInfoAPI(t *testing.T) {
 	// attempt to retrieve file info about one file from the server
 	log.Printf("[TEST] retrieving test file data...")
 	client := new(http.Client)
+	client.Timeout = time.Second * 600
+
 	res, err := client.Get(ServerFile)
 	if err != nil {
 		shutDown <- true
@@ -199,14 +201,15 @@ func TestFileGetAPI(t *testing.T) {
 
 	// contact the server
 	log.Print("[TEST] attempting to retrieve file via its API endpoint...")
-	client := &http.Client{
-		Timeout: 600 * time.Second,
-	}
+	client := new(http.Client)
+	client.Timeout = time.Second * 600
+
 	res, err := client.Get(testFile.Endpoint)
 	if err != nil {
 		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
 	}
+
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)
@@ -314,19 +317,21 @@ func TestFileDeleteAPI(t *testing.T) {
 	// ----- start test client and attempt to delete file via its API endpoint
 
 	log.Print("[TEST] attempting to delete file via its API endpoint...")
-	client := &http.Client{
-		Timeout: 600 * time.Second,
-	}
+	client := new(http.Client)
+	client.Timeout = time.Second * 600
 
-	req, err := http.NewRequest(http.MethodDelete, testFile.Endpoint, nil)
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodDelete, testFile.Endpoint, &buf)
 	if err != nil {
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to create HTTP request: %v", err))
 	}
+
 	res, err := client.Do(req)
 	if err != nil {
 		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
 	}
+
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)

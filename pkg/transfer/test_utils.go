@@ -74,7 +74,7 @@ func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 	defer file.Close()
 
 	var data string
-	f := svc.NewFile(filepath.Base(filePath), "me", filePath)
+	f := svc.NewFile(filepath.Base(filePath), "some-rand-id", "me", filePath)
 	for i := 0; i < textReps; i++ {
 		data += txtData
 	}

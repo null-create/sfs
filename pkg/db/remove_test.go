@@ -17,7 +17,7 @@ func TestAddAndRemoveFile(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Files"), false)
 	q.Debug = true
 
-	tmpFile := svc.NewFile("temp.txt", "bill", filepath.Join(testDir, "Files"))
+	tmpFile := svc.NewFile("temp.txt", "some-rand-id", "bill", filepath.Join(testDir, "Files"))
 
 	if err := q.AddFile(tmpFile); err != nil {
 		Fatal(t, fmt.Errorf("failed to add file: %v", err))

@@ -177,7 +177,7 @@ func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 	defer file.Close()
 
 	var data string
-	f := svc.NewFile(filepath.Base(filePath), "me", filePath)
+	f := svc.NewFile(filepath.Base(filePath), "some-rand-id", "me", filePath)
 	for i := 0; i < textReps; i++ {
 		data += txtData
 	}
@@ -211,7 +211,7 @@ func MakeDummyFiles(t *testing.T, total int) []*svc.File {
 	testFiles := make([]*svc.File, 0)
 	for i := 0; i < total; i++ {
 		tfName := fmt.Sprintf("tmp-%d.txt", i)
-		testFiles = append(testFiles, svc.NewFile(tfName, "me", filepath.Join(testDir, tfName)))
+		testFiles = append(testFiles, svc.NewFile(tfName, "some-rand-id", "me", filepath.Join(testDir, tfName)))
 	}
 	return testFiles
 }
@@ -239,7 +239,7 @@ func MakeLargeTestFiles(total int, dest string) ([]*svc.File, error) {
 		}
 		file.Close()
 
-		testFiles = append(testFiles, svc.NewFile(tfName, "me", tfPath))
+		testFiles = append(testFiles, svc.NewFile(tfName, "some-rand-id", "me", tfPath))
 	}
 	return testFiles, nil
 }

@@ -201,7 +201,7 @@ func MakeTmpTxtFile(filePath string, textReps int) (*File, error) {
 	defer file.Close()
 
 	var data string
-	f := NewFile(filepath.Base(filePath), "me", filePath)
+	f := NewFile(filepath.Base(filePath), "some-rand-id", "me", filePath)
 	for i := 0; i < textReps; i++ {
 		data += txtData // file size will be ~49*textReps bytes in size
 	}
@@ -236,7 +236,7 @@ func MakeDummyFiles(t *testing.T, total int) []*File {
 	testFiles := make([]*File, 0)
 	for i := 0; i < total; i++ {
 		tfName := fmt.Sprintf("tmp-%d.txt", i)
-		testFiles = append(testFiles, NewFile(tfName, "me", filepath.Join(testDir, tfName)))
+		testFiles = append(testFiles, NewFile(tfName, "some-rand-id", "me", filepath.Join(testDir, tfName)))
 	}
 
 	return testFiles
@@ -259,7 +259,7 @@ func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 		file.Write([]byte(txtData))
 		file.Close()
 
-		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
+		testFiles = append(testFiles, NewFile(tfName, "some-rand-id", "me", tfPath))
 	}
 	return testFiles, nil
 }
@@ -287,7 +287,7 @@ func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
 		}
 		file.Close()
 
-		testFiles = append(testFiles, NewFile(tfName, "me", tfPath))
+		testFiles = append(testFiles, NewFile(tfName, "some-rand-id", "me", tfPath))
 	}
 	return testFiles, nil
 }
@@ -322,7 +322,7 @@ func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 		file.Write([]byte(txtData))
 		file.Close()
 
-		testFiles = append(testFiles, NewFile(name, "me", tfPath))
+		testFiles = append(testFiles, NewFile(name, "some-rand-id", "me", tfPath))
 	}
 
 	return testFiles

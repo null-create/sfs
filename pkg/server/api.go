@@ -289,7 +289,7 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	file := r.Context().Value(File).(*svc.File)
 
 	// remove physical file, update database, and updates state file.
-	if err := a.Svc.DeleteFile(file.OwnerID, file.DirID, file.ID); err != nil {
+	if err := a.Svc.DeleteFile(file.DriveID, file.DirID, file.ID); err != nil {
 		msg := fmt.Sprintf("failed to delete file: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return

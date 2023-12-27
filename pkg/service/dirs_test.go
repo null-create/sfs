@@ -224,7 +224,7 @@ func TestWalkF(t *testing.T) {
 	env.SetEnv(false)
 
 	d := MakeTmpDirs(t)
-	fileToFind := NewFile("findMe", "bill", filepath.Join(d.Path, "findMe"))
+	fileToFind := NewFile("findMe", "some-rand-id", "bill", filepath.Join(d.Path, "findMe"))
 	d.addFile(fileToFind)
 
 	found := d.WalkF(fileToFind.ID)

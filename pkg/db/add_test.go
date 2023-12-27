@@ -22,7 +22,7 @@ func TestAddAndFindFile(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Files"), false)
 	q.Debug = true
 
-	tmpFile := svc.NewFile("temp.txt", "bill", filepath.Join(testDir, "Files"))
+	tmpFile := svc.NewFile("temp.txt", "some-rand-id", "bill", filepath.Join(testDir, "Files"))
 
 	// add temp file
 	if err := q.AddFile(tmpFile); err != nil {
@@ -63,7 +63,7 @@ func TestAddAndFindMultipleFiles(t *testing.T) {
 	testFiles := make([]*svc.File, 0, total)
 	for i := 0; i < total; i++ {
 		fn := fmt.Sprintf("test-%d.txt", i)
-		f := svc.NewFile(fn, "me", filepath.Join(testDir, fn))
+		f := svc.NewFile(fn, "some-rand-id", "me", filepath.Join(testDir, fn))
 		testFiles = append(testFiles, f)
 	}
 

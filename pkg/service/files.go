@@ -28,6 +28,7 @@ type File struct {
 	NMap    NameMap `json:"name_map"` // file name map
 	OwnerID string  `json:"owner"`    // file owner ID
 	DirID   string  `json:"dir_id"`   // id of the directory this file belongs to
+	DriveID string  `json:"drive_id"` // id of the drive this file belongs to
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -49,7 +50,7 @@ type File struct {
 
 // creates a new file struct instance.
 // file contents are not loaded into memory.
-func NewFile(fileName string, ownerID string, path string) *File {
+func NewFile(fileName string, driveID string, ownerID string, path string) *File {
 	cs, err := CalculateChecksum(path, "sha256")
 	if err != nil {
 		log.Printf("[WARNING] error calculating checksum: %v", err)
@@ -63,6 +64,7 @@ func NewFile(fileName string, ownerID string, path string) *File {
 		ID:         uuid,
 		NMap:       newNameMap(fileName, uuid),
 		OwnerID:    ownerID,
+		DriveID:    driveID,
 		Protected:  false,
 		Key:        "default",
 		LastSync:   time.Now().UTC(),

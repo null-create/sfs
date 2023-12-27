@@ -290,6 +290,7 @@ func (d *Directory) Unlock(password string) bool {
 func (d *Directory) addFile(file *File) {
 	if _, exists := d.Files[file.ID]; !exists {
 		file.DirID = d.ID
+		file.DriveID = d.DriveID
 		file.LastSync = time.Now().UTC()
 		d.Files[file.ID] = file
 		log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
@@ -333,7 +334,6 @@ func (d *Directory) updateFile(f *File, data []byte) error {
 		if err := file.Save(data); err != nil {
 			return err
 		}
-		file.LastSync = time.Now().UTC()
 	} else {
 		log.Printf("[INFO] file (%v) not found", f.ID)
 	}
@@ -419,6 +419,7 @@ func (d *Directory) FindFile(fileID string) *File {
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
 		dir.Parent = d
+		dir.DriveID = d.DriveID
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
 		log.Printf("[INFO] dir %s (id=%s) added", dir.DirName, dir.ID)
@@ -579,7 +580,7 @@ func walk(d *Directory) *Directory {
 			sd = walk(sd)
 			d.AddSubDir(sd)
 		} else {
-			file := NewFile(item.Name(), d.OwnerID, entryPath)
+			file := NewFile(item.Name(), d.DriveID, d.OwnerID, entryPath)
 			d.AddFile(file)
 		}
 	}
