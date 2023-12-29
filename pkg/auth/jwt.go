@@ -76,7 +76,9 @@ func (t *Token) Create(payload string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["sub"] = payload
-	claims["exp"] = time.Now().Add(time.Hour).UTC() // Token expires in 1  hour
+	// TODO: token expires in 1 hour by default.
+	// expiration times should vary depending on the request.
+	claims["exp"] = time.Now().Add(time.Hour).UTC()
 	tokenString, err := token.SignedString(t.Secret)
 	if err != nil {
 		return "", err

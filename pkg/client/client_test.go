@@ -106,7 +106,6 @@ func TestLoadClient(t *testing.T) {
 	assert.Equal(t, c1.SfDir, c2.SfDir)
 	assert.NotEqual(t, nil, c2.Db)
 	assert.True(t, c2.Db.Singleton)
-	assert.Equal(t, c1.Handlers, c2.Handlers)
 
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests

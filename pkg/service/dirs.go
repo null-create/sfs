@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/sfs/pkg/auth"
 )
 
 /*
@@ -28,7 +30,7 @@ NOTE:
 type Directory struct {
 	ID      string  `json:"id"`       // dir UUID
 	NMap    NameMap `json:"nmap"`     // name map
-	DirName string  `json:"name"`     // dir name
+	Name    string  `json:"name"`     // dir name
 	OwnerID string  `json:"owner"`    // owner UUID
 	DriveID string  `json:"drive_id"` // drive ID this directory belongs to
 
@@ -73,14 +75,14 @@ type Directory struct {
 
 // create a new root directory object. does not create physical directory.
 func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath string) *Directory {
-	uuid := NewUUID()
 	cfg := NewSvcCfg()
+	uuid := auth.NewUUID()
 	return &Directory{
 		ID:        uuid,
 		NMap:      newNameMap(dirName, uuid),
-		DirName:   dirName,
+		Name:      dirName,
 		OwnerID:   ownerID,
-		DriveID:   "CHANGE ME",
+		DriveID:   driveID,
 		Protected: false,
 		Key:       "default",
 		Overwrite: false,
@@ -100,14 +102,14 @@ func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath s
 // testing without having to create an entire mocked system.
 // I'm sure I won't regret this.
 func NewDirectory(dirName string, ownerID string, driveID string, path string) *Directory {
-	uuid := NewUUID()
 	cfg := NewSvcCfg()
+	uuid := auth.NewUUID()
 	return &Directory{
 		ID:        uuid,
 		NMap:      newNameMap(dirName, uuid),
-		DirName:   dirName,
+		Name:      dirName,
 		OwnerID:   ownerID,
-		DriveID:   "CHANGE ME",
+		DriveID:   driveID,
 		Protected: false,
 		Key:       "default",
 		Overwrite: false,
@@ -162,7 +164,10 @@ func (d *Directory) clear() {
 	log.Printf("[INFO] dirID (%s) all directories and files cleared", d.ID)
 }
 
-// used to securely run clear()
+// clears *in-memory* file and directory data structures.
+// does not actually remove physical files or directories.
+//
+// used to securely run clear().
 func (d *Directory) Clear(password string) {
 	if !d.Protected {
 		d.clear()
@@ -194,9 +199,10 @@ func clean(dirPath string) error {
 	return nil
 }
 
-// calls clean() which removes all files and subdirectories
-// from a drive starting at the given path. also
-// calls dir.clear() which removes internal data structure references.
+// calls clean() which ***removes all physical files and subdirectories
+// from a drive starting at the given path***. use with caution!
+//
+// also calls dir.clear() which removes internal data structure references.
 func (d *Directory) Clean(dirPath string) error {
 	if !d.Protected {
 		if err := clean(dirPath); err != nil {
@@ -307,7 +313,7 @@ func (d *Directory) AddFile(file *File) {
 			log.Printf("[INFO] file %s (%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
-		log.Printf("[INFO] directory %s (%s) locked", d.DirName, d.ID)
+		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
 	}
 }
 
@@ -325,19 +331,8 @@ func (d *Directory) AddFiles(files []*File) {
 			}
 		}
 	} else {
-		log.Printf("[INFO] directory %s (%s) locked", d.DirName, d.ID)
+		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
 	}
-}
-
-func (d *Directory) updateFile(f *File, data []byte) error {
-	if file, exists := d.Files[f.ID]; exists {
-		if err := file.Save(data); err != nil {
-			return err
-		}
-	} else {
-		log.Printf("[INFO] file (%v) not found", f.ID)
-	}
-	return nil
 }
 
 // save new data to a file. file will be created or truncated,
@@ -345,11 +340,15 @@ func (d *Directory) updateFile(f *File, data []byte) error {
 // subdirectories for the existence of this file.
 func (d *Directory) UpdateFile(f *File, data []byte) error {
 	if !d.Protected {
-		if err := d.updateFile(f, data); err != nil {
-			return err
+		if d.HasFile(f.ID) {
+			if err := f.Save(data); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("[ERROR] file (id=%s) does not belong to this directory", f.ID)
 		}
 	} else {
-		log.Printf("[INFO] directory %s (%s) locked", d.DirName, d.ID)
+		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
 	}
 	return nil
 }
@@ -380,14 +379,12 @@ func (d *Directory) RemoveFile(fileID string) error {
 	return nil
 }
 
-// return a copy of the files map for *this* directory.
-//
-// does not return files from subdirectories.
+// returns a file map containing all files starting at this directory.
 func (d *Directory) GetFileMap() map[string]*File {
 	if len(d.Files) == 0 {
 		log.Printf("[WARNING] dir (%s) has no files", d.ID)
 	}
-	return d.Files
+	return d.WalkFs()
 }
 
 // get a slice of all files starting from this directory.
@@ -422,9 +419,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.DriveID = d.DriveID
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
-		log.Printf("[INFO] dir %s (id=%s) added", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) added", dir.Name, dir.ID)
 	} else {
-		return fmt.Errorf("dir %s (id=%s) already exists", dir.DirName, dir.ID)
+		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
 	return nil
 }
@@ -438,7 +435,7 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		d.addSubDir(dir)
 	} else {
-		log.Printf("[DEBUG] dir %s is protected", d.DirName)
+		log.Printf("[DEBUG] dir %s is protected", d.Name)
 	}
 	return nil
 }
@@ -455,7 +452,7 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 			d.addSubDir(dir)
 		}
 	} else {
-		log.Printf("[INFO] %s (id=%s) is protected", d.DirName, d.ID)
+		log.Printf("[INFO] %s (id=%s) is protected", d.Name, d.ID)
 	}
 	return nil
 }
@@ -527,7 +524,8 @@ func (d *Directory) GetSubDirs() map[string]*Directory {
 	return d.Dirs
 }
 
-// attempts to locate the directory or subdirectory. returns nil if not found.
+// attempts to locate the directory or subdirectory starting from the given directory.
+// returns nil if not found.
 func (d *Directory) FindDir(dirID string) *Directory {
 	return d.WalkD(dirID)
 }
@@ -600,7 +598,7 @@ func walkF(dir *Directory, fileID string) *File {
 		return file
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
@@ -647,7 +645,7 @@ func (d *Directory) WalkD(dirID string) *Directory {
 
 func walkD(dir *Directory, dirID string) *Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	if d, ok := dir.Dirs[dirID]; ok {
@@ -673,7 +671,7 @@ func (d *Directory) WalkDs() map[string]*Directory {
 
 func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return dirMap
 	}
 	for _, subDir := range dir.Dirs {
@@ -707,10 +705,10 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildSync(dir, idx)
 	} else {
-		log.Printf("[INFO] dir %s (%s) has no files", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.Name, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -748,10 +746,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildUpdate(dir, idx)
 	} else {
-		log.Printf("[INFO] dir %s (%s) has no files", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.Name, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -773,10 +771,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 // functions should have the following signature: func(file *File) error
 func (d *Directory) WalkO(op func(file *File) error) error {
 	if len(d.Files) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no files", d.DirName, d.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", d.Name, d.ID)
 	}
 	if len(d.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", d.DirName, d.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", d.Name, d.ID)
 		return nil
 	}
 	return walkO(d, op)
@@ -788,15 +786,15 @@ func walkO(dir *Directory, op func(f *File) error) error {
 			if err := op(file); err != nil {
 				// we don't exit right away because this exception may only apply
 				// to a single file.
-				log.Printf("[INFO] unable to run operation on %s \n%v\n continuing...", dir.DirName, err)
+				log.Printf("[INFO] unable to run operation on %s \n%v\n continuing...", dir.Name, err)
 				continue
 			}
 		}
 	} else {
-		log.Printf("[INFO] dir %s (%s) has no files", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.DirName, dir.ID)
+		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {

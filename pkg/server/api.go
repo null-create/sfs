@@ -189,7 +189,6 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 	w.Header().Set("Content-Type", "application/octet-stream")
 
-	// TODO: re-evaluate this. may need a more explicit upload implementation
 	http.ServeFile(w, r, file.ServerPath)
 }
 
@@ -217,7 +216,7 @@ func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
-	// retrieve file
+	// download the file
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
@@ -230,15 +229,12 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	// update checksum (also updates the files last sync time.)
-	if err := newFile.UpdateChecksum(); err != nil {
-		log.Printf("[WARNING] failed to calculate checksum %v", err)
-	}
-
-	// save to DB
-	if err := a.Svc.Db.AddFile(newFile); err != nil {
-		msg := fmt.Sprintf("failed to add file to database: %v", err)
+	// update service. remove file if update fails.
+	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
+		if err := os.Remove(newFile.ServerPath); err != nil {
+			log.Printf("[WARNING] failed to remove %s (id=%s) from server: %v", newFile.Name, newFile.ID, err)
+		}
+		msg := fmt.Sprintf("failed to add file to service: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
@@ -249,7 +245,7 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 
 // update the file
 func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
-	// retrieve and update the file
+	// retrieve file data from request body
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
@@ -257,15 +253,9 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	if err := file.Save(buf.Bytes()); err != nil {
-		msg := fmt.Sprintf("failed to download file to server: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
-		return
-	}
-	// update DB
-	if err := a.Svc.Db.UpdateFile(file); err != nil {
-		msg := fmt.Sprintf("failed to update file database: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
+	// update file
+	if err := a.Svc.UpdateFile(file, buf.Bytes()); err != nil {
+		http.Error(w, fmt.Sprintf("failed to update %s (id=%s)", file.Name, file.ID), http.StatusInternalServerError)
 		return
 	}
 	msg := fmt.Sprintf("file %s updated", file.Name)
@@ -285,16 +275,12 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 
 // delete a file from the server
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	// retrieve file object from the request context
 	file := r.Context().Value(File).(*svc.File)
-
-	// remove physical file, update database, and updates state file.
-	if err := a.Svc.DeleteFile(file.DriveID, file.DirID, file.ID); err != nil {
+	if err := a.Svc.DeleteFile(file); err != nil {
 		msg := fmt.Sprintf("failed to delete file: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
 	log.Printf("[INFO] file (%s) deleted from server", file.Path)
 	w.Write([]byte(fmt.Sprintf("file (%s) deleted", file.Name)))
 }
@@ -389,7 +375,7 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing drive ID", http.StatusBadRequest)
 		return
 	}
-	// returns a "shallow" read of the drive. does not populate the root directory.
+	// returns entire contents of the drive!
 	drive := a.Svc.GetDrive(driveID)
 	if drive == nil {
 		http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)

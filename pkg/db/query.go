@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -11,8 +10,10 @@ import (
 
 // Query objects represent connections to to our database.
 //
-// If instantiated as a singleton, then the query will prepare
-// a map of sql statements that can be used during run time.
+// Setting isSingleton to true will allow Query to automatically
+// switch between different databases.
+//
+// TODO: prepare all queries at instantiation time for singletons.
 type Query struct {
 	DBPath string // database directory path
 	CurDB  string // current database we're connecting to
@@ -27,13 +28,12 @@ type Query struct {
 
 // returns a new query object.
 func NewQuery(dbPath string, isSingleton bool) *Query {
-	dbs := []string{"users", "drives", "directories", "files"}
 	return &Query{
 		DBPath:    dbPath,
 		CurDB:     "",
 		Debug:     false,
 		Singleton: isSingleton,
-		DBs:       dbs,
+		DBs:       []string{"users", "drives", "directories", "files"},
 	}
 }
 
@@ -59,19 +59,17 @@ func (q *Query) ValidDb(dbName string) bool {
 
 // sets the file path to the db we want to connect to.
 //
-// used only in singleton mode. will be a no-op when used
-// otherwise
+// used only in singleton mode. will be a no-op if/when used
+// otherwise.
 func (q *Query) WhichDB(dbName string) {
 	if q.Singleton && q.DBPath != "" {
 		q.CurDB = filepath.Join(q.DBPath, dbName)
-	} else {
-		log.Print("[WARNING] q.DBpath was not set")
 	}
 }
 
 // connect to a database
 //
-// must be followed by a defer q.Conn.Close() statement when called!
+// must be followed by a defer q.Conn.Close() call when used.
 func (q *Query) Connect() error {
 	var path string
 	if q.Singleton {
@@ -81,7 +79,7 @@ func (q *Query) Connect() error {
 	}
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open database: %v", err)
 	}
 	q.Conn = db
 	return nil

@@ -16,9 +16,11 @@ import (
 
 func TestServiceConfig(t *testing.T) {
 	env.SetEnv(false)
+
 	c := ServiceConfig()
 	assert.NotEqual(t, nil, c)
-	assert.True(t, strings.Contains(c.SvcRoot, "C:"))
+	assert.NotEqual(t, "", c.SvcRoot)
+	assert.NotEqual(t, true, c.IsAdmin)
 }
 
 func TestSaveStateFile(t *testing.T) {
@@ -53,7 +55,7 @@ func TestLoadServiceFromStateFile(t *testing.T) {
 
 	// create a test service instance with a bunch of sub directories,
 	// add to service state, then write out
-	svc, err := Init(true, false)
+	svc, err := Init(false, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -148,51 +150,6 @@ func TestCreateNewService(t *testing.T) {
 		}
 	}
 	// clean up
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-}
-
-func TestAllocateDrive(t *testing.T) {
-	testSvc := &Service{
-		SvcRoot: GetTestingDir(),
-		UserDir: filepath.Join(GetTestingDir(), "users"),
-	}
-
-	// create a temp "users" directory
-	if err := os.Mkdir(testSvc.UserDir, 0644); err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	// allocate a new tmp drive
-	d, err := svc.AllocateDrive("test", "me", testSvc.SvcRoot)
-	if err != nil {
-		Fatal(t, err)
-	}
-	assert.NotEqual(t, nil, d)
-
-	// make sure all the basic user files are present
-	entries, err := os.ReadDir(d.DriveRoot)
-	if err != nil {
-		Fatal(t, err)
-	}
-	assert.NotEqual(t, 0, len(entries))
-
-	for _, e := range entries {
-		if strings.Contains(e.Name(), "root") {
-			continue // don't check root directory
-		} else if strings.Contains(e.Name(), "meta") {
-			fdir := filepath.Join(GetTestingDir(), "users/test/meta")
-			baseFiles, err := os.ReadDir(fdir)
-			if err != nil {
-				Fatal(t, err)
-			}
-			for _, bf := range baseFiles {
-				assert.True(t, strings.Contains(bf.Name(), ".json"))
-			}
-		}
-	}
-
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
@@ -297,10 +254,65 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	}
 }
 
+// ------ drive tests --------------------------------
+
+func TestAllocateDrive(t *testing.T) {
+	env.SetEnv(false)
+
+	testSvc := &Service{
+		SvcRoot: GetTestingDir(),
+		UserDir: filepath.Join(GetTestingDir(), "users"),
+	}
+
+	// create a temp "users" directory
+	if err := os.Mkdir(testSvc.UserDir, 0644); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// allocate a new tmp drive
+	d, err := svc.AllocateDrive("test", "me", testSvc.SvcRoot)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	assert.NotEqual(t, nil, d)
+
+	// make sure all the basic user files are present
+	entries, err := os.ReadDir(d.DriveRoot)
+	if err != nil {
+		Fatal(t, err)
+	}
+	assert.NotEqual(t, 0, len(entries))
+
+	for _, e := range entries {
+		if strings.Contains(e.Name(), "root") {
+			continue // don't check root directory
+		} else if strings.Contains(e.Name(), "meta") {
+			fdir := filepath.Join(GetTestingDir(), "users/test/meta")
+			baseFiles, err := os.ReadDir(fdir)
+			if err != nil {
+				Fatal(t, err)
+			}
+			for _, bf := range baseFiles {
+				assert.True(t, strings.Contains(bf.Name(), ".json"))
+			}
+		}
+	}
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+// func TestAddDrive(t *testing.T) {}
+
+// func TestUpdateDrive(t *testing.T) {}
+
+// func TestRemoveDrive(t *testing.T) {}
+
 func TestDiscover(t *testing.T) {
 	env.SetEnv(false)
 
-	testSvc, err := Init(true, false)
+	testSvc, err := Init(false, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}

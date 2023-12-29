@@ -89,6 +89,9 @@ func TestNewFileAPI(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
+	// TODO: use client for this instead of transfer component.
+	// create empty client, add a file, then send to server.
+
 	// transfer file
 	log.Print("[TEST] uploading file...")
 	transfer := transfer.NewTransfer(8080)
@@ -202,25 +205,26 @@ func TestFileGetAPI(t *testing.T) {
 	// contact the server
 	log.Print("[TEST] attempting to retrieve file via its API endpoint...")
 	client := new(http.Client)
-	client.Timeout = time.Second * 600
+	client.Timeout = time.Second * 30
 
 	res, err := client.Get(testFile.Endpoint)
 	if err != nil {
 		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
 	}
-
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)
 		if err != nil {
-			Fail(t, testSvc.UserDir, err)
+			log.Printf("[TEST] failed to dump response: %v", err)
+			Fail(t, testSvc.UserDir, fmt.Errorf("response code was not 200: %v", res.StatusCode))
+		} else {
+			msg := fmt.Sprintf(
+				"response code was not 200: %d\n response: %v\n",
+				res.StatusCode, string(b),
+			)
+			Fail(t, testSvc.UserDir, fmt.Errorf(msg))
 		}
-		msg := fmt.Sprintf(
-			"response code was not 200: %d\n response: %v\n",
-			res.StatusCode, string(b),
-		)
-		Fail(t, testSvc.UserDir, fmt.Errorf(msg))
 	}
 
 	// get file info from response body
@@ -255,8 +259,11 @@ func TestFileGetAPI(t *testing.T) {
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to read test file data: %v", err))
 	}
 	if len(tmpFileData) == 0 {
-		Fail(t, testSvc.UserDir, fmt.Errorf("no test file data found"))
+		Fail(t, testSvc.UserDir, fmt.Errorf("no test file data received"))
 	}
+
+	// TODO: more germaine file content tests
+
 	// testFile.Load()
 	// if len(tmpFileData) != len(testFile.Content) {
 	// 	Fail(t, testSvc.UserDir, fmt.Errorf("different byte counts. orig = %d, new = %d", testFile.Size(), len(tmpFileData)))
@@ -318,7 +325,7 @@ func TestFileDeleteAPI(t *testing.T) {
 
 	log.Print("[TEST] attempting to delete file via its API endpoint...")
 	client := new(http.Client)
-	client.Timeout = time.Second * 600
+	client.Timeout = time.Second * 1200 // 20 min timeout lol
 
 	var buf bytes.Buffer
 	req, err := http.NewRequest(http.MethodDelete, testFile.Endpoint, &buf)
@@ -343,8 +350,17 @@ func TestFileDeleteAPI(t *testing.T) {
 		Fail(t, testSvc.UserDir, fmt.Errorf("non 200 response code"))
 	}
 
-	shutDown <- true // shut down test server
+	// shut down test server
+	shutDown <- true
 
+	// remove tmp drive from service
+	if err := testSvc.RemoveDrive(tmpDrive.ID); err != nil {
+		if err2 := Clean(testSvc.UserDir); err2 != nil {
+			log.Printf("[TEST] failed to clean test service files: %v", err2)
+		}
+	}
+
+	// clean up
 	if err := Clean(testSvc.UserDir); err != nil {
 		log.Fatal(err)
 	}

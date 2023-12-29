@@ -28,6 +28,10 @@ func NewFileCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileToken := r.Header.Get("Authorization")
+		if fileToken == "" {
+			http.Error(w, "no authorization token provided", http.StatusBadRequest)
+			return
+		}
 		fileInfo, err := tokenValidator.Verify(fileToken)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify file token: %v", err)
@@ -50,6 +54,10 @@ func NewUserCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userToken := r.Header.Get("Authorization")
+		if userToken == "" {
+			http.Error(w, "no authorization token provided", http.StatusBadRequest)
+			return
+		}
 		userInfo, err := tokenValidator.Verify(userToken)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify user token: %v", err)
@@ -92,11 +100,10 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 
 // retrieve jwt token from request & verify
 func AuthenticateUser(reqToken string) (*auth.User, error) {
-	// verify request token
 	tokenValidator := auth.NewT()
 	userID, err := tokenValidator.Verify(reqToken)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to validate token: %v", err)
 	}
 	// attempt to find data about the user from the the user db
 	user, err := findUser(userID, getDBConn("Users"))
@@ -111,12 +118,12 @@ func AuthenticateUser(reqToken string) (*auth.User, error) {
 // get user info
 func AuthUserHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authReq := r.Header.Get("Authorization")
-		if authReq == "" {
+		reqToken := r.Header.Get("Authorization")
+		if reqToken == "" {
 			http.Error(w, "header had no request token", http.StatusBadRequest)
 			return
 		}
-		user, err := AuthenticateUser(authReq)
+		user, err := AuthenticateUser(reqToken)
 		if err != nil {
 			// TODO: handle error more explicitly. need to
 			// map return codes to failures; could be client side
@@ -141,33 +148,13 @@ func FileCtx(h http.Handler) http.Handler {
 		}
 		file, err := findFile(fileID, getDBConn("Files"))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to retrieve file info: %v", err), http.StatusInternalServerError)
 			return
 		} else if file == nil {
 			http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), File, file)
-		h.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func DriveCtx(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		driveID := chi.URLParam(r, "driveID")
-		if driveID == "" {
-			http.Error(w, "driveID not set", http.StatusBadRequest)
-			return
-		}
-		drive, err := findDrive(driveID, getDBConn("Drives"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else if drive == nil {
-			http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)
-			return
-		}
-		ctx := context.WithValue(r.Context(), Drive, drive)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -188,6 +175,26 @@ func DirCtx(h http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), Directory, dir)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func DriveCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		driveID := chi.URLParam(r, "driveID")
+		if driveID == "" {
+			http.Error(w, "driveID not set", http.StatusBadRequest)
+			return
+		}
+		drive, err := findDrive(driveID, getDBConn("Drives"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else if drive == nil {
+			http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Drive, drive)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

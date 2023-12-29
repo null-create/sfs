@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 	"log"
+
+	"github.com/sfs/pkg/auth"
 )
 
 // max batch size
@@ -57,7 +59,7 @@ type Batch struct {
 // create a new batch with capacity of MAX
 func NewBatch() *Batch {
 	return &Batch{
-		ID:    NewUUID(),
+		ID:    auth.NewUUID(),
 		Cap:   MAX,
 		Max:   MAX,
 		Files: make(map[string]*File, 0),

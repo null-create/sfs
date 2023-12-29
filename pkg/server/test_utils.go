@@ -89,14 +89,15 @@ func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 	}
 	defer file.Close()
 
-	f := svc.NewFile(filepath.Base(filePath), "some-rand-id", "some-rand-id", filePath)
 	for i := 0; i < textReps; i++ {
 		_, err := file.WriteString(txtData)
 		if err != nil {
 			return nil, fmt.Errorf("error writing to test file: %v", err)
 		}
 	}
-	return f, nil
+
+	tmpFile := svc.NewFile(filepath.Base(filePath), "some-rand-id", "some-rand-id", filePath)
+	return tmpFile, nil
 }
 
 // make a bunch of temp .txt files of varying sizes.
@@ -124,7 +125,7 @@ func MakeTmpDir(t *testing.T, path string) (*svc.Directory, error) {
 	if err := os.Mkdir(path, 0666); err != nil {
 		return nil, fmt.Errorf("[ERROR] unable to create temporary directory: %v", err)
 	}
-	dir := svc.NewDirectory("tmp", "me", "some-rand-ide", path)
+	dir := svc.NewDirectory("tmp", "some-rand-id", "some-rand-id", path)
 	return dir, nil
 }
 
@@ -144,6 +145,8 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
+
+	// temp root directory
 	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", "some-rand-id", filepath.Join(GetTestingDir(), "tmp"))
 	tmpRoot.AddFiles(files)
 
@@ -169,18 +172,22 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 // also with files, under a specified path.
 //
 // returns complete test root with directory and files
-func MakeTmpDirsWithPath(t *testing.T, path string) *svc.Directory {
+func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *svc.Directory {
 	// make our temporary directory
 	d, err := MakeTmpDir(t, filepath.Join(path, "tmp"))
 	if err != nil {
 		Fatal(t, err)
 	}
 
-	// create tmp service root directory with some files
-	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", "some-rand-id", filepath.Join(path, "tmp"))
+	// create tmp service root directory with some files and
+	// make sure we properly assign these files and directories to the temp drivea
+	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", driveID, filepath.Join(path, "tmp"))
 	files, err := MakeABunchOfTxtFiles(10, d.Path)
 	if err != nil {
 		Fatal(t, err)
+	}
+	for _, f := range files {
+		f.DriveID = driveID
 	}
 	tmpRoot.AddFiles(files)
 
@@ -189,12 +196,16 @@ func MakeTmpDirsWithPath(t *testing.T, path string) *svc.Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
+	sd.DriveID = driveID
 	moreFiles, err := MakeABunchOfTxtFiles(10, sd.Path)
 	if err != nil {
 		Fatal(t, err)
 	}
+	for _, f := range moreFiles {
+		f.DriveID = driveID
+	}
 
-	// build the directories
+	// build the directory structure
 	sd.AddFiles(moreFiles)
 	d.AddSubDir(sd)
 	tmpRoot.AddSubDir(d)
@@ -213,8 +224,9 @@ func MakeTmpDrive(t *testing.T) *svc.Drive {
 // make testing drive with test files, directories, and subdirectories
 // under a specified path.
 func MakeTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
-	root := MakeTmpDirsWithPath(t, path)
-	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	tmpDriveID := auth.NewUUID()
+	root := MakeTmpDirsWithPath(t, path, tmpDriveID)
+	drive := svc.NewDrive(tmpDriveID, "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
 	return drive
 }
 

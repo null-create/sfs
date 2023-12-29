@@ -90,7 +90,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if _, err = fileWriter.Write(file.Content); err != nil {
 		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
-	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, destURL)
+	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, file.Endpoint)
 	if err != nil {
 		return err
 	}

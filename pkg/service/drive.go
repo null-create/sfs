@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/sfs/pkg/auth"
 )
 
 // max size of a single drive (root directory) per user (1GB)
@@ -31,15 +33,17 @@ func AllocateDrive(name string, ownerID string, svcRoot string) (*Drive, error) 
 	userRoot := filepath.Join(svcRoot, "users", name)
 	contentsRoot := filepath.Join(userRoot, "root")
 	stateFileDir := filepath.Join(userRoot, "state")
+
 	// make each directory
 	dirs := []string{userRoot, contentsRoot, stateFileDir}
 	for _, d := range dirs {
-		if err := os.Mkdir(d, 0644); err != nil {
+		if err := os.Mkdir(d, PERMS); err != nil {
 			return nil, err
 		}
 	}
+
 	// gen root and drive objects
-	driveID := NewUUID()
+	driveID := auth.NewUUID()
 	rt := NewRootDirectory(name, ownerID, driveID, contentsRoot)
 	drv := NewDrive(driveID, name, ownerID, userRoot, rt.ID, rt)
 	return drv, nil
@@ -56,9 +60,6 @@ contains the user's "root" directory. Its this "root" directory where
 all the users files live, in whatever arragement they end up using.
 
 user/
-|---meta/
-|   |---user.json
-|   |---drive.json
 |---root/    <---- the "drive." user's files & directories live here
 |---state/
 |   |---userID-d-m-y-hh-mm-ss.json
@@ -93,7 +94,7 @@ type Drive struct {
 
 	// User's root directory & sync index
 	RootID    string     `json:"root_id"`
-	Root      *Directory `json:"-"` // ignored to avoid json cycles. will be populated during instantiation
+	Root      *Directory `json:"-"` // ignored to avoid json cycle errors
 	SyncIndex *SyncIndex `json:"sync_index"`
 }
 
@@ -210,7 +211,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 			}
 			dir.AddFile(file)
 		}
-		d.Root.Size += float64(file.Size())
+		d.UsedSpace += float64(file.Size())
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
 	}
@@ -252,6 +253,8 @@ func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 			if err := dir.UpdateFile(file, data); err != nil {
 				return err
 			}
+			// TODO: get the difference between old and new file sizes
+			// and adjust the drives used space value accordingly.
 		}
 	} else {
 		log.Printf("[INFO] drive is protected")
@@ -264,7 +267,7 @@ func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 func (d *Drive) RemoveFile(dirID string, file *File) error {
 	if !d.Protected {
 		// if the driveID is this drive's root directory
-		if dirID == d.RootID {
+		if dirID == d.Root.ID {
 			if err := d.Root.RemoveFile(file.ID); err != nil {
 				return err
 			}
@@ -277,7 +280,7 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 			if err := dir.RemoveFile(file.ID); err != nil {
 				return err
 			}
-			d.Root.Size -= float64(file.Size())
+			d.UsedSpace -= float64(file.Size())
 			return nil
 		}
 	} else {
@@ -288,37 +291,20 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 
 // ------ directory management --------------------------------
 
-// makes a physical directory for this drive.
-func (d *Drive) MkDir(dirPath string) error {
-	return os.Mkdir(dirPath, PERMS)
-}
-
 func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 	// add sub directory to root if that's where it's supposed to be
 	if dirID == d.Root.ID {
-		if err := d.MkDir(dir.Path); err != nil {
-			return err
-		}
 		if err := d.Root.AddSubDir(dir); err != nil {
 			return err
 		}
 	} else {
 		// otherwise attempt to retrive the directory we want to
 		// add the subdirectory to
-		dirs := d.Root.WalkDs()
-		if dirs == nil {
-			return fmt.Errorf("root has no subdirectories")
+		dirs := d.Root.GetSubDirs()
+		if d, exists := dirs[dirID]; exists {
+			return d.AddSubDir(dir)
 		} else {
-			if dir, exists := dirs[dirID]; exists {
-				if err := d.MkDir(dir.Path); err != nil {
-					return err
-				}
-				if err := dir.AddSubDir(dir); err != nil {
-					return err
-				}
-			} else {
-				return fmt.Errorf("dir not found: %v", dirID)
-			}
+			return fmt.Errorf("drive has no directory with id=%s", dirID)
 		}
 	}
 	return nil
@@ -350,8 +336,7 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 	return nil
 }
 
-// find a directory.
-// returns nil if not found (or if drive has no root directory)
+// find a directory. returns nil if not found (or if drive has no root directory)
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
 		if d.Root == nil {

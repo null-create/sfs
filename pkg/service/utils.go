@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 func KbToMb(kb float64) float64 {
@@ -26,15 +24,6 @@ func RandInt(limit int) int {
 		return 1
 	}
 	return num
-}
-
-// creates a new UUID string
-func NewUUID() string {
-	uuid, err := uuid.NewUUID()
-	if err != nil {
-		log.Fatalf("[ERROR] failed to generate UUID: \n%v\n", err)
-	}
-	return uuid.String()
 }
 
 func isEmpty(path string) bool {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/env"
 )
 
@@ -23,7 +24,7 @@ func MakeDummySystem(t *testing.T) (*Drive, *Directory) {
 	testRoot := NewRootDirectory("testRoot", "some-rand-id", "some-rand-id", driveRoot)
 	testRoot.AddFiles(testFiles1)
 
-	testDrive := NewDrive(NewUUID(), "testDrive", "me", driveRoot, NewUUID(), testRoot)
+	testDrive := NewDrive(auth.NewUUID(), "testDrive", "me", driveRoot, auth.NewUUID(), testRoot)
 
 	// create a subdirectory with dummy files
 	sdPath := filepath.Join(driveRoot, "testSubDir")
@@ -49,7 +50,7 @@ func TestDriveSecurityFeatures(t *testing.T) {
 	tmpDir := filepath.Join(testDir, "testDir")
 
 	testRoot := NewRootDirectory("testRoot", "some-rand-id", "some-rand-id", filepath.Join(tmpDir, "testRoot"))
-	testDrive := NewDrive(NewUUID(), "test-drive", "me", tmpDir, NewUUID(), testRoot)
+	testDrive := NewDrive(auth.NewUUID(), "test-drive", "me", tmpDir, auth.NewUUID(), testRoot)
 
 	testDrive.Lock("default")
 	assert.True(t, testDrive.Protected)

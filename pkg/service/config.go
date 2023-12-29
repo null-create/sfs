@@ -10,6 +10,9 @@ import (
 // server's root endpoint, since we're running on LAN
 const Endpoint = "http://localhost"
 
+// enusre -rw-r----- permissions
+const PERMS = 0640 // go's default is 0666
+
 type ServiceConfig struct {
 	Port string `env:"SERVER_PORT,required"`
 }

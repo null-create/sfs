@@ -26,7 +26,7 @@ const (
 
 // gets server sync index, compares with local index, and either
 // calls Push or Pull, depending on whether the corresponding bool
-// flag is set.
+// flag is set. resets sync doc too.
 func (c *Client) sync(up bool) error {
 	if up {
 		c.Push()
@@ -43,6 +43,16 @@ func (c *Client) reset() {
 	c.Monitor.ResetDoc()      // resets sync doc
 }
 
+// display server response clearly.
+func (c *Client) dump(resp *http.Response, body bool) {
+	b, err := httputil.DumpResponse(resp, body)
+	if err != nil {
+		log.Printf("[WARNING] failed to dump http response:\n%v", err)
+	} else {
+		log.Printf("\n%s\n", string(b))
+	}
+}
+
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
 func (c *Client) Push() error {
@@ -53,11 +63,12 @@ func (c *Client) Push() error {
 	if len(queue.Queue) == 0 || queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
+	// TODO: use a channel to block Push() right before c.reset() until
+	// all files have been uploaded
 	for _, batch := range queue.Queue {
 		for _, file := range batch.Files {
 			// TODO: some apis are contingent on http method: file post/put is new vs update
 			// need a way to handle these cases on the fly.
-			// maybe add a field to File struct?
 			go func() {
 				if err := c.Transfer.Upload(http.MethodPost, file, file.Endpoint); err != nil {
 					log.Printf("[WARNING] failed to upload file: %s\nerr: %v", file.ID, err)
@@ -115,22 +126,19 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 	buffer := new(bytes.Buffer)
 	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], buffer)
 	if err != nil {
-		log.Printf("[WARNING] failed prepare http request\nerr: %v", err)
+		log.Printf("[WARNING] failed prepare http request: \n%v", err)
 		return nil
 	}
 
 	// attempt to get the server's sync index
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		log.Printf("[WARNING] failed to get execute http request\nerr: %v", err)
+		log.Printf("[WARNING] failed to get execute http request: \n%v", err)
 		return nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		b, err := httputil.DumpResponse(resp, true)
-		if err != nil {
-			log.Printf("[WARNING] failed to parse server sync index response\nerr: %v", err)
-		}
-		log.Printf("[WARNING] failed to get server sync index\nerr: %s", string(b))
+		log.Printf("[WARNING] failed to get server sync index. return code: %d", resp.StatusCode)
+		c.dump(resp, true)
 		return nil
 	}
 
@@ -138,7 +146,7 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 	respBody := make([]byte, resp.ContentLength)
 	_, err = resp.Body.Read(respBody)
 	if err != nil {
-		log.Printf("[WARNING] failed to parse server response \nerr: %v", err.Error())
+		log.Printf("[WARNING] failed to read server response body: \n%v", err)
 		return nil
 	}
 	defer resp.Body.Close()
@@ -146,7 +154,7 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 	// unmarshal response body
 	idx := new(svc.SyncIndex)
 	if err := json.Unmarshal(respBody, &idx); err != nil {
-		log.Printf("[WARNING] failed to parse server sync index: %v", err.Error())
+		log.Printf("[WARNING] failed to unmarshal server sync index: \n%v", err)
 		return nil
 	}
 	return idx
@@ -165,7 +173,7 @@ func (c *Client) Sync(stop chan bool) {
 			default:
 				contents, err := os.ReadFile(c.Monitor.SyncDoc)
 				if err != nil {
-					log.Printf("[WARNING] failed to read sync doc: %v\n stopping sync thread...", err)
+					log.Printf("[WARNING] failed to read sync doc: %v\nstopping sync thread...", err)
 					return
 				}
 				if string(contents) == "1" {

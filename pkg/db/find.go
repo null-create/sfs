@@ -318,7 +318,7 @@ func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 
 	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
 		&d.ID,
-		&d.DirName,
+		&d.Name,
 		&d.OwnerID,
 		&d.DriveID,
 		&d.Size,
@@ -352,7 +352,7 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 
 	if err := q.Conn.QueryRow(FindDirByNameQuery, dirName).Scan(
 		&d.ID,
-		&d.DirName,
+		&d.Name,
 		&d.OwnerID,
 		&d.Size,
 		&d.Path,
@@ -391,7 +391,7 @@ func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 		dir.Dirs = make(map[string]*svc.Directory, 0)
 		if err := q.Conn.QueryRow(FindAllQuery, "Directories").Scan(
 			&dir.ID,
-			&dir.DirName,
+			&dir.Name,
 			&dir.OwnerID,
 			&dir.Size,
 			&dir.Path,

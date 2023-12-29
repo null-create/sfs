@@ -12,12 +12,9 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/sfs/pkg/auth"
 )
-
-// enusre -rw-r----- permissions
-const PERMS = 0640 // go's default is 0666
-
-type ChecksumMismatch error
 
 type File struct {
 	m sync.Mutex
@@ -39,10 +36,9 @@ type File struct {
 	Path       string    `json:"path"` // temp. will be replaced by server/client path at some point
 	ServerPath string    `json:"server_path"`
 	ClientPath string    `json:"client_path"`
-	Endpoint   string    `json:"endpoint"` // unique API endpoint
-
-	CheckSum  string `json:"checksum"`
-	Algorithm string `json:"algorithm"`
+	Endpoint   string    `json:"endpoint"` // unique server API endpoint
+	CheckSum   string    `json:"checksum"`
+	Algorithm  string    `json:"algorithm"`
 
 	// file content/bytes
 	Content []byte
@@ -56,7 +52,7 @@ func NewFile(fileName string, driveID string, ownerID string, path string) *File
 		log.Printf("[WARNING] error calculating checksum: %v", err)
 	}
 
-	uuid := NewUUID()
+	uuid := auth.NewUUID()
 	cfg := NewSvcCfg()
 
 	return &File{

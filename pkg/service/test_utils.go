@@ -131,15 +131,9 @@ func MakeTmpDirs(t *testing.T) *Directory {
 	if err != nil {
 		Fatal(t, err)
 	}
-
-	moreFiles := make([]*File, 0)
-	for i := 0; i < 10; i++ {
-		fname := fmt.Sprintf("tmp-%d.txt", i)
-		f, err := MakeTmpTxtFile(filepath.Join(sd.Path, fname), RandInt(1000))
-		if err != nil {
-			Fatal(t, err)
-		}
-		moreFiles = append(moreFiles, f)
+	moreFiles, err := MakeABunchOfTxtFiles(10)
+	if err != nil {
+		Fatal(t, err)
 	}
 
 	sd.AddFiles(moreFiles)
@@ -229,19 +223,6 @@ func MakeABunchOfTxtFiles(total int) ([]*File, error) {
 	return files, nil
 }
 
-func MakeDummyFiles(t *testing.T, total int) []*File {
-	testDir := GetTestingDir()
-
-	// build dummy file objects + test files
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmp-%d.txt", i)
-		testFiles = append(testFiles, NewFile(tfName, "some-rand-id", "me", filepath.Join(testDir, tfName)))
-	}
-
-	return testFiles
-}
-
 // makes temp files and file objects for testing purposes
 func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 	testDir := GetTestingDir()
@@ -257,34 +238,6 @@ func MakeTestFiles(t *testing.T, total int) ([]*File, error) {
 			t.Fatalf("[ERROR] failed to create test file: %v", err)
 		}
 		file.Write([]byte(txtData))
-		file.Close()
-
-		testFiles = append(testFiles, NewFile(tfName, "some-rand-id", "me", tfPath))
-	}
-	return testFiles, nil
-}
-
-// build large test text files in a specified directory
-//
-// builds one huge string. really slow.
-func MakeLargeTestFiles(total int, dest string) ([]*File, error) {
-	testFiles := make([]*File, 0)
-	for i := 0; i < total; i++ {
-		tfName := fmt.Sprintf("tmpXL-%d.txt", i)
-		tfPath := filepath.Join(dest, tfName)
-
-		file, err := os.Create(tfPath)
-		if err != nil {
-			return nil, err
-		}
-		// files are roughly 500kb so "large" is generous here
-		var data string
-		for i := 0; i < 10000; i++ {
-			data += txtData
-		}
-		if _, err := file.Write([]byte(data)); err != nil {
-			return nil, err
-		}
 		file.Close()
 
 		testFiles = append(testFiles, NewFile(tfName, "some-rand-id", "me", tfPath))

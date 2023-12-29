@@ -81,19 +81,19 @@ const (
 
 	AddFileQuery string = `
 		INSERT OR IGNORE INTO Files (
-			id, 
-			name, 
+			id,
+			name,
 			owner_id,
-			directory_id, 
-			drive_id, 
-			protected, 
+			directory_id,
+			drive_id,
+			protected,
 			key,
-			last_sync, 
-			path, 
-			server_path, 
+			last_sync,
+			path,
+			server_path,
 			client_path,
-			endpoint, 
-			checksum, 
+			endpoint,
+			checksum,
 			algorithm
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`

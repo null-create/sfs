@@ -12,9 +12,10 @@ import (
 
 func TestGetServerSyncIndex(t *testing.T) {
 	// build env and get our temp working directory
-	env.SetEnv(true)
+	env.SetEnv(false)
+
 	e := env.NewE()
-	tmpDir, err := e.Get("CLIENT_ROOT")
+	clientRoot, err := e.Get("CLIENT_ROOT")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +36,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	client, err := Init(true)
 	if err != nil {
 		shutDown <- true
-		Fail(t, tmpDir, err)
+		Fail(t, clientRoot, err)
 	}
 
 	// NOTE: failing because the server doesn't have a drive
@@ -45,7 +46,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	idx := client.GetServerIdx()
 	if idx == nil {
 		shutDown <- true
-		Fail(t, tmpDir, fmt.Errorf("server index is nil"))
+		Fail(t, clientRoot, fmt.Errorf("server index is nil"))
 	}
 
 	// TODO: other tests...
@@ -53,7 +54,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	// shutdown test server
 	shutDown <- true
 
-	if err := Clean(t, tmpDir); err != nil {
+	if err := Clean(t, clientRoot); err != nil {
 		// reset our .env file for other tests
 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
 			log.Fatal(err2)

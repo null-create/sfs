@@ -39,7 +39,7 @@ func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *a
 		"bill", "bill buttlicker", "some-rand-id", filepath.Join(testDir, "bill"),
 	)
 	tempDrive := svc.NewDrive(
-		svc.NewUUID(), "bill", svc.NewUUID(), filepath.Join(testDir, "bill"), tempDir.ID, tempDir,
+		auth.NewUUID(), "bill", auth.NewUUID(), filepath.Join(testDir, "bill"), tempDir.ID, tempDir,
 	)
 	tmpUser := auth.NewUser("bill", "bill123", "bill@bill.com", testDir, false)
 	return tempDrive, tempDir, tmpUser
