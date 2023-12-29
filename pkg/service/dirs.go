@@ -645,7 +645,7 @@ func (d *Directory) WalkD(dirID string) *Directory {
 
 func walkD(dir *Directory, dirID string) *Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		log.Printf("[INFO] %s (id=%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	if d, ok := dir.Dirs[dirID]; ok {
@@ -671,7 +671,7 @@ func (d *Directory) WalkDs() map[string]*Directory {
 
 func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		log.Printf("[INFO] %s (id=%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return dirMap
 	}
 	for _, subDir := range dir.Dirs {

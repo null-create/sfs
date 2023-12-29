@@ -354,6 +354,7 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 		&d.ID,
 		&d.Name,
 		&d.OwnerID,
+		&d.DriveID,
 		&d.Size,
 		&d.Path,
 		&d.Protected,
