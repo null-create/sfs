@@ -328,7 +328,7 @@ func TestUpdateDrive(t *testing.T) {
 	env.SetEnv(false)
 
 	// test service
-	testSvc, err := Init(false, false)
+	testSvc, err := Init(true, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -343,9 +343,9 @@ func TestUpdateDrive(t *testing.T) {
 	// update test drive
 	testDrv.OwnerName = "william j buttlicker"
 
-	// if err := testSvc.UpdateDrive(testDrv); err != nil {
-	// 	Fail(t, GetTestingDir(), err)
-	// }
+	if err := testSvc.UpdateDrive(testDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
 
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to clean testing directory: %v", err)

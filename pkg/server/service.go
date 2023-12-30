@@ -775,10 +775,6 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	return nil
 }
 
-// func (s *Service) refreshDriveDbs(drv *svc.Drive) error {
-
-// }
-
 // take a given drive instance and update db. does not traverse
 // file systen for any other changes, only deals with drive metadata.
 // use service.RefreshDrive(driveID) to do a complete refresh of a given drive and its
