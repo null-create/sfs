@@ -44,10 +44,10 @@ type Client struct {
 	// key == filepath, value == new EventHandler() function
 	Handlers map[string]EHandler `json:"-"`
 
-	// file transfer component
+	// file transfer component. handles file uploads and downloads.
 	Transfer *transfer.Transfer `json:"-"`
 
-	// http client
+	// http client. used mainly for small-scope calls to the server.
 	Client *http.Client `json:"-"`
 }
 
@@ -92,9 +92,14 @@ func NewClient(user *auth.User) *Client {
 	drv.Root = root
 	drv.IsLoaded = true
 
-	// add drive itself to DB
+	// add drive itself to DB (root was added during discovery)
+	// then attach to client
 	if err := c.Db.AddDrive(c.Drive); err != nil {
 		log.Fatal(fmt.Errorf("failed to add client drive to database: %v", err))
+	}
+	c.Drive = drv
+	if err := c.Drive.SaveState(); err != nil {
+		log.Fatalf("failed to save drive state: %v", err)
 	}
 
 	// build services endpoints map (files and directories have endpoints defined

@@ -24,11 +24,13 @@ root/
 |		user
 |	  |---root/     <------ users files and directories live here
 |	  |---state/
-|   |   |---user-state-date-time.json
+|   |   |---user-state-d-m-y-hh-mm-ss.json
+|   |   |---driveID-d-m-y-hh-mm-ss.json
 |   |---dbs/
 |   |   |---users
 |   |   |---files
 |   |   |---directories
+
 users files and directories within a dedicated service root.
 "root" here means a dedicated directory for the user to backup and retrieve
 any files and directories they wish.

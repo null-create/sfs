@@ -141,18 +141,18 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 	files := root.WalkFs()
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
-			return nil, fmt.Errorf("failed to add file to database: ", err)
+			return nil, fmt.Errorf("failed to add file to database: %v", err)
 		}
 	}
 	dirs := root.WalkDs()
 	for _, d := range dirs {
 		if err := c.Db.AddDir(d); err != nil {
-			return nil, fmt.Errorf("failed to add directory to database: ", err)
+			return nil, fmt.Errorf("failed to add directory to database: %v", err)
 		}
 	}
 	// add root directory itself
 	if err := c.Db.AddDir(root); err != nil {
-		return nil, fmt.Errorf("failed to add root to database: ", err)
+		return nil, fmt.Errorf("failed to add root to database: %v", err)
 	}
 	return root, nil
 }
