@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -23,21 +24,21 @@ func TestQueueOrder(t *testing.T) {
 	testBatch3 := NewBatch()
 	testQ.Enqueue(testBatch3)
 
-	t1, err := testQ.Dequeue()
-	if err != nil {
-		Fatal(t, err)
+	t1 := testQ.Dequeue()
+	if t1 == nil {
+		Fatal(t, fmt.Errorf("queue was empty"))
 	}
 	assert.Equal(t, testBatch1.ID, t1.ID)
 
-	t2, err := testQ.Dequeue()
-	if err != nil {
-		Fatal(t, err)
+	t2 := testQ.Dequeue()
+	if t2 == nil {
+		Fatal(t, fmt.Errorf("queue was empty"))
 	}
 	assert.Equal(t, testBatch2.ID, t2.ID)
 
-	t3, err := testQ.Dequeue()
-	if err != nil {
-		Fatal(t, err)
+	t3 := testQ.Dequeue()
+	if t3 == nil {
+		Fatal(t, fmt.Errorf("queue was empty"))
 	}
 	assert.Equal(t, testBatch3.ID, t3.ID)
 }

@@ -30,6 +30,10 @@ func (q *Queue) TotalFiles() int {
 	return total
 }
 
+func (q *Queue) IsEmpty() bool {
+	return len(q.Queue) == 0
+}
+
 // NOTE: thes does NOT ensure there are no duplicate batches!
 //
 // that will need to be done elsewhere
@@ -38,13 +42,13 @@ func (q *Queue) Enqueue(b *Batch) {
 	q.Total += 1
 }
 
-func (q *Queue) Dequeue() (*Batch, error) {
+func (q *Queue) Dequeue() *Batch {
 	if len(q.Queue) == 0 {
 		log.Printf("[INFO] file queue is empty")
-		return nil, nil
+		return nil
 	}
 	item := q.Queue[0]
 	q.Queue = q.Queue[1:]
 	q.Total -= 1
-	return item, nil
+	return item
 }
