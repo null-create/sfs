@@ -44,7 +44,7 @@ func (t *Token) Extract(rawReqToken string) (string, error) {
 	return reqToken, nil
 }
 
-// verify jwt token and attempt ot retrieve userID from it.
+// verify jwt token and attempt to retrieve the request payload.
 //
 // use the return value to compare against the db and whether
 // they're an actual user
@@ -66,7 +66,7 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	// retrieve the payload as a string
 	data := claims["sub"].(string)
 	if data == "" {
-		return "", fmt.Errorf("no info found in token claims")
+		return "", fmt.Errorf("no payload found in token claims")
 	}
 	return data, nil
 }
