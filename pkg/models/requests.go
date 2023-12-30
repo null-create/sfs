@@ -1,16 +1,20 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	svc "github.com/sfs/pkg/service"
 )
 
 /*
-This module defines REST request objects.
+This module define request objects.
+These will be used by the Client when creating request messages
 
-These will be used by both Client and Server when creating request messages
+ref for generics implementations: https://go.dev/doc/tutorial/generics
 */
+
+// ----info requests --------------------------------
 
 type InfoReq struct {
 	ReqTime time.Time `json:"request_time"`
@@ -18,8 +22,6 @@ type InfoReq struct {
 	// requestor info
 	Source string `json:"source"` // server or client
 }
-
-// --- info
 
 type FileInfoReq struct {
 	Req    InfoReq `json:"request"`
@@ -41,7 +43,7 @@ type UserInfoReq struct {
 	UserID string  `json:"user_id"`
 }
 
-// --- upload/download/delete/create requests
+// --- upload/download/delete/create requests -------
 
 type OpReq struct {
 	RequestTime time.Time `json:"request_time"`
@@ -117,4 +119,22 @@ type SyncUpReq struct {
 type SyncDownReq struct {
 	Req       SyncReq       `json:"request"`
 	ServerIdx svc.SyncIndex `json:"server_idx"`
+}
+
+// ------ generic marshaling --------------------------------
+
+type ReqType interface {
+	OpReq | FileReq | DirReq | DriveReq
+}
+
+type ReqInfoType interface {
+	InfoReq | FileInfoReq | DirInfoReq | DriveInfoReq | UserInfoReq
+}
+
+func MarshalRequest[reqType ReqInfoType | ReqType](r reqType) ([]byte, error) {
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
