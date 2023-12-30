@@ -352,6 +352,8 @@ func TestUpdateDrive(t *testing.T) {
 	}
 }
 
+// func TestRefreshDrive(t *testing.T) {}
+
 // func TestRemoveDrive(t *testing.T) {}
 
 func TestDiscover(t *testing.T) {
