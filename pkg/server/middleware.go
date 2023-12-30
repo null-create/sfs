@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -27,6 +28,7 @@ func ContentTypeJson(h http.Handler) http.Handler {
 func NewFileCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// validate token
 		fileToken := r.Header.Get("Authorization")
 		if fileToken == "" {
 			http.Error(w, "no authorization token provided", http.StatusBadRequest)
@@ -34,14 +36,21 @@ func NewFileCtx(h http.Handler) http.Handler {
 		}
 		fileInfo, err := tokenValidator.Verify(fileToken)
 		if err != nil {
-			msg := fmt.Sprintf("failed to verify file token: %v", err)
-			http.Error(w, msg, http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to verify file token: %v", err), http.StatusInternalServerError)
 			return
 		}
+		// unmarshal new file data and check if it already exists before creating
 		newFile, err := svc.UnmarshalFileStr(fileInfo)
 		if err != nil {
-			msg := fmt.Sprintf("failed to unmarshal file data: %v", err)
-			http.Error(w, msg, http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to unmarshal file data: %v", err), http.StatusInternalServerError)
+			return
+		}
+		file, err := findFile(newFile.ID, getDBConn("Files"))
+		if err != nil {
+			http.Error(w, "failed to query file database", http.StatusInternalServerError)
+			return
+		} else if file != nil {
+			http.Error(w, fmt.Sprintf("file %s (id=%s) already exists", file.Name, file.ID), http.StatusBadRequest)
 			return
 		}
 		// create new file object and add to request context
@@ -53,6 +62,7 @@ func NewFileCtx(h http.Handler) http.Handler {
 func NewUserCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// validate request token
 		userToken := r.Header.Get("Authorization")
 		if userToken == "" {
 			http.Error(w, "no authorization token provided", http.StatusBadRequest)
@@ -64,10 +74,20 @@ func NewUserCtx(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
+		// unmarshal data and check database before creating a new user
 		newUser, err := auth.UnmarshalUser(userInfo)
 		if err != nil {
 			msg := fmt.Sprintf("failed to unmarshal user data: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		// check if this user already exists before adding
+		user, err := findUser(newUser.ID, getDBConn("Users"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to query database for user: %v", err), http.StatusInternalServerError)
+			return
+		} else if user != nil {
+			http.Error(w, fmt.Sprintf("user %s (id=%s) already exists", newUser.Name, newUser.ID), http.StatusBadRequest)
 			return
 		}
 		newCtx := context.WithValue(r.Context(), User, newUser)
@@ -78,6 +98,7 @@ func NewUserCtx(h http.Handler) http.Handler {
 func NewDirectoryCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// validate token
 		dirToken := r.Header.Get("Authorization")
 		dirInfo, err := tokenValidator.Verify(dirToken)
 		if err != nil {
@@ -89,6 +110,15 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 		if err != nil {
 			msg := fmt.Sprintf("failed to unmarshal directory data: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		// see if this directory is already in the DB first
+		dir, err := findDir(newDir.ID, getDBConn("Directories"))
+		if err != nil {
+			http.Error(w, "failed to query directory database", http.StatusInternalServerError)
+			return
+		} else if dir != nil {
+			http.Error(w, fmt.Sprintf("directory (id=%s) already exists", newDir.ID), http.StatusBadRequest)
 			return
 		}
 		newCtx := context.WithValue(r.Context(), Directory, newDir)
@@ -125,12 +155,13 @@ func AuthUserHandler(h http.Handler) http.Handler {
 		}
 		user, err := AuthenticateUser(reqToken)
 		if err != nil {
-			// TODO: handle error more explicitly. need to
-			// map return codes to failures; could be client side
-			// or server side.
-			msg := fmt.Sprintf("failed to authenticate user: %v", err)
-			http.Error(w, msg, http.StatusInternalServerError)
-			return
+			if strings.Contains(err.Error(), "failed to query database") {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			} else if strings.Contains(err.Error(), "user not found") {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 		newCtx := context.WithValue(r.Context(), User, user)
 		h.ServeHTTP(w, r.WithContext(newCtx))
