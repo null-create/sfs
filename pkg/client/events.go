@@ -46,21 +46,21 @@ func (c *Client) NewHandler(filePath string) error {
 
 // get alll the necessary things for the event handler to operate independently
 func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
-	evt := c.Monitor.GetEventChan(filePath)
-	off := c.Monitor.GetOffSwitch(filePath)
+	evtChan := c.Monitor.GetEventChan(filePath)
+	offSwitch := c.Monitor.GetOffSwitch(filePath)
 	fileID, err := c.Db.GetFileID(filePath)
 	if err != nil {
 		return nil, nil, "", nil, err
 	}
-	if evt == nil || off == nil || fileID == "" {
+	if evtChan == nil || offSwitch == nil || fileID == "" {
 		return nil, nil, "", nil, fmt.Errorf(
 			"failed to get param: evt=%v off=%v fileID=%s",
-			evt, off, fileID,
+			evtChan, offSwitch, fileID,
 		)
 	}
 	// TODO: buffered events should be a client setting
 	evts := monitor.NewEvents(false)
-	return evt, off, fileID, evts, nil
+	return evtChan, offSwitch, fileID, evts, nil
 }
 
 // start an event handler for a given file
