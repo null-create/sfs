@@ -1,5 +1,10 @@
 package client
 
+import (
+	"github.com/sfs/pkg/auth"
+	svc "github.com/sfs/pkg/service"
+)
+
 /*
 File for constructing and sending requests to the server
 
@@ -11,24 +16,24 @@ Use Models package to help create requests.
 
 // creation
 
-func (c *Client) NewUserRequest() error { return nil }
+func (c *Client) NewUserRequest(newUser *auth.User) error { return nil }
 
-func (c *Client) NewFileRequest() error { return nil }
+func (c *Client) NewFileRequest(newFile *svc.File) error { return nil }
 
-func (c *Client) NewDirectoryRequest() error { return nil }
+func (c *Client) NewDirectoryRequest(newDir *svc.Directory) error { return nil }
 
-func (c *Client) NewDriveRequest() error { return nil }
+func (c *Client) NewDriveRequest(newDrv *svc.Drive) error { return nil }
 
 // updates/deletes
 
-func (c *Client) UpdateFileRequest() error { return nil }
+func (c *Client) UpdateFileRequest(file *svc.File) error { return nil }
 
-func (c *Client) DeleteFileRequest() error { return nil }
+func (c *Client) DeleteFileRequest(file *svc.File) error { return nil }
 
-func (c *Client) UpdateDirectoryRequest() error { return nil }
+func (c *Client) UpdateDirectoryRequest(dir *svc.Directory) error { return nil }
 
-func (c *Client) DeleteDirectoryRequest() error { return nil }
+func (c *Client) DeleteDirectoryRequest(dir *svc.Directory) error { return nil }
 
-func (c *Client) UpdateDriveRequest() error { return nil }
+func (c *Client) UpdateDriveRequest(drv *svc.Drive) error { return nil }
 
-func (c *Client) DeleteDriveRequest() error { return nil }
+func (c *Client) DeleteDriveRequest(drv *svc.Drive) error { return nil }
