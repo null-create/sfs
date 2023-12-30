@@ -122,8 +122,8 @@ func newUser(clientName string, drvRoot string, e *env.Env) (*auth.User, error) 
 
 // initial client service set up
 func Setup(e *env.Env) (*Client, error) {
-	c := ClientConfig()
-	client, err := setup(c.Root, e)
+	cfg := ClientConfig()
+	client, err := setup(cfg.Root, e)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +131,9 @@ func Setup(e *env.Env) (*Client, error) {
 }
 
 func loadStateFile(user string) ([]byte, error) {
-	c := ClientConfig()
-	fp := filepath.Join(c.Root, user, "state")
-	entries, err := os.ReadDir(fp)
+	cfg := ClientConfig()
+	sfDir := filepath.Join(cfg.Root, user, "state")
+	entries, err := os.ReadDir(sfDir)
 	if err != nil {
 		return nil, err
 	}
@@ -147,11 +147,32 @@ func loadStateFile(user string) ([]byte, error) {
 	}
 	// get most recent one (assuming more than one present somehow)
 	sf := entries[len(entries)-1]
-	data, err := os.ReadFile(filepath.Join(fp, sf.Name()))
+	data, err := os.ReadFile(filepath.Join(sfDir, sf.Name()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read state file: %v", err)
 	}
 	return data, nil
+}
+
+func loadDrive(client *Client) error {
+	drive, err := client.Db.GetDrive(client.User.DriveID)
+	if err != nil {
+		return err
+	}
+	if drive == nil {
+		return fmt.Errorf("no drive found for user (id=%v)", client.UserID)
+	}
+	root, err := client.Db.GetDirectory(drive.RootID)
+	if err != nil {
+		return err
+	}
+	if root == nil {
+		return fmt.Errorf("no root directory for drive (id=%v)", drive.ID)
+	}
+	drive.Root = client.Populate(root)
+	client.Drive = drive
+	client.Root = drive.Root.Path
+	return nil
 }
 
 // load client from state file, if possible
@@ -167,43 +188,32 @@ func LoadClient(usersName string) (*Client, error) {
 	}
 
 	// load user
-	user, err := client.GetUser()
+	user, err := client.Db.GetUser(client.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
+	client.User = user
 
 	// load drive
-	drive, err := client.Db.GetDrive(user.DriveID)
-	if err != nil {
-		return nil, err
+	if err := loadDrive(client); err != nil {
+		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
 
-	// get root directory for the drive and create a sync index if necessary
-	root, err := client.Db.GetDirectory(drive.RootID)
-	if err != nil {
-		return nil, err
+	// create sync index if necessary
+	if client.Drive.SyncIndex == nil {
+		client.Drive.SyncIndex = client.Drive.Root.WalkS(svc.NewSyncIndex(client.User.ID))
 	}
-	if root == nil {
-		return nil, fmt.Errorf("no root directory for drive %v", drive.ID)
-	}
-	drive.Root = root
-	if drive.SyncIndex == nil {
-		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
-	}
-	client.Drive = drive
-	client.Root = drive.Root.Path
 
 	// add transfer component
 	client.Transfer = transfer.NewTransfer(client.Conf.Port)
 
 	// start client file monitoring services
-	client.Monitor = monitor.NewMonitor(client.Root)
+	client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
 	if err := client.StartMonitor(); err != nil {
 		return nil, fmt.Errorf("failed to start client monitor: %v", err)
 	}
 
 	// initialize handlers map and start all handlers
-	client.Handlers = make(map[string]EHandler)
 	client.BuildHandlers()
 	if err := client.StartHandlers(); err != nil {
 		return nil, fmt.Errorf("failed to start event handlers: %v", err)

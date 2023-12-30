@@ -1,11 +1,13 @@
 package pkg
 
 /*
-File for creating all necessary .env files for all packages
+File for creating all necessary .env files for all packages.
 Should be run the first time Simple File Sync is installed.
 
 Also will contain a "repair" function that will check for any missing
-files and re-create them if necessary
+files and re-create them if necessary. This may involve pulling
+from the sfs github repo and/or using some sort of file validation
+system. Will need to investigate.
 */
 
 // creates .env files for all packages
@@ -25,4 +27,6 @@ var Packages = []string{
 	"monitor", "network", "server", "service", "transfer",
 }
 
+// TODO: create/generate some sort of exteranal file listing of all
+// necessary SFS files/packages? Will/can go pull this info from github?
 func Repair() error { return nil }

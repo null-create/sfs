@@ -99,6 +99,9 @@ func (c *Client) StartHandlers() error {
 //
 // should ideally only be called once during initialization
 func (c *Client) BuildHandlers() {
+	if c.Handlers == nil {
+		c.Handlers = make(map[string]EHandler)
+	}
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
 		log.Print("[WARNING] no files to build handlers for")

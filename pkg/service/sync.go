@@ -167,7 +167,7 @@ func wontFit(files []*File, limit int64) bool {
 // from a raw list of files
 func Prune(files []*File) []*File {
 	lgf := GetLargeFiles(files)
-	return Diff(files, lgf)
+	return DiffFiles(files, lgf)
 }
 
 // build a slice of file objects that exceed batch.MAX.

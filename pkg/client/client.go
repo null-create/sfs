@@ -55,18 +55,18 @@ type Client struct {
 // other necessary infrastructure -- only the client itself.
 func NewClient(user *auth.User) *Client {
 	// get client service configs
-	conf := ClientConfig()
+	cfg := ClientConfig()
 
 	// set up local client services
 	driveID := auth.NewUUID()
-	svcRoot := filepath.Join(conf.Root, conf.User)
-	root := svc.NewRootDirectory("root", conf.User, driveID, filepath.Join(svcRoot, "root"))
-	drv := svc.NewDrive(driveID, conf.User, user.ID, root.Path, root.ID, root)
+	svcRoot := filepath.Join(cfg.Root, cfg.User)
+	root := svc.NewRootDirectory("root", cfg.User, driveID, filepath.Join(svcRoot, "root"))
+	drv := svc.NewDrive(driveID, cfg.User, user.ID, root.Path, root.ID, root)
 
 	// intialize client
 	c := &Client{
 		StartTime: time.Now().UTC(),
-		Conf:      conf,
+		Conf:      cfg,
 		UserID:    user.ID,
 		User:      user,
 		Root:      filepath.Join(svcRoot, "root"),
@@ -77,7 +77,7 @@ func NewClient(user *auth.User) *Client {
 		Drive:     drv,
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		Handlers:  make(map[string]EHandler),
-		Transfer:  transfer.NewTransfer(conf.Port),
+		Transfer:  transfer.NewTransfer(cfg.Port),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -85,7 +85,11 @@ func NewClient(user *auth.User) *Client {
 
 	// run discover to populate the database and internal data structures
 	// with users files and directories
-	drv.Root = c.Discover(root)
+	root, err := c.Discover(root)
+	if err != nil {
+		log.Fatalf("failed to discover user file system: %v", err)
+	}
+	drv.Root = root
 	drv.IsLoaded = true
 
 	// add drive itself to DB

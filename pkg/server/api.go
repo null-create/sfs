@@ -192,7 +192,8 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, file.ServerPath)
 }
 
-// get json blobs of all files available on the server
+// get json blobs of all files available on the server.
+// only sends metadata, not the actual files.
 // TODO: implement a user-specific get-all-files db call
 func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
 	if files, err := a.Svc.Db.GetFiles(); err == nil {

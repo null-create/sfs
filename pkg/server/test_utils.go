@@ -36,7 +36,7 @@ func GetTestingDir() string {
 	return filepath.Join(curDir, "testing")
 }
 
-// clean all contents from the testing directory
+// clean all files and subdirectories from a directory
 func Clean(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {

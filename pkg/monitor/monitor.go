@@ -64,8 +64,9 @@ func NewMonitor(drvRoot string) *Monitor {
 	}
 }
 
-func (m *Monitor) Exists(path string) bool {
-	if _, exists := m.Events[path]; exists {
+// see if an event channel exists for a given filepath.
+func (m *Monitor) Exists(filePath string) bool {
+	if _, exists := m.Events[filePath]; exists {
 		return true
 	}
 	return false
@@ -73,17 +74,18 @@ func (m *Monitor) Exists(path string) bool {
 
 // creates a new monitor goroutine for a given file.
 // returns a channel that sends events to the listener for handling
-func watchFile(path string, stop chan bool) chan Event {
-	initialStat, err := os.Stat(path)
+func watchFile(filePath string, stop chan bool) chan Event {
+	initialStat, err := os.Stat(filePath)
 	if err != nil {
-		log.Printf("[ERROR] failed to get file info for %s :%v\nunable to monitor", path, err)
+		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(filePath), err)
 		return nil
 	}
 
-	// event channel
+	// event channel used by the event handler goroutine
 	evt := make(chan Event)
+
 	go func() {
-		log.Printf("[INFO] monitoring %s ...", filepath.Base(path))
+		log.Printf("[INFO] monitoring %s ...", filepath.Base(filePath))
 		for {
 			select {
 			case <-stop:
@@ -91,30 +93,42 @@ func watchFile(path string, stop chan bool) chan Event {
 				close(evt)
 				return
 			default:
-				stat, err := os.Stat(path)
+				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
 					close(evt)
 					return
 				}
 				switch {
+				// file deletion
 				case err == os.ErrNotExist:
-					log.Printf("[INFO] file %s deleted. shutting down monitoring...", path)
+					log.Printf("[INFO] %s deleted. shutting down monitoring...", filepath.Base(filePath))
 					evt <- Event{
 						Type: FileDelete,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
 					}
 					close(evt)
 					return
-				case stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime():
+				// file size change
+				case stat.Size() != initialStat.Size():
 					log.Printf("[INFO] file size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000))
 					evt <- Event{
 						Type: FileChange,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
+					}
+					initialStat = stat
+				// file modification time change
+				case stat.ModTime() != initialStat.ModTime():
+					log.Printf("[INFO] file modification time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime())
+					evt <- Event{
+						Type: FileChange,
+						ID:   auth.NewUUID(),
+						Time: time.Now().UTC(),
+						Path: filePath,
 					}
 					initialStat = stat
 				default:

@@ -49,6 +49,9 @@ func (m *Monitor) DeleteDoc() error {
 // checks for whether the sync flag is set.
 // if so, then a sync operation should take place.
 func (m *Monitor) StartSync() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	file, err := os.Open(m.SyncDoc)
 	if err != nil {
 		log.Printf("[ERROR] failed to open sync doc: %v", err)
@@ -68,6 +71,9 @@ func (m *Monitor) StartSync() bool {
 // sets the doc val to 1 for an event handler to indicate that
 // a sync event should start
 func (m *Monitor) SetDoc() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	file, err := os.Open(m.SyncDoc)
 	if err != nil {
 		return
@@ -84,6 +90,9 @@ func (m *Monitor) SetDoc() {
 }
 
 func (m *Monitor) ResetDoc() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	file, err := os.Open(m.SyncDoc)
 	if err != nil {
 		log.Fatalf("failed to open sync doc: %v", err)

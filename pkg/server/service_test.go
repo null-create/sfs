@@ -245,12 +245,12 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	assert.Equal(t, testUsr.Name, u.Name)
 
 	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
 	}
 	// remove test user drive
 	tmpDir := filepath.Join(c.SvcRoot, "users")
 	if err := Clean(tmpDir); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+		t.Errorf("[ERROR] unable to clean up test user files: %v", err)
 	}
 }
 
@@ -299,13 +299,58 @@ func TestAllocateDrive(t *testing.T) {
 	}
 
 	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
 	}
 }
 
-// func TestAddDrive(t *testing.T) {}
+func TestAddDrive(t *testing.T) {
+	env.SetEnv(false)
 
-// func TestUpdateDrive(t *testing.T) {}
+	// test service
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// test drive
+	testDrv := MakeEmptyTmpDrive(t)
+
+	if err := testSvc.AddDrive(testDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
+	}
+}
+
+func TestUpdateDrive(t *testing.T) {
+	env.SetEnv(false)
+
+	// test service
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// test drive
+	testDrv := MakeEmptyTmpDrive(t)
+
+	if err := testSvc.AddDrive(testDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// update test drive
+	testDrv.OwnerName = "william j buttlicker"
+
+	// if err := testSvc.UpdateDrive(testDrv); err != nil {
+	// 	Fail(t, GetTestingDir(), err)
+	// }
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
+	}
+}
 
 // func TestRemoveDrive(t *testing.T) {}
 
@@ -320,7 +365,12 @@ func TestDiscover(t *testing.T) {
 	MakeTmpDirs(t)
 	tmpDrive := MakeEmptyTmpDrive(t)
 
-	tmpDrive.Root = testSvc.Discover(tmpDrive.Root)
+	tmpDrive.Root, err = testSvc.Discover(tmpDrive.Root)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// retrieve files and confirm that they exist
 	tmpRootDirs := tmpDrive.Root.WalkDs()
 	if len(tmpRootDirs) == 0 {
 		Fail(t, GetTestingDir(), fmt.Errorf("no test directories found"))
@@ -346,7 +396,10 @@ func TestPopulate(t *testing.T) {
 	// create a test drive with files and directories
 	// added to the database via Discover()
 	tmpDrive := MakeTmpDrive(t)
-	tmpDrive.Root = testSvc.Discover(tmpDrive.Root)
+	tmpDrive.Root, err = testSvc.Discover(tmpDrive.Root)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
 
 	// create a new root directory and populate
 	testRoot := svc.NewRootDirectory("test", "some-rand-id", tmpDrive.Root.ID, filepath.Join(GetTestingDir(), "tmp"))

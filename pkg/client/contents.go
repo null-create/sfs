@@ -130,32 +130,31 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 
 // discover populates the given root directory with the users file and
 // sub directories, updates the database as it does so, and returns
-// the the directory object when finished.
+// the the directory object when finished, or if there was an error.
 //
 // this should ideally be used for starting a new sfs service in a
 // users root directly that already has files and/or subdirectories.
-func (c *Client) Discover(root *svc.Directory) *svc.Directory {
+func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 	// traverse users SFS file system and populate internal structures
 	root = root.Walk()
-
 	// send everything to the database
 	files := root.WalkFs()
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
-			return nil
+			return nil, fmt.Errorf("failed to add file to database: ", err)
 		}
 	}
 	dirs := root.WalkDs()
 	for _, d := range dirs {
 		if err := c.Db.AddDir(d); err != nil {
-			return nil
+			return nil, fmt.Errorf("failed to add directory to database: ", err)
 		}
 	}
 	// add root directory itself
 	if err := c.Db.AddDir(root); err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to add root to database: ", err)
 	}
-	return root
+	return root, nil
 }
 
 // Populate() populates a drive's root directory with all the users

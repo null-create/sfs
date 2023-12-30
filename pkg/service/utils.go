@@ -63,7 +63,7 @@ func GetCwd() string {
 // then this function should work in ~O(n) on an unsorted slice.
 //
 // based off of: https://stackoverflow.com/questions/19374219/how-to-find-the-difference-between-two-slices-of-strings
-func Diff(f, g []*File) []*File {
+func DiffFiles(f, g []*File) []*File {
 	tmp := make(map[*File]int)
 	for _, file := range g {
 		tmp[file] = 1
@@ -72,6 +72,22 @@ func Diff(f, g []*File) []*File {
 	for _, file := range f {
 		if _, found := tmp[file]; !found {
 			diff = append(diff, file)
+		}
+	}
+	return diff
+}
+
+// return the difference between two map[string]*Directory maps.
+// compares the directory ID's.
+func DiffDirs(f, g map[string]*Directory) []*Directory {
+	tmp := make(map[string]bool)
+	for _, dir := range g {
+		tmp[dir.ID] = true
+	}
+	var diff []*Directory
+	for _, dir := range f {
+		if _, found := tmp[dir.ID]; !found {
+			diff = append(diff, dir)
 		}
 	}
 	return diff
