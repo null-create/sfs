@@ -70,7 +70,9 @@ func (c *Client) StartHandler(filePath string) error {
 		if err != nil {
 			return err
 		}
-		if _, err := handler(evt, off, fileID, evts); err != nil {
+		if offSwitch, err := handler(evt, off, fileID, evts); err == nil {
+			c.OffSwitches[filePath] = offSwitch
+		} else {
 			return err
 		}
 	}
@@ -90,6 +92,14 @@ func (c *Client) StartHandlers() error {
 		}
 	}
 	return nil
+}
+
+// stops all event handler goroutines.
+func (c *Client) StopHandlers() {
+	log.Printf("[INFO] shutting down monitoring handlers...")
+	for _, off := range c.OffSwitches {
+		off <- true
+	}
 }
 
 // build a map of event handlers for client files.
@@ -122,7 +132,7 @@ func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *mo
 		for {
 			select {
 			case <-stopMonitor:
-				log.Printf("[INFO] stopping event handler for file id=%v", fileID)
+				log.Printf("[INFO] stopping event handler for file id=%v ...", fileID)
 				return
 			case e := <-evt:
 				switch e.Type {

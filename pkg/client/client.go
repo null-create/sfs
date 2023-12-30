@@ -44,6 +44,9 @@ type Client struct {
 	// key == filepath, value == new EventHandler() function
 	Handlers map[string]EHandler `json:"-"`
 
+	// map of handler off switches. used during shutdown.
+	OffSwitches map[string]chan bool `json:"-"`
+
 	// file transfer component. handles file uploads and downloads.
 	Transfer *transfer.Transfer `json:"-"`
 
@@ -65,19 +68,20 @@ func NewClient(user *auth.User) *Client {
 
 	// intialize client
 	c := &Client{
-		StartTime: time.Now().UTC(),
-		Conf:      cfg,
-		UserID:    user.ID,
-		User:      user,
-		Root:      filepath.Join(svcRoot, "root"),
-		SfDir:     filepath.Join(svcRoot, "state"),
-		Endpoints: make(map[string]string),
-		Monitor:   monitor.NewMonitor(drv.Root.Path),
-		Off:       make(chan bool),
-		Drive:     drv,
-		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		Handlers:  make(map[string]EHandler),
-		Transfer:  transfer.NewTransfer(cfg.Port),
+		StartTime:   time.Now().UTC(),
+		Conf:        cfg,
+		UserID:      user.ID,
+		User:        user,
+		Root:        filepath.Join(svcRoot, "root"),
+		SfDir:       filepath.Join(svcRoot, "state"),
+		Endpoints:   make(map[string]string),
+		Monitor:     monitor.NewMonitor(drv.Root.Path),
+		Off:         make(chan bool),
+		Drive:       drv,
+		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		Handlers:    make(map[string]EHandler),
+		OffSwitches: make(map[string]chan bool),
+		Transfer:    transfer.NewTransfer(cfg.Port),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -108,11 +112,13 @@ func NewClient(user *auth.User) *Client {
 	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
 	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.Drive.ID)
 
-	// build and start handlers
-	c.BuildHandlers()
+	// start monitoring services
 	if err := c.Monitor.Start(root.Path); err != nil {
 		log.Fatal("failed to start monitor", err)
 	}
+
+	// build and start monitoring event handlers
+	c.BuildHandlers()
 	if err := c.StartHandlers(); err != nil {
 		log.Fatal("failed to start event handlers", err)
 	}
@@ -156,6 +162,26 @@ func (c *Client) SaveState() error {
 	fn := fmt.Sprintf("client-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05Z"))
 	fp := filepath.Join(c.SfDir, fn)
 	return os.WriteFile(fp, data, svc.PERMS)
+}
+
+// shutdown client side services
+func (c *Client) ShutDown() error {
+	// stop sync doc loop
+	c.Off <- true
+
+	// shut down monitor and handlers
+	if err := c.StopMonitoring(); err != nil {
+		return fmt.Errorf("failed to shutdown monitor: %v", err)
+	}
+	c.StopHandlers()
+
+	if err := c.Drive.SaveState(); err != nil {
+		return fmt.Errorf("failed to save drive state: %v", err)
+	}
+	if err := c.SaveState(); err != nil {
+		return fmt.Errorf("failed to save state: %v", err)
+	}
+	return nil
 }
 
 // ------- user functions --------------------------------
