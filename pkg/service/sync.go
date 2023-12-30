@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -72,12 +71,12 @@ func (s *SyncIndex) ToJSON() ([]byte, error) {
 
 // write out a sync index to a JSON file
 func (s *SyncIndex) SaveToJSON() error {
+	s.IdxFp = fmt.Sprintf("%s-sync-index-%s.json", s.UserID, time.Now().Format("2006-01-02T15-04-05"))
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
 	}
-	fn := fmt.Sprintf("%s-sync-index-%s.json", s.UserID, time.Now().Format("2006-01-02T15-04-05"))
-	return os.WriteFile(filepath.Join(s.IdxFp, fn), data, 0644)
+	return os.WriteFile(s.IdxFp, data, 0644)
 }
 
 // checks last sync for file.

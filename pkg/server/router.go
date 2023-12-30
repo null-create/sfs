@@ -107,12 +107,12 @@ func NewRouter() *chi.Mux {
 			r.Route("/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
 				r.Get("/", api.Placeholder)    // get a directory as a zip file
-				r.Post("/", api.Placeholder)   // create a (empty) directory to the server
-				r.Put("/", api.Placeholder)    // update a directory on the server
+				r.Post("/", api.Placeholder)   // create a new (empty) directory to the server
+				r.Put("/", api.Placeholder)    // update a directory on the server by sending a zip file and unpacking
 				r.Delete("/", api.Placeholder) // delete a directory
 			})
 			r.Route("/new", func(r chi.Router) {
-				// r.Use(NewDirCtx)
+				r.Use(NewDirectoryCtx)
 				r.Post("/", api.Placeholder) // create a new directory
 			})
 			r.Route("/i/{dirID}", func(r chi.Router) {
