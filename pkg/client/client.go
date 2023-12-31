@@ -28,6 +28,8 @@ type Client struct {
 	Drive *svc.Drive `json:"drive"` // client drive for managing users files and directories
 	Db    *db.Query  `json:"db"`    // local db connection
 
+	Tok *auth.Token `json:"token"` // token creator for requests
+
 	// server api endpoints.
 	// file objects have their own API field, this is for storing
 	// general operation endpoints like sync operations
@@ -52,6 +54,22 @@ type Client struct {
 
 	// http client. used mainly for small-scope calls to the server.
 	Client *http.Client `json:"-"`
+}
+
+func (c *Client) setEndpoints() {
+	// build services endpoints map (files and directories have endpoints defined
+	// within their respective data structures)
+	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
+	c.Endpoints["files"] = fmt.Sprint(EndpointRootWithPort, "v1/files/all")
+	c.Endpoints["new file"] = fmt.Sprint(EndpointRootWithPort, "v1/files/new")
+	c.Endpoints["dirs"] = fmt.Sprint(EndpointRootWithPort, "/v1/dirs")
+	c.Endpoints["new dir"] = fmt.Sprintf(EndpointRootWithPort, "/dirs/new")
+	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
+	c.Endpoints["new drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/new")
+	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.Drive.ID)
+	c.Endpoints["user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/", c.User.ID)
+	c.Endpoints["new user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/new")
+	c.Endpoints["all users"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/all")
 }
 
 // creates a new client object. does not create actual service directories or
@@ -108,9 +126,7 @@ func NewClient(user *auth.User) *Client {
 
 	// build services endpoints map (files and directories have endpoints defined
 	// within their respective data structures)
-	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
-	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
-	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.Drive.ID)
+	c.setEndpoints()
 
 	// start monitoring services
 	if err := c.Monitor.Start(root.Path); err != nil {
