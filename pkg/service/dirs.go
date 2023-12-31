@@ -412,6 +412,18 @@ func (d *Directory) FindFile(fileID string) *File {
 
 // -------- sub directory methods
 
+// update a subdirectory. must already exist as a subdirectory
+// for this directory -- this is primarily used for updating a
+// child subdirectory and reattaching it to its parent.
+func (d *Directory) PutSubDir(subDir *Directory) error {
+	if d.HasDir(subDir.ID) {
+		d.Dirs[subDir.ID] = subDir
+	} else {
+		return fmt.Errorf("dir %s not found. need to add before updating", subDir.ID)
+	}
+	return nil
+}
+
 // creates a new subdirectory and updates internal data structures.
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
