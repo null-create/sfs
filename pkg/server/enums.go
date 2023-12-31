@@ -6,6 +6,7 @@ type Context string
 const (
 	Name      Context = "name"
 	File      Context = "file"
+	Files     Context = "files"
 	Email     Context = "email"
 	Admin     Context = "admin"
 	Directory Context = "directory"
