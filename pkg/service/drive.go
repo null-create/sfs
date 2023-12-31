@@ -130,8 +130,9 @@ func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }
 
-func (d *Drive) Isloaded() bool {
-	return d.IsLoaded
+// check whether this drive has an instantiated root directory.
+func (d *Drive) HasRoot() bool {
+	return d.Root != nil
 }
 
 // save drive state to JSON format
@@ -202,6 +203,9 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 // add file to a directory
 func (d *Drive) AddFile(dirID string, file *File) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if dirID == d.Root.ID {
 			d.Root.AddFile(file)
 		} else {
@@ -221,6 +225,10 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 // find a file. returns nil if not found.
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
+		if !d.HasRoot() {
+			log.Printf("[WARNING] drive (id=%s) has no root directory", d.ID)
+			return nil
+		}
 		return d.Root.WalkF(fileID)
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
@@ -231,6 +239,10 @@ func (d *Drive) GetFile(fileID string) *File {
 // get a map of all available files for this user
 func (d *Drive) GetFiles() map[string]*File {
 	if !d.Protected {
+		if !d.HasRoot() {
+			log.Printf("[WARNING] drive (id=%s) has no root directory", d.ID)
+			return nil
+		}
 		return d.Root.WalkFs()
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
@@ -241,6 +253,9 @@ func (d *Drive) GetFiles() map[string]*File {
 // update a file
 func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if d.Root.ID == dirID {
 			if err := d.Root.UpdateFile(file, data); err != nil {
 				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
@@ -266,6 +281,9 @@ func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 // updates internal data structures.
 func (d *Drive) RemoveFile(dirID string, file *File) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		// if the driveID is this drive's root directory
 		if dirID == d.Root.ID {
 			if err := d.Root.RemoveFile(file.ID); err != nil {
@@ -315,6 +333,9 @@ func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 // the directory parameter.
 func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if err := d.addSubDir(dirID, dir); err != nil {
 			return err
 		}
@@ -327,6 +348,9 @@ func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 // add subdirectories to the drives root directory
 func (d *Drive) AddDirs(dirs []*Directory) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if err := d.Root.AddSubDirs(dirs); err != nil {
 			return err
 		}
@@ -339,7 +363,7 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 // find a directory. returns nil if not found (or if drive has no root directory)
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
-		if d.Root == nil {
+		if !d.HasRoot() {
 			log.Printf("[WARNING] drive (id=%s) has no root dir. cant traverse.", d.ID)
 			return nil
 		}
@@ -356,6 +380,10 @@ func (d *Drive) GetDir(dirID string) *Directory {
 // get a map of all directories for this user
 func (d *Drive) GetDirs() map[string]*Directory {
 	if !d.Protected {
+		if !d.HasRoot() {
+			log.Printf("[WARNING] drive (id=%s) has no root", d.ID)
+			return nil
+		}
 		return d.Root.WalkDs()
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
@@ -386,6 +414,9 @@ func (d *Drive) removeDir(dirID string) error {
 // sfs filesystem.
 func (d *Drive) RemoveDir(dirID string) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if err := d.removeDir(dirID); err != nil {
 			return err
 		}
@@ -398,6 +429,9 @@ func (d *Drive) RemoveDir(dirID string) error {
 // remove directories from the drive root directory
 func (d *Drive) RemoveDirs(dirs []*Directory) error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if len(dirs) == 0 {
 			log.Print("[INFO] no subdirectories to remove")
 			return nil
@@ -413,11 +447,43 @@ func (d *Drive) RemoveDirs(dirs []*Directory) error {
 	return nil
 }
 
+// update a directory within a drive.
+func (d *Drive) UpdateDir(dirID string, updatedDir *Directory) error {
+	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
+		dir := d.Root.WalkD(dirID)
+		if dir == nil {
+			return fmt.Errorf("dir %s not found", dirID)
+		}
+		if dir.Parent == nil && !dir.IsRoot() {
+			return fmt.Errorf("dir %s (id=%s) has no parent and is not a root", dir.Name, dir.ID)
+		}
+		parent := dir.Parent
+		if parent == nil {
+			return fmt.Errorf("failed to find parent for dir %s", dir.ID)
+		}
+		if err := parent.PutSubDir(updatedDir); err != nil {
+			return fmt.Errorf(
+				"failed to update %s (id=%s) with its parent (id=%s): %s",
+				dir.Name, dir.ID, parent.ID, err,
+			)
+		}
+	} else {
+		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
 // ----- cleanup --------------------------------
 
 // removes all users files and directories from their drive
 func (d *Drive) ClearDrive() error {
 	if !d.Protected {
+		if !d.HasRoot() {
+			return fmt.Errorf("no root directory")
+		}
 		if err := d.Root.Clean(d.Root.Path); err != nil {
 			return err
 		}
