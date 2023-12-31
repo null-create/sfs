@@ -831,7 +831,7 @@ func (s *Service) addUser(user *auth.User) error {
 	// allocate new drive and base service files
 	newDrive, err := svc.AllocateDrive(user.Name, user.Name, s.SvcRoot)
 	if err != nil {
-		return fmt.Errorf("failed to allocate new drive for user %s \n%v", user.ID, err)
+		return fmt.Errorf("failed to allocate new drive for %s (id=%s) \n%v", user.Name, user.ID, err)
 	}
 	user.DriveID = newDrive.ID
 	user.DrvRoot = newDrive.Root.Path
@@ -846,6 +846,7 @@ func (s *Service) addUser(user *auth.User) error {
 	if err := s.Db.AddDir(newDrive.Root); err != nil {
 		return fmt.Errorf("failed to add drive root directory to database: %v", err)
 	}
+	s.Drives[newDrive.ID] = newDrive
 	s.Users[user.ID] = user
 	if err := s.SaveState(); err != nil {
 		log.Printf("[WARNING] failed to save state file: %v", err)
@@ -1075,14 +1076,13 @@ func (s *Service) DeleteFile(file *svc.File) error {
 
 // --------- directories --------------------------------
 
-// find a directory in the database and populate it with
-// its files and subdirectories.
+// find a directory in the database. does not populate with files or subdirectories,
+// just returns metadata.
 func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
 	dir, err := s.Db.GetDirectory(dirID)
 	if err != nil {
 		return nil, err
 	}
-	dir = s.Populate(dir)
 	return dir, nil
 }
 
@@ -1094,7 +1094,16 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if drive == nil {
 		return fmt.Errorf("drive %s not found", driveID)
 	}
-	return drive.AddSubDir(destDirID, newDir)
+	if !drive.IsLoaded {
+		drive.Root = s.Populate(drive.Root)
+	}
+	if err := drive.AddSubDir(destDirID, newDir); err != nil {
+		return err
+	}
+	if err := s.Db.AddDir(newDir); err != nil {
+		return err
+	}
+	return nil
 }
 
 // remove a physical directory from a user's drive service.
@@ -1103,31 +1112,60 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 // it's assumed dirID is a sub-directory within the drive, and not
 // the drives root directory itself.
 func (s *Service) RemoveDir(driveID string, dirID string) error {
-	root, err := s.Db.GetDirectory(driveID)
-	if err != nil {
-		return err
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return fmt.Errorf("drive %s not found", driveID)
 	}
-	if root == nil {
-		log.Printf("[WARNING] root %s not found in database", driveID)
-		return nil
+	if !drive.IsLoaded {
+		drive.Root = s.Populate(drive.Root)
 	}
-	if root.ID == dirID {
-		log.Printf(
-			"[WARNING] can't delete user's drive instance. \ndriveID=%s dirID=%s",
-			driveID, dirID,
-		)
-		return nil
-	}
-	if err := root.RemoveSubDir(dirID); err != nil {
-		return fmt.Errorf("failed to remove sub directory: %v", err)
+	if err := drive.RemoveDir(dirID); err != nil {
+		return fmt.Errorf("failed to remove dir %s: %v", dirID, err)
 	}
 	if err := s.Db.RemoveDirectory(dirID); err != nil {
 		return fmt.Errorf("failed to remove directory from database: %v", err)
 	}
-	if err := s.Db.UpdateDir(root); err != nil {
+	if err := s.Db.UpdateDir(drive.Root); err != nil {
 		return fmt.Errorf("failed to update root directory: %v", err)
 	}
 	return nil
+}
+
+// update a directory within a drive.
+func (s *Service) UpdateDir(driveID string, dir *svc.Directory) error {
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return fmt.Errorf("drive %s not found", driveID)
+	}
+	if !drive.IsLoaded {
+		drive.Root = s.Populate(drive.Root)
+	}
+	if err := drive.UpdateDir(dir.ID, dir); err != nil {
+		return fmt.Errorf("failed to update dir %s (id=%s): %v", dir.Name, dir.ID, err)
+	}
+	if err := s.Db.UpdateDir(dir); err != nil {
+		return fmt.Errorf("failed update dir %s (id=%s) in database: %v", dir.Name, dir.ID, err)
+	}
+	return nil
+}
+
+// retrieves all directories available for user using the current drive state.
+// returns nil if no directories are available.
+func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
+	drive := s.GetDrive(driveID)
+	if !drive.IsLoaded {
+		drive.Root = s.Populate(drive.Root)
+	}
+	d := drive.Root.GetSubDirs()
+	if len(d) == 0 {
+		log.Printf("[WARNING] no directories found for user %v", drive.OwnerID)
+		return nil, nil
+	}
+	dirs := make([]*svc.Directory, 0, len(d))
+	for _, sd := range d {
+		dirs = append(dirs, sd)
+	}
+	return dirs, nil
 }
 
 // --------- sync --------------------------------
