@@ -132,6 +132,10 @@ func NewRouter() *chi.Mux {
 				// "home" page data for all user's files, directories, etc.
 				r.Get("/", api.GetDrive)
 			})
+			r.Route("/new", func(r chi.Router) {
+				// r.Use(NewDriveCtx)
+				r.Post("/", api.Placeholder) // create a new drive on the server
+			})
 		})
 
 		// sync operations

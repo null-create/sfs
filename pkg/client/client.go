@@ -56,10 +56,11 @@ type Client struct {
 	Client *http.Client `json:"-"`
 }
 
+// build services endpoints map (files and directories have endpoints defined
+// within their respective data structures)
 func (c *Client) setEndpoints() {
-	// build services endpoints map (files and directories have endpoints defined
-	// within their respective data structures)
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
+
 	c.Endpoints["files"] = fmt.Sprint(EndpointRootWithPort, "v1/files/all")
 	c.Endpoints["new file"] = fmt.Sprint(EndpointRootWithPort, "v1/files/new")
 	c.Endpoints["dirs"] = fmt.Sprint(EndpointRootWithPort, "/v1/dirs")
@@ -127,6 +128,9 @@ func NewClient(user *auth.User) *Client {
 	// build services endpoints map (files and directories have endpoints defined
 	// within their respective data structures)
 	c.setEndpoints()
+
+	// add token componet
+	c.Tok = auth.NewT()
 
 	// start monitoring services
 	if err := c.Monitor.Start(root.Path); err != nil {
