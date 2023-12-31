@@ -104,6 +104,10 @@ func NewRouter() *chi.Mux {
 
 		// directories
 		r.Route("/dirs", func(r chi.Router) {
+			// get a list all directories starting from the users root.
+			// will need its own context?
+			r.Get("/", api.Placeholder)
+			// specific directories
 			r.Route("/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
 				r.Get("/", api.Placeholder)    // get a directory as a zip file
