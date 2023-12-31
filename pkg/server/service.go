@@ -650,7 +650,7 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 // attempts to retrieve a drive from the drive map. if not found,
 // will check database and if a drive is found, will add it to the map,
 // update the service state file, and return the drive with the root
-// directory initalized populated. if no drive (or drive root) is found,
+// directory populated. if no drive (or drive root) is found,
 // then will return nil.
 func (s *Service) GetDrive(driveID string) *svc.Drive {
 	if drive, exists := s.Drives[driveID]; exists {
