@@ -61,6 +61,68 @@ func (c *Client) encodeDrive(drv *svc.Drive) (string, error) {
 	return c.NewToken(string(payload))
 }
 
+// ------- get request objects --------------------------------------------------
+
+func (c *Client) GetFileReq(file *svc.File, reqType string) (*http.Request, error) {
+	switch reqType {
+	case "new":
+		return c.NewFileRequest(file)
+	case "get":
+		return c.GetFileRequest(file)
+	case "update":
+		return c.UpdateFileRequest(file)
+	case "delete":
+		return c.DeleteFileRequest(file)
+	default:
+		return nil, fmt.Errorf("unsupported request type")
+	}
+}
+
+func (c *Client) GetDirReq(dir *svc.Directory, reqType string) (*http.Request, error) {
+	switch reqType {
+	case "new":
+		return c.NewDirectoryRequest(dir)
+	case "get":
+		return c.GetDirRequest(dir)
+	case "update":
+		return c.UpdateDirectoryRequest(dir)
+	case "delete":
+		return c.DeleteDirectoryRequest(dir)
+	default:
+		return nil, fmt.Errorf("unsupported request type")
+	}
+}
+
+func (c *Client) GetDriveReq(drv *svc.Drive, reqType string) (*http.Request, error) {
+	switch reqType {
+	case "new":
+		return c.NewDriveRequest(drv)
+	case "get":
+		return c.GetDriveRequest(drv)
+	case "update":
+		return c.UpdateDriveRequest(drv)
+	case "delete":
+		return c.DeleteDriveRequest(drv)
+	default:
+		return nil, fmt.Errorf("unsupported request type")
+	}
+}
+
+func (c *Client) GetUserReq(user *auth.User, reqType string) (*http.Request, error) {
+	switch reqType {
+	case "new":
+		return c.NewUserRequest(user)
+	case "get":
+		return c.GetUserRequest(user)
+	case "update":
+		return c.UpdateUserRequest(user)
+	case "delete":
+		return c.DeleteUserRequest(user)
+	default:
+		return nil, fmt.Errorf("unsupported request type")
+	}
+}
+
 // ------ new item requests ----------------------------------------------
 
 func (c *Client) NewUserRequest(newUser *auth.User) (*http.Request, error) {
@@ -214,6 +276,20 @@ func (c *Client) UpdateDriveRequest(drv *svc.Drive) (*http.Request, error) {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 	reqToken, err := c.encodeDrive(drv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	return req, nil
+}
+
+func (c *Client) UpdateUserRequest(user *auth.User) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodPut, c.Endpoints["user"], &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeUser(user)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
