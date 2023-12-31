@@ -192,6 +192,20 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, file.ServerPath)
 }
 
+// send an individual file to the server. shold be ran in its own goroutine.
+func sendFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
+	// Set the response header for the download
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	http.ServeFile(w, r, file.ServerPath)
+}
+
+// TODO: send multiple files to the client. each upload should happen in its own goroutine.
+func (a *API) GetFiles(w http.ResponseWriter, r *http.Request) {
+	// files := r.Context().Value(Files).([]*svc.File)
+}
+
 // get json blobs of all files available on the server.
 // only sends metadata, not the actual files.
 // TODO: implement a user-specific get-all-files db call
