@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"mime/multipart"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -18,26 +17,24 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// transfer handles the uploading and downloading of individual files.
+// transfer handles the uploading and downloading of individual files
+// during synchronization events. one-off API calls are handled by
+// other client request implementations.
+//
 // transfer operations are intended to run in their own goroutine as part
-// of sync operations with the server
+// of sync operations with the server.
 type Transfer struct {
 	Start  time.Time
 	Buffer *bytes.Buffer
-
-	// dedicated listener for downloads
-	Listener func(network string, address string) (net.Listener, error)
-	Port     int // port to listen to for downloads
-
+	Tok    *auth.Token
 	Client *http.Client
 }
 
 func NewTransfer(port int) *Transfer {
 	return &Transfer{
-		Start:    time.Now().UTC(),
-		Buffer:   new(bytes.Buffer),
-		Listener: net.Listen,
-		Port:     port,
+		Start:  time.Now().UTC(),
+		Buffer: new(bytes.Buffer),
+		Tok:    auth.NewT(),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
@@ -55,12 +52,11 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 	req.Header.Set("Content-Type", contentType)
 
 	// create file info token to attach to request header
-	tokenizer := auth.NewT()
 	fileData, err := file.ToJSON()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file json string: %v", err)
 	}
-	fileToken, err := tokenizer.Create(string(fileData))
+	fileToken, err := t.Tok.Create(string(fileData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file token: %v", err)
 	}
@@ -128,6 +124,8 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // intended to run in its own goroutine.
 // download a known file that is only on the server, and is new to the client
 func (t *Transfer) Download(destPath string, srcURL string) error {
+	log.Printf("[INFO] downloading file from %s ...", srcURL)
+
 	// attempt to retrieve the file from the server
 	resp, err := t.Client.Get(srcURL)
 	if err != nil {
@@ -138,8 +136,10 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 		if err != nil {
 			log.Printf("[WARNING] failed to parse response: %v", err)
 		} else {
-			log.Printf("[INFO] failed to retrieve file: %v", string(b))
+			log.Printf("[INFO] failed to download file from server: %v", string(b))
 		}
+		// server may be having issues.
+		// does necessarily not mean a client error occurred.
 		return nil
 	}
 	defer resp.Body.Close()
@@ -155,11 +155,11 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to download file: %v", err)
+		return fmt.Errorf("failed to copy file data to buffer: %v", err)
 	}
 	_, err = file.Write(buf.Bytes())
 	if err != nil {
-		return fmt.Errorf("failed to download file: %v", err)
+		return fmt.Errorf("failed to write out file data: %v", err)
 	}
 
 	log.Printf("[INFO] %s downloaded to %s", file.Name(), destPath)
