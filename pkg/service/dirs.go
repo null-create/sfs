@@ -417,6 +417,7 @@ func (d *Directory) FindFile(fileID string) *File {
 // child subdirectory and reattaching it to its parent.
 func (d *Directory) PutSubDir(subDir *Directory) error {
 	if d.HasDir(subDir.ID) {
+		subDir.Parent = d
 		d.Dirs[subDir.ID] = subDir
 	} else {
 		return fmt.Errorf("dir %s not found. need to add before updating", subDir.ID)
