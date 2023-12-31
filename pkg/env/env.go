@@ -63,14 +63,12 @@ func HasDotEnv() bool {
 	return false
 }
 
-// create a new baseline .env file for all necessary components.
-// saves in the current working directory.
-func BuildEnv() error {
-	if err := godotenv.Write(BaseEnv, ".env"); err != nil {
-		return err
-	}
-	SetEnv(false)
-	return nil
+// create a new baseline .env file using the provided configurations.
+// does not set the environment. use env.SetEnv(false) after a call to this if needed.
+//
+// saves in the designated directory.
+func NewEnvFile(path string, env map[string]string) error {
+	return godotenv.Write(env, filepath.Join(path, ".env"))
 }
 
 // read .env file and set as environment variables
