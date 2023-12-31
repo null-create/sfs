@@ -108,7 +108,7 @@ func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 		if err != nil {
 			return nil, err
 		}
-		drive.Root = root
+		drive.Root = c.Populate(root)
 		if drive.SyncIndex == nil {
 			drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
 		}
