@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/dgrijalva/jwt-go" // TODO: replace -- this has a security problem
 )
 
@@ -26,7 +28,7 @@ func NewT() *Token {
 }
 
 func getSecret() ([]byte, error) {
-	e := NewE()
+	e := env.NewE()
 	if s, err := e.Get("JWT_SECRET"); err == nil {
 		return []byte(s), nil
 	} else {

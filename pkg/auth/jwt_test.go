@@ -3,11 +3,13 @@ package auth
 import (
 	"testing"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/alecthomas/assert/v2"
 )
 
 func TestTokenCreation(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	tok := NewT()
 	userID := NewUUID()
@@ -21,7 +23,7 @@ func TestTokenCreation(t *testing.T) {
 }
 
 func TestTokenVerification(t *testing.T) {
-	BuildEnv(true)
+	env.SetEnv(false)
 
 	tok := NewT()
 	userID := NewUUID()
