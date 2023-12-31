@@ -11,6 +11,29 @@ import (
 
 // ----- files --------------------------------------
 
+// retrieve a file. returns nil if the file is not found.
+func (c *Client) GetFile(fileID string) (*svc.File, error) {
+	file := c.Drive.GetFile(fileID)
+	if file == nil {
+		// try database before giving up.
+		file, err := c.Db.GetFile(fileID)
+		if err != nil {
+			return nil, err
+		}
+		if file == nil {
+			return nil, fmt.Errorf("file %s not found", fileID)
+		}
+		// add this since we didn't have it before
+		if err := c.Drive.AddFile(file.DirID, file); err != nil {
+			return nil, fmt.Errorf("failed to add file %s: %v", file.DirID, err)
+		}
+		if err := c.SaveState(); err != nil {
+			return nil, fmt.Errorf("failed to save state: %v", err)
+		}
+	}
+	return file, nil
+}
+
 // add a file to a specified directory
 func (c *Client) AddFile(dirID string, file *svc.File) error {
 	return c.Drive.AddFile(dirID, file)
