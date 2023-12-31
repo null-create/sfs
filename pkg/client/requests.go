@@ -121,6 +121,62 @@ func (c *Client) NewDriveRequest(newDrv *svc.Drive) (*http.Request, error) {
 
 // ----- get
 
+func (c *Client) GetFileRequest(file *svc.File) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, file.Endpoint, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	return req, nil
+}
+
+func (c *Client) GetDirRequest(dir *svc.Directory) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, dir.Endpoint, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	return req, nil
+}
+
+func (c *Client) GetDriveRequest(drv *svc.Drive) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["drive"], &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeDrive(drv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	return req, nil
+}
+
+func (c *Client) GetUserRequest(user *auth.User) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["user"], &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeUser(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	return req, nil
+}
+
 // ----- update
 
 func (c *Client) UpdateFileRequest(file *svc.File) (*http.Request, error) {
