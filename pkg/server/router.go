@@ -89,8 +89,13 @@ func NewRouter() *chi.Mux {
 				r.Put("/", api.PutFile)       // update a file on the server
 				r.Delete("/", api.DeleteFile) // delete a file on the server
 			})
-			r.Route("/all", func(r chi.Router) {
-				r.Get("/", api.GetAllFiles) // get info about all user-specific files
+			r.Route("/i/all/{userID}", func(r chi.Router) {
+				r.Use(AllFilesCtx)
+				r.Get("/", api.GetAllFileInfo) // get info about all user-specific files
+			})
+			r.Route("/all/{userID}", func(r chi.Router) {
+				r.Use(FilesCtx)
+				r.Get("/", api.GetFiles) // send multiple files (not metadata) to client
 			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
 				r.Use(NewFileCtx)
@@ -104,9 +109,6 @@ func NewRouter() *chi.Mux {
 
 		// directories
 		r.Route("/dirs", func(r chi.Router) {
-			// get a list all directories starting from the users root.
-			// will need its own context?
-			r.Get("/", api.Placeholder)
 			// specific directories
 			r.Route("/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
@@ -114,6 +116,10 @@ func NewRouter() *chi.Mux {
 				r.Post("/", api.Placeholder)   // create a new (empty) directory to the server
 				r.Put("/", api.Placeholder)    // update a directory on the server by sending a zip file and unpacking
 				r.Delete("/", api.Placeholder) // delete a directory
+			})
+			r.Route("/all/{userID}", func(r chi.Router) {
+				// TODO: need a specific context for this request.
+				r.Get("/", api.Placeholder) // get all directories
 			})
 			r.Route("/new", func(r chi.Router) {
 				r.Use(NewDirectoryCtx)

@@ -21,6 +21,29 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
+// -------- all item contexts ------------------------------------
+
+func AllFilesCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "userID")
+		if userID == "" {
+			http.Error(w, "no user ID provided", http.StatusBadRequest)
+			return
+		}
+		files, err := getAllFiles(userID, getDBConn("Files"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to get files from database: %v", err), http.StatusInternalServerError)
+			return
+		}
+		if len(files) == 0 {
+			http.Error(w, fmt.Sprintf("no files found for user %s", userID), http.StatusNotFound)
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Files, files)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
 // -------- new item/user context --------------------------------
 
 // attempts to get filename, owner, and path from a requets
@@ -170,6 +193,7 @@ func AuthUserHandler(h http.Handler) http.Handler {
 
 // ------ standard context --------------------------------
 
+// single file context
 func FileCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileID := chi.URLParam(r, "fileID")
@@ -187,6 +211,19 @@ func FileCtx(h http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), File, file)
 		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// multiple files context
+func FilesCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "userID")
+		if userID == "" {
+			http.Error(w, "userID is required", http.StatusBadRequest)
+			return
+		}
+		// TODO: retrieve files list from request. need to figure out how to
+		// send a list of files as part of a request.
 	})
 }
 

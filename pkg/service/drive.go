@@ -135,6 +135,11 @@ func (d *Drive) HasRoot() bool {
 	return d.Root != nil
 }
 
+// check whether the root directory has files and subdirectories
+func (d *Drive) EmptyRoot() bool {
+	return len(d.Root.Files) == 0 || len(d.Root.Dirs) == 0
+}
+
 // save drive state to JSON format
 func (d *Drive) ToJSON() ([]byte, error) {
 	data, err := json.MarshalIndent(d, "", "  ")

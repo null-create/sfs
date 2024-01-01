@@ -56,8 +56,9 @@ type Client struct {
 	Client *http.Client `json:"-"`
 }
 
-// build services endpoints map (files and directories have endpoints defined
-// within their respective data structures)
+// build services endpoints map.
+// individual files and directories have endpoints defined
+// within their respective data structures.
 func (c *Client) setEndpoints() {
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 
@@ -180,8 +181,7 @@ func (c *Client) SaveState() error {
 		return fmt.Errorf("failed to encode json: %v", err)
 	}
 	fn := fmt.Sprintf("client-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05Z"))
-	fp := filepath.Join(c.SfDir, fn)
-	return os.WriteFile(fp, data, svc.PERMS)
+	return os.WriteFile(filepath.Join(c.SfDir, fn), data, svc.PERMS)
 }
 
 // shutdown client side services

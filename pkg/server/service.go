@@ -682,9 +682,6 @@ func (s *Service) SaveDrive(drv *svc.Drive) error {
 	if err := s.Db.UpdateDrive(drv); err != nil {
 		return fmt.Errorf("failed to update drive in database: %v", err)
 	}
-	if err := drv.SaveState(); err != nil {
-		return fmt.Errorf("failed to save drive state: %v", err)
-	}
 	return nil
 }
 
@@ -701,8 +698,8 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	}
 }
 
-// remove a drive and all its files and directories, as well
-// as its info from the database
+// remove a drive and all the users files and directories, as well
+// as its info from the database.
 func (s *Service) RemoveDrive(driveID string) error {
 	drv := s.GetDrive(driveID)
 	if drv == nil {
@@ -714,13 +711,13 @@ func (s *Service) RemoveDrive(driveID string) error {
 		return fmt.Errorf("failed to remove drives files and directories: %v", err)
 	}
 	// remove all files and directories from the database
-	files := drv.Root.GetFiles()
+	files := drv.GetFiles()
 	for _, f := range files {
 		if err := s.Db.RemoveFile(f.ID); err != nil {
 			return err
 		}
 	}
-	dirs := drv.Root.GetSubDirs()
+	dirs := drv.GetDirs()
 	for _, d := range dirs {
 		if err := s.Db.RemoveDirectory(d.ID); err != nil {
 			return err
@@ -743,19 +740,33 @@ func (s *Service) RemoveDrive(driveID string) error {
 	return nil
 }
 
-// add drive and all files and subdirectoris to the service instance
+// add a new drive and all files and subdirectoris to the service instance.
+// the new drive should have the root directory instantiated but empty. AddDrive
+// calls s.Discover() and populates the drive and databases with what it discoveres.
 func (s *Service) AddDrive(drv *svc.Drive) error {
-	if drv.Root == nil {
+	// check that the root dir is valid
+	if !drv.HasRoot() {
 		return fmt.Errorf("drive does not have root directory")
 	}
+	if !drv.EmptyRoot() {
+		return fmt.Errorf("root has already been populated")
+	}
+
+	// discover users files and directories, then add them to the service instance
+	populatedRoot, err := s.Discover(drv.Root)
+	if err != nil {
+		return fmt.Errorf("failed to discover drive files and directories: %v", err)
+	}
+	drv.Root = populatedRoot
+
 	// add all files and subdirectories to the database
-	files := drv.Root.WalkFs()
+	files := drv.GetFiles()
 	for _, f := range files {
 		if err := s.Db.AddFile(f); err != nil {
 			return err
 		}
 	}
-	subDirs := drv.Root.WalkDs()
+	subDirs := drv.GetDirs()
 	for _, d := range subDirs {
 		if err := s.Db.AddDir(d); err != nil {
 			return err

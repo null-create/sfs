@@ -259,7 +259,8 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 }
 
 // populate a slice of *svc.File structs for all files
-// associated with the given user
+// associated with the given user. will return an empty slice
+// if no files are found.
 func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 	q.WhichDB("files")
 	q.Connect()

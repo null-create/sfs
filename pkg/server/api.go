@@ -192,10 +192,20 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, file.ServerPath)
 }
 
+// retrieve the files (not just metadata) requested by the client.
+func (a *API) GetFiles(w http.ResponseWriter, r *http.Request) {
+	files := r.Context().Value(Files).([]*svc.File)
+	for _, file := range files {
+		go func() {
+			http.ServeFile(w, r, file.ServerPath)
+		}()
+	}
+}
+
 // get json blobs of all files available on the server.
 // only sends metadata, not the actual files.
 // TODO: implement a user-specific get-all-files db call
-func (a *API) GetAllFiles(w http.ResponseWriter, r *http.Request) {
+func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	if files, err := a.Svc.Db.GetFiles(); err == nil {
 		if len(files) == 0 {
 			w.Write([]byte("no files found"))
@@ -320,48 +330,12 @@ func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// TODO: refactor this to be a single context struct
-	dirName := ctx.Value(Name).(string)
-	parentID := ctx.Value(Parent).(string)
-	driveID := ctx.Value(Drive).(string)
-	path := ctx.Value(Path).(string)
-	owner := ctx.Value(User).(string)
-
-	// check if this directory exists
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		log.Printf("[INFO] dir %s already exists", path)
-		http.Error(w, fmt.Sprintf("dir %s already exists", path), http.StatusBadRequest)
+	newDir := r.Context().Value(Directory).(*svc.Directory)
+	if err := a.Svc.NewDir(newDir.DriveID, newDir.Parent.ID, newDir); err != nil {
+		http.Error(w, fmt.Sprintf("failed to create directory: %v", err), http.StatusInternalServerError)
 		return
 	}
-	// make the new physical directory & directory object
-	if err := os.Mkdir(path, svc.PERMS); err != nil {
-		log.Printf("[ERROR] failed to make directory: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	dir := svc.NewDirectory(dirName, owner, driveID, path)
-
-	// set parent to this directory
-	parent, err := a.Svc.Db.GetDirectory(parentID)
-	if err != nil {
-		log.Printf("[ERROR] couldn't retrieve directory: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	dir.Parent = parent
-
-	// save new dir to directory db
-	if err := a.Svc.Db.AddDir(dir); err != nil {
-		log.Printf("[ERROR] failed to add directory to database: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	log.Printf("[INFO] dir %s (%s) created", dirName, path)
-
-	msg := fmt.Sprintf("directory %s created", dirName)
-	w.Write([]byte(msg))
+	w.Write([]byte(fmt.Sprintf("directory %s (id=%s) created successfully", newDir.Name, newDir.ID)))
 }
 
 func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {

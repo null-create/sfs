@@ -25,6 +25,15 @@ func findFile(fileID string, q *db.Query) (*svc.File, error) {
 	return f, nil
 }
 
+// get a slice of all files for this user. returns an empty slice if none are found.
+func getAllFiles(userID string, q *db.Query) ([]*svc.File, error) {
+	files, err := q.GetUsersFiles(userID)
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // get user data from db. user will be nil if not found
 func findUser(userID string, q *db.Query) (*auth.User, error) {
 	u, err := q.GetUser(userID)
