@@ -63,6 +63,7 @@ func (c *Client) encodeDrive(drv *svc.Drive) (string, error) {
 
 // ------- get request objects --------------------------------------------------
 
+// valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetFileReq(file *svc.File, reqType string) (*http.Request, error) {
 	switch reqType {
 	case "new":
@@ -78,6 +79,7 @@ func (c *Client) GetFileReq(file *svc.File, reqType string) (*http.Request, erro
 	}
 }
 
+// valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetDirReq(dir *svc.Directory, reqType string) (*http.Request, error) {
 	switch reqType {
 	case "new":
@@ -93,6 +95,7 @@ func (c *Client) GetDirReq(dir *svc.Directory, reqType string) (*http.Request, e
 	}
 }
 
+// valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetDriveReq(drv *svc.Drive, reqType string) (*http.Request, error) {
 	switch reqType {
 	case "new":
@@ -108,6 +111,7 @@ func (c *Client) GetDriveReq(drv *svc.Drive, reqType string) (*http.Request, err
 	}
 }
 
+// valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetUserReq(user *auth.User, reqType string) (*http.Request, error) {
 	switch reqType {
 	case "new":
