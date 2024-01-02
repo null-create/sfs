@@ -58,7 +58,7 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 			evtChan, offSwitch, fileID,
 		)
 	}
-	// TODO: buffered events should be a client setting
+	// TODO: buffered events (and buffer size) should be a client setting
 	evts := monitor.NewEvents(false)
 	return evtChan, offSwitch, fileID, evts, nil
 }
