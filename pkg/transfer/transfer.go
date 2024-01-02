@@ -74,7 +74,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	bodyWriter := multipart.NewWriter(t.Buffer)
 	defer bodyWriter.Close()
 
-	// create a form file field for the file
 	fileWriter, err := bodyWriter.CreateFormFile("myFile", filepath.Base(file.Path))
 	if err != nil {
 		return err
@@ -91,8 +90,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		return err
 	}
 
-	// upload and confirm success
-	log.Printf("[INFO] uploading %v ...", filepath.Base(file.Path))
 	resp, err := t.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
@@ -109,7 +106,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		return fmt.Errorf("failed to upload file: %v", fmt.Sprintf("\n%s\n", string(b)))
 	}
 
-	log.Printf("[INFO] ...done")
 	b, err := httputil.DumpResponse(resp, true)
 	if err != nil {
 		log.Printf("[WARNING] failed to parse http response: %v", err)
@@ -124,9 +120,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 // intended to run in its own goroutine.
 // download a known file that is only on the server, and is new to the client
 func (t *Transfer) Download(destPath string, srcURL string) error {
-	log.Printf("[INFO] downloading file from %s ...", srcURL)
-
-	// attempt to retrieve the file from the server
 	resp, err := t.Client.Get(srcURL)
 	if err != nil {
 		return fmt.Errorf("failed to execute http request: %v", err)
@@ -144,14 +137,12 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 	}
 	defer resp.Body.Close()
 
-	// create (or truncate and overwrite) destination file
 	file, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %v", err)
 	}
 	defer file.Close()
 
-	// write out contents
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
