@@ -207,7 +207,7 @@ func (c *Client) Start() error {
 		if c.Drive.Root.IsNil() || c.Drive.Root.IsEmpty() {
 			root, err := c.Db.GetDirectory(c.Drive.RootID)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get root directory: %v", err)
 			}
 			c.Drive.Root = c.Populate(root)
 		}
@@ -216,12 +216,12 @@ func (c *Client) Start() error {
 
 	// start monitoring services
 	if err := c.Monitor.Start(c.Drive.Root.Path); err != nil {
-		log.Fatal("failed to start monitor", err)
+		return fmt.Errorf("failed to start monitoring: %v", err)
 	}
 
 	// start monitoring event handlers
 	if err := c.StartHandlers(); err != nil {
-		log.Fatal("failed to start event handlers", err)
+		return fmt.Errorf("failed to start event handlers: %v", err)
 	}
 
 	// start sync doc monitoring
@@ -229,8 +229,7 @@ func (c *Client) Start() error {
 
 	// save initial state
 	if err := c.SaveState(); err != nil {
-		log.Fatal("failed to save state")
+		return fmt.Errorf("failed to save initial state: %v", err)
 	}
-
 	return nil
 }
