@@ -185,7 +185,18 @@ func (c *Client) NewDriveRequest(newDrv *svc.Drive) (*http.Request, error) {
 	return req, nil
 }
 
-// ----- get
+// ----- gets --------------------------------
+
+// request to retrieve metadata about multiple files or directories. needs the
+// specified server API endpoint for this request.
+func (c *Client) GetInfoRequest(endpoint string) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, endpoint, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	return req, nil
+}
 
 func (c *Client) GetFileRequest(file *svc.File) (*http.Request, error) {
 	var buf bytes.Buffer
@@ -243,7 +254,7 @@ func (c *Client) GetUserRequest(user *auth.User) (*http.Request, error) {
 	return req, nil
 }
 
-// ----- update
+// ----- updates --------------------------------
 
 func (c *Client) UpdateFileRequest(file *svc.File) (*http.Request, error) {
 	var buf bytes.Buffer
@@ -301,7 +312,7 @@ func (c *Client) UpdateUserRequest(user *auth.User) (*http.Request, error) {
 	return req, nil
 }
 
-// ---- delete
+// ---- deletes --------------------------------------------
 
 func (c *Client) DeleteFileRequest(file *svc.File) (*http.Request, error) {
 	var buf bytes.Buffer
