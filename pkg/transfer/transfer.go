@@ -44,6 +44,15 @@ func NewTransfer(port int) *Transfer {
 	}
 }
 
+func (t *Transfer) dump(resp *http.Response, body bool) {
+	b, err := httputil.DumpResponse(resp, body)
+	if err != nil {
+		log.Printf("[WARNING] failed to parse http response: %v", err)
+	} else {
+		log.Printf("[INFO] \n%v\n", string(b))
+	}
+}
+
 func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.File, destURL string) (*http.Request, error) {
 	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
@@ -78,7 +87,6 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if err != nil {
 		return err
 	}
-	// load data into file writer, then prepare and send the request to the destination
 	if len(file.Content) == 0 {
 		file.Load()
 	}
@@ -97,13 +105,8 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] server returned non-OK status: %v", resp.Status)
-		b, err := httputil.DumpResponse(resp, true)
-		if err != nil {
-			log.Printf("[WARNING] failed to parse http response: %v", err)
-			return nil
-		}
-		return fmt.Errorf("failed to upload file: %v", fmt.Sprintf("\n%s\n", string(b)))
+		t.dump(resp, true)
+		return fmt.Errorf("server returned non-OK status: %v", resp.Status)
 	}
 
 	b, err := httputil.DumpResponse(resp, true)
@@ -125,12 +128,7 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 		return fmt.Errorf("failed to execute http request: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		b, err := httputil.DumpResponse(resp, true)
-		if err != nil {
-			log.Printf("[WARNING] failed to parse response: %v", err)
-		} else {
-			log.Printf("[INFO] failed to download file from server: %v", string(b))
-		}
+		t.dump(resp, true)
 		// server may be having issues.
 		// does necessarily not mean a client error occurred.
 		return nil
