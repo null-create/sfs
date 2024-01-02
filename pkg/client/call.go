@@ -19,7 +19,28 @@ These are basically one-off functions that don't need to be part of
 the bigger push/pull synchronization events.
 */
 
-// executes a file request API call.
+// request information from the server about a particular file, directory
+// drive, or user. retrieves only metadata. requires the
+func (c *Client) InfoReq(endpoint string, reqType string) error {
+	req, err := c.GetInfoRequest(endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to execute info request: %v", err)
+	}
+	defer req.Body.Close()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, req.Body)
+	if err != nil {
+		return err
+	}
+
+	// TODO: fancy output
+
+	return nil
+}
+
+// executes a file request. can be used to send a new file,
+// send an updated file, retrieve a file, or a delete a file on the server.
 func (c *Client) FileReq(file *svc.File, reqType string) error {
 	req, err := c.GetFileReq(file, reqType)
 	if err != nil {
