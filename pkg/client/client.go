@@ -200,3 +200,37 @@ func (c *Client) ShutDown() error {
 	}
 	return nil
 }
+
+// start up client services
+func (c *Client) Start() error {
+	if !c.Drive.IsLoaded {
+		if c.Drive.Root.IsNil() || c.Drive.Root.IsEmpty() {
+			root, err := c.Db.GetDirectory(c.Drive.RootID)
+			if err != nil {
+				return err
+			}
+			c.Drive.Root = c.Populate(root)
+		}
+		c.Drive.IsLoaded = true
+	}
+
+	// start monitoring services
+	if err := c.Monitor.Start(c.Drive.Root.Path); err != nil {
+		log.Fatal("failed to start monitor", err)
+	}
+
+	// start monitoring event handlers
+	if err := c.StartHandlers(); err != nil {
+		log.Fatal("failed to start event handlers", err)
+	}
+
+	// start sync doc monitoring
+	c.Sync(c.Off)
+
+	// save initial state
+	if err := c.SaveState(); err != nil {
+		log.Fatal("failed to save state")
+	}
+
+	return nil
+}

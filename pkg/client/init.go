@@ -173,11 +173,14 @@ func loadDrive(client *Client) error {
 	}
 	drive.Root = client.Populate(root)
 	client.Drive = drive
+	client.Drive.IsLoaded = true
 	client.Root = drive.Root.Path
 	return nil
 }
 
-// load client from state file, if possible
+// load client from state file, if possible.
+// does not start client services. use client.Run()
+// to start monitoring and synchronization services.
 func LoadClient(usersName string) (*Client, error) {
 	// load client state
 	data, err := loadStateFile(usersName)
@@ -201,25 +204,23 @@ func LoadClient(usersName string) (*Client, error) {
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
 
-	// create sync index if necessary
-	if client.Drive.SyncIndex == nil {
-		client.Drive.SyncIndex = client.Drive.Root.WalkS(svc.NewSyncIndex(client.User.ID))
-	}
+	// create (or refresh) sync index
+	client.Drive.SyncIndex = client.Drive.Root.WalkS(svc.NewSyncIndex(client.User.ID))
+
+	// add token validation and generation componet
+	client.Tok = auth.NewT()
+
+	// set up server endpoints map
+	client.setEndpoints()
 
 	// add transfer component
 	client.Transfer = transfer.NewTransfer(client.Conf.Port)
 
-	// start client file monitoring services
+	// add monitoring component
 	client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
-	if err := client.StartMonitor(); err != nil {
-		return nil, fmt.Errorf("failed to start client monitor: %v", err)
-	}
 
-	// initialize handlers map and start all handlers
+	// initialize handlers map
 	client.BuildHandlers()
-	if err := client.StartHandlers(); err != nil {
-		return nil, fmt.Errorf("failed to start event handlers: %v", err)
-	}
 
 	client.StartTime = time.Now().UTC()
 	return client, nil
