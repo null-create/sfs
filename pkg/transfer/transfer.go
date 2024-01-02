@@ -20,9 +20,6 @@ import (
 // transfer handles the uploading and downloading of individual files
 // during synchronization events. one-off API calls are handled by
 // other client request implementations.
-//
-// transfer operations are intended to run in their own goroutine as part
-// of sync operations with the server.
 type Transfer struct {
 	Start  time.Time
 	Buffer *bytes.Buffer
