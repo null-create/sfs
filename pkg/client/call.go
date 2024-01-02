@@ -20,8 +20,10 @@ the bigger push/pull synchronization events.
 */
 
 // request information from the server about a particular file, directory
-// drive, or user. retrieves only metadata. requires the
-func (c *Client) InfoReq(endpoint string, reqType string) error {
+// drive, or user. retrieves only metadata. requires the specific information
+// endpoint associated with the file, directory, drive, or user that the request
+// is about.
+func (c *Client) InfoReq(endpoint string) error {
 	req, err := c.GetInfoRequest(endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to execute info request: %v", err)
@@ -56,7 +58,6 @@ func (c *Client) FileReq(file *svc.File, reqType string) error {
 	}
 	defer resp.Body.Close()
 
-	// all other requests involve sending a file. this handles the get case.
 	if reqType == "get" {
 		// download the file
 		var buf bytes.Buffer
