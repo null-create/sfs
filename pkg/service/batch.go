@@ -74,20 +74,6 @@ func (b *Batch) HasFile(id string) bool {
 	return false
 }
 
-// retrieves all files in the batch.
-//
-// should be used when multiplexing file uploads or downloads
-func (b *Batch) GetFiles() ([]*File, error) {
-	if len(b.Files) == 0 {
-		return nil, fmt.Errorf("no files were in the batch")
-	}
-	f := make([]*File, 0, len(b.Files))
-	for _, file := range b.Files {
-		f = append(f, file)
-	}
-	return f, nil
-}
-
 /*
 we're bound  by an upper size limit on our batch sizes (MAX) since
 we ideally don't want to clog a home network's resources when uploading

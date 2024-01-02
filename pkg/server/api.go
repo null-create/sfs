@@ -97,8 +97,8 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// TODO: userData should be part of a jwt token claim/payload,
-	// and not just the bare bytes
+	// TODO: more secure way to send user data over the wire.
+	// this just sends the raw JSON response.
 	w.Write(userData)
 }
 
@@ -142,36 +142,9 @@ func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 // -------- files -----------------------------------------
 
-/*
-NOTE: these are single operation file handlers.
-syncing events will have separate handlers for file
-uploads and downloads
-*/
-
-// check the db for the existence of a file.
-//
-// returns nil if file isn't found. handles db errors.
-func (a *API) findF(w http.ResponseWriter, r *http.Request, fileID string) *svc.File {
-	file, err := a.Svc.Db.GetFile(fileID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
-	}
-	return file
-}
-
 // get file metadata
 func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
-	fileID := chi.URLParam(r, "fileID")
-	if fileID == "" {
-		http.Error(w, "missing file ID", http.StatusBadRequest)
-		return
-	}
-	file := a.findF(w, r, fileID)
-	if file == nil {
-		http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
-		return
-	}
+	file := r.Context().Value(File).(*svc.File)
 	data, err := file.ToJSON()
 	if err != nil {
 		msg := fmt.Sprintf("failed to convert to JSON: %s", err.Error())
@@ -183,30 +156,27 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
+	// file existance as confirmed in middleware by this point
 	file := r.Context().Value(File).(*svc.File)
 
 	// Set the response header for the download
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 	w.Header().Set("Content-Type", "application/octet-stream")
 
+	// send the file
 	http.ServeFile(w, r, file.ServerPath)
 }
 
-// retrieve the files (not just metadata) requested by the client.
-func (a *API) GetFiles(w http.ResponseWriter, r *http.Request) {
-	files := r.Context().Value(Files).([]*svc.File)
-	for _, file := range files {
-		go func() {
-			http.ServeFile(w, r, file.ServerPath)
-		}()
-	}
-}
-
-// get json blobs of all files available on the server.
+// get json blobs of all files available on the server for a user.
 // only sends metadata, not the actual files.
-// TODO: implement a user-specific get-all-files db call
 func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
-	if files, err := a.Svc.Db.GetFiles(); err == nil {
+	userID := chi.URLParam(r, "userID") // userID won't be empty because middleware will have already checked for this
+	driveID, err := a.Svc.Db.GetDriveID(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if files, err := a.Svc.GetAllFiles(driveID); err == nil {
 		if len(files) == 0 {
 			w.Write([]byte("no files found"))
 			return
@@ -214,7 +184,7 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 		for _, file := range files {
 			data, err := file.ToJSON()
 			if err != nil {
-				msg := fmt.Sprintf("failed to convert file (name=%s id=%s) to JSON: %v", file.Name, file.ID, err)
+				msg := fmt.Sprintf("failed to convert %s (id=%s) to JSON: %v", file.Name, file.ID, err)
 				http.Error(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -245,8 +215,7 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 		if err := os.Remove(newFile.ServerPath); err != nil {
 			log.Printf("[WARNING] failed to remove %s (id=%s) from server: %v", newFile.Name, newFile.ID, err)
 		}
-		msg := fmt.Sprintf("failed to add file to service: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to add file to service: %v", err), http.StatusInternalServerError)
 		return
 	}
 	msg := fmt.Sprintf("%s has been added to the server", newFile.Name)
@@ -269,7 +238,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 		http.Error(w, fmt.Sprintf("failed to update %s (id=%s)", file.Name, file.ID), http.StatusInternalServerError)
 		return
 	}
-	msg := fmt.Sprintf("file %s updated", file.Name)
+	msg := fmt.Sprintf("%s updated (owner id=%s)", file.Name, file.OwnerID)
 	log.Printf("[INFO] %s", msg)
 	w.Write([]byte(msg))
 }

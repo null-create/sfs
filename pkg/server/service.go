@@ -1003,8 +1003,8 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // ---------- files --------------------------------
 
-// find a file in the database
-func (s *Service) FindFile(driveID string, fileID string) (*svc.File, error) {
+// find a file in the drive instance and return.
+func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
 		return nil, fmt.Errorf("drive id=%s not found", driveID)
@@ -1016,8 +1016,8 @@ func (s *Service) FindFile(driveID string, fileID string) (*svc.File, error) {
 	return file, nil
 }
 
-// get all files for this user
-func (s *Service) FindFiles(driveID string, fileIds []string) (map[string]*svc.File, error) {
+// get all file objects for this user.
+func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
 		return nil, fmt.Errorf("drive id=%s not found", driveID)

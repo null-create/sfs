@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -100,6 +101,14 @@ func (f *File) ToJSON() ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// confirms the physical file associated with this object actually exists.
+func (f *File) Exists() bool {
+	if _, err := os.Stat(f.Path); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
 
 // ----------- simple security features

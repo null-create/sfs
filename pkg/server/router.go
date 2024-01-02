@@ -95,7 +95,7 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/all/{userID}", func(r chi.Router) {
 				r.Use(FilesCtx)
-				r.Get("/", api.GetFiles) // send multiple files (not metadata) to client
+				// r.Get("/", api.GetFiles) // send multiple files (not metadata) to client
 			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
 				r.Use(NewFileCtx)

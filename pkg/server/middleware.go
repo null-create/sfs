@@ -76,7 +76,6 @@ func NewFileCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("file %s (id=%s) already exists", file.Name, file.ID), http.StatusBadRequest)
 			return
 		}
-		// create new file object and add to request context
 		newCtx := context.WithValue(r.Context(), File, newFile)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
@@ -207,6 +206,10 @@ func FileCtx(h http.Handler) http.Handler {
 			return
 		} else if file == nil {
 			http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
+			return
+		}
+		if !file.Exists() {
+			http.Error(w, "file was in database but physical file was not found", http.StatusInternalServerError)
 			return
 		}
 		ctx := context.WithValue(r.Context(), File, file)

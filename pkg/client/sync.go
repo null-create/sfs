@@ -123,8 +123,7 @@ func (c *Client) Pull() error {
 // returns nil if there's any errors.
 func (c *Client) GetServerIdx() *svc.SyncIndex {
 	// make a new request
-	buffer := new(bytes.Buffer)
-	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], buffer)
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], new(bytes.Buffer))
 	if err != nil {
 		log.Printf("[WARNING] failed prepare http request: \n%v", err)
 		return nil
