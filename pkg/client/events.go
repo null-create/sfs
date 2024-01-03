@@ -32,7 +32,9 @@ func (c *Client) WatchFile(filePath string) {
 	c.Monitor.WatchFile(filePath)
 }
 
-// add a new event handler for the given file
+// add a new event handler for the given file.
+// path to the given file must already have a monitoring
+// goroutine in place (call client.WatchFile(filePath) first).
 func (c *Client) NewHandler(filePath string) error {
 	if _, exists := c.Handlers[filePath]; !exists {
 		c.NewEHandler(filePath)
@@ -122,8 +124,9 @@ func (c *Client) NewEHandler(filePath string) error {
 	// handler off-switch
 	stopHandler := make(chan bool)
 
-	// event monitoring handler
+	// event listener handler
 	var handler = func() {
+		// event listener
 		var listener = func() error {
 			for {
 				select {
@@ -142,27 +145,28 @@ func (c *Client) NewEHandler(filePath string) error {
 						return nil
 					}
 					if evts.StartSync {
-						// push changes to server
-						if err := c.Sync(true); err != nil {
+						if err := c.Sync(true); err != nil { // push changes to server
 							return err
 						}
 						evts.Reset()             // resets events buffer
 						time.Sleep(monitor.WAIT) // wait before resuming event handler
 					}
-					// TODO: a way to determine when to pull from the server
-
 				default:
 					continue
 				}
 			}
 		}
+		// start listener
 		go func() {
 			if err := listener(); err != nil {
 				log.Printf("[ERROR] failed to start sync operation: %v", err)
 			}
 		}()
 	}
+
+	// save the handler and its off-switch
 	c.Handlers[filePath] = handler
 	c.OffSwitches[filePath] = stopHandler
+
 	return nil
 }
