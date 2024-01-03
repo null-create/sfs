@@ -7,11 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
+	"github.com/sfs/pkg/transfer"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -97,7 +99,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// TODO: more secure way to send user data over the wire.
+	// TODO: more secure way to send user data.
 	// this just sends the raw JSON response.
 	w.Write(userData)
 }
@@ -267,7 +269,7 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 // ------- directories --------------------------------
 
-// returns metadata for a directory. does not populate it.
+// returns metadata for a single directory (not its children).
 func (a *API) GetDirInfo(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	data, err := dir.ToJSON()
@@ -308,15 +310,44 @@ func (a *API) walkDir(w http.ResponseWriter, dir *svc.Directory) error {
 
 // retrieve metadata for a directory as well as all its files and children.
 // does not return file contents, only metadata.
-func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
+func (a *API) GetManyDirsInfo(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	dir = a.Svc.Populate(dir)
 	// walk the directory tree starting from this directory, and
 	// send JSON blobs for each object it discovers along the way.
-	// data is sent in depth-first search order so client side will need to sort that out.
+	// data is sent in depth-first search order so client side
+	// will need to sort that out.
 	a.walkDir(w, dir)
 }
 
+// retrieve a zipfile of the directory (and all its children)
+func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
+	dir := r.Context().Value(Directory).(*svc.Directory)
+	// create a tmp .zip file so we can transfer the directory and its contents
+	archive := filepath.Join(dir.Path, fmt.Sprintf(dir.Name, ".zip"))
+	if err := transfer.Zip(dir.Path, archive); err != nil {
+		http.Error(w, fmt.Sprintf("failed to compress directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+	// send archive file
+	http.ServeFile(w, r, archive)
+	// remove tmp .zip file and tmp folder
+	if err := os.Remove(archive); err != nil {
+		log.Printf("[WARNING] failed to remove temp archive %s: %v", archive, err)
+	}
+}
+
+// TODO:
+// create a new directory with supplied contents on the server.
+// should take a .zip file sent from the user, unpack it in the
+// desired location, and update internal data structures and databases
+// accordingly
+
+// func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
+//
+// }
+
+// create a new empty physical directory on the server for a user
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 	newDir := r.Context().Value(Directory).(*svc.Directory)
 	if err := a.Svc.NewDir(newDir.DriveID, newDir.Parent.ID, newDir); err != nil {
@@ -326,8 +357,14 @@ func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("directory %s (id=%s) created successfully", newDir.Name, newDir.ID)))
 }
 
+// delete a physical file on the server for the user
 func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
-
+	dir := r.Context().Value(Directory).(*svc.Directory)
+	if err := a.Svc.RemoveDir(dir.DriveID, dir.ID); err != nil {
+		http.Error(w, fmt.Sprintf("failed to remove directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("directory %s (id=%s) deleted", dir.Name, dir.ID)))
 }
 
 // -------- drives --------------------------------

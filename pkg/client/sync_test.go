@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"testing"
-	"time"
 
 	"github.com/sfs/pkg/env"
 	svr "github.com/sfs/pkg/server"
@@ -20,6 +19,22 @@ func TestGetServerSyncIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// create a tmp service with drive, then
+	// generate a new sync index to be retrieved by the client
+	tmpSvc, err := svr.Init(false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// create tmp client & add drive to service before contacting server
+	client, err := Init(true)
+	if err != nil {
+		Fail(t, clientRoot, err)
+	}
+	if err := tmpSvc.AddDrive(client.Drive); err != nil {
+		Fail(t, clientRoot, err)
+	}
+
 	// shut down signal to the test server
 	shutDown := make(chan bool)
 
@@ -28,25 +43,14 @@ func TestGetServerSyncIndex(t *testing.T) {
 	go func() {
 		testServer.TestRun(shutDown)
 	}()
-
-	// wait for server to be ready
-	time.Sleep(2 * time.Second)
-
-	// create tmp client
-	client, err := Init(true)
-	if err != nil {
-		shutDown <- true
-		Fail(t, clientRoot, err)
-	}
-
-	// NOTE: failing because the server doesn't have a drive
-	// for this client. will need to create one somehow.
-
 	// retrieve index from server API and confirm non-empty fields
 	idx := client.GetServerIdx()
 	if idx == nil {
 		shutDown <- true
-		Fail(t, clientRoot, fmt.Errorf("server index is nil"))
+		if err := Clean(t, GetTestingDir()); err != nil {
+			t.Fatal(err)
+		}
+		Fail(t, clientRoot, fmt.Errorf("failed to retrieve sync index from server"))
 	}
 
 	// TODO: other tests...
@@ -54,6 +58,9 @@ func TestGetServerSyncIndex(t *testing.T) {
 	// shutdown test server
 	shutDown <- true
 
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
 	if err := Clean(t, clientRoot); err != nil {
 		// reset our .env file for other tests
 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {

@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -23,14 +24,13 @@ const (
 	SyncWait     = time.Minute
 )
 
+// TODO: func to compare local index with server index, find any differences
+// between them, and determine what to pull from the server.
+
 // gets server Sync index, compares with local index, and either
 // calls Push or Pull, depending on whether the corresponding bool
 // flag is set. resets Sync doc too.
 func (c *Client) Sync(up bool) error {
-	// TODO: compare with local index, find any differences between them,
-	// and determine whether to push or pull (or both, if the server has
-	// some newer versions of local files, and the client has newer (or new)
-	// files to update/send to the server)
 	if up {
 		localIdx := c.Drive.SyncIndex
 		if localIdx == nil {
@@ -82,7 +82,6 @@ func (c *Client) Push() error {
 	}
 	// TODO: use a channel to block Push() right before c.reset() until
 	// all files have been uploaded
-	// for _, batch := range queue.Queue {
 	for len(queue.Queue) > 0 {
 		batch := queue.Dequeue()
 		for _, file := range batch.Files {
@@ -107,16 +106,17 @@ func (c *Client) Push() error {
 // gets a sync index from the server, compares with the local one,
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
-func (c *Client) Pull(svrIdx *svc.SyncIndex) error {
-	if len(svrIdx.ToUpdate) == 0 {
+func (c *Client) Pull(idx *svc.SyncIndex) error {
+	if len(idx.ToUpdate) == 0 {
 		log.Print("[INFO] no sync index return from server. nothing to pull")
 		return nil
 	}
-	queue := svc.BuildQ(svrIdx)
+	queue := svc.BuildQ(idx)
 	if len(queue.Queue) == 0 || queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
-	for _, batch := range queue.Queue {
+	for len(queue.Queue) > 0 {
+		batch := queue.Dequeue()
 		for _, file := range batch.Files {
 			go func() {
 				if err := c.Transfer.Download(
@@ -157,8 +157,8 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 		return nil
 	}
 
-	data := make([]byte, 0)
-	_, err = resp.Body.Read(data)
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
 		log.Printf("[WARNING] failed to read server response body: \n%v", err)
 		return nil
@@ -166,7 +166,7 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 	defer resp.Body.Close()
 
 	idx := new(svc.SyncIndex)
-	if err := json.Unmarshal(data, &idx); err != nil {
+	if err := json.Unmarshal(buf.Bytes(), &idx); err != nil {
 		log.Printf("[WARNING] failed to unmarshal server sync index: \n%v", err)
 		return nil
 	}

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -220,4 +221,14 @@ func MakeABunchOfTxtFiles(total int) ([]*svc.File, error) {
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+// ---- test drives and stuff
+
+// make testing drive with test files, directories, and subdirectories.
+// all test files will be within the test directory.
+func MakeTmpDrive(t *testing.T) *svc.Drive {
+	root := MakeTmpDirs(t)
+	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	return drive
 }

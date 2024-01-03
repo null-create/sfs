@@ -347,7 +347,9 @@ func (s *Service) GetDrive(driveID string) *svc.Drive {
 		if root == nil {
 			return nil
 		}
+		// populate the root directory and generate a new sync index
 		drive.Root = s.Populate(root)
+		drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
 		s.Drives[drive.ID] = drive
 		if err := s.SaveState(); err != nil {
 			log.Printf("[ERROR] failed to save service state while updating drive map: %v", err)
@@ -867,16 +869,13 @@ func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 		return nil, fmt.Errorf("drive %s not found", driveID)
 	}
 	// build sync index if necessary
-	if len(drive.SyncIndex.LastSync) == 0 || drive.SyncIndex == nil {
+	if drive.SyncIndex == nil {
 		log.Printf("[WARNING] sync index for %s not found. creating...", driveID)
 		ownerID, err := drive.GetOwnerID()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get drive owner ID: %v", err)
 		}
 		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(ownerID))
-		if err := drive.SaveState(); err != nil {
-			return nil, fmt.Errorf("failed to save drive state: %v", err)
-		}
 	}
 	return drive.SyncIndex, nil
 }
