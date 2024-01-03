@@ -205,6 +205,9 @@ func (c *Client) Start() error {
 			if err != nil {
 				return fmt.Errorf("failed to get root directory: %v", err)
 			}
+			if root == nil {
+				return fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
+			}
 			c.Drive.Root = c.Populate(root)
 		}
 		c.Drive.IsLoaded = true
