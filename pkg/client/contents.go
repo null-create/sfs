@@ -71,9 +71,6 @@ func (c *Client) RemoveFile(dirID string, file *svc.File) error {
 
 // remove files from a specied directory
 func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
-	if len(fileIDs) == 0 {
-		return fmt.Errorf("no files to remove")
-	}
 	for _, fileID := range fileIDs {
 		file := c.Drive.GetFile(fileID)
 		if file == nil { // didn't find the file. ignore.
@@ -132,7 +129,7 @@ func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 			return nil, err
 		}
 		drive.Root = c.Populate(root)
-		if drive.SyncIndex == nil {
+		if !drive.IsIndexed() {
 			drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
 		}
 		c.Drive = drive
@@ -245,6 +242,81 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 				continue
 			}
 			dir.AddFile(file)
+		}
+	}
+	return dir
+}
+
+// recursively descends the drive's directory tree and compares what it
+// finds to what is in the database, adding new items as it goes. generates
+// a new root directory object and attaches it to the drive.
+func (c *Client) RefreshDrive() error {
+	// refresh root against the database and create a new root object
+	newRoot := c.refreshDrive(c.Drive.Root)
+
+	// clear old contents from memory then add new root
+	c.Drive.Root.Clear(c.Drive.Root.Key)
+	c.Drive.Root = newRoot
+
+	if err := c.SaveState(); err != nil {
+		return fmt.Errorf("failed to save state file: %v", err)
+	}
+	return nil
+}
+
+// descends users directory tree and compares what it finds
+// to what is in the database. if a new file or directory is found
+// along the way it will be added to the database and new objects
+// will created for them.
+func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
+	entries, err := os.ReadDir(dir.Path)
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return dir
+	}
+	if len(entries) == 0 {
+		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
+		return dir
+	}
+	for _, entry := range entries {
+		entryPath := filepath.Join(dir.Path, entry.Name())
+		item, err := os.Stat(entryPath)
+		if err != nil {
+			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			return dir
+		}
+		// add directory then recurse
+		if item.IsDir() {
+			subDir, err := c.Db.GetDirectoryByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				continue
+			}
+			// new directory
+			if subDir == nil {
+				subDir = svc.NewDirectory(item.Name(), dir.OwnerID, dir.DriveID, entryPath)
+				if err := c.Db.AddDir(subDir); err != nil {
+					log.Printf("[ERROR] could not add directory (%s) to db: %v", item.Name(), err)
+					continue
+				}
+				subDir = c.refreshDrive(subDir)
+				dir.AddSubDir(subDir)
+			}
+		} else {
+			file, err := c.Db.GetFileByName(item.Name())
+			if err != nil {
+				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				continue
+			}
+			// new file
+			if file == nil {
+				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, filepath.Join(item.Name(), dir.Path))
+				if err := c.Db.AddFile(newFile); err != nil {
+					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
+					continue // TEMP until there's a better way to handle this error
+				}
+				dir.AddFile(newFile)
+			}
 		}
 	}
 	return dir
