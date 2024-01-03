@@ -199,17 +199,15 @@ func (c *Client) ShutDown() error {
 
 // start up client services
 func (c *Client) Start() error {
-	if !c.Drive.IsLoaded {
-		if c.Drive.Root.IsNil() || c.Drive.Root.IsEmpty() {
-			root, err := c.Db.GetDirectory(c.Drive.RootID)
-			if err != nil {
-				return fmt.Errorf("failed to get root directory: %v", err)
-			}
-			if root == nil {
-				return fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
-			}
-			c.Drive.Root = c.Populate(root)
+	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
+		root, err := c.Db.GetDirectory(c.Drive.RootID)
+		if err != nil {
+			return fmt.Errorf("failed to get root directory: %v", err)
 		}
+		if root == nil {
+			return fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
+		}
+		c.Drive.Root = c.Populate(root)
 		c.Drive.IsLoaded = true
 	}
 

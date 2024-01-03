@@ -153,6 +153,7 @@ func loadStateFile(user string) ([]byte, error) {
 	return data, nil
 }
 
+// loads and populates the users drive and root directory tree.
 func loadDrive(client *Client) error {
 	drive, err := client.Db.GetDrive(client.User.DriveID)
 	if err != nil {
@@ -196,7 +197,7 @@ func LoadClient(usersName string) (*Client, error) {
 	}
 	client.User = user
 
-	// load drive
+	// load drive with users directory tree.
 	if err := loadDrive(client); err != nil {
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
@@ -218,6 +219,10 @@ func LoadClient(usersName string) (*Client, error) {
 
 	// initialize handlers map
 	client.BuildHandlers()
+
+	// TODO: pull sync index from server and compare against local index,
+	// then make changes as necessary. this should be part of the standard
+	// start up process for LoadClient()
 
 	client.StartTime = time.Now().UTC()
 	return client, nil

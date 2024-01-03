@@ -307,7 +307,7 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 
 // retrieve information about a users directory from the database
 //
-// dir returns nil if no information is available
+// returns nil if no information is available
 func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
 	q.WhichDB("directories")
 	q.Connect()
@@ -375,6 +375,8 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 	return d, nil
 }
 
+// geta a slice of *all* directories on the server, regardless
+// of owner. only for admin users.
 func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
 	q.WhichDB("directories")
 	q.Connect()

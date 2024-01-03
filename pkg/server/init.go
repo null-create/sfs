@@ -149,7 +149,7 @@ func loadDrives(svc *Service) (*Service, error) {
 		}
 	}
 	// update state file so we can make each
-	// successive service load quicker.
+	// successive service loads quicker. hopefully.
 	if err := svc.SaveState(); err != nil {
 		return svc, fmt.Errorf("failed to save state: %v", err)
 	}

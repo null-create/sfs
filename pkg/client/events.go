@@ -63,7 +63,8 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 	return evtChan, offSwitch, fileID, evts, nil
 }
 
-// start an event handler for a given file
+// start an event handler for a given file. will be a no-op
+// if the handler does not exist.
 func (c *Client) StartHandler(filePath string) error {
 	if handler, exists := c.Handlers[filePath]; exists {
 		handler()
@@ -113,6 +114,8 @@ func (c *Client) BuildHandlers() {
 	}
 }
 
+// build a new event handler for a given file. does not start the handler,
+// only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(filePath string) error {
 	// retrieve the event monitor channel, the monitor
 	// off switch, the associated fileID, and a new events buffer
@@ -125,9 +128,9 @@ func (c *Client) NewEHandler(filePath string) error {
 	stopHandler := make(chan bool)
 
 	// event listener handler
-	var handler = func() {
+	handler := func() {
 		// event listener
-		var listener = func() error {
+		listener := func() error {
 			for {
 				select {
 				case <-stopHandler:

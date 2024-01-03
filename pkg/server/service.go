@@ -344,10 +344,13 @@ func (s *Service) GetDrive(driveID string) *svc.Drive {
 		if err != nil {
 			return nil
 		}
+		if root == nil {
+			return nil
+		}
 		drive.Root = s.Populate(root)
 		s.Drives[drive.ID] = drive
 		if err := s.SaveState(); err != nil {
-			log.Printf("[WARNING] failed to save state while updating drive map: %v", err)
+			log.Printf("[ERROR] failed to save service state while updating drive map: %v", err)
 		}
 		return drive
 	}

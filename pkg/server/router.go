@@ -127,7 +127,7 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/i/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
-				r.Get("/", api.GetDir) // get info about a directory
+				r.Get("/", api.GetManyDirsInfo) // get info about a directory
 			})
 		})
 

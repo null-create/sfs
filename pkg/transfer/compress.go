@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +21,7 @@ func ValidPath(filePath string, dest string) bool {
 	return strings.HasPrefix(filePath, filepath.Clean(dest)+string(os.PathSeparator))
 }
 
+// create a .zip file from a directory.
 func Zip(sourceDir string, destArchive string) error {
 	file, err := os.Create(destArchive)
 	if err != nil {
@@ -66,6 +68,7 @@ func Zip(sourceDir string, destArchive string) error {
 	return nil
 }
 
+// unzip an archive file into a directory.
 // from: https://stackoverflow.com/questions/20357223/easy-way-to-unzip-file
 func Unzip(src string, dest string) error {
 	r, err := zip.OpenReader(src)
@@ -74,7 +77,7 @@ func Unzip(src string, dest string) error {
 	}
 	defer func() {
 		if err := r.Close(); err != nil {
-			panic(err)
+			log.Printf("[ERROR] failed to close file descriptor: %v", err)
 		}
 	}()
 
@@ -90,7 +93,7 @@ func Unzip(src string, dest string) error {
 		}
 		defer func() {
 			if err := rc.Close(); err != nil {
-				panic(err)
+				log.Printf("[ERROR] failed to close file descriptor: %v", err)
 			}
 		}()
 
@@ -111,7 +114,7 @@ func Unzip(src string, dest string) error {
 			}
 			defer func() {
 				if err := f.Close(); err != nil {
-					panic(err)
+					log.Printf("[ERROR] failed to close file descriptor: %v", err)
 				}
 			}()
 
