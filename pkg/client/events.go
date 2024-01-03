@@ -8,8 +8,6 @@ import (
 	"github.com/sfs/pkg/monitor"
 )
 
-type EHandler func(chan monitor.Event, chan bool, string, *monitor.Events) (chan bool, error)
-
 // ---- file monitoring operations
 
 // start monitoring files for changes
@@ -37,7 +35,7 @@ func (c *Client) WatchFile(filePath string) {
 // add a new event handler for the given file
 func (c *Client) NewHandler(filePath string) error {
 	if _, exists := c.Handlers[filePath]; !exists {
-		c.Handlers[filePath] = EventHandler
+		c.NewEHandler(filePath)
 	} else {
 		return fmt.Errorf("file (%v) is already registered", filePath)
 	}
@@ -66,15 +64,7 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 // start an event handler for a given file
 func (c *Client) StartHandler(filePath string) error {
 	if handler, exists := c.Handlers[filePath]; exists {
-		evt, off, fileID, evts, err := c.setupHandler(filePath)
-		if err != nil {
-			return err
-		}
-		if offSwitch, err := handler(evt, off, fileID, evts); err == nil {
-			c.OffSwitches[filePath] = offSwitch
-		} else {
-			return err
-		}
+		handler()
 	}
 	return nil
 }
@@ -110,7 +100,7 @@ func (c *Client) StopHandlers() {
 // should ideally only be called once during initialization
 func (c *Client) BuildHandlers() {
 	if c.Handlers == nil {
-		c.Handlers = make(map[string]EHandler)
+		c.Handlers = make(map[string]func())
 	}
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
@@ -119,42 +109,63 @@ func (c *Client) BuildHandlers() {
 	}
 	for _, file := range files {
 		if _, exists := c.Handlers[file.Path]; !exists {
-			c.Handlers[file.Path] = EventHandler
+			c.NewEHandler(file.Path)
 		}
 	}
 }
 
-// handles received events from the client's monitor component
-// and starts transfer operations by updating the sync doc flag.
-func EventHandler(evt chan monitor.Event, off chan bool, fileID string, evts *monitor.Events) (chan bool, error) {
-	stopMonitor := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-stopMonitor:
-				log.Printf("[INFO] stopping event handler for file id=%v ...", fileID)
-				return
-			case e := <-evt:
-				switch e.Type {
-				case monitor.FileCreate:
-					evts.AddEvent(e)
-				case monitor.FileChange:
-					evts.AddEvent(e)
-				case monitor.FileDelete:
-					off <- true // shutdown monitoring thread, remove from index, and shut down handler
-					log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
-					return
+func (c *Client) NewEHandler(filePath string) error {
+	// retrieve the event monitor channel, the monitor
+	// off switch, the associated fileID, and a new events buffer
+	evtChan, off, fileID, evts, err := c.setupHandler(filePath)
+	if err != nil {
+		return err
+	}
+
+	// handler off-switch
+	stopHandler := make(chan bool)
+
+	// event monitoring handler
+	var handler = func() {
+		var listener = func() error {
+			for {
+				select {
+				case <-stopHandler:
+					log.Printf("[INFO] stopping event handler for file id=%v ...", fileID)
+					return nil
+				case e := <-evtChan:
+					switch e.Type {
+					case monitor.FileCreate:
+						evts.AddEvent(e)
+					case monitor.FileChange:
+						evts.AddEvent(e)
+					case monitor.FileDelete:
+						off <- true // shutdown monitoring thread, remove from index, and shut down handler
+						log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
+						return nil
+					}
+					if evts.StartSync {
+						// push changes to server
+						if err := c.Sync(true); err != nil {
+							return err
+						}
+						evts.Reset()             // resets events buffer
+						time.Sleep(monitor.WAIT) // wait before resuming event handler
+					}
+					// TODO: a way to determine when to pull from the server
+
+				default:
+					continue
 				}
-				if evts.StartSync {
-					log.Printf("[INFO] sync operation started at: %v", time.Now().UTC())
-					evts.Notify()            // sets sync doc to indicate sync operation
-					evts.Reset()             // resets events buffer
-					time.Sleep(monitor.WAIT) // wait before resuming event handler
-				}
-			default:
-				continue
 			}
 		}
-	}()
-	return stopMonitor, nil
+		go func() {
+			if err := listener(); err != nil {
+				log.Printf("[ERROR] failed to start sync operation: %v", err)
+			}
+		}()
+	}
+	c.Handlers[filePath] = handler
+	c.OffSwitches[filePath] = stopHandler
+	return nil
 }

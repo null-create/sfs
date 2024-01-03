@@ -1,9 +1,5 @@
 package service
 
-import (
-	"log"
-)
-
 // Queue represents a set of file batches that are to be uploaded or downloaded
 type Queue struct {
 	Total int      // total number of batches
@@ -44,7 +40,6 @@ func (q *Queue) Enqueue(b *Batch) {
 
 func (q *Queue) Dequeue() *Batch {
 	if len(q.Queue) == 0 {
-		log.Printf("[INFO] file queue is empty")
 		return nil
 	}
 	item := q.Queue[0]

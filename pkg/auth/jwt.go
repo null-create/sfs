@@ -60,7 +60,7 @@ func (t *Token) Verify(tokenString string) (string, error) {
 	if !token.Valid {
 		return "", fmt.Errorf("invalid token")
 	}
-	// retrieve jwt claims
+	// retrieve claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return "", fmt.Errorf("failed to parse jwt claims")

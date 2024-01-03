@@ -267,35 +267,54 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 // ------- directories --------------------------------
 
-// check the db for the existence of a directory.
-//
-// handles errors and not found cases. returns nil if either of these
-// are the case, otherwise returns a directory pointer.
-func (a *API) findD(w http.ResponseWriter, r *http.Request) *svc.Directory {
-	dirID := chi.URLParam(r, "dirID")
-	d, err := findDir(dirID, a.Svc.Db)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
-	} else if d == nil {
-		msg := fmt.Sprintf("directory (id=%s) not found: ", err.Error())
-		http.Error(w, msg, http.StatusNotFound)
-		return nil
-	}
-	return d
-}
-
-func (a *API) GetDirectory(w http.ResponseWriter, r *http.Request) {
-	d := a.findD(w, r)
-	if d == nil {
-		return
-	}
-	data, err := d.ToJSON()
+// returns metadata for a directory. does not populate it.
+func (a *API) GetDirInfo(w http.ResponseWriter, r *http.Request) {
+	dir := r.Context().Value(Directory).(*svc.Directory)
+	data, err := dir.ToJSON()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(data)
+}
+
+func (a *API) walkDir(w http.ResponseWriter, dir *svc.Directory) error {
+	// send file info, if any
+	for _, file := range dir.Files {
+		fileData, err := file.ToJSON()
+		if err != nil {
+			return err
+		}
+		w.Write(fileData)
+	}
+	if len(dir.Dirs) == 0 {
+		return nil
+	}
+	// send any subdirectory info before descending directory tree further
+	for _, subDir := range dir.Dirs {
+		sdData, err := subDir.ToJSON()
+		if err != nil {
+			return err
+		}
+		w.Write(sdData)
+	}
+	for _, subDir := range dir.Dirs {
+		if err := a.walkDir(w, subDir); err != nil {
+			log.Printf("[WARNING] %v", err)
+		}
+	}
+	return nil
+}
+
+// retrieve metadata for a directory as well as all its files and children.
+// does not return file contents, only metadata.
+func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
+	dir := r.Context().Value(Directory).(*svc.Directory)
+	dir = a.Svc.Populate(dir)
+	// walk the directory tree starting from this directory, and
+	// send JSON blobs for each object it discovers along the way.
+	// data is sent in depth-first search order so client side will need to sort that out.
+	a.walkDir(w, dir)
 }
 
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {

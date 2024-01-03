@@ -123,11 +123,11 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/new", func(r chi.Router) {
 				r.Use(NewDirectoryCtx)
-				r.Post("/", api.Placeholder) // create a new directory
+				r.Post("/", api.NewDir) // create a new directory
 			})
 			r.Route("/i/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
-				r.Get("/", api.Placeholder) // get info about a directory
+				r.Get("/", api.GetDir) // get info about a directory
 			})
 		})
 

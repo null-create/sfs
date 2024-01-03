@@ -81,18 +81,15 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 	}
 
 	// initialize a new client for the new user
-	client := NewClient(newUser)
+	client, err := NewClient(newUser)
+	if err != nil {
+		return nil, err
+	}
 	newUser.DriveID = client.Drive.ID
 	newUser.DrvRoot = client.Drive.Root.Path
 
 	// save user, user's root, and drive to db
 	if err := client.Db.AddUser(newUser); err != nil {
-		return nil, err
-	}
-	if err := client.Db.AddDrive(client.Drive); err != nil {
-		return nil, err
-	}
-	if err := client.Db.AddDir(client.Drive.Root); err != nil {
 		return nil, err
 	}
 

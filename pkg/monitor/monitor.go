@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -26,16 +25,8 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 const WAIT = time.Millisecond * 500
 
 type Monitor struct {
-	// mutex lock to protect the sync document
-	mu sync.Mutex
-
 	// path to the users drive root to monitor
 	Path string
-
-	// path to the .txt file containing the flag to
-	// indicate whether the events handler has indicated that
-	// a sync operation should be performed.
-	SyncDoc string
 
 	// map of channels to active listeners.
 	// key is the absolute file path, value is the channel to the watchFile() thread
@@ -52,13 +43,8 @@ type Monitor struct {
 }
 
 func NewMonitor(drvRoot string) *Monitor {
-	// create sync doc
-	syncDoc := filepath.Join(drvRoot, ".sync.txt")
-	NewSD(syncDoc)
-
 	return &Monitor{
 		Path:        drvRoot,
-		SyncDoc:     syncDoc,
 		Events:      make(map[string]chan Event),
 		OffSwitches: make(map[string]chan bool),
 	}
@@ -150,8 +136,7 @@ func watchAll(path string, m *Monitor) error {
 		if err != nil {
 			return err
 		}
-		// m.WatchFile handles whether this is a directory or a file.
-		// we just don't want to miss anything.
+		// m.WatchFile handles whether this is a directory or a file
 		m.WatchFile(filePath)
 		return nil
 	})
@@ -178,10 +163,9 @@ func (m *Monitor) Start(dirpath string) error {
 		return err
 	}
 	if len(entries) == 0 {
-		log.Printf("[WARNING] no files or subdirectories in %s", dirpath)
+		log.Printf("[WARNING] no files or subdirectories in: %s", dirpath)
 		return nil
 	}
-	m.MakeSyncDoc()
 	return watchAll(dirpath, m)
 }
 
@@ -220,7 +204,7 @@ func (m *Monitor) GetEventChan(filePath string) chan Event {
 	return nil
 }
 
-// get an off switch for a given monitor go routine.
+// get an off switch for a given monitoring goroutine.
 // off switches, when set to true, will shut down the monitoring process.
 func (m *Monitor) GetOffSwitch(filePath string) chan bool {
 	if offSwitch, exists := m.OffSwitches[filePath]; exists {
@@ -267,10 +251,6 @@ func (m *Monitor) ShutDown() error {
 	log.Print("[INFO] shutting down all active monitoring threads...")
 	for _, path := range paths {
 		m.OffSwitches[path] <- true
-	}
-	// delete sync doc
-	if err := m.DeleteDoc(); err != nil {
-		return fmt.Errorf("failed to remove sync doc: %v", err)
 	}
 	return nil
 }

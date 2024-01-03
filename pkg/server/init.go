@@ -36,7 +36,7 @@ func Init(new bool, admin bool) (*Service, error) {
 		// load from state file and dbs
 		svc, err := SvcLoad(c.SvcRoot)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load service config: %v", err)
+			return nil, fmt.Errorf("failed to load service: %v", err)
 		}
 		if admin {
 			setAdmin(svc)
@@ -291,6 +291,9 @@ func SvcLoad(svcPath string) (*Service, error) {
 			root, err := svc.Db.GetDirectory(d.RootID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get root directory: %v", err)
+			}
+			if root == nil {
+				return nil, fmt.Errorf("no root directory found for drive: %s", d.ID)
 			}
 			d.Root = svc.Populate(root)
 		}

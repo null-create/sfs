@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -44,7 +43,7 @@ type Client struct {
 
 	// map of active event handlers for individual files
 	// key == filepath, value == new EventHandler() function
-	Handlers map[string]EHandler `json:"-"`
+	Handlers map[string]func() `json:"-"`
 
 	// map of handler off switches. used during shutdown.
 	OffSwitches map[string]chan bool `json:"-"`
@@ -76,7 +75,7 @@ func (c *Client) setEndpoints() {
 
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
-func NewClient(user *auth.User) *Client {
+func NewClient(user *auth.User) (*Client, error) {
 	// get client service configs
 	cfg := ClientConfig()
 
@@ -99,7 +98,7 @@ func NewClient(user *auth.User) *Client {
 		Off:         make(chan bool),
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		Handlers:    make(map[string]EHandler),
+		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
 		Transfer:    transfer.NewTransfer(cfg.Port),
 		Client: &http.Client{
@@ -111,20 +110,20 @@ func NewClient(user *auth.User) *Client {
 	// with users files and directories
 	root, err := c.Discover(root)
 	if err != nil {
-		log.Fatalf("failed to discover user file system: %v", err)
+		return nil, fmt.Errorf("failed to discover user file system: %v", err)
 	}
 	drv.Root = root
 	drv.IsLoaded = true
 
 	// add drive itself to DB (root was added during discovery)
 	// then attach to client
-	if err := c.Db.AddDrive(c.Drive); err != nil {
-		log.Fatal(fmt.Errorf("failed to add client drive to database: %v", err))
+	if err := c.Db.AddDrive(drv); err != nil {
+		return nil, fmt.Errorf("failed to add client drive to database: %v", err)
+	}
+	if err := c.Db.AddDir(root); err != nil {
+		return nil, fmt.Errorf("failed to add root directory to database: %v", err)
 	}
 	c.Drive = drv
-	if err := c.Drive.SaveState(); err != nil {
-		log.Fatalf("failed to save drive state: %v", err)
-	}
 
 	// build services endpoints map (files and directories have endpoints defined
 	// within their respective data structures)
@@ -135,23 +134,20 @@ func NewClient(user *auth.User) *Client {
 
 	// start monitoring services
 	if err := c.Monitor.Start(root.Path); err != nil {
-		log.Fatal("failed to start monitor", err)
+		return nil, fmt.Errorf("failed to start monitor: %v", err)
 	}
 
 	// build and start monitoring event handlers
 	c.BuildHandlers()
 	if err := c.StartHandlers(); err != nil {
-		log.Fatal("failed to start event handlers", err)
+		return nil, fmt.Errorf("failed to start event handlers: %v", err)
 	}
-
-	// start sync doc monitoring
-	c.Sync(c.Off)
 
 	// save initial state
 	if err := c.SaveState(); err != nil {
-		log.Fatal("failed to save state")
+		return nil, fmt.Errorf("failed to save initial state: %v", err)
 	}
-	return c
+	return c, nil
 }
 
 // remove previous state file(s)
@@ -223,9 +219,6 @@ func (c *Client) Start() error {
 	if err := c.StartHandlers(); err != nil {
 		return fmt.Errorf("failed to start event handlers: %v", err)
 	}
-
-	// start sync doc monitoring
-	c.Sync(c.Off)
 
 	// save initial state
 	if err := c.SaveState(); err != nil {

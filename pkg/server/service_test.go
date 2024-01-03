@@ -328,7 +328,7 @@ func TestUpdateDrive(t *testing.T) {
 	env.SetEnv(false)
 
 	// test service
-	testSvc, err := Init(true, false)
+	testSvc, err := Init(false, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}

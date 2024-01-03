@@ -140,6 +140,11 @@ func (d *Drive) EmptyRoot() bool {
 	return len(d.Root.Files) == 0 || len(d.Root.Dirs) == 0
 }
 
+// check whether the sync index has been initialized and populated.
+func (d *Drive) IsIndexed() bool {
+	return d.SyncIndex != nil && len(d.SyncIndex.LastSync) != 0
+}
+
 // save drive state to JSON format
 func (d *Drive) ToJSON() ([]byte, error) {
 	data, err := json.MarshalIndent(d, "", "  ")

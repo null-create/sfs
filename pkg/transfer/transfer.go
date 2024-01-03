@@ -80,6 +80,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	bodyWriter := multipart.NewWriter(t.Buffer)
 	defer bodyWriter.Close()
 
+	// create form file and prepare request
 	fileWriter, err := bodyWriter.CreateFormFile("myFile", filepath.Base(file.Path))
 	if err != nil {
 		return err
@@ -95,6 +96,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		return err
 	}
 
+	// send request
 	resp, err := t.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
@@ -105,13 +107,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 		t.dump(resp, true)
 		return fmt.Errorf("server returned non-OK status: %v", resp.Status)
 	}
-
-	b, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		log.Printf("[WARNING] failed to parse http response: %v", err)
-	} else {
-		log.Printf("[INFO] \n%v\n", string(b))
-	}
+	t.dump(resp, true)
 	return nil
 }
 
@@ -132,6 +128,10 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 	}
 	defer resp.Body.Close()
 
+	// show sever response
+	t.dump(resp, true)
+
+	// create (or truncate) file
 	file, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %v", err)

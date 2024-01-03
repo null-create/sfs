@@ -424,17 +424,14 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	if !drv.HasRoot() {
 		return fmt.Errorf("drive does not have root directory")
 	}
-	if !drv.EmptyRoot() {
-		return fmt.Errorf("root has already been populated")
+	if drv.EmptyRoot() {
+		// discover users files and directories, then add them to the service instance
+		populatedRoot, err := s.Discover(drv.Root)
+		if err != nil {
+			return fmt.Errorf("failed to discover drive files and directories: %v", err)
+		}
+		drv.Root = populatedRoot
 	}
-
-	// discover users files and directories, then add them to the service instance
-	populatedRoot, err := s.Discover(drv.Root)
-	if err != nil {
-		return fmt.Errorf("failed to discover drive files and directories: %v", err)
-	}
-	drv.Root = populatedRoot
-
 	// add all files and subdirectories to the database
 	files := drv.GetFiles()
 	for _, f := range files {
