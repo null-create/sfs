@@ -98,6 +98,16 @@ func TestLoadClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
+
+	// clean up before any possible assert failures
+	if err := Clean(t, tmpDir); err != nil {
+		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+
 	assert.NotEqual(t, nil, c2)
 	assert.Equal(t, c1.Conf, c2.Conf)
 	assert.Equal(t, c1.User, c2.User)
@@ -106,14 +116,6 @@ func TestLoadClient(t *testing.T) {
 	assert.Equal(t, c1.SfDir, c2.SfDir)
 	assert.NotEqual(t, nil, c2.Db)
 	assert.True(t, c2.Db.Singleton)
-
-	if err := Clean(t, tmpDir); err != nil {
-		// reset our .env file for other tests
-		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
-			log.Fatal(err2)
-		}
-		log.Fatal(err)
-	}
 }
 
 func TestLoadClientSaveState(t *testing.T) {
