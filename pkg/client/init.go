@@ -46,8 +46,8 @@ as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
 func setup(svcRoot string) (*Client, error) {
-	// get environment variables
-	e := env.NewE()
+	// get environment variables and client envCfg
+	envCfg := env.NewE()
 
 	// make client service root directory
 	svcDir := filepath.Join(svcRoot, cfgs.User)
@@ -73,7 +73,7 @@ func setup(svcRoot string) (*Client, error) {
 	}
 
 	// set up new user and initialize a new drive
-	newUser, err := newUser(svcDir, e)
+	newUser, err := newUser(svcDir)
 	if err != nil {
 		return nil, err
 	}
@@ -92,19 +92,17 @@ func setup(svcRoot string) (*Client, error) {
 	}
 
 	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
-	if err := e.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
+	if err := envCfg.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
 		return nil, err
 	}
 
 	return client, nil
 }
 
-// client env, user, and service configurations
-var cfgs = ClientConfig()
-
 // these pull user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
-func newUser(drvRoot string, e *env.Env) (*auth.User, error) {
+func newUser(drvRoot string) (*auth.User, error) {
+	envCfg := env.NewE()
 	newUser := auth.NewUser(
 		cfgs.User,
 		cfgs.UserAlias,
@@ -112,7 +110,7 @@ func newUser(drvRoot string, e *env.Env) (*auth.User, error) {
 		cfgs.Root,
 		cfgs.IsAdmin,
 	)
-	if err := e.Set("CLIENT_ID", newUser.ID); err != nil {
+	if err := envCfg.Set("CLIENT_ID", newUser.ID); err != nil {
 		return nil, err
 	}
 	return newUser, nil

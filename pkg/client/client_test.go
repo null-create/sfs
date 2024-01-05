@@ -83,7 +83,7 @@ func TestLoadClient(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	// add a new user
-	newUser, err := newUser("bill buttlicker", c1.Drive.Root.Path, e)
+	newUser, err := newUser(c1.Drive.Root.Path)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}

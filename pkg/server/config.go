@@ -38,3 +38,9 @@ func ServiceConfig() *SvcCfg {
 	}
 	return &c
 }
+
+// server side service
+var svcCfgs = ServerConfig()
+
+// server configurations
+var svrCfgs = ServerConfig()

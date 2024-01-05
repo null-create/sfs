@@ -25,3 +25,6 @@ func ClientConfig() *Conf {
 	}
 	return &c
 }
+
+// client env, user, and service configurations
+var cfgs = ClientConfig()
