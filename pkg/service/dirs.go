@@ -299,15 +299,11 @@ func (d *Directory) Unlock(password string) bool {
 
 // updates internal file map and file's sync time
 func (d *Directory) addFile(file *File) {
-	if _, exists := d.Files[file.ID]; !exists {
-		file.DirID = d.ID
-		file.DriveID = d.DriveID
-		file.LastSync = time.Now().UTC()
-		d.Files[file.ID] = file
-		log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
-	} else {
-		log.Printf("[INFO] file %s (%s) already exists", file.Name, file.ID)
-	}
+	file.DirID = d.ID
+	file.DriveID = d.DriveID
+	file.LastSync = time.Now().UTC()
+	d.Files[file.ID] = file
+	log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
 }
 
 func (d *Directory) AddFile(file *File) {
