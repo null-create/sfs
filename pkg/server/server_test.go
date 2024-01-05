@@ -19,7 +19,7 @@ func TestServerStartUpWithAPing(t *testing.T) {
 	// start testing server
 	testServer := NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// wait for server to start up

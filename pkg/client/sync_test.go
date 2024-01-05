@@ -46,7 +46,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	// fire up a test server with test files
 	testServer := svr.NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// retrieve index from server API and confirm non-empty fields

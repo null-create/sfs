@@ -32,7 +32,7 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// attempt to retrieve all file info from the server
@@ -78,7 +78,7 @@ func TestNewFileAPI(t *testing.T) {
 	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// create tmp file to try and send it to the server
@@ -123,7 +123,7 @@ func TestGetSingleFileInfoAPI(t *testing.T) {
 	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// attempt to retrieve file info about one file from the server
@@ -197,7 +197,7 @@ func TestFileGetAPI(t *testing.T) {
 	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// ---- atttempt to retrieve file via its API endpoint -----------
@@ -318,7 +318,7 @@ func TestFileDeleteAPI(t *testing.T) {
 	log.Print("[TEST] starting test server...")
 	testServer := NewServer()
 	go func() {
-		testServer.TestRun(shutDown)
+		testServer.Start(shutDown)
 	}()
 
 	// ----- start test client and attempt to delete file via its API endpoint

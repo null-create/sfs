@@ -177,7 +177,7 @@ func loadDrive(client *Client) error {
 }
 
 // load client from state file, if possible.
-// does not start client services. use client.Run()
+// does not start client services. use client.Start()
 // to start monitoring and synchronization services.
 func LoadClient(usersName string) (*Client, error) {
 	// load client state

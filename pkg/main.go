@@ -1,8 +1,7 @@
-package main
+package pkg
 
 import (
 	"github.com/sfs/pkg/env"
-	"github.com/sfs/pkg/server"
 )
 
 /*
@@ -15,10 +14,9 @@ import (
     		SIMPLE FILE SYNC
 */
 
-// TODO:
-// should deterime whether we're running client or server at runtime
 func main() {
-	env.SetEnv(true)
-	srv := server.NewServer()
-	srv.Run()
+	env.SetEnv(false)
+
+	// TODO: need way to shut one or both client and server down via command line
+	// server stops with ctrl-c, but not the client
 }

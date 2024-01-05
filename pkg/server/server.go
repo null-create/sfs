@@ -39,18 +39,15 @@ func (s *Server) RunTime() float64 {
 	return time.Since(s.StartTime).Seconds()
 }
 
-// forcibly shuts down server and returns total run time
+// forcibly shuts down server and returns total run time in seconds.
 func (s *Server) Shutdown() (float64, error) {
-	log.Printf("forcing server shut down...")
 	if err := s.Svr.Close(); err != nil && err != http.ErrServerClosed {
 		return 0, fmt.Errorf("server shutdown failed: %v", err)
 	}
 	return s.RunTime(), nil
 }
 
-// runs server with graceful shutdowns
-//
-// based off examples from chi
+// starts a server that can be shut down via ctrl-c
 func (s *Server) Run() {
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 
@@ -66,7 +63,7 @@ func (s *Server) Run() {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Print("shutdown timed out. forcing exit.")
+				log.Print("[WARNING] shutdown timed out. forcing exit.")
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
@@ -88,14 +85,14 @@ func (s *Server) Run() {
 	<-serverCtx.Done()
 }
 
-// run a test server that can be shut down using a turnOff bool channel
-func (s *Server) TestRun(turnOff chan bool) {
+// start a server that can be shut down using a shutDown bool channel.
+func (s *Server) Start(shutDown chan bool) {
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 
 	go func() {
 		// blocks until turnOff = true
 		// (set by outer test and passed after checks are completed (or failed))
-		<-turnOff
+		<-shutDown
 
 		// shutdown signal with grace period of 10 seconds
 		shutdownCtx, _ := context.WithTimeout(serverCtx, 10*time.Second)
