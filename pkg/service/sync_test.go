@@ -39,3 +39,37 @@ func TestToUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCompare(t *testing.T) {
+	env.SetEnv(false)
+
+	// make a temp drive and generate a starting sync index
+	tmpDrv := MakeTmpDrive(t)
+	origIdx := BuildSyncIndex(tmpDrv.Root) // ToUpdate is empty
+
+	// change some files (last three w/e) and generate a new index
+	testFiles := tmpDrv.Root.GetFiles()
+	victims := testFiles[:3]
+	for _, victim := range victims {
+		MutateFile(t, victim)
+	}
+	origIdx = BuildToUpdate(tmpDrv.Root, origIdx)
+
+	// change some more stuff, but update newIdx instead
+	newIdx := BuildSyncIndex(tmpDrv.Root)
+	for _, victim := range victims {
+		MutateFile(t, victim)
+	}
+	newIdx = BuildToUpdate(tmpDrv.Root, newIdx)
+
+	// compare the two indicies
+	diffs := Compare(origIdx, newIdx)
+
+	// pre-emptively clean up before the asserts
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Fatal(err)
+	}
+
+	// compare
+	assert.NotEqual(t, 0, len(diffs.LastSync))
+}
