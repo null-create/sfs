@@ -7,10 +7,10 @@ import (
 )
 
 type Conf struct {
+	IsAdmin   bool   `env:"ADMIN_MODE,required"`      //
 	User      string `env:"CLIENT,required"`          // users name
 	UserAlias string `env:"CLIENT_USERNAME,required"` // users alias (username)
 	UserID    string `env:"CLIENT_ID,required"`       // this is generated at creation time. won't be in the initial .env file
-	IsAdmin   bool   `env:"ADMIN_MODE,required"`      //
 	Email     string `env:"CLIENT_EMAIL,required"`    // users email
 	Root      string `env:"CLIENT_ROOT,required"`     // client service root (ie. ../sfs/client/run/)
 	TestRoot  string `env:"CLIENT_TESTING,required"`  // testing root directory

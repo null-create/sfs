@@ -45,14 +45,12 @@ this can allow for more individual control over files and directories
 as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
-func setup(svcRoot string, e *env.Env) (*Client, error) {
-	clientName, err := e.Get("CLIENT")
-	if err != nil {
-		return nil, err
-	}
+func setup(svcRoot string) (*Client, error) {
+	// get environment variables
+	e := env.NewE()
 
 	// make client service root directory
-	svcDir := filepath.Join(svcRoot, clientName)
+	svcDir := filepath.Join(svcRoot, cfgs.User)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
 	}
@@ -75,7 +73,7 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 	}
 
 	// set up new user and initialize a new drive
-	newUser, err := newUser(clientName, svcDir, e)
+	newUser, err := newUser(svcDir, e)
 	if err != nil {
 		return nil, err
 	}
@@ -101,18 +99,19 @@ func setup(svcRoot string, e *env.Env) (*Client, error) {
 	return client, nil
 }
 
+// client env, user, and service configurations
+var cfgs = ClientConfig()
+
 // these pull user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
-func newUser(clientName string, drvRoot string, e *env.Env) (*auth.User, error) {
-	userName, err := e.Get("CLIENT_USERNAME")
-	if err != nil {
-		return nil, err
-	}
-	userEmail, err := e.Get("CLIENT_EMAIL")
-	if err != nil {
-		return nil, err
-	}
-	newUser := auth.NewUser(clientName, userName, userEmail, drvRoot, false)
+func newUser(drvRoot string, e *env.Env) (*auth.User, error) {
+	newUser := auth.NewUser(
+		cfgs.User,
+		cfgs.UserAlias,
+		cfgs.Email,
+		cfgs.Root,
+		cfgs.IsAdmin,
+	)
 	if err := e.Set("CLIENT_ID", newUser.ID); err != nil {
 		return nil, err
 	}
@@ -120,18 +119,16 @@ func newUser(clientName string, drvRoot string, e *env.Env) (*auth.User, error) 
 }
 
 // initial client service set up
-func Setup(e *env.Env) (*Client, error) {
-	cfg := ClientConfig()
-	client, err := setup(cfg.Root, e)
+func Setup() (*Client, error) {
+	client, err := setup(cfgs.Root)
 	if err != nil {
 		return nil, err
 	}
 	return client, nil
 }
 
-func loadStateFile(user string) ([]byte, error) {
-	cfg := ClientConfig()
-	sfDir := filepath.Join(cfg.Root, user, "state")
+func loadStateFile() ([]byte, error) {
+	sfDir := filepath.Join(cfgs.Root, cfgs.User, "state")
 	entries, err := os.ReadDir(sfDir)
 	if err != nil {
 		return nil, err
@@ -179,9 +176,9 @@ func loadDrive(client *Client) error {
 // load client from state file, if possible.
 // does not start client services. use client.Start()
 // to start monitoring and synchronization services.
-func LoadClient(usersName string) (*Client, error) {
+func LoadClient() (*Client, error) {
 	// load client state
-	data, err := loadStateFile(usersName)
+	data, err := loadStateFile()
 	if err != nil {
 		return nil, err
 	}
@@ -190,12 +187,17 @@ func LoadClient(usersName string) (*Client, error) {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
-	// load user
-	user, err := client.Db.GetUser(client.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %v", err)
+	// load user if necessary
+	if client.User == nil {
+		if client.UserID == "" {
+			return nil, fmt.Errorf("missing user id")
+		}
+		user, err := client.Db.GetUser(client.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user: %v", err)
+		}
+		client.User = user
 	}
-	client.User = user
 
 	// load drive with users directory tree.
 	if err := loadDrive(client); err != nil {
@@ -230,19 +232,14 @@ func LoadClient(usersName string) (*Client, error) {
 
 // initialize client service
 func Init(newClient bool) (*Client, error) {
-	e := env.NewE()
 	if newClient {
-		client, err := Setup(e)
+		client, err := Setup()
 		if err != nil {
 			return nil, err
 		}
 		return client, nil
 	} else {
-		user, err := e.Get("CLIENT")
-		if err != nil {
-			return nil, err
-		}
-		client, err := LoadClient(user)
+		client, err := LoadClient()
 		if err != nil {
 			return nil, err
 		}
