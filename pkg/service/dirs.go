@@ -346,7 +346,8 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 				return err
 			}
 		} else {
-			return fmt.Errorf("[ERROR] file (id=%s) does not belong to this directory", f.ID)
+			log.Printf("[ERROR] file (id=%s) does not belong to this directory", f.ID)
+			return nil
 		}
 	} else {
 		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
@@ -369,6 +370,7 @@ func (d *Directory) removeFile(fileID string) error {
 }
 
 // removes file from internal file map and deletes physical file.
+// use with caution.
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {

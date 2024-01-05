@@ -137,7 +137,7 @@ func (d *Drive) HasRoot() bool {
 
 // check whether the root directory has files and subdirectories
 func (d *Drive) EmptyRoot() bool {
-	return len(d.Root.Files) == 0 || len(d.Root.Dirs) == 0
+	return len(d.Root.Files) == 0 && len(d.Root.Dirs) == 0
 }
 
 // check whether the sync index has been initialized and populated.

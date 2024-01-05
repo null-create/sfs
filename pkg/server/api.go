@@ -263,8 +263,9 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	log.Printf("[INFO] file (%s) deleted from server", file.Path)
-	w.Write([]byte(fmt.Sprintf("file (%s) deleted", file.Name)))
+	msg := fmt.Sprintf("%s (id=%s) deleted from server", file.Name, file.ID)
+	log.Printf("[INFO] %s ", msg)
+	w.Write([]byte(msg))
 }
 
 // ------- directories --------------------------------

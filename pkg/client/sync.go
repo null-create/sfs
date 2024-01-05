@@ -58,10 +58,12 @@ func (c *Client) Sync(up bool) error {
 		c.Push()
 	} else {
 		svrIdx := c.GetServerIdx()
+		// TODO: compare with local files, see which has the
+		// latest modification time, and pull any that are more recent
 		if svrIdx == nil {
 			return fmt.Errorf("failed to retrieve server sync index")
 		}
-		c.Pull(svrIdx)
+		c.Pull(svrIdx) // TODO: replace svrIdx
 	}
 	c.reset()
 	return nil
@@ -141,7 +143,8 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 // get the server's current sync index for this user.
 // returns nil if there's any errors.
 func (c *Client) GetServerIdx() *svc.SyncIndex {
-	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], new(bytes.Buffer))
+	var reqBuf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], &reqBuf)
 	if err != nil {
 		log.Printf("[WARNING] failed prepare http request: \n%v", err)
 		return nil

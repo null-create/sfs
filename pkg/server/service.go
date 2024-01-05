@@ -458,10 +458,10 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 		}
 	}
 	// add drive and root dir to db
-	if err := s.Db.AddDrive(drv); err != nil {
+	if err := s.Db.AddDir(drv.Root); err != nil {
 		return err
 	}
-	if err := s.Db.AddDir(drv.Root); err != nil {
+	if err := s.Db.AddDrive(drv); err != nil {
 		return err
 	}
 	// generate sync index and save to service instance
@@ -479,7 +479,6 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 // file system.
 func (s *Service) UpdateDrive(drv *svc.Drive) error {
 	if s.DriveExists(drv.ID) {
-		drv.SyncIndex = svc.BuildSyncIndex(drv.Root)
 		if err := s.Db.UpdateDrive(drv); err != nil {
 			return err
 		}
@@ -529,17 +528,13 @@ func (s *Service) addUser(user *auth.User) error {
 	user.DriveID = newDrive.ID
 	user.DrvRoot = newDrive.Root.Path
 
-	// save info to the db, then update service user map
+	// add drive to service instance, then add new user to service
+	if err := s.AddDrive(newDrive); err != nil {
+		return fmt.Errorf("failed to create new drive for %s (id=%s): %v", user.Name, user.ID, err)
+	}
 	if err := s.Db.AddUser(user); err != nil {
-		return fmt.Errorf("failed to add user to database: %v", err)
+		return fmt.Errorf("failed to add %s (id=%s) to the user database: %v", user.Name, user.ID, err)
 	}
-	if err := s.Db.AddDrive(newDrive); err != nil {
-		return fmt.Errorf("failed to add drive to database: %v", err)
-	}
-	if err := s.Db.AddDir(newDrive.Root); err != nil {
-		return fmt.Errorf("failed to add drive root directory to database: %v", err)
-	}
-	s.Drives[newDrive.ID] = newDrive
 	s.Users[user.ID] = user
 	if err := s.SaveState(); err != nil {
 		log.Printf("[WARNING] failed to save state file: %v", err)
@@ -812,7 +807,7 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 	}
 	d := drive.Root.GetSubDirs()
 	if len(d) == 0 {
-		log.Printf("[WARNING] no directories found for user %v", drive.OwnerID)
+		log.Printf("[INFO] no directories found for user %v", drive.OwnerID)
 		return nil, nil
 	}
 	dirs := make([]*svc.Directory, 0, len(d))
@@ -831,16 +826,11 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("drive %s not found", driveID)
+		return nil, fmt.Errorf("drive id=%s not found", driveID)
 	}
 	// build sync index if necessary
-	if drive.SyncIndex == nil {
-		log.Printf("[WARNING] sync index for %s not found. creating...", driveID)
-		ownerID, err := drive.GetOwnerID()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get drive owner ID: %v", err)
-		}
-		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(ownerID))
+	if !drive.IsIndexed() {
+		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
 	}
 	return drive.SyncIndex, nil
 }
