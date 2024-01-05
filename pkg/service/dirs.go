@@ -117,6 +117,7 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 		Dirs:      make(map[string]*Directory, 0),
 		Files:     make(map[string]*File, 0),
 		Endpoint:  fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
+		Parent:    nil,
 		Root:      false,
 		Path:      path,
 	}
@@ -138,9 +139,7 @@ func UnmarshalDirStr(data string) (*Directory, error) {
 	return dir, nil
 }
 
-func (d *Directory) IsRoot() bool {
-	return d.Root
-}
+func (d *Directory) IsRoot() bool { return d.Root }
 
 func (d *Directory) HasParent() bool {
 	return !d.IsRoot() && d.Parent == nil
@@ -153,6 +152,12 @@ func (d *Directory) IsNil() bool {
 func (d *Directory) IsEmpty() bool {
 	return len(d.Files) == 0 && len(d.Dirs) == 0
 }
+
+// returns the total count of files for only this directory.
+func (d *Directory) TotalFiles() int { return len(d.Files) }
+
+// return the total number of subdirectories for this directory
+func (d *Directory) TotalSubDirs() int { return len(d.Dirs) }
 
 // Remove all *internal data structure representations* of files and directories
 // *Does not* remove actual files or sub directories themselves!
@@ -611,7 +616,7 @@ func walkF(dir *Directory, fileID string) *File {
 		return file
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories. nothing to search", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
@@ -718,10 +723,10 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildSync(dir, idx)
 	} else {
-		log.Printf("[INFO] dir %s (%s) has no files", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -759,10 +764,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Files) > 0 {
 		idx = buildUpdate(dir, idx)
 	} else {
-		log.Printf("[INFO] dir %s (%s) has no files", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -784,10 +789,10 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 // functions should have the following signature: func(file *File) error
 func (d *Directory) WalkO(op func(file *File) error) error {
 	if len(d.Files) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no files", d.Name, d.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no files", d.Name, d.ID)
 	}
 	if len(d.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", d.Name, d.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no sub directories", d.Name, d.ID)
 		return nil
 	}
 	return walkO(d, op)
@@ -804,10 +809,10 @@ func walkO(dir *Directory, op func(f *File) error) error {
 			}
 		}
 	} else {
-		log.Printf("[INFO] dir %s (%s) has no files", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (%s) has no sub directories", dir.Name, dir.ID)
+		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {

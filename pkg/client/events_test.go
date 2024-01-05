@@ -43,7 +43,6 @@ func TestStartHandler(t *testing.T) {
 	f := files[RandInt(len(files)-1)]
 
 	// this is just so the event handler can get the fileID
-	c.Db.WhichDB("files")
 	if err := c.Db.AddFile(f); err != nil {
 		if err2 := Clean(t, GetTestingDir()); err2 != nil {
 			log.Fatal(err2)

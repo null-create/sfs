@@ -137,6 +137,51 @@ func MakeTmpDirs(t *testing.T) *svc.Directory {
 	return tmpRoot
 }
 
+// create a temporary root directory with files and a subdirectory,
+// also with files, under a specified path.
+//
+// returns complete test root with directory and files
+func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *svc.Directory {
+	// make our temporary directory
+	d, err := MakeTmpDir(t, filepath.Join(path, "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// create tmp service root directory with some files and
+	// make sure we properly assign these files and directories to the temp drivea
+	tmpRoot := svc.NewRootDirectory("root", "some-rand-id", driveID, filepath.Join(path, "tmp"))
+	files, err := MakeABunchOfTxtFilesWithLoc(10, d.Path)
+	if err != nil {
+		Fatal(t, err)
+	}
+	for _, f := range files {
+		f.DriveID = driveID
+	}
+	tmpRoot.AddFiles(files)
+
+	// add a subdirectory also with files
+	sd, err := MakeTmpDir(t, filepath.Join(tmpRoot.Path, "tmpSubDir"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	sd.DriveID = driveID
+	moreFiles, err := MakeABunchOfTxtFilesWithLoc(10, sd.Path)
+	if err != nil {
+		Fatal(t, err)
+	}
+	for _, f := range moreFiles {
+		f.DriveID = driveID
+	}
+
+	// build the directory structure
+	sd.AddFiles(moreFiles)
+	d.AddSubDir(sd)
+	tmpRoot.AddSubDir(d)
+
+	return tmpRoot
+}
+
 // ---- files
 
 // alter a test file with additional data
@@ -223,6 +268,24 @@ func MakeABunchOfTxtFiles(total int) ([]*svc.File, error) {
 	return files, nil
 }
 
+// make a bunch of temp .txt files of varying sizes.
+// under pkg/files/testing/tmp
+func MakeABunchOfTxtFilesWithLoc(total int, loc string) ([]*svc.File, error) {
+	files := make([]*svc.File, 0, total)
+	for i := 0; i < total; i++ {
+		fileName := fmt.Sprintf("tmp-%d.txt", i)
+		filePath := filepath.Join(loc, fileName)
+
+		f, err := MakeTmpTxtFile(filePath, RandInt(1000))
+		if err != nil {
+			return nil, fmt.Errorf("error creating temporary file: %v", err)
+		}
+
+		files = append(files, f)
+	}
+	return files, nil
+}
+
 // ---- test drives and stuff
 
 // make testing drive with test files, directories, and subdirectories.
@@ -230,5 +293,14 @@ func MakeABunchOfTxtFiles(total int) ([]*svc.File, error) {
 func MakeTmpDrive(t *testing.T) *svc.Drive {
 	root := MakeTmpDirs(t)
 	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	return drive
+}
+
+// make testing drive with test files, directories, and subdirectories
+// under a specified path.
+func MakeTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
+	tmpDriveID := auth.NewUUID()
+	root := MakeTmpDirsWithPath(t, path, tmpDriveID)
+	drive := svc.NewDrive(tmpDriveID, "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
 	return drive
 }

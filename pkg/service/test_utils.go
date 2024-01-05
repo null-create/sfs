@@ -163,6 +163,19 @@ func MakeTestDirs(t *testing.T, total int) []*Directory {
 
 // ---- files
 
+// add between 1 and 5000 addition lines to the given test file.
+func MutateFile(t *testing.T, file *File) *File {
+	var data string
+	total := RandInt(5000)
+	for i := 0; i < total; i++ {
+		data += txtData
+	}
+	if err := file.Save([]byte(data)); err != nil {
+		Fatal(t, err)
+	}
+	return file
+}
+
 // "randomly" update some files
 // whenever RandInt() returns an even value
 func MutateFiles(t *testing.T, files map[string]*File) map[string]*File {

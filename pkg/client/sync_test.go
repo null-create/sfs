@@ -7,6 +7,7 @@ import (
 
 	"github.com/sfs/pkg/env"
 	svr "github.com/sfs/pkg/server"
+	svc "github.com/sfs/pkg/service"
 )
 
 func TestGetServerSyncIndex(t *testing.T) {
@@ -31,6 +32,10 @@ func TestGetServerSyncIndex(t *testing.T) {
 	if err != nil {
 		Fail(t, clientRoot, err)
 	}
+
+	// create a tmp drive
+	drive := MakeTmpDriveWithPath(t, client.Root)
+	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
 	if err := tmpSvc.AddDrive(client.Drive); err != nil {
 		Fail(t, clientRoot, err)
 	}
@@ -47,7 +52,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	idx := client.GetServerIdx()
 	if idx == nil {
 		shutDown <- true
-		if err := Clean(t, GetTestingDir()); err != nil {
+		if err := Clean(t, client.Root); err != nil {
 			t.Fatal(err)
 		}
 		Fail(t, clientRoot, fmt.Errorf("failed to retrieve sync index from server"))
@@ -58,7 +63,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	// shutdown test server
 	shutDown <- true
 
-	if err := Clean(t, GetTestingDir()); err != nil {
+	if err := Clean(t, client.Root); err != nil {
 		t.Fatal(err)
 	}
 	if err := Clean(t, clientRoot); err != nil {

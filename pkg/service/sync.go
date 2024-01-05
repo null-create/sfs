@@ -2,9 +2,7 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
-	"os"
 	"time"
 )
 
@@ -17,11 +15,6 @@ if this is the service mode that's active)
 type SyncIndex struct {
 	// userID of of the user this sync index belongs to
 	UserID string `json:"user"`
-
-	// filepath to save sync-index.json to, i.e.
-	// path/to/userID-sync-index-date.json, where <date>
-	// is updated with each save
-	IdxFp string `json:"file"`
 
 	// flag to indicate whether a sync operation should be executed
 	Sync bool `json:"sync"`
@@ -42,7 +35,6 @@ type SyncIndex struct {
 func NewSyncIndex(userID string) *SyncIndex {
 	return &SyncIndex{
 		UserID:   userID,
-		IdxFp:    "",
 		Sync:     false,
 		LastSync: make(map[string]time.Time, 0),
 		ToUpdate: make(map[string]*File, 0),
@@ -69,23 +61,13 @@ func (s *SyncIndex) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
-// write out a sync index to a JSON file
-func (s *SyncIndex) SaveToJSON() error {
-	s.IdxFp = fmt.Sprintf("%s-sync-index-%s.json", s.UserID, time.Now().Format("2006-01-02T15-04-05"))
-	data, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(s.IdxFp, data, 0644)
-}
-
 // checks last sync for file.
 // won't be in toupdate if it's not in lastsync first
 func (s *SyncIndex) HasFile(fileID string) bool {
-	if _, exists := s.LastSync[fileID]; !exists {
-		return false
+	if _, exists := s.LastSync[fileID]; exists {
+		return true
 	}
-	return true
+	return false
 }
 
 // get a slice of files to sync from the index.ToUpdate map
@@ -137,11 +119,17 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	diff := NewSyncIndex(orig.UserID)
 	for fileID, lastSync := range new.LastSync {
-		if orig.HasFile(fileID) {
-			if orig.LastSync[fileID].Sub(lastSync) > 0 {
-				diff.ToUpdate[fileID] = nil // CHANGE THIS. need to get actual *svc.File
+		if origTime, exists := orig.LastSync[fileID]; exists {
+			if lastSync.Sub(origTime) > 0 {
+				diff.LastSync[fileID] = lastSync
 			}
-			diff.LastSync[fileID] = lastSync
+		}
+	}
+	for fileID, newFile := range new.ToUpdate {
+		if origFile, exists := orig.ToUpdate[fileID]; exists {
+			if origFile.LastSync.Sub(newFile.LastSync) > 0 {
+				diff.ToUpdate[fileID] = newFile
+			}
 		}
 	}
 	return diff

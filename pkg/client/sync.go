@@ -24,6 +24,21 @@ const (
 	SyncWait     = time.Minute
 )
 
+// resets client side sync mechanisms
+func (c *Client) reset() {
+	c.Drive.SyncIndex.Reset() // clear ToUpdate
+}
+
+// display server response clearly.
+func (c *Client) dump(resp *http.Response, body bool) {
+	b, err := httputil.DumpResponse(resp, body)
+	if err != nil {
+		log.Printf("[WARNING] failed to dump http response:\n%v", err)
+	} else {
+		log.Printf("\n%s\n", string(b))
+	}
+}
+
 // TODO: func to compare local index with server index, find any differences
 // between them, and determine what to pull from the server.
 
@@ -52,26 +67,11 @@ func (c *Client) Sync(up bool) error {
 	return nil
 }
 
-// resets client side sync mechanisms
-func (c *Client) reset() {
-	c.Drive.SyncIndex.Reset() // clear ToUpdate
-}
-
-// display server response clearly.
-func (c *Client) dump(resp *http.Response, body bool) {
-	b, err := httputil.DumpResponse(resp, body)
-	if err != nil {
-		log.Printf("[WARNING] failed to dump http response:\n%v", err)
-	} else {
-		log.Printf("\n%s\n", string(b))
-	}
-}
-
-// take a given synch index, build a queue of files to be pushed to the
-// server, then upload each in their own goroutines
-
 // TODO: handle the difference between creates and updates.
 // some files may be new, others may be only modified!
+//
+// take a given synch index, build a queue of files to be pushed to the
+// server, then upload each in their own goroutines
 func (c *Client) Push() error {
 	if len(c.Drive.SyncIndex.ToUpdate) == 0 || c.Drive.SyncIndex.ToUpdate == nil {
 		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
