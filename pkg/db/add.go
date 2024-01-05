@@ -49,9 +49,6 @@ func (q *Query) AddFiles(files []*svc.File) error {
 	defer q.Close()
 
 	for _, f := range files {
-		// if err := q.AddFile(file); err != nil {
-		// 	return fmt.Errorf("[ERROR] : %v", err)
-		// }
 		if err := q.Prepare(AddFileQuery); err != nil {
 			return fmt.Errorf("failed to prepare statement: %v", err)
 		}
@@ -149,9 +146,6 @@ func (q *Query) AddDirs(dirs []*svc.Directory) error {
 	defer q.Close()
 
 	for _, d := range dirs {
-		// if err := q.AddDir(dir); err != nil {
-		// 	return fmt.Errorf("[ERROR] failed to add dir (%s) to database: %v", dir.ID, err)
-		// }
 		if err := q.Prepare(AddDirQuery); err != nil {
 			return fmt.Errorf("failed to prepare statement: %v", err)
 		}
