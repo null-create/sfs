@@ -33,7 +33,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 		Fail(t, clientRoot, err)
 	}
 
-	// create a tmp drive
+	// create a tmp drive with sync index
 	drive := MakeTmpDriveWithPath(t, client.Root)
 	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
 	if err := tmpSvc.AddDrive(client.Drive); err != nil {
@@ -48,6 +48,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	go func() {
 		testServer.TestRun(shutDown)
 	}()
+
 	// retrieve index from server API and confirm non-empty fields
 	idx := client.GetServerIdx()
 	if idx == nil {
@@ -58,7 +59,16 @@ func TestGetServerSyncIndex(t *testing.T) {
 		Fail(t, clientRoot, fmt.Errorf("failed to retrieve sync index from server"))
 	}
 
-	// TODO: other tests...
+	// display the sync index
+	idxJson, err := idx.ToJSON()
+	if err != nil {
+		shutDown <- true
+		if err := Clean(t, client.Root); err != nil {
+			t.Fatal(err)
+		}
+		Fail(t, clientRoot, fmt.Errorf("failed to convert data to JSON: %v", err))
+	}
+	log.Printf("[TEST] sync index received from server: \n%s\n", string(idxJson))
 
 	// shutdown test server
 	shutDown <- true
