@@ -2,34 +2,53 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "sfs",
-	Short: "root sfs command",
-	// long description for help messages
-	Long: `
-	A bunch of text can go here, along with some demos about how
-	to use the command.
-	
-	
-	`,
-	// filler/demo func for how to use this command
-	Run: func(cmd *cobra.Command, args []string) {
-		// whatever the command should call or do
-	},
-}
+var (
+	cfgFile string
+
+	// root sfs cli command
+	rootCmd = &cobra.Command{
+		Use:   "sfs",
+		Short: "root sfs command",
+		Long: `
+	 	A bunch of text can go here, along with some demos about how
+	 	to use the command.
+	 `,
+		Version: "0.1", // TODO: better semantic versioning
+	}
+)
 
 func init() {
 	rootCmd.AddCommand(rootCmd)
 }
 
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+
+		viper.AddConfigPath(home)
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(".cobra")
+	}
+
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+}
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
