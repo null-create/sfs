@@ -40,7 +40,8 @@ func secondsToTimeStr(seconds float64) string {
 	return timeValue.Format("15:04:05")
 }
 
-// returns the current run time of the server in seconds
+// returns the current run time of the server
+// as a HH:MM:SS formatted string.
 func (s *Server) RunTime() string {
 	return secondsToTimeStr(time.Since(s.StartTime).Seconds())
 }
