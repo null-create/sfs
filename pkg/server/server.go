@@ -34,15 +34,21 @@ func NewServer() *Server {
 	}
 }
 
+func secondsToTimeStr(seconds float64) string {
+	duration := time.Duration(int64(seconds)) * time.Second
+	timeValue := time.Time{}.Add(duration)
+	return timeValue.Format("15:04:05")
+}
+
 // returns the current run time of the server in seconds
-func (s *Server) RunTime() float64 {
-	return time.Since(s.StartTime).Seconds()
+func (s *Server) RunTime() string {
+	return secondsToTimeStr(time.Since(s.StartTime).Seconds())
 }
 
 // forcibly shuts down server and returns total run time in seconds.
-func (s *Server) Shutdown() (float64, error) {
+func (s *Server) Shutdown() (string, error) {
 	if err := s.Svr.Close(); err != nil && err != http.ErrServerClosed {
-		return 0, fmt.Errorf("server shutdown failed: %v", err)
+		return "0", fmt.Errorf("server shutdown failed: %v", err)
 	}
 	return s.RunTime(), nil
 }
