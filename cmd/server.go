@@ -4,17 +4,11 @@ import (
 	"fmt"
 
 	"github.com/sfs/pkg/server"
+
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
-	// flag variables
-	start bool
-	stop  bool
-	stats bool
-	new   bool
-
 	svr *server.Server // pointer to server instance. used for run time info.
 
 	shutDown chan bool // shutdown channel for the server
@@ -87,15 +81,4 @@ func init() {
 	serverCmd.AddCommand(stopCmd)
 	serverCmd.AddCommand(statsCmd)
 	rootCmd.AddCommand(serverCmd)
-
-	// add flags
-	serverCmd.PersistentFlags().BoolVarP(&new, "new", "n", true, "set up a new server side sfs service instance")
-	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "flag to start the sfs server")
-	serverCmd.PersistentFlags().BoolVar(&stop, "start", false, "flag to stop the sfs server")
-	serverCmd.PersistentFlags().BoolVar(&stats, "stats", false, "flag to display run time health of the server")
-
-	viper.BindPFlag("new", serverCmd.Flags().Lookup("new"))
-	viper.BindPFlag("start", serverCmd.Flags().Lookup("start"))
-	viper.BindPFlag("stop", serverCmd.Flags().Lookup("stop"))
-	viper.BindPFlag("stats", serverCmd.Flags().Lookup("stats"))
 }
