@@ -97,7 +97,7 @@ func (s *Server) Start(shutDown chan bool) {
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 
 	go func() {
-		// blocks until turnOff = true
+		// blocks until shutDown = true
 		// (set by outer test and passed after checks are completed (or failed))
 		<-shutDown
 
