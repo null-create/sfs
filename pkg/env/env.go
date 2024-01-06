@@ -10,7 +10,10 @@ import (
 )
 
 // used for run-time environment variable manipulation
-type Env map[string]string
+type Env struct {
+	env map[string]string // environment map
+	loc string            // location of the .env file
+}
 
 // base environment which will need to be customized
 // to the user's preferences
@@ -39,11 +42,24 @@ var BaseEnv = map[string]string{
 	"SERVICE_TEST_ROOT":    "",
 }
 
+// new env object.
+// checks the current directory for the .env file by default.
 func NewE() *Env {
 	if !HasDotEnv() {
 		log.Fatal("no .env file present")
 	}
-	return new(Env)
+	env, err := godotenv.Read(".env")
+	if err != nil {
+		log.Fatal(err)
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &Env{
+		env: env,
+		loc: filepath.Join(cwd, ".env"),
+	}
 }
 
 func HasDotEnv() bool {
@@ -73,11 +89,7 @@ func NewEnvFile(path string, env map[string]string) error {
 
 // read .env file and set as environment variables
 func SetEnv(debug bool) {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("failed to get working directory: %v", err)
-	}
-	if err := godotenv.Load(filepath.Join(wd, ".env")); err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("failed to load .env file: %v", err)
 	}
 	if debug {
