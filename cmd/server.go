@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/sfs/pkg/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -13,10 +15,11 @@ var (
 	stats bool
 	new   bool
 
-	// shutdown channel for the server
-	shutDown chan bool
+	svr *server.Server // pointer to server instance. used for run time info.
 
-	// server command
+	shutDown chan bool // shutdown channel for the server
+
+	// ------ server command
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "sfs server commands",
@@ -29,11 +32,11 @@ var (
 			sfs server new     - create a new sfs server side service instance.
 			sfs server start   - start the SFS server
 			sfs server stop    - shutdown the SFS server
-			sfs server stats   - display the total run time of the SFS server in seconds
 		`,
 	}
 
-	// child commands
+	// ------ child commands
+
 	newSvrCmd = &cobra.Command{
 		Use:   "new",
 		Short: "create a new sfs server side service instance",
@@ -52,18 +55,27 @@ var (
 		Use:   "start",
 		Short: "start the SFS server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svr := server.NewServer()
+			svr = server.NewServer()
 			go func() {
 				svr.Start(shutDown)
 			}()
 			return nil
 		},
 	}
+
 	stopCmd = &cobra.Command{
 		Use:   "stop",
 		Short: "stop the SFS server",
 		Run: func(cmd *cobra.Command, args []string) {
 			shutDown <- true
+		},
+	}
+
+	statsCmd = &cobra.Command{
+		Use:   "stats",
+		Short: "stats the SFS server",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("server run time %s", svr.RunTime())
 		},
 	}
 )
@@ -73,6 +85,7 @@ func init() {
 	serverCmd.AddCommand(newSvrCmd)
 	serverCmd.AddCommand(startCmd)
 	serverCmd.AddCommand(stopCmd)
+	serverCmd.AddCommand(statsCmd)
 	rootCmd.AddCommand(serverCmd)
 
 	// add flags
