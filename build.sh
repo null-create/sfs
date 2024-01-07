@@ -21,14 +21,17 @@ then
 fi
 
 build() {
-	echo "$1 $2 ..."
+	echo "building SFS binary for $1 $2 ..."
 	GOOS=$1 GOARCH=$2 go build \
 		-ldflags "$LDFLAGS" \
 		-o bin/sfs-${3:-""}
 }
 
+# TODO: make this a switch statement based on the runtime host OS
 build linux arm linux-arm
 build darwin amd64 mac-amd64
 build linux amd64 linux-amd64
 build linux 386 linux-386
 build windows amd64 win-amd64.exe
+
+# set path varible for sfs CLI, then test
