@@ -320,7 +320,6 @@ func (d *Directory) AddFile(file *File) {
 
 func (d *Directory) AddFiles(files []*File) {
 	if len(files) == 0 {
-		log.Printf("[INFO] no files recieved")
 		return
 	}
 	if !d.Protected {
@@ -384,9 +383,6 @@ func (d *Directory) RemoveFile(fileID string) error {
 
 // returns a file map containing all files starting at this directory.
 func (d *Directory) GetFileMap() map[string]*File {
-	if len(d.Files) == 0 {
-		log.Printf("[WARNING] dir (%s) has no files", d.ID)
-	}
 	return d.WalkFs()
 }
 
@@ -513,9 +509,9 @@ func (d *Directory) RemoveSubDirs() error {
 		if err := d.Clean(d.Path); err != nil {
 			return err
 		}
-		log.Printf("[INFO] dir(%s) all sub directories deleted", d.ID)
+		log.Printf("[INFO] dir (id=%s) all sub directories deleted", d.ID)
 	} else {
-		log.Printf("[INFO] dir(%s) is protected. no sub directories deleted", d.ID)
+		log.Printf("[INFO] dir (id=%s) is protected. no sub directories deleted", d.ID)
 	}
 	return nil
 }
@@ -525,7 +521,7 @@ func (d *Directory) GetSubDir(dirID string) *Directory {
 	if dir, ok := d.Dirs[dirID]; ok {
 		return dir
 	} else {
-		log.Printf("[INFO] dir(%s) not found", dirID)
+		log.Printf("[INFO] dir (id=%s) not found", dirID)
 		return nil
 	}
 }
@@ -534,7 +530,7 @@ func (d *Directory) GetSubDir(dirID string) *Directory {
 // returns an empty map if nothing is not found
 func (d *Directory) GetSubDirs() map[string]*Directory {
 	if len(d.Dirs) == 0 {
-		log.Printf("[INFO] directory %s is empty", d.ID)
+		log.Printf("[INFO] dir (id=%s) is empty", d.ID)
 		return nil
 	}
 	return d.Dirs
@@ -718,13 +714,8 @@ func (d *Directory) WalkS(idx *SyncIndex) *SyncIndex {
 }
 
 func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
-	if len(dir.Files) > 0 {
-		idx = buildSync(dir, idx)
-	} else {
-		log.Printf("[INFO] dir %s (id=%s) has no files", dir.Name, dir.ID)
-	}
+	idx = buildSync(dir, idx)
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -759,13 +750,8 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 // of each file in each subdirectory, populating the ToUpdate map of a given SyncIndex
 // as needed.
 func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
-	if len(dir.Files) > 0 {
-		idx = buildUpdate(dir, idx)
-	} else {
-		log.Printf("[INFO] dir %s (id=%s) has no files", dir.Name, dir.ID)
-	}
+	buildUpdate(dir, idx)
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
 		return idx
 	}
 	for _, subDirs := range dir.Dirs {
@@ -786,28 +772,17 @@ func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
 //
 // functions should have the following signature: func(file *File) error
 func (d *Directory) WalkO(op func(file *File) error) error {
-	if len(d.Files) == 0 {
-		log.Printf("[INFO] dir %s (id=%s) has no files", d.Name, d.ID)
-	}
-	if len(d.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (id=%s) has no sub directories", d.Name, d.ID)
-		return nil
-	}
 	return walkO(d, op)
 }
 
 func walkO(dir *Directory, op func(f *File) error) error {
-	if len(dir.Files) > 0 {
-		for _, file := range dir.Files {
-			if err := op(file); err != nil {
-				// we don't exit right away because this exception may only apply
-				// to a single file.
-				log.Printf("[INFO] unable to run operation on %s \n%v\n continuing...", dir.Name, err)
-				continue
-			}
+	for _, file := range dir.Files {
+		if err := op(file); err != nil {
+			// we don't exit right away because this exception may only apply
+			// to a single file.
+			log.Printf("[INFO] unable to run operation on %s \n%v\n continuing...", dir.Name, err)
+			continue
 		}
-	} else {
-		log.Printf("[INFO] dir %s (id=%s) has no files", dir.Name, dir.ID)
 	}
 	if len(dir.Dirs) == 0 {
 		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
