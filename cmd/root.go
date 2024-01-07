@@ -17,15 +17,18 @@ var (
 		Use:   "sfs",
 		Short: "root sfs command",
 		Long: `
-	 	A bunch of text can go here, along with some demos about how
-	 	to use the command.
-	 `,
+		Simple File Sync: synchronize your project files across your devices.
+
+		Examples:
+			sfs client --new
+			sfs server --start
+		`,
 		Version: "0.1", // TODO: better semantic versioning
 	}
 )
 
 func init() {
-	rootCmd.AddCommand(rootCmd)
+	initConfig()
 }
 
 func initConfig() {

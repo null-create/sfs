@@ -17,22 +17,26 @@ var (
 	// main client command
 	clientCmd = &cobra.Command{
 		Use:   "client",
-		Short: "client commands",
+		Short: "SFS Client Commands",
 		Long: `
-			SFS Client Commands. 
-			
-			Examples:
+SFS Client Commands. 
 
-			sfs client start   - Start the SFS client
-			sfs client stop    - Stop the SFS client
-			sfs client list    - List root entries
-			sfs client sync    - Sync local files with the SFS server
+Examples:
+	sfs client --new        Create a new SFS client.
+	sfs client --start      Start the SFS client
+	sfs client --stop       Stop the SFS client
+	sfs client --list       List root entries
+	sfs client --sync       Sync local files with the SFS server
 		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			return nil
+		},
 	}
 
 	newClientCmd = &cobra.Command{
 		Use:   "new",
-		Short: "create a new SFS client",
+		Short: "Create a new SFS client",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfgs := client.ClientConfig()
 			newUser := auth.NewUser(

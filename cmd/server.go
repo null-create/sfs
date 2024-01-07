@@ -1,84 +1,71 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/sfs/pkg/client"
 	"github.com/sfs/pkg/server"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	svr      *server.Server // pointer to server instance. used for run time info.
-	shutDown chan bool      // shutdown channel for the server
+	svr *server.Server // pointer to server instance. used for reading run time info.
+
+	new      bool      // whether we should create a new sfs server
+	start    bool      // whether we should start the server
+	stop     bool      // whether we should stop the server
+	shutDown chan bool // shutdown channel for the server
+
+	conf = client.ClientConfig() // client service configurations
 
 	// ------ server command
 
 	serverCmd = &cobra.Command{
 		Use:   "server",
-		Short: "sfs server commands",
+		Short: "SFS Server Commands",
 		Long: `
 		SFS Server command. 
 	
 		Use the flags associated with this command to configure and manage the SFS server.
 	
 		Examples: 
-			sfs server new     - create a new sfs server side service instance.
-			sfs server start   - start the SFS server
-			sfs server stop    - shutdown the SFS server
-			sfs server stats   - get the run time stats for the server
+			sfs server --new     - create a new sfs server side service instance.
+			sfs server --start   - start the SFS server
+			sfs server --stop    - shutdown the SFS server
+			sfs server --stats   - get the run time stats for the server
 		`,
-	}
-
-	// ------ child commands
-
-	newSvrCmd = &cobra.Command{
-		Use:   "new",
-		Short: "create a new sfs server side service instance",
-		Long:  ``,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := server.Init(true, false)
-			if err != nil {
-				return err
+			startFlag, _ := cmd.Flags().GetBool("start")
+			stopFlag, _ := cmd.Flags().GetBool("stop")
+			newFlag, _ := cmd.Flags().GetBool("new")
+
+			switch {
+			case startFlag:
+				svr = server.NewServer()
+				go func() {
+					svr.Start(shutDown)
+				}()
+			case stopFlag:
+				shutDown <- true
+			case newFlag:
+				_, err := server.Init(conf.NewService, conf.IsAdmin)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
-		},
-	}
-
-	startCmd = &cobra.Command{
-		Use:   "start",
-		Short: "start the SFS server",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			svr = server.NewServer()
-			go func() {
-				svr.Start(shutDown)
-			}()
-			return nil
-		},
-	}
-
-	stopCmd = &cobra.Command{
-		Use:   "stop",
-		Short: "stop the SFS server",
-		Run: func(cmd *cobra.Command, args []string) {
-			shutDown <- true
-		},
-	}
-
-	statsCmd = &cobra.Command{
-		Use:   "stats",
-		Short: "stats the SFS server",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("server run time %s", svr.RunTime())
 		},
 	}
 )
 
 func init() {
-	// add command and child commands to root command
-	serverCmd.AddCommand(newSvrCmd)
-	serverCmd.AddCommand(startCmd)
-	serverCmd.AddCommand(stopCmd)
-	serverCmd.AddCommand(statsCmd)
+	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "start the sfs server")
+	serverCmd.PersistentFlags().BoolVar(&stop, "stop", false, "stop the sfs server")
+	serverCmd.PersistentFlags().BoolVar(&new, "new", false, "create a new sfs server side service instance")
+
+	viper.BindPFlag("start", serverCmd.PersistentFlags().Lookup("start"))
+	viper.BindPFlag("stop", serverCmd.PersistentFlags().Lookup("stop"))
+	viper.BindPFlag("new", serverCmd.PersistentFlags().Lookup("new"))
+
 	rootCmd.AddCommand(serverCmd)
 }
