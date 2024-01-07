@@ -2,32 +2,13 @@
 
 set -eu
 
-VERSION=$(git describe --abbrev=0 --tags)
-REVCNT=$(git rev-list --count HEAD)
-DEVCNT=$(git rev-list --count $VERSION)
-if test $REVCNT != $DEVCNT
-then
-	VERSION="$VERSION.dev$(expr $REVCNT - $DEVCNT)"
-fi
-echo "VER: $VERSION"
-
-GITCOMMIT=$(git rev-parse HEAD)
-BUILDTIME=$(date -u +%Y/%m/%d-%H:%M:%S)
-
-LDFLAGS="-X main.VERSION=$VERSION -X main.BUILDTIME=$BUILDTIME -X main.GITCOMMIT=$GITCOMMIT"
-if [[ -n "${EX_LDFLAGS:-""}" ]]
-then
-	LDFLAGS="$LDFLAGS $EX_LDFLAGS"
-fi
+BINPATH="$(pwd)/bin"
 
 build() {
 	echo "building SFS binary for $1 $2 ..."
-	GOOS=$1 GOARCH=$2 go build \
-		-ldflags "$LDFLAGS" \
-		-o bin/sfs-${3:-""}
+  OUTPUT="${BINPATH}/sfs"
+	GOOS=$1 GOARCH=$2 go build -o sfs
 }
-
-# ----------------------------------------------------------------
 
 # build executable based on the hose OS
 case "$(uname -s)" in
@@ -48,11 +29,16 @@ case "$(uname -s)" in
     ;;
 esac
 
-BINPATH="$(pwd)/bin"
+cp sfs "${BINPATH}/sfs"
+rm sfs
 
 # set path varible for sfs CLI, then test
-export PATH=$PATH:$BINPATH
+export PATH="${PATH:+${PATH}:}${BINPATH}"
 
-sfs --help
+sfs -h
+if [[ $? -ne 0 ]]; then
+  echo "failed to set PATH variable"
+  exit 1
+fi
 
 exit 0
