@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	svr *server.Server // pointer to server instance. used for run time info.
-
-	shutDown chan bool // shutdown channel for the server
+	svr      *server.Server // pointer to server instance. used for run time info.
+	shutDown chan bool      // shutdown channel for the server
 
 	// ------ server command
+
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "sfs server commands",
@@ -26,6 +26,7 @@ var (
 			sfs server new     - create a new sfs server side service instance.
 			sfs server start   - start the SFS server
 			sfs server stop    - shutdown the SFS server
+			sfs server stats   - get the run time stats for the server
 		`,
 	}
 
@@ -36,7 +37,6 @@ var (
 		Short: "create a new sfs server side service instance",
 		Long:  ``,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: handle admin param as a flag
 			_, err := server.Init(true, false)
 			if err != nil {
 				return err

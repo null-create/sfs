@@ -20,8 +20,7 @@ import (
 // create a new SFS service with databases.
 // requires a configured .env file prior to running.
 func Build() error {
-	c := ServiceConfig()
-	_, err := SvcInit(c.SvcRoot)
+	_, err := SvcInit(svcCfg.SvcRoot)
 	if err != nil {
 		return fmt.Errorf("failed to initialize new SFS service: %v", err)
 	}
@@ -31,10 +30,9 @@ func Build() error {
 // initialize a new server-side sfs service from either a state file/dbs or
 // create a new service from scratch.
 func Init(new bool, admin bool) (*Service, error) {
-	c := ServiceConfig()
 	if !new {
 		// load from state file and dbs
-		svc, err := SvcLoad(c.SvcRoot)
+		svc, err := SvcLoad(svcCfg.SvcRoot)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load service: %v", err)
 		}
@@ -44,7 +42,7 @@ func Init(new bool, admin bool) (*Service, error) {
 		return svc, nil
 	} else {
 		// initialize new sfs service
-		svc, err := SvcInit(c.SvcRoot)
+		svc, err := SvcInit(svcCfg.SvcRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -56,10 +54,9 @@ func Init(new bool, admin bool) (*Service, error) {
 }
 
 func setAdmin(svc *Service) {
-	cfg := ServerConfig()
 	svc.AdminMode = true
-	svc.Admin = cfg.Admin
-	svc.AdminKey = cfg.AdminKey
+	svc.Admin = svrCfg.Admin
+	svc.AdminKey = svrCfg.AdminKey
 }
 
 // searches for the service state file.

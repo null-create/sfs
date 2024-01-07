@@ -19,17 +19,13 @@ type Server struct {
 // instantiate a new HTTP server with an sfs service instance
 // contained within the router
 func NewServer() *Server {
-	// router contains (and intializes) the server-side SNS service instance.
-	rtr := NewRouter()
-	cfg := ServerConfig()
-
 	return &Server{
 		Svr: &http.Server{
-			Handler:      rtr,
-			Addr:         cfg.Addr,
-			ReadTimeout:  cfg.TimeoutRead,
-			WriteTimeout: cfg.TimeoutWrite,
-			IdleTimeout:  cfg.TimeoutIdle,
+			Handler:      NewRouter(), // router contains (and intializes) the server-side SNS service instance.
+			Addr:         svrCfg.Addr,
+			ReadTimeout:  svrCfg.TimeoutRead,
+			WriteTimeout: svrCfg.TimeoutWrite,
+			IdleTimeout:  svrCfg.TimeoutIdle,
 		},
 	}
 }

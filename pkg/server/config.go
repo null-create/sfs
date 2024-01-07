@@ -4,6 +4,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/joeshaw/envdecode"
 )
 
@@ -18,12 +20,16 @@ type SvrCnf struct {
 }
 
 func ServerConfig() *SvrCnf {
+	env.SetEnv(false)
+
 	var c SvrCnf
 	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode server config .env file: %s", err)
 	}
 	return &c
 }
+
+var svrCfg = ServerConfig()
 
 type SvcCfg struct {
 	SvcRoot    string `env:"SERVICE_ROOT,required"`
@@ -32,6 +38,8 @@ type SvcCfg struct {
 }
 
 func ServiceConfig() *SvcCfg {
+	env.SetEnv(false)
+
 	var c SvcCfg
 	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode server config .env file: %s", err)
@@ -39,8 +47,4 @@ func ServiceConfig() *SvcCfg {
 	return &c
 }
 
-// server side service
-var svcCfgs = ServerConfig()
-
-// server configurations
-var svrCfgs = ServerConfig()
+var svcCfg = ServiceConfig()

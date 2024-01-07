@@ -48,10 +48,8 @@ POST   /v1/sync/{driveID}    // send a last sync index object to the server
 
 // instantiate a new chi router
 func NewRouter() *chi.Mux {
-	cfg := ServiceConfig()
-
 	// initialize API handlers and SFS service instance
-	api := NewAPI(cfg.NewService, cfg.IsAdmin)
+	api := NewAPI(svcCfg.NewService, svcCfg.IsAdmin)
 
 	// instantiate router
 	r := chi.NewRouter()
@@ -177,14 +175,12 @@ func NewRouter() *chi.Mux {
 
 // A completely separate router for administrator routes
 func adminRouter() http.Handler {
-	cfg := ServiceConfig()
-
 	r := chi.NewRouter()
 
 	// r.Use(AdminOnly)
 
 	// initialize API handlers
-	api := NewAPI(cfg.NewService, true)
+	api := NewAPI(svcCfg.NewService, true)
 
 	r.Route("/users", func(r chi.Router) {
 		r.Route("/{userID}", func(r chi.Router) {

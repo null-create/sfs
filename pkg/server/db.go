@@ -12,8 +12,7 @@ import (
 
 // get a one-off db connection to a given db
 func getDBConn(dbName string) *db.Query {
-	cfg := ServiceConfig()
-	return db.NewQuery(filepath.Join(cfg.SvcRoot, "dbs", dbName), false)
+	return db.NewQuery(filepath.Join(svcCfg.SvcRoot, "dbs", dbName), false)
 }
 
 // get file info from db. file will be nil if not found.

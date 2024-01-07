@@ -159,15 +159,15 @@ func TestAddAndRemoveUser(t *testing.T) {
 	env.SetEnv(false)
 
 	// create test service instance
-	conf := ServiceConfig()
-	testFolder := filepath.Join(conf.SvcRoot, "users")
-	testSvc, err := SvcLoad(conf.SvcRoot)
+	// conf := ServiceConfig()
+	testFolder := filepath.Join(svcCfg.SvcRoot, "users")
+	testSvc, err := SvcLoad(svcCfg.SvcRoot)
 	if err != nil {
 		Fail(t, testFolder, err)
 	}
 
 	// create test user
-	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", conf.SvcRoot, false)
+	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", svcCfg.SvcRoot, false)
 
 	// add user to service instance
 	if err := testSvc.AddUser(testUsr); err != nil {
@@ -194,13 +194,13 @@ func TestAddAndRemoveUser(t *testing.T) {
 	if err := testSvc.RemoveUser(testUsr.ID); err != nil {
 		Fail(t, testFolder, err)
 	}
-	entries, err := os.ReadDir(filepath.Join(conf.SvcRoot, "users"))
+	entries, err := os.ReadDir(filepath.Join(svcCfg.SvcRoot, "users"))
 	if err != nil {
 		Fail(t, testFolder, err)
 	}
 	assert.Equal(t, 0, len(entries))
 
-	if err := Clean(filepath.Join(conf.SvcRoot, "users")); err != nil {
+	if err := Clean(filepath.Join(svcCfg.SvcRoot, "users")); err != nil {
 		t.Errorf("[ERROR] unable to remove test user directories: %v", err)
 	}
 }
@@ -208,14 +208,14 @@ func TestAddAndRemoveUser(t *testing.T) {
 func TestAddAndUpdateAUser(t *testing.T) {
 	env.SetEnv(false)
 
-	c := ServiceConfig()
+	// c := ServiceConfig()
 	// create a test instance
-	testSvc, err := SvcLoad(c.SvcRoot)
+	testSvc, err := SvcLoad(svcCfg.SvcRoot)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 	// create a test user
-	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", c.SvcRoot, false)
+	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", svcCfg.SvcRoot, false)
 	if err := testSvc.AddUser(testUsr); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -248,7 +248,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
 	}
 	// remove test user drive
-	tmpDir := filepath.Join(c.SvcRoot, "users")
+	tmpDir := filepath.Join(svcCfg.SvcRoot, "users")
 	if err := Clean(tmpDir); err != nil {
 		t.Errorf("[ERROR] unable to clean up test user files: %v", err)
 	}

@@ -3,6 +3,8 @@ package client
 import (
 	"log"
 
+	"github.com/sfs/pkg/env"
+
 	"github.com/joeshaw/envdecode"
 )
 
@@ -19,6 +21,8 @@ type Conf struct {
 }
 
 func ClientConfig() *Conf {
+	env.SetEnv(false)
+
 	var c Conf
 	if err := envdecode.StrictDecode(&c); err != nil {
 		log.Fatalf("[ERROR] failed to decode client config .env file: %s", err)

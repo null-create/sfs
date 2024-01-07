@@ -26,7 +26,7 @@ const (
 
 // resets client side sync mechanisms
 func (c *Client) reset() {
-	c.Drive.SyncIndex.Reset() // clear ToUpdate
+	c.Drive.SyncIndex.Reset()
 }
 
 // display server response clearly.
