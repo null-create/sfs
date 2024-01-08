@@ -1,99 +1,61 @@
 package cmd
 
 import (
-	"log"
-	"path/filepath"
-
-	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/client"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	// pointer to client instance
-	cl *client.Client
+	c    *client.Client          // active client service instance
+	ccfg = client.ClientConfig() // client service configurations
+
+	// for flags
+	newClient   bool
+	startClient bool
+	stopClient  bool
 
 	// main client command
 	clientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "SFS Client Commands",
-		Long: `
-SFS Client Commands. 
-
-Examples:
-	sfs client --new        Create a new SFS client.
-	sfs client --start      Start the SFS client
-	sfs client --stop       Stop the SFS client
-	sfs client --list       List root entries
-	sfs client --sync       Sync local files with the SFS server
-		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return nil
-		},
-	}
-
-	newClientCmd = &cobra.Command{
-		Use:   "new",
-		Short: "Create a new SFS client",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgs := client.ClientConfig()
-			newUser := auth.NewUser(
-				cfgs.User,
-				cfgs.UserAlias,
-				cfgs.Email,
-				filepath.Join(cfgs.Root, cfgs.User),
-				cfgs.IsAdmin,
-			)
-			newClient, err := client.NewClient(newUser)
-			if err != nil {
-				return err
+			newFlag, _ := cmd.Flags().GetBool("new")
+			startFlag, _ := cmd.Flags().GetBool("start")
+			stopFlag, _ := cmd.Flags().GetBool("stop")
+			switch {
+			case newFlag:
+				newClient, err := client.Init(ccfg.NewService)
+				if err != nil {
+					return err
+				}
+				c = newClient
+			case startFlag:
+				client, err := client.LoadClient()
+				if err != nil {
+					return err
+				}
+				c = client
+				go func() {
+					c.Start()
+				}()
+			case stopFlag:
+				return c.ShutDown()
 			}
-			cl = newClient
 			return nil
-		},
-	}
-
-	// child commands
-	syncCmd = &cobra.Command{
-		Use:   "sync",
-		Short: "client sync commands",
-		Long: `
-			SFS Client side synchronization command. 
-			
-			Use the flags associated with this command to configure and execute
-			Synchronization operations from the client to the server.
-		`,
-	}
-
-	pushCmd = &cobra.Command{
-		Use:   "push",
-		Short: "push files to the sfs server",
-		RunE: func(c *cobra.Command, args []string) error {
-			return cl.Push()
-		},
-	}
-
-	pullCmd = &cobra.Command{
-		Use:   "pull",
-		Short: "pull files from the sfs server",
-		RunE: func(c *cobra.Command, args []string) error {
-			idx := cl.GetServerIdx()
-			if idx == nil {
-				log.Print("no sync index received from server")
-				return nil
-			}
-			return cl.Pull(idx)
 		},
 	}
 )
 
 func init() {
-	clientCmd.AddCommand(pushCmd)
-	clientCmd.AddCommand(pullCmd)
-	clientCmd.AddCommand(syncCmd)
-	clientCmd.AddCommand(newClientCmd)
+	clientCmd.PersistentFlags().BoolVar(&newClient, "new", false, "Initialize a new client service instance")
+	clientCmd.PersistentFlags().BoolVar(&startClient, "start", false, "Start client services")
+	clientCmd.PersistentFlags().BoolVar(&stopClient, "stop", false, "Stop client services")
+
+	viper.BindPFlag("start", clientCmd.PersistentFlags().Lookup("start"))
+	viper.BindPFlag("stop", clientCmd.PersistentFlags().Lookup("stop"))
+	viper.BindPFlag("new", clientCmd.PersistentFlags().Lookup("new"))
 
 	rootCmd.AddCommand(clientCmd)
 }

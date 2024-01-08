@@ -14,15 +14,8 @@ var (
 
 	// root sfs cli command
 	rootCmd = &cobra.Command{
-		Use:   "sfs",
-		Short: "root sfs command",
-		Long: `
-		Simple File Sync: synchronize your project files across your devices.
-
-		Examples:
-			sfs client --new
-			sfs server --start
-		`,
+		Use:     "sfs",
+		Short:   "Root SFS Command. Use to call client and server commands.",
 		Version: "0.1", // TODO: better semantic versioning
 	}
 )
