@@ -2,26 +2,28 @@
 
 set -eu
 
-BINPATH="$(pwd)/bin"
-
 build() {
 	echo "building SFS binary for $1 $2 ..."
-  OUTPUT="${BINPATH}/sfs"
-	GOOS=$1 GOARCH=$2 go build -o sfs
+	GOOS=$1 GOARCH=$2 go build -o $3
 }
 
-# build executable based on the hose OS
+OUTFILE=""
+
+# build executable based on the host OS
 case "$(uname -s)" in
   Linux*)
-    build linux arm linux-arm
-		build linux amd64 linux-amd64
-		build linux 386 linux-386
+    # TODO: refactor this to call each of these depending
+    # on architecture
+    OUT_FILE="sfs"
+		build linux linux-amd64 $OUT_FILE
     ;;
   Darwin*)
-    build darwin amd64 mac-amd64
+    OUT_FILE="sfs"
+    build darwin mac-amd64 $OUT_FILE
     ;;
   CYGWIN*|MINGW32*|MSYS*|MINGW*)
-    build windows amd64 win-amd64.exe
+    OUT_FILE="sfs.exe"
+    build windows amd64 $OUT_FILE
     ;;
   *)
     echo "Unsupported operating system."
@@ -29,13 +31,11 @@ case "$(uname -s)" in
     ;;
 esac
 
-cp sfs "${BINPATH}/sfs"
-rm sfs
-
 # set path varible for sfs CLI, then test
-export PATH="${PATH:+${PATH}:}${BINPATH}"
+BINPATH="$(pwd)/${OUT_FILE}"
+export PATH="$PATH:${BINPATH}"
 
-sfs -h
+./sfs -h
 if [[ $? -ne 0 ]]; then
   echo "failed to set PATH variable"
   exit 1
