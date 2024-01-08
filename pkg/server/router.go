@@ -74,7 +74,7 @@ func NewRouter() *chi.Mux {
 	// placeholder for sfs "homepage"
 	// this will eventually display a simple service index page
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hi"))
+		w.Write([]byte("\nhi\n"))
 	})
 
 	//v1 routing
