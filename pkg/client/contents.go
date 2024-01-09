@@ -11,6 +11,15 @@ import (
 
 // ----- files --------------------------------------
 
+// list all local files managed by the sfs service.
+// does not check database
+func (c *Client) ListLocalFiles() {
+	files := c.Drive.GetFiles()
+	for _, f := range files {
+		fmt.Print(fmt.Sprintf("id: %s\n name: %s\n loc: %s", f.ID, f.Name, f.ClientPath))
+	}
+}
+
 // retrieve a file. returns nil if the file is not found.
 func (c *Client) GetFile(fileID string) (*svc.File, error) {
 	file := c.Drive.GetFile(fileID)
