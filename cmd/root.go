@@ -5,11 +5,14 @@ import (
 	"log"
 	"os"
 
+	"github.com/sfs/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
+	c *client.Client // active client service instance
+
 	cfgFile string
 
 	// root sfs cli command

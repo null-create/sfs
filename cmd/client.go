@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	c    *client.Client          // active client service instance
 	ccfg = client.ClientConfig() // client service configurations
 	sig  chan bool               // client shut down signal
 
@@ -27,6 +26,7 @@ var (
 			newFlag, _ := cmd.Flags().GetBool("new")
 			startFlag, _ := cmd.Flags().GetBool("start")
 			stopFlag, _ := cmd.Flags().GetBool("stop")
+
 			switch {
 			case newFlag:
 				newClient, err := client.Init(ccfg.NewService)
@@ -52,6 +52,7 @@ var (
 				sig <- true
 				return c.ShutDown()
 			}
+
 			return nil
 		},
 	}
