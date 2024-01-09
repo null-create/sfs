@@ -62,9 +62,11 @@ type Client struct {
 func (c *Client) setEndpoints() {
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 
-	c.Endpoints["files"] = fmt.Sprint(EndpointRootWithPort, "v1/files/all")
-	c.Endpoints["new file"] = fmt.Sprint(EndpointRootWithPort, "v1/files/new")
+	c.Endpoints["files"] = fmt.Sprint(EndpointRootWithPort, "/v1/files/all")
+	c.Endpoints["all files"] = fmt.Sprint(EndpointRootWithPort, "/v1/files/i/all/", c.UserID)
+	c.Endpoints["new file"] = fmt.Sprint(EndpointRootWithPort, "/v1/files/new")
 	c.Endpoints["dirs"] = fmt.Sprint(EndpointRootWithPort, "/v1/dirs")
+	c.Endpoints["all dirs"] = fmt.Sprint(EndpointRootWithPort, "/v1/i/dirs/all/", c.UserID)
 	c.Endpoints["new dir"] = fmt.Sprintf(EndpointRootWithPort, "/dirs/new")
 	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.DriveID)
 	c.Endpoints["new drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/new")
@@ -84,6 +86,9 @@ func NewClient(user *auth.User) (*Client, error) {
 	svcRoot := filepath.Join(clientCfg.Root, clientCfg.User)
 	root := svc.NewRootDirectory("root", clientCfg.User, driveID, filepath.Join(svcRoot, "root"))
 	drv := svc.NewDrive(driveID, clientCfg.User, user.ID, root.Path, root.ID, root)
+	user.DriveID = driveID
+	user.DrvRoot = drv.DriveRoot
+	user.SvcRoot = root.Path
 
 	// intialize client
 	c := &Client{
