@@ -25,6 +25,18 @@ const ServerFile = "http://localhost:8080/v1/files/i/4e539b7b-9ed7-11ee-aef3-0a0
 func TestGetAllFileInfoAPI(t *testing.T) {
 	env.SetEnv(false)
 
+	// ------- make temp drive to retrieve info about, add to service
+	testSvc, err := Init(false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// add test files to server dbs
+	tmpDrive := MakeTmpDrive(t)
+	if err := testSvc.AddDrive(tmpDrive); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
 	// shut down signal to the server
 	shutDown := make(chan bool)
 
@@ -35,10 +47,12 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 		testServer.Start(shutDown)
 	}()
 
-	// attempt to retrieve all file info from the server
+	// ------ attempt to retrieve all file info from the server
 	log.Printf("[TEST] retrieving file data...")
+	endpoint := fmt.Sprint(LocalHost, "/v1/i/files/all/", tmpDrive.OwnerID)
+
 	client := new(http.Client)
-	res, err := client.Get(fmt.Sprint(LocalHost, "/v1/files/all"))
+	res, err := client.Get(endpoint)
 	if err != nil {
 		shutDown <- true
 		Fail(t, GetTestingDir(), err)
