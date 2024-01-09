@@ -28,16 +28,22 @@ func (c *Client) InfoReq(endpoint string) error {
 	if err != nil {
 		return fmt.Errorf("failed to execute info request: %v", err)
 	}
-	defer req.Body.Close()
-
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, req.Body)
+	resp, err := c.Client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute info request: %v", err)
 	}
-
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		c.dump(resp, true)
+		return nil
+	}
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to copy response body: %v", err)
+	}
 	// TODO: fancy output
-
+	fmt.Print(buf.String())
 	return nil
 }
 
