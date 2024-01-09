@@ -11,11 +11,16 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// at ~1 byte per character, and at 49 characters (inlcuding spaces),
-// this string is roughly 49 bytes in size, depending on encoding.
-//
-// in go's case, this is a utf-8 encoded string, so this is roughly 49 bytes
-const txtData string = "all work and no play makes jack a dull boy\n"
+const (
+	// at ~1 byte per character, and at 49 characters (inlcuding spaces),
+	// this string is roughly 49 bytes in size, depending on encoding.
+	//
+	// in go's case, this is a utf-8 encoded string, so this is roughly 49 bytes
+	txtData string = "all work and no play makes jack a dull boy\n"
+
+	// test user name
+	testUser = "bill buttlicker"
+)
 
 // run an individual test as part of a series of larger tests
 func RunTestStage(stageName string, test func()) {
@@ -63,9 +68,6 @@ func Fail(t *testing.T, dir string, err error) {
 	t.Fatalf("[ERROR] %v", err)
 }
 
-// handle test failures
-//
-// calls Clean() followed by t.Fatalf()
 // handle test failures
 //
 // calls Clean() followed by t.Fatalf()
@@ -217,7 +219,7 @@ func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *svc.Directo
 // all test files will be within the test directory.
 func MakeTmpDrive(t *testing.T) *svc.Drive {
 	root := MakeTmpDirs(t)
-	drive := svc.NewDrive(auth.NewUUID(), "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	drive := svc.NewDrive(auth.NewUUID(), testUser, root.OwnerID, root.Path, root.ID, root)
 	return drive
 }
 
@@ -226,7 +228,7 @@ func MakeTmpDrive(t *testing.T) *svc.Drive {
 func MakeTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
 	tmpDriveID := auth.NewUUID()
 	root := MakeTmpDirsWithPath(t, path, tmpDriveID)
-	drive := svc.NewDrive(tmpDriveID, "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	drive := svc.NewDrive(tmpDriveID, testUser, root.OwnerID, root.Path, root.ID, root)
 	return drive
 }
 
@@ -235,7 +237,7 @@ func MakeTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
 func MakeEmptyTmpDrive(t *testing.T) *svc.Drive {
 	tmpDriveID := auth.NewUUID()
 	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), tmpDriveID, GetTestingDir())
-	testDrv := svc.NewDrive(tmpDriveID, "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
+	testDrv := svc.NewDrive(tmpDriveID, testUser, tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
 	return testDrv
 }
 
@@ -244,6 +246,6 @@ func MakeEmptyTmpDrive(t *testing.T) *svc.Drive {
 func MakeEmptyTmpDriveWithPath(t *testing.T, path string) *svc.Drive {
 	tmpDriveID := auth.NewUUID()
 	tmpRoot := svc.NewRootDirectory("tmp", auth.NewUUID(), tmpDriveID, path)
-	testDrv := svc.NewDrive(tmpDriveID, "me", tmpRoot.OwnerID, path, tmpRoot.ID, tmpRoot)
+	testDrv := svc.NewDrive(tmpDriveID, testUser, tmpRoot.OwnerID, path, tmpRoot.ID, tmpRoot)
 	return testDrv
 }
