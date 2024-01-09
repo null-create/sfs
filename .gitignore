@@ -2,10 +2,10 @@
 vendor
 docs
 old-files
-pkg/run
 pkg/client/run
 pkg/.env
 .env
 pkg/network/test_files/shrek.txt
 pkg/server/.env
+pkg/server/run
 sfs.exe

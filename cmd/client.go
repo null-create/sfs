@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/sfs/pkg/client"
 
 	"github.com/spf13/cobra"
@@ -10,6 +12,7 @@ import (
 var (
 	c    *client.Client          // active client service instance
 	ccfg = client.ClientConfig() // client service configurations
+	sig  chan bool               // client shut down signal
 
 	// for flags
 	newClient   bool
@@ -38,9 +41,15 @@ var (
 				}
 				c = client
 				go func() {
-					c.Start()
+					off, err := c.Start()
+					if err != nil {
+						log.Printf("failed to start client: %v", err)
+						return
+					}
+					sig = off
 				}()
 			case stopFlag:
+				sig <- true
 				return c.ShutDown()
 			}
 			return nil

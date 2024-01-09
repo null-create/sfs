@@ -104,7 +104,7 @@ func (c *Client) StopHandlers() {
 func (c *Client) BuildHandlers() {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		log.Print("[WARNING] no files to build handlers for")
+		log.Print("[INFO] no files to build handlers for")
 		return
 	}
 	for _, file := range files {
@@ -162,7 +162,7 @@ func (c *Client) NewEHandler(filePath string) error {
 		// start listener
 		go func() {
 			if err := listener(); err != nil {
-				log.Printf("[ERROR] failed to start sync operation: %v", err)
+				log.Printf("[ERROR] listener failed: %v", err)
 			}
 		}()
 	}

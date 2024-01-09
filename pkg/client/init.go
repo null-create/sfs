@@ -72,7 +72,7 @@ func setup(svcRoot string) (*Client, error) {
 		return nil, err
 	}
 
-	// set up new user and initialize a new drive
+	// set up new user
 	newUser, err := newUser(svcDir)
 	if err != nil {
 		return nil, err
@@ -83,11 +83,18 @@ func setup(svcRoot string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	client.User = newUser
 	newUser.DriveID = client.Drive.ID
 	newUser.DrvRoot = client.Drive.Root.Path
 
 	// save user, user's root, and drive to db
 	if err := client.Db.AddUser(newUser); err != nil {
+		return nil, err
+	}
+	if err := client.Db.AddDir(client.Drive.Root); err != nil {
+		return nil, err
+	}
+	if err := client.Db.AddDrive(client.Drive); err != nil {
 		return nil, err
 	}
 
@@ -114,6 +121,11 @@ func newUser(drvRoot string) (*auth.User, error) {
 		return nil, err
 	}
 	return newUser, nil
+}
+
+// allocate a new local client drive
+func newDrive(userName string, ownerID string, drvRoot string) (*svc.Drive, error) {
+	return svc.AllocateDrive(userName, ownerID, drvRoot)
 }
 
 // initial client service set up
@@ -150,7 +162,7 @@ func loadStateFile() ([]byte, error) {
 
 // loads and populates the users drive and root directory tree.
 func loadDrive(client *Client) error {
-	drive, err := client.Db.GetDrive(client.User.DriveID)
+	drive, err := client.Db.GetDrive(client.Drive.ID)
 	if err != nil {
 		return err
 	}

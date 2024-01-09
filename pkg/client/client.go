@@ -24,8 +24,9 @@ type Client struct {
 	Root   string     `json:"root"`           // path to root drive for users files and directories
 	SfDir  string     `json:"state_file_dir"` // path to state file
 
-	Drive *svc.Drive `json:"drive"` // client drive for managing users files and directories
-	Db    *db.Query  `json:"db"`    // local db connection
+	DriveID string     `json:"drive_id"` // drive ID for this client
+	Drive   *svc.Drive `json:"drive"`    // client drive for managing users files and directories
+	Db      *db.Query  `json:"db"`       // local db connection
 
 	Tok *auth.Token `json:"token"` // token creator for requests
 
@@ -65,10 +66,10 @@ func (c *Client) setEndpoints() {
 	c.Endpoints["new file"] = fmt.Sprint(EndpointRootWithPort, "v1/files/new")
 	c.Endpoints["dirs"] = fmt.Sprint(EndpointRootWithPort, "/v1/dirs")
 	c.Endpoints["new dir"] = fmt.Sprintf(EndpointRootWithPort, "/dirs/new")
-	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.Drive.ID)
+	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.DriveID)
 	c.Endpoints["new drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/new")
-	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.Drive.ID)
-	c.Endpoints["user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/", c.User.ID)
+	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.DriveID)
+	c.Endpoints["user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/", c.UserID)
 	c.Endpoints["new user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/new")
 	c.Endpoints["all users"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/all")
 }
@@ -76,16 +77,18 @@ func (c *Client) setEndpoints() {
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
 func NewClient(user *auth.User) (*Client, error) {
+	clientCfg := ClientConfig()
+
 	// set up local client services
 	driveID := auth.NewUUID()
-	svcRoot := filepath.Join(cfgs.Root, cfgs.User)
-	root := svc.NewRootDirectory("root", cfgs.User, driveID, filepath.Join(svcRoot, "root"))
-	drv := svc.NewDrive(driveID, cfgs.User, user.ID, root.Path, root.ID, root)
+	svcRoot := filepath.Join(clientCfg.Root, clientCfg.User)
+	root := svc.NewRootDirectory("root", clientCfg.User, driveID, filepath.Join(svcRoot, "root"))
+	drv := svc.NewDrive(driveID, clientCfg.User, user.ID, root.Path, root.ID, root)
 
 	// intialize client
 	c := &Client{
 		StartTime:   time.Now().UTC(),
-		Conf:        cfgs,
+		Conf:        clientCfg,
 		UserID:      user.ID,
 		User:        user,
 		Root:        filepath.Join(svcRoot, "root"),
@@ -93,11 +96,12 @@ func NewClient(user *auth.User) (*Client, error) {
 		Endpoints:   make(map[string]string),
 		Monitor:     monitor.NewMonitor(drv.Root.Path),
 		Off:         make(chan bool),
+		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
-		Transfer:    transfer.NewTransfer(cfgs.Port),
+		Transfer:    transfer.NewTransfer(clientCfg.Port),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -195,14 +199,14 @@ func (c *Client) ShutDown() error {
 }
 
 // start up client services
-func (c *Client) Start() error {
+func (c *Client) Start() (chan bool, error) {
 	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
 		root, err := c.Db.GetDirectory(c.Drive.RootID)
 		if err != nil {
-			return fmt.Errorf("failed to get root directory: %v", err)
+			return nil, fmt.Errorf("failed to get root directory: %v", err)
 		}
 		if root == nil {
-			return fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
+			return nil, fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
 		}
 		c.Drive.Root = c.Populate(root)
 		c.Drive.IsLoaded = true
@@ -210,17 +214,27 @@ func (c *Client) Start() error {
 
 	// start monitoring services
 	if err := c.Monitor.Start(c.Drive.Root.Path); err != nil {
-		return fmt.Errorf("failed to start monitoring: %v", err)
+		return nil, fmt.Errorf("failed to start monitoring: %v", err)
 	}
 
 	// start monitoring event handlers
 	if err := c.StartHandlers(); err != nil {
-		return fmt.Errorf("failed to start event handlers: %v", err)
+		return nil, fmt.Errorf("failed to start event handlers: %v", err)
 	}
 
 	// save initial state
 	if err := c.SaveState(); err != nil {
-		return fmt.Errorf("failed to save initial state: %v", err)
+		return nil, fmt.Errorf("failed to save initial state: %v", err)
 	}
-	return nil
+
+	// allow background serices to continue.
+	// shut down when we recieve a ctrl c (for now)
+	sig := make(chan bool)
+	var wait = func() {
+		<-sig
+	}
+
+	wait()
+
+	return sig, nil
 }
