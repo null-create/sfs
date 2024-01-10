@@ -1,8 +1,11 @@
 package client
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -12,15 +15,49 @@ import (
 // ----- files --------------------------------------
 
 // list all local files managed by the sfs service.
-// does not check database
+// does not check database.
 func (c *Client) ListLocalFiles() {
 	files := c.Drive.GetFiles()
 	for _, f := range files {
-		fmt.Print(fmt.Sprintf("id: %s\n name: %s\n loc: %s", f.ID, f.Name, f.ClientPath))
+		output := fmt.Sprintf("id: %s\n name: %s\n loc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		fmt.Print(output)
 	}
 }
 
-// retrieve a file. returns nil if the file is not found.
+// list all files managed by the local sfs database
+func (c *Client) ListLocalFilesDB() error {
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		fmt.Printf("id: %s\n name: %s\n loc: %s\n\n", f.ID, f.Name, f.ClientPath)
+	}
+	return nil
+}
+
+// list all files known to the remote SFS server
+func (c *Client) ListRemoteFiles() error {
+	req, err := c.GetInfoRequest(c.Endpoints["all files"])
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Print(buf.String()) // TODO: fancier output
+	return nil
+}
+
+// retrieve a local file. returns nil if the file is not found.
 func (c *Client) GetFile(fileID string) (*svc.File, error) {
 	file := c.Drive.GetFile(fileID)
 	if file == nil {
@@ -36,16 +73,50 @@ func (c *Client) GetFile(fileID string) (*svc.File, error) {
 		if err := c.Drive.AddFile(file.DirID, file); err != nil {
 			return nil, fmt.Errorf("failed to add file %s: %v", file.DirID, err)
 		}
-		if err := c.SaveState(); err != nil {
-			return nil, fmt.Errorf("failed to save state: %v", err)
-		}
 	}
 	return file, nil
 }
 
-// add a file to a specified directory
+// add a file to a specified directory. adds to monitoring services
+// and pushes the new file to the SFS server.
 func (c *Client) AddFile(dirID string, file *svc.File) error {
-	return c.Drive.AddFile(dirID, file)
+	// add to drive, local database, and monitoring services
+	if err := c.Drive.AddFile(dirID, file); err != nil {
+		return err
+	}
+	if err := c.Db.AddFile(file); err != nil {
+		return err
+	}
+	if err := c.WatchFile(file.ClientPath); err != nil {
+		return err
+	}
+	// now send new file to sfs server
+	req, err := c.GetFileReq(file, "new")
+	if err != nil {
+		return err
+	}
+	// first send metadata
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[WARNING] failed to send new file metadata to sfs server. upload to server cancelled")
+		c.dump(resp, true)
+		// exit before transferring file.
+		// we only want physical files on the server
+		// we have a record for.
+		return nil
+	}
+	// then send actual file
+	if err := c.Transfer.Upload(
+		http.MethodPost,
+		file,
+		c.Endpoints["new file"],
+	); err != nil {
+		return err
+	}
+	return nil
 }
 
 // add a series of files to a specified directory
@@ -53,29 +124,62 @@ func (c *Client) AddFiles(dirID string, files []*svc.File) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no files to add")
 	}
+	// add new files to drive and local databases and monitoring service
 	for _, file := range files {
 		if err := c.Drive.AddFile(dirID, file); err != nil {
 			return err
 		}
+		if err := c.Db.AddFile(file); err != nil {
+			return err
+		}
+		if err := c.WatchFile(file.ClientPath); err != nil {
+			return err
+		}
+	}
+	// push new files to sfs server
+	if err := c.Push(); err != nil {
+		return err
 	}
 	return nil
 }
 
 // update a file in a specied directory
 func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
+	// update local file
 	file := c.Drive.GetFile(fileID)
 	if file == nil {
-		return fmt.Errorf("no file ID %s found", fileID)
+		return fmt.Errorf("no file (id=%s) found", fileID)
 	}
 	if len(data) == 0 {
 		return fmt.Errorf("no data received")
 	}
-	return c.Drive.UpdateFile(dirID, file, data)
+	if err := c.Drive.UpdateFile(dirID, file, data); err != nil {
+		return err
+	}
+	if err := c.Db.UpdateFile(file); err != nil {
+		return err
+	}
+	// send updated file to the server
+	if err := c.Transfer.Upload(http.MethodPut, file, file.Endpoint); err != nil {
+		return err
+	}
+	return nil
 }
 
 // remove a file in a specied directory
 func (c *Client) RemoveFile(dirID string, file *svc.File) error {
-	return c.Drive.RemoveFile(dirID, file)
+	// remove physical file and update local database
+	if err := c.Drive.RemoveFile(dirID, file); err != nil {
+		return err
+	}
+	if err := c.Db.RemoveFile(file.ID); err != nil {
+		return err
+	}
+	// remove from server
+	if err := c.FileReq(file, "delete"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // remove files from a specied directory
@@ -95,19 +199,82 @@ func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
 // ----- directories --------------------------------
 
 func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
-	return c.Drive.AddSubDir(dirID, dir)
+	// add dir to client service instance
+	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
+		return err
+	}
+	if err := c.Db.AddDir(dir); err != nil {
+		return err
+	}
+	// send metadata to the server
+	req, err := c.NewDirectoryRequest(dir)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[WARNING] failed to send dir metadata to server")
+		c.dump(resp, true)
+		return nil
+	}
+	// send dir as a zip archive
+
+	return nil
 }
 
 func (c *Client) AddDirs(dirs []*svc.Directory) error {
-	return c.Drive.AddDirs(dirs)
+	// add to service instance
+	if err := c.Drive.AddDirs(dirs); err != nil {
+		return err
+	}
+	if err := c.Db.AddDirs(dirs); err != nil {
+		return err
+	}
+	// send metadata to server
+
+	return nil
 }
 
 func (c *Client) RemoveDir(dirID string) error {
-	return c.Drive.RemoveDir(dirID)
+	// remove from service instance
+	dir := c.Drive.GetDir(dirID)
+	if dir == nil {
+		return fmt.Errorf("no such dir: %v", dirID)
+	}
+	if err := c.Drive.RemoveDir(dirID); err != nil {
+		return err
+	}
+	if err := c.Db.RemoveDirectory(dirID); err != nil {
+		return err
+	}
+	// remove from server
+	req, err := c.DeleteDirectoryRequest(dir)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[WARNING] server returned code: %d", resp.StatusCode)
+		c.dump(resp, true)
+	}
+	return nil
 }
 
 func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
-	return c.Drive.RemoveDirs(dirs)
+	if err := c.Drive.RemoveDirs(dirs); err != nil {
+		return err
+	}
+	if err := c.Db.RemoveDirectories(dirs); err != nil {
+		return err
+	}
+	// TODO: remove from server
+	return nil
 }
 
 // ----- drive --------------------------------

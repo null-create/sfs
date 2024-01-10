@@ -26,10 +26,19 @@ func (c *Client) StopMonitoring() error {
 	return nil
 }
 
-// add a file listener to the map if the file isn't already present.
-// will be a no-op if its already being watched.
-func (c *Client) WatchFile(filePath string) {
-	c.Monitor.WatchFile(filePath)
+// adds a file to monitor, then creates and starts
+// a dedicated event listener and handler for this file.
+func (c *Client) WatchFile(filePath string) error {
+	if err := c.Monitor.WatchFile(filePath); err != nil {
+		return err
+	}
+	if err := c.NewHandler(filePath); err != nil {
+		return err
+	}
+	if err := c.StartHandler(filePath); err != nil {
+		return err
+	}
+	return nil
 }
 
 // add a new event handler for the given file.
@@ -58,16 +67,16 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 			evtChan, offSwitch, fileID,
 		)
 	}
-	// TODO: buffered events (and buffer size) should be a client setting
-	evts := monitor.NewEvents(false)
+	evts := monitor.NewEvents(cfgs.BufferedEvents)
 	return evtChan, offSwitch, fileID, evts, nil
 }
 
 // start an event handler for a given file. will be a no-op
-// if the handler does not exist.
+// if the handler does not exist, otherwise will listen
+// for whether the handlers errChan sends an error
 func (c *Client) StartHandler(filePath string) error {
 	if handler, exists := c.Handlers[filePath]; exists {
-		handler()
+		handler() // TODO: need error handling
 	}
 	return nil
 }
@@ -101,17 +110,20 @@ func (c *Client) StopHandlers() {
 // are present during the build call then this will be a no-op.
 //
 // should ideally only be called once during initialization
-func (c *Client) BuildHandlers() {
+func (c *Client) BuildHandlers() error {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
 		log.Print("[INFO] no files to build handlers for")
-		return
+		return nil
 	}
 	for _, file := range files {
 		if _, exists := c.Handlers[file.Path]; !exists {
-			c.NewEHandler(file.Path)
+			if err := c.NewEHandler(file.Path); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // build a new event handler for a given file. does not start the handler,
@@ -123,11 +135,11 @@ func (c *Client) NewEHandler(filePath string) error {
 	if err != nil {
 		return err
 	}
-
 	// handler off-switch
 	stopHandler := make(chan bool)
-
-	// event listener handler
+	// event listener handler. returns an error chanel from
+	// the inner listener function so that errors can be handled externally
+	// of the gouroutine the listener is operating in.
 	handler := func() {
 		// event listener
 		listener := func() error {
@@ -148,7 +160,7 @@ func (c *Client) NewEHandler(filePath string) error {
 						return nil
 					}
 					if evts.StartSync {
-						if err := c.Sync(true); err != nil { // push changes to server
+						if err := c.Push(); err != nil {
 							return err
 						}
 						evts.Reset()             // resets events buffer

@@ -75,7 +75,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] shutting down monitoring...")
+				log.Printf("[INFO] shutting down monitoring for %s...", filepath.Base(filePath))
 				close(evt)
 				return
 			default:
@@ -88,7 +88,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Printf("[INFO] %s deleted. shutting down monitoring...", filepath.Base(filePath))
+					log.Printf("[INFO] %s deleted. stopping monitoring ...", filepath.Base(filePath))
 					evt <- Event{
 						Type: FileDelete,
 						ID:   auth.NewUUID(),
@@ -137,7 +137,9 @@ func watchAll(path string, m *Monitor) error {
 			return err
 		}
 		// m.WatchFile handles whether this is a directory or a file
-		m.WatchFile(filePath)
+		if err := m.WatchFile(filePath); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
@@ -178,21 +180,22 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 	return false, nil
 }
 
-// add a file to the events map. will be a no-op if the
+// add a file to the events map and create a new monitoring
+// goroutine. will need a corresponding events handler. will be a no-op if the
 // given path is not a file path.
-func (m *Monitor) WatchFile(filePath string) {
+func (m *Monitor) WatchFile(filePath string) error {
 	if isDir, err := m.IsDir(filePath); isDir {
 		log.Printf("[WARNING] path is a directory, not a file: %s", filePath)
-		return
+		return nil
 	} else if err != nil {
-		log.Printf("[WARNING] failed to read file path: %s\nerr: %v", filePath, err)
-		return
+		return fmt.Errorf("failed to read file path: %s\n %v", filePath, err)
 	}
 	if !m.Exists(filePath) {
 		stop := make(chan bool)
 		m.OffSwitches[filePath] = stop
 		m.Events[filePath] = watchFile(filePath, stop)
 	}
+	return nil
 }
 
 // get an event listener channel for a given file

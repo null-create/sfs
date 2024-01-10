@@ -212,7 +212,7 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	// update service. remove file if update fails.
+	// update service. remove physical file if update fails.
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
 		if err := os.Remove(newFile.ServerPath); err != nil {
 			log.Printf("[WARNING] failed to remove %s (id=%s) from server: %v", newFile.Name, newFile.ID, err)

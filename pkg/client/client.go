@@ -144,7 +144,9 @@ func NewClient(user *auth.User) (*Client, error) {
 	}
 
 	// build and start monitoring event handlers
-	c.BuildHandlers()
+	if err := c.BuildHandlers(); err != nil {
+		return nil, fmt.Errorf("failed to build event handlers: %v", err)
+	}
 	if err := c.StartHandlers(); err != nil {
 		return nil, fmt.Errorf("failed to start event handlers: %v", err)
 	}
@@ -235,11 +237,11 @@ func (c *Client) Start() (chan bool, error) {
 	// allow background serices to continue.
 	// shut down when we recieve a ctrl c (for now)
 	sig := make(chan bool)
-	var wait = func() {
-		<-sig
-	}
+	// var wait = func() {
+	// 	<-sig
+	// }
 
-	wait()
+	// wait()
 
 	return sig, nil
 }

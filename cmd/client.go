@@ -52,7 +52,6 @@ var (
 				sig <- true
 				return c.ShutDown()
 			}
-
 			return nil
 		},
 	}

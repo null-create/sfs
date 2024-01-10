@@ -39,36 +39,6 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
-// TODO: func to compare local index with server index, find any differences
-// between them, and determine what to pull from the server.
-
-// gets server Sync index, compares with local index, and either
-// calls Push or Pull, depending on whether the corresponding bool
-// flag is set. resets Sync doc too.
-func (c *Client) Sync(up bool) error {
-	if up {
-		localIdx := c.Drive.SyncIndex
-		if localIdx == nil {
-			if !c.Drive.HasRoot() {
-				return fmt.Errorf("drive root has not been instantiated")
-			}
-			localIdx = svc.BuildSyncIndex(c.Drive.Root)
-			c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, localIdx)
-		}
-		c.Push()
-	} else {
-		svrIdx := c.GetServerIdx()
-		// TODO: compare with local files, see which has the
-		// latest modification time, and pull any that are more recent
-		if svrIdx == nil {
-			return fmt.Errorf("failed to retrieve server sync index")
-		}
-		c.Pull(svrIdx) // TODO: replace svrIdx
-	}
-	c.reset()
-	return nil
-}
-
 // TODO: handle the difference between creates and updates.
 // some files may be new, others may be only modified!
 //
@@ -174,4 +144,19 @@ func (c *Client) GetServerIdx() *svc.SyncIndex {
 		return nil
 	}
 	return idx
+}
+
+// TODO:
+func (c *Client) Diff() error {
+	// generate a local sync index
+
+	// have the server run a sync index on its end for all
+	// files managed for this client
+
+	// pull new server index
+
+	// compare the two indicies, and generate a third index
+	// with the most recent LastSync times for each file and directory,
+	// then display the differences.
+	return nil
 }

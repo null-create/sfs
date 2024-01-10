@@ -230,7 +230,9 @@ func LoadClient() (*Client, error) {
 	client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
 
 	// initialize handlers map
-	client.BuildHandlers()
+	if err := client.BuildHandlers(); err != nil {
+		return nil, fmt.Errorf("failed to initialize handlers: %v", err)
+	}
 
 	// TODO: pull sync index from server and compare against local index,
 	// then make changes as necessary. this should be part of the standard

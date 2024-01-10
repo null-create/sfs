@@ -314,7 +314,7 @@ func (d *Directory) AddFile(file *File) {
 			log.Printf("[INFO] file %s (%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
-		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
+		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
 	}
 }
 
@@ -331,7 +331,7 @@ func (d *Directory) AddFiles(files []*File) {
 			}
 		}
 	} else {
-		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
+		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
 	}
 }
 
@@ -349,7 +349,7 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 			return nil
 		}
 	} else {
-		log.Printf("[INFO] directory %s (%s) locked", d.Name, d.ID)
+		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
 	}
 	return nil
 }

@@ -128,9 +128,6 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 	}
 	defer resp.Body.Close()
 
-	// show sever response
-	t.dump(resp, true)
-
 	// create (or truncate) file
 	file, err := os.Create(destPath)
 	if err != nil {
@@ -138,6 +135,7 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 	}
 	defer file.Close()
 
+	// write out data
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {

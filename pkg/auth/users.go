@@ -58,7 +58,7 @@ func NewUser(name string, userName string, email string, svcRoot string, isAdmin
 		SvcRoot:   svcRoot,
 		SfPath:    "", // set the first time the state is saved
 		DriveID:   "", // set during first time set up
-		DrvRoot:   "", // set during first time
+		DrvRoot:   "", // set during first time set up
 	}
 }
 

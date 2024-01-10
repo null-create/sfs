@@ -34,7 +34,6 @@ esac
 # set path varible for sfs CLI, then test
 BINPATH="$(pwd)/${OUT_FILE}"
 export PATH="$PATH:${BINPATH}"
-
 ./sfs -h
 if [[ $? -ne 0 ]]; then
   echo "failed to set PATH variable"

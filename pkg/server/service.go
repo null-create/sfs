@@ -667,7 +667,8 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	return files, nil
 }
 
-// add a file to the service.
+// add a file to the service. does not create a physical file,
+// only updates internal service state.
 func (s *Service) AddFile(dirID string, file *svc.File) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
