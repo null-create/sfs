@@ -362,6 +362,9 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 
 // -------- sync ----------------------------------
 
+// retrieves (or generates) a sync index for a given drive.
+// sync operations are coordinated on the client side, so the server
+// only needs to manage indicies -- not coordinate operations.
 func (a *API) Sync(w http.ResponseWriter, r *http.Request) {
 	driveID := r.Context().Value(Drive).(string)
 	idx, err := a.Svc.GetSyncIdx(driveID)
