@@ -79,6 +79,24 @@ func NewRouter() *chi.Mux {
 
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
+		// users (admin only TODO: add admin context)
+		r.Route("/users", func(r chi.Router) {
+			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(UserCtx)
+				r.Get("/", api.GetUser)       // get info about a user
+				r.Put("/", api.UpdateUser)    // update a user
+				r.Delete("/", api.DeleteUser) // delete a user
+			})
+			r.Route("/new", func(r chi.Router) {
+				r.Use(NewUserCtx)
+				r.Post("/", api.AddNewUser) // add a new user
+			})
+			r.Route("/all", func(r chi.Router) {
+				// get a list of all active users
+				r.Get("/", api.GetAllUsers)
+			})
+		})
+
 		// files
 		r.Route("/files", func(r chi.Router) {
 			r.Route("/{fileID}", func(r chi.Router) {
@@ -126,12 +144,8 @@ func NewRouter() *chi.Mux {
 		r.Route("/drive", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
 				r.Use(DriveCtx)
-				// "home" page data for all user's files, directories, etc.
-				r.Get("/", api.GetDrive)
-			})
-			r.Route("/new", func(r chi.Router) {
-				// r.Use(NewDriveCtx)
-				r.Post("/", api.Placeholder) // create a new drive on the server
+				r.Get("/", api.GetDrive) // "home" page data for all user's files, directories, etc.
+				// NOTE: new drives are created when a new user is added.
 			})
 		})
 
@@ -141,8 +155,9 @@ func NewRouter() *chi.Mux {
 				// fetch file last sync times for all
 				// user files (in all directories) from server
 				r.Get("/", api.Sync)
-				// send a newly generated last sync index to the server
-				r.Post("/", api.Sync)
+				// generate a new sync index for all files on the server
+				// for this user
+				r.Get("/idx", api.Placeholder)
 			})
 		})
 	})
@@ -153,7 +168,7 @@ func NewRouter() *chi.Mux {
 	})
 
 	// mount the admin sub-router
-	r.Mount("/admin", adminRouter())
+	// r.Mount("/admin", adminRouter())
 
 	// generates a json document of our routing
 	// fmt.Println(docgen.MarkdownRoutesDoc(r, docgen.MarkdownOpts{
