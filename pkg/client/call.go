@@ -60,7 +60,7 @@ func (c *Client) FileReq(file *svc.File, reqType string) error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		c.dump(resp, true)
-		return fmt.Errorf("failed to get file from API: %v", resp.Status)
+		return fmt.Errorf("server returned: %v", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
