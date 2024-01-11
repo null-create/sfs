@@ -69,35 +69,13 @@ func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// attempts to read data from the user database.
-//
-// if found, it will attempt to prepare it as json data and return it
-func (a *API) getUser(userID string) ([]byte, error) {
-	u, err := a.Svc.FindUser(userID)
-	if err != nil {
-		return nil, err
-	}
-	if u == nil {
-		return nil, fmt.Errorf("\nuser %s not found\n", userID)
-	}
-	jsonData, err := u.ToJSON()
-	if err != nil {
-		return nil, err
-	}
-	return jsonData, nil
-}
-
+// send user metadata.
 func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "userID")
-	userData, err := a.getUser(userID)
+	user := r.Context().Value("user").(*auth.User)
+	userData, err := user.ToJSON()
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") { // user not found
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	// TODO: more secure way to send user data.
 	// this just sends the raw JSON response.
@@ -134,6 +112,7 @@ func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// remove a user from the server
 func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
 	if err := a.Svc.RemoveUser(user.ID); err != nil {
@@ -370,18 +349,9 @@ func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 
 // -------- drives --------------------------------
 
+// sends drive metadata. does not return entire contents of drive.
 func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
-	driveID := chi.URLParam(r, "driveID")
-	if driveID == "" {
-		http.Error(w, "\nmissing drive ID\n", http.StatusBadRequest)
-		return
-	}
-	// returns entire contents of the drive!
-	drive := a.Svc.GetDrive(driveID)
-	if drive == nil {
-		http.Error(w, fmt.Sprintf("\ndrive (id=%s) not found\n", driveID), http.StatusNotFound)
-		return
-	}
+	drive := r.Context().Value(Drive).(*svc.Drive)
 	data, err := drive.ToJSON()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("\nfailed to codify drive info to JSON: %v\n", err), http.StatusInternalServerError)
@@ -393,30 +363,20 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 // -------- sync ----------------------------------
 
 func (a *API) Sync(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		driveID := chi.URLParam(r, "driveID")
-		if driveID == "" {
-			http.Error(w, "\nmissing drive ID\n", http.StatusBadRequest)
-			return
-		}
-		// attempt to get the sync index for this drive
-		idx, err := a.Svc.GetSyncIdx(driveID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("\nfailed to retrieve sync index: %v\n", err), http.StatusInternalServerError)
-			return
-		}
-		if idx == nil { // no drive found
-			http.Error(w, fmt.Sprintf("\ndrive %s not found\n", driveID), http.StatusNotFound)
-			return
-		}
-		data, err := idx.ToJSON()
-		if err != nil {
-			http.Error(w, fmt.Sprintf("\nfailed to encode sync index: %v\n", err), http.StatusInternalServerError)
-			return
-		}
-		w.Write(data)
-	} else if r.Method == http.MethodPost {
-		// TODO:
-		w.Write([]byte("\nnot implemented yet\n"))
+	driveID := r.Context().Value(Drive).(string)
+	idx, err := a.Svc.GetSyncIdx(driveID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("\nfailed to retrieve sync index: %v\n", err), http.StatusInternalServerError)
+		return
 	}
+	if idx == nil { // no drive found
+		http.Error(w, fmt.Sprintf("\ndrive %s not found\n", driveID), http.StatusNotFound)
+		return
+	}
+	data, err := idx.ToJSON()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("\nfailed to encode sync index: %v\n", err), http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
 }
