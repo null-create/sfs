@@ -500,13 +500,13 @@ func (s *Service) TotalUsers() int {
 
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
-	if _, exists := s.Users[userID]; exists {
+	if _, ok := s.Users[userID]; ok {
 		// make sure they exist in the DB too
 		exists, err := s.Db.UserExists(userID)
 		if err != nil {
 			log.Fatalf("failed to check user database: %v", err)
 		}
-		return exists
+		return exists && ok
 	}
 	return false
 }
@@ -611,30 +611,33 @@ func (s *Service) updateUser(user *auth.User) error {
 		return fmt.Errorf("failed to update user in database: %v", err)
 	}
 	s.Users[user.ID] = user
-	log.Printf("[INFO] user (id=%s) updated", user.ID)
+	log.Printf("[INFO] user %s (id=%s) updated", user.Name, user.ID)
 	return nil
 }
 
 // update user info
 func (s *Service) UpdateUser(user *auth.User) error {
 	if _, exists := s.Users[user.ID]; exists {
+		if err := s.updateUser(user); err != nil {
+			return err
+		}
+		if err := s.SaveState(); err != nil {
+			return fmt.Errorf("failed to save service state: %v", err)
+		}
+	} else {
+		// try DB before giving up
 		u, err := s.Db.GetUser(user.ID)
 		if err != nil {
 			return err
+		} else if u == nil {
+			return fmt.Errorf("user %s not found", user.ID)
 		}
-		if u != nil { // user exists, update it
-			if err := s.updateUser(user); err != nil {
-				return err
-			}
-			log.Printf("[INFO] user (id=%s) updated", user.ID)
-			if err = s.SaveState(); err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("user %s not found in user database", user.ID)
+		if err := s.updateUser(user); err != nil {
+			return err
 		}
-	} else {
-		return fmt.Errorf("user %s not found", user.ID)
+		if err := s.SaveState(); err != nil {
+			return fmt.Errorf("failed to save state: %v", err)
+		}
 	}
 	return nil
 }
@@ -662,7 +665,7 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	}
 	files := drive.GetFiles()
 	if len(files) == 0 {
-		log.Printf("[INFO] no files in drive id=%s", driveID)
+		log.Printf("[INFO] no files in drive (id=%s)", driveID)
 	}
 	return files, nil
 }
