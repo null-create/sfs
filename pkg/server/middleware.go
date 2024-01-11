@@ -293,6 +293,19 @@ func UserCtx(h http.Handler) http.Handler {
 	})
 }
 
+// retrieve the drive ID to run a sync index operation on.
+func SyncCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		driveID := chi.URLParam(r, "driveID")
+		if driveID == "" {
+			http.Error(w, "missing drive ID", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Drive, driveID)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // ------ admin stuff --------------------------------
 
 func AdminOnly(h http.Handler) http.Handler {
