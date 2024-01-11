@@ -15,4 +15,5 @@ const (
 	Drive       Context = "drive"
 	Path        Context = "path"
 	User        Context = "user"
+	Index       Context = "index"
 )
