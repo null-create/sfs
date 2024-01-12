@@ -109,11 +109,7 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 		return nil
 	}
 	// then send actual file
-	if err := c.Transfer.Upload(
-		http.MethodPost,
-		file,
-		c.Endpoints["new file"],
-	); err != nil {
+	if err := c.Transfer.Upload(http.MethodPost, file, c.Endpoints["new file"]); err != nil {
 		return err
 	}
 	return nil
@@ -199,11 +195,22 @@ func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
 // ----- directories --------------------------------
 
 func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
+	// make physical directory for the client
+	if err := os.Mkdir(dir.Path, svc.PERMS); err != nil {
+		return err
+	}
 	// add dir to client service instance
 	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
+		// remove if this fails. we only want items we have records for.
+		if remErr := os.Remove(dir.Path); remErr != nil {
+			log.Printf("[WARNING] failed to remove directory: %v", remErr)
+		}
 		return err
 	}
 	if err := c.Db.AddDir(dir); err != nil {
+		if remErr := os.Remove(dir.Path); remErr != nil {
+			log.Printf("[WARNING] failed to remove directory: %v", remErr)
+		}
 		return err
 	}
 	// send metadata to the server
@@ -225,6 +232,10 @@ func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
 	return nil
 }
 
+// adds the directories to the client service,
+// creates new empty directories for each directory object,
+// updates database, then attempts to send metadata to server
+// and create directories on the server as well.
 func (c *Client) AddDirs(dirs []*svc.Directory) error {
 	// add to service instance
 	if err := c.Drive.AddDirs(dirs); err != nil {
@@ -233,11 +244,18 @@ func (c *Client) AddDirs(dirs []*svc.Directory) error {
 	if err := c.Db.AddDirs(dirs); err != nil {
 		return err
 	}
+	// create each (empty) physical directory
+	for _, dir := range dirs {
+		if err := os.Mkdir(dir.Path, svc.PERMS); err != nil {
+			return err
+		}
+	}
 	// send metadata to server
 
 	return nil
 }
 
+// remove a directory from local and remote service instances.
 func (c *Client) RemoveDir(dirID string) error {
 	// remove from service instance
 	dir := c.Drive.GetDir(dirID)
@@ -250,6 +268,12 @@ func (c *Client) RemoveDir(dirID string) error {
 	if err := c.Db.RemoveDirectory(dirID); err != nil {
 		return err
 	}
+
+	// TODO: remove files and subdirectories for this directory.
+	//
+	// need to think about this. this could easily be a recursive operation,
+	// but there's a lot that needs to be accounted for if that's the route we want to go
+
 	// remove from server
 	req, err := c.DeleteDirectoryRequest(dir)
 	if err != nil {
@@ -266,6 +290,7 @@ func (c *Client) RemoveDir(dirID string) error {
 	return nil
 }
 
+// remove directories from local and remove service instances
 func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
 	if err := c.Drive.RemoveDirs(dirs); err != nil {
 		return err
@@ -279,14 +304,27 @@ func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
 
 // ----- drive --------------------------------
 
-// Populates drive's root directory with and all the users
-// subdirectories and files from the database into memory.
-// Should be followed by a call to Drive.Root.Clear() (not clean!)
-// to clear the drive's internal data structures after loading.
-func (c *Client) LoadDrive(driveID string) *svc.Drive {
-	c.Drive.Root = c.Populate(c.Drive.Root)
+// Loads drive from the database, populates root directory,
+// and attaches to the client service instance.
+func (c *Client) LoadDrive() error {
+	drive, err := c.Db.GetDrive(c.DriveID)
+	if err != nil {
+		return err
+	}
+	root, err := c.Db.GetDirectory(drive.RootID)
+	if err != nil {
+		return err
+	}
+	c.Drive = drive
+	c.Drive.Root = c.Populate(root)
 	c.Drive.IsLoaded = true
-	return c.Drive
+	if !c.Drive.IsIndexed() {
+		c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
+	}
+	if err := c.SaveState(); err != nil {
+		return fmt.Errorf("failed to save state: %v", err)
+	}
+	return nil
 }
 
 // retrieves drive with root directory attached, but unpopulated.
@@ -313,13 +351,13 @@ func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 	return c.Drive, nil
 }
 
-// save drive state to DB
+// save drive metadata in the db
 func (c *Client) SaveDrive(drv *svc.Drive) error {
 	if err := c.Db.UpdateDrive(drv); err != nil {
 		return fmt.Errorf("failed to update drive in database: %v", err)
 	}
-	if err := drv.SaveState(); err != nil {
-		return fmt.Errorf("failed to save drive state: %v", err)
+	if err := c.SaveState(); err != nil {
+		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
