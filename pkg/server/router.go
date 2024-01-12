@@ -79,8 +79,8 @@ func NewRouter() *chi.Mux {
 
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
-		// users (admin only TODO: add admin context)
 		r.Route("/users", func(r chi.Router) {
+			// TODO: add admin-only context here
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(UserCtx)
 				r.Get("/", api.GetUser)       // get info about a user
@@ -152,12 +152,16 @@ func NewRouter() *chi.Mux {
 		// sync operations
 		r.Route("/sync", func(r chi.Router) {
 			r.Route("/{driveID}", func(r chi.Router) {
+				r.Use(DriveIdCtx)
 				// fetch file last sync times for all
 				// user files (in all directories) from server
-				r.Get("/", api.Sync)
+				r.Get("/", api.GetIdx)
 				// generate a new sync index for all files on the server
 				// for this user
-				r.Get("/idx", api.Placeholder)
+				r.Get("/index", api.GenIndex)
+				// refreshes a drives update map, and returns the servers sync index
+				// for this drive/user
+				r.Get("/update", api.GetUpdates)
 			})
 		})
 	})
