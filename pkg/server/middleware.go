@@ -250,6 +250,18 @@ func DirCtx(h http.Handler) http.Handler {
 	})
 }
 
+func DriveIdCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		driveID := chi.URLParam(r, "driveID")
+		if driveID == "" {
+			http.Error(w, "driveID not set", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Drive, driveID)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func DriveCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		driveID := chi.URLParam(r, "driveID")
