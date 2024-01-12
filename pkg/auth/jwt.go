@@ -28,8 +28,8 @@ func NewT() *Token {
 }
 
 func getSecret() ([]byte, error) {
-	e := env.NewE()
-	if s, err := e.Get("JWT_SECRET"); err == nil {
+	envCfg := env.NewE()
+	if s, err := envCfg.Get("JWT_SECRET"); err == nil {
 		return []byte(s), nil
 	} else {
 		return nil, err
