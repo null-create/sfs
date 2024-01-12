@@ -6,10 +6,7 @@ May need to build SyncIndex.ToUpdate map, or transfer individual files or direct
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -110,50 +107,28 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 	return nil
 }
 
-// get the server's current sync index for this user.
-// returns nil if there's any errors.
-func (c *Client) GetServerIdx() *svc.SyncIndex {
-	var reqBuf bytes.Buffer
-	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], &reqBuf)
+// TODO:
+func (c *Client) Diff() error {
+	// refresh ToUpdate
+	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
+	if !c.Drive.IsIndexed() {
+		return fmt.Errorf("no files found for indexing")
+	}
+
+	// retrieve the servers index for this client
+	req, err := c.GetIdxRequest(c.DriveID)
 	if err != nil {
-		log.Printf("[WARNING] failed prepare http request: \n%v", err)
-		return nil
+		return err
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		log.Printf("[WARNING] failed to get execute http request: \n%v", err)
-		return nil
+		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] failed to get server sync index. return code: %d", resp.StatusCode)
+		log.Printf("[INFO] server returned non-200 status")
 		c.dump(resp, true)
 		return nil
 	}
-
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, resp.Body)
-	if err != nil {
-		log.Printf("[WARNING] failed to read server response body: \n%v", err)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	idx := new(svc.SyncIndex)
-	if err := json.Unmarshal(buf.Bytes(), &idx); err != nil {
-		log.Printf("[WARNING] failed to unmarshal server sync index: \n%v", err)
-		return nil
-	}
-	return idx
-}
-
-// TODO:
-func (c *Client) Diff() error {
-	// generate a local sync index
-
-	// have the server run a sync index on its end for all
-	// files managed for this client
-
-	// pull new server index
 
 	// compare the two indicies, and generate a third index
 	// with the most recent LastSync times for each file and directory,

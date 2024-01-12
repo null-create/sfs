@@ -2,8 +2,10 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/sfs/pkg/auth"
@@ -163,4 +165,40 @@ func (c *Client) UserReq(user *auth.User, reqType string) error {
 
 	}
 	return nil
+}
+
+// get the server's current sync index for this user.
+// returns nil if there's any errors.
+func (c *Client) GetServerIdx() *svc.SyncIndex {
+	var reqBuf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["sync"], &reqBuf)
+	if err != nil {
+		log.Printf("[WARNING] failed prepare http request: \n%v", err)
+		return nil
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		log.Printf("[WARNING] failed to get execute http request: \n%v", err)
+		return nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[WARNING] failed to get server sync index. return code: %d", resp.StatusCode)
+		c.dump(resp, true)
+		return nil
+	}
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		log.Printf("[WARNING] failed to read server response body: \n%v", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	idx := new(svc.SyncIndex)
+	if err := json.Unmarshal(buf.Bytes(), &idx); err != nil {
+		log.Printf("[WARNING] failed to unmarshal server sync index: \n%v", err)
+		return nil
+	}
+	return idx
 }
