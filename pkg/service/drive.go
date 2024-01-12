@@ -339,7 +339,7 @@ func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 }
 
 // add a sub directory to a directory within the drive file system.
-// creates a physical sub directory at the path assigned within
+// does not create a physical sub directory at the path assigned within
 // the directory parameter.
 func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 	if !d.Protected {
@@ -463,22 +463,13 @@ func (d *Drive) UpdateDir(dirID string, updatedDir *Directory) error {
 		if !d.HasRoot() {
 			return fmt.Errorf("no root directory")
 		}
-		dir := d.Root.WalkD(dirID)
-		if dir == nil {
+		// get the parent of the updated directory & add
+		parent := d.Root.WalkD(dirID)
+		if parent == nil {
 			return fmt.Errorf("dir %s not found", dirID)
 		}
-		if dir.Parent == nil && !dir.IsRoot() {
-			return fmt.Errorf("dir %s (id=%s) has no parent and is not a root", dir.Name, dir.ID)
-		}
-		parent := dir.Parent
-		if parent == nil {
-			return fmt.Errorf("failed to find parent for dir %s", dir.ID)
-		}
 		if err := parent.PutSubDir(updatedDir); err != nil {
-			return fmt.Errorf(
-				"failed to update %s (id=%s) with its parent (id=%s): %s",
-				dir.Name, dir.ID, parent.ID, err,
-			)
+			return fmt.Errorf("failed to update dir %s: %v", parent.Name, err)
 		}
 	} else {
 		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
