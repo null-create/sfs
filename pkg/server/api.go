@@ -362,10 +362,26 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 
 // -------- sync ----------------------------------
 
+// generate (or refresh) a sync index for a given drive
+func (a *API) GenIndex(w http.ResponseWriter, r *http.Request) {
+	driveID := r.Context().Value(Drive).(string)
+	idx, err := a.Svc.GenSyncIndex(driveID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data, err := idx.ToJSON()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
+}
+
 // retrieves (or generates) a sync index for a given drive.
 // sync operations are coordinated on the client side, so the server
 // only needs to manage indicies -- not coordinate operations.
-func (a *API) Sync(w http.ResponseWriter, r *http.Request) {
+func (a *API) GetIdx(w http.ResponseWriter, r *http.Request) {
 	driveID := r.Context().Value(Drive).(string)
 	idx, err := a.Svc.GetSyncIdx(driveID)
 	if err != nil {
@@ -379,6 +395,23 @@ func (a *API) Sync(w http.ResponseWriter, r *http.Request) {
 	data, err := idx.ToJSON()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("\nfailed to encode sync index: %v\n", err), http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
+}
+
+// refreshes the server side Update map for this drives sync index.
+// drives must already have been indexed prior to calling this endpoint.
+func (a *API) GetUpdates(w http.ResponseWriter, r *http.Request) {
+	driveID := r.Context().Value(Drive).(string)
+	newIdx, err := a.Svc.RefreshUpdates(driveID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data, err := newIdx.ToJSON()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(data)
