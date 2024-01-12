@@ -369,3 +369,14 @@ func (c *Client) DeleteUserRequest(user *auth.User) (*http.Request, error) {
 	req.Header.Set("Authorization", reqToken)
 	return req, nil
 }
+
+// ------- sync requests --------------------------------
+
+func (c *Client) GenIndexRequest(dirID string) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["gen index"], &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	return req, nil
+}
