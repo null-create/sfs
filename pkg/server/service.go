@@ -853,6 +853,16 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 
 // --------- sync --------------------------------
 
+// generate (or refresh) a drives sync index
+func (s *Service) GenSyncIndex(driveID string) (*svc.SyncIndex, error) {
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return nil, fmt.Errorf("drive id=%s not found", driveID)
+	}
+	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
+	return drive.SyncIndex, nil
+}
+
 // retrieve a sync index for a given drive. used by the client
 // to compare against and initiate a sync operation, if necessary
 // will be used as the first step in a sync operation on the client side.
@@ -866,5 +876,19 @@ func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 	if !drive.IsIndexed() {
 		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
 	}
+	return drive.SyncIndex, nil
+}
+
+// refresh a drives updates map. used by clients during comparison operations
+func (s *Service) RefreshUpdates(driveID string) (*svc.SyncIndex, error) {
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return nil, fmt.Errorf("drive id=%s not found", driveID)
+	}
+	// drive should already be indexed
+	if !drive.IsIndexed() {
+		return nil, fmt.Errorf("drive %s has not been indexed", driveID)
+	}
+	drive.SyncIndex = svc.BuildToUpdate(drive.Root, drive.SyncIndex)
 	return drive.SyncIndex, nil
 }
