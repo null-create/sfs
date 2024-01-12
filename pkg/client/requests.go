@@ -380,3 +380,12 @@ func (c *Client) GenIndexRequest(dirID string) (*http.Request, error) {
 	}
 	return req, nil
 }
+
+func (c *Client) GetIdxRequest(dirID string) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["get index"], &buf)
+	if err != nil {
+		return nil, err
+	}
+	return req, nil
+}
