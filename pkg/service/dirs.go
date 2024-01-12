@@ -729,9 +729,7 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 func buildUpdate(d *Directory, idx *SyncIndex) *SyncIndex {
 	for _, file := range d.Files {
 		if _, exists := idx.LastSync[file.ID]; exists {
-			// check if the time difference between most recent sync
-			// and last sync is greater than zero.
-			if file.LastSync.Sub(idx.LastSync[file.ID]) > 0 {
+			if file.LastSync.After(idx.LastSync[file.ID]) {
 				idx.ToUpdate[file.ID] = file
 			}
 		} else {

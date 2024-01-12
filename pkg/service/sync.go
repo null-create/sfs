@@ -120,14 +120,14 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	diff := NewSyncIndex(orig.UserID)
 	for fileID, lastSync := range new.LastSync {
 		if origTime, exists := orig.LastSync[fileID]; exists {
-			if lastSync.Sub(origTime) > 0 {
+			if lastSync.After(origTime) {
 				diff.LastSync[fileID] = lastSync
 			}
 		}
 	}
 	for fileID, newFile := range new.ToUpdate {
 		if origFile, exists := orig.ToUpdate[fileID]; exists {
-			if origFile.LastSync.Sub(newFile.LastSync) > 0 {
+			if origFile.LastSync.After(newFile.LastSync) {
 				diff.ToUpdate[fileID] = newFile
 			}
 		}
