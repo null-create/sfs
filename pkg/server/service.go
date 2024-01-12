@@ -750,6 +750,9 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if !drive.IsLoaded {
 		drive.Root = s.Populate(drive.Root)
 	}
+	if err := os.Mkdir(newDir.Path, svc.PERMS); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
 	if err := drive.AddSubDir(destDirID, newDir); err != nil {
 		return err
 	}
@@ -760,7 +763,8 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 }
 
 // remove a physical directory from a user's drive service.
-// use with caution!
+// use with caution! will remove all children of this subdirectory
+// as well
 //
 // it's assumed dirID is a sub-directory within the drive, and not
 // the drives root directory itself.
@@ -772,6 +776,32 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 	if !drive.IsLoaded {
 		drive.Root = s.Populate(drive.Root)
 	}
+	// get the directory to be removed, as well as all potential children.
+	// we'll need to remove all of them from the DB.
+	dir := drive.GetDir(dirID)
+	if dir == nil {
+		return fmt.Errorf("drive %s not found", dirID)
+	}
+	subDirs := dir.GetSubDirs()
+	for _, subDir := range subDirs {
+		if err := drive.RemoveDir(subDir.ID); err != nil {
+			return err
+		}
+		if err := s.Db.RemoveDirectory(subDir.ID); err != nil {
+			return err
+		}
+	}
+	// remove all files from db
+	files := dir.GetFiles()
+	for _, file := range files {
+		if err := drive.RemoveFile(file.DirID, file); err != nil {
+			return err
+		}
+		if err := s.Db.RemoveFile(file.ID); err != nil {
+			return err
+		}
+	}
+	// remove directory itself
 	if err := drive.RemoveDir(dirID); err != nil {
 		return fmt.Errorf("failed to remove dir %s: %v", dirID, err)
 	}
@@ -781,7 +811,7 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 	if err := s.Db.UpdateDir(drive.Root); err != nil {
 		return fmt.Errorf("failed to update root directory: %v", err)
 	}
-	return nil
+	return os.RemoveAll(dir.Path)
 }
 
 // update a directory within a drive.
