@@ -70,6 +70,15 @@ func (s *SyncIndex) HasFile(fileID string) bool {
 	return false
 }
 
+// make a json-formatted string representation of the sync-index object
+func (s *SyncIndex) ToString() string {
+	data, err := s.ToJSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(data)
+}
+
 // get a slice of files to sync from the index.ToUpdate map
 func (s *SyncIndex) GetFiles() []*File {
 	if len(s.ToUpdate) == 0 {
