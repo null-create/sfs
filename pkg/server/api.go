@@ -14,8 +14,6 @@ import (
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
 	"github.com/sfs/pkg/transfer"
-
-	"github.com/go-chi/chi/v5"
 )
 
 /*
@@ -151,29 +149,15 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 // get json blobs of all files available on the server for a user.
 // only sends metadata, not the actual files.
 func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "userID") // userID won't be empty because middleware will have already checked for this
-	driveID, err := a.Svc.Db.GetDriveID(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if files, err := a.Svc.GetAllFiles(driveID); err == nil {
-		if len(files) == 0 {
-			w.Write([]byte("\nno files found\n"))
+	files := r.Context().Value(Files).([]*svc.File)
+	for _, file := range files {
+		data, err := file.ToJSON()
+		if err != nil {
+			msg := fmt.Sprintf("\nfailed to convert %s (id=%s) to JSON: %v\n", file.Name, file.ID, err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-		for _, file := range files {
-			data, err := file.ToJSON()
-			if err != nil {
-				msg := fmt.Sprintf("\nfailed to convert %s (id=%s) to JSON: %v\n", file.Name, file.ID, err)
-				http.Error(w, msg, http.StatusInternalServerError)
-				return
-			}
-			w.Write(data)
-		}
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		w.Write(data)
 	}
 }
 

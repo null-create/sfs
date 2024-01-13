@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/env"
+	svc "github.com/sfs/pkg/service"
 	"github.com/sfs/pkg/transfer"
 )
 
@@ -387,3 +389,81 @@ func TestFileDeleteAPI(t *testing.T) {
 // func TestPutDirectoryAPI(t *testing.T) {}
 
 // func TestDeleteDirectoryAPI(t *testing.T) {}
+
+func TestGetServerSyncIndex(t *testing.T) {
+	env.SetEnv(false)
+
+	// ---- set up test service
+
+	log.Print("[TEST] initializing tmp service...")
+
+	// so we can add the test file directly to the db ahead of time
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// create tmp test drive. we'll need this
+	// since the service requires a drive instance with
+	// root to be found in the database in order to retrieve it
+	tmpDrive := MakeTmpDriveWithPath(t, testSvc.UserDir)
+
+	// add drive generates a sync index in addition to
+	// adding the drive to the service
+	if err := testSvc.AddDrive(tmpDrive); err != nil {
+		Fail(t, testSvc.UserDir, err)
+	}
+
+	// ---- start server
+
+	// shut down signal to the server
+	shutDown := make(chan bool)
+
+	// start testing server
+	log.Print("[TEST] starting test server...")
+	testServer := NewServer()
+	go func() {
+		testServer.Start(shutDown)
+	}()
+
+	// ------ create a client and contact the indexing API endpoint
+
+	client := &http.Client{Timeout: time.Second * 600} // ten minute time out
+	buf := new(bytes.Buffer)
+	req, err := http.NewRequest(http.MethodGet, LocalHost+"/v1/sync/"+tmpDrive.ID, buf)
+	if err != nil {
+		Fail(t, testSvc.UserDir, err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		Fail(t, testSvc.UserDir, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[TEST] failed to get index from server: %d", resp.StatusCode)
+		b, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			log.Printf("[TEST] failed to dump server response: %v", err)
+		} else {
+			log.Printf("%s", string(b))
+		}
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to get index from server"))
+	}
+
+	// ----- retrieve index and verify
+	var idxBuf bytes.Buffer
+	_, err = io.Copy(&idxBuf, resp.Body)
+	if err != nil {
+		Fail(t, testSvc.UserDir, err)
+	}
+	var idx *svc.SyncIndex
+	if err := json.Unmarshal(idxBuf.Bytes(), &idx); err != nil {
+		Fail(t, testSvc.UserDir, err)
+	}
+	log.Print("[TEST] retrieved index:")
+	log.Print(idx.ToString())
+
+	// clean up
+	if err := Clean(testSvc.UserDir); err != nil {
+		log.Fatal(err)
+	}
+}
