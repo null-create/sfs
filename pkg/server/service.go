@@ -428,7 +428,7 @@ func (s *Service) RemoveDrive(driveID string) error {
 	return nil
 }
 
-// add a new drive and all files and subdirectoris to the service instance.
+// add a new drive and all files and subdirectories to the service instance.
 // the new drive should have the root directory instantiated but empty. AddDrive
 // calls s.Discover() and populates the drive and databases with what it discoveres.
 func (s *Service) AddDrive(drv *svc.Drive) error {
@@ -436,14 +436,12 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	if !drv.HasRoot() {
 		return fmt.Errorf("drive does not have root directory")
 	}
-	if drv.EmptyRoot() {
-		// discover users files and directories, then add them to the service instance
-		populatedRoot, err := s.Discover(drv.Root)
-		if err != nil {
-			return fmt.Errorf("failed to discover drive files and directories: %v", err)
-		}
-		drv.Root = populatedRoot
+	// discover users files and directories, then add them to the service instance
+	populatedRoot, err := s.Discover(drv.Root)
+	if err != nil {
+		return fmt.Errorf("failed to discover drive files and directories: %v", err)
 	}
+	drv.Root = populatedRoot
 	// add all files and subdirectories to the database
 	files := drv.GetFiles()
 	for _, f := range files {
@@ -468,7 +466,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	drv.SyncIndex = svc.BuildSyncIndex(drv.Root)
 	s.Drives[drv.ID] = drv
 	if err := s.SaveState(); err != nil {
-		log.Printf("[WARNING] failed to save state file: %v", err)
+		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
@@ -484,7 +482,7 @@ func (s *Service) UpdateDrive(drv *svc.Drive) error {
 		}
 		s.Drives[drv.ID] = drv
 		if err := s.SaveState(); err != nil {
-			return fmt.Errorf("failed to save state file: %v", err)
+			return fmt.Errorf("failed to save state: %v", err)
 		}
 	} else {
 		return fmt.Errorf("drive (id=%s) not found", drv.ID)
