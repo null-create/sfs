@@ -432,10 +432,12 @@ func TestGetServerSyncIndex(t *testing.T) {
 	buf := new(bytes.Buffer)
 	req, err := http.NewRequest(http.MethodGet, LocalHost+"/v1/sync/"+tmpDrive.ID, buf)
 	if err != nil {
+		shutDown <- true
 		Fail(t, testSvc.UserDir, err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
+		shutDown <- true
 		Fail(t, testSvc.UserDir, err)
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -446,23 +448,31 @@ func TestGetServerSyncIndex(t *testing.T) {
 		} else {
 			log.Printf("%s", string(b))
 		}
+		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to get index from server"))
 	}
 
 	// ----- retrieve index and verify
+
 	var idxBuf bytes.Buffer
 	_, err = io.Copy(&idxBuf, resp.Body)
 	if err != nil {
+		shutDown <- true
 		Fail(t, testSvc.UserDir, err)
 	}
 	var idx *svc.SyncIndex
 	if err := json.Unmarshal(idxBuf.Bytes(), &idx); err != nil {
+		shutDown <- true
 		Fail(t, testSvc.UserDir, err)
 	}
 	log.Print("[TEST] retrieved index:")
 	log.Print(idx.ToString())
 
-	// clean up
+	log.Print("[TEST] shutting down test server...")
+	shutDown <- true
+
+	// ------ clean up
+
 	if err := Clean(testSvc.UserDir); err != nil {
 		log.Fatal(err)
 	}
