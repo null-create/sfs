@@ -10,7 +10,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/env"
-	"github.com/sfs/pkg/service"
+	svc "github.com/sfs/pkg/service"
 
 	"github.com/alecthomas/assert/v2"
 )
@@ -272,7 +272,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 
 	// make a bunch of dummy files for this "client"
 	total := RandInt(25)
-	files := make([]*service.File, 0, total)
+	files := make([]*svc.File, 0, total)
 	for i := 0; i < total; i++ {
 		fn := filepath.Join(tmpClient.Root, fmt.Sprintf("tmp-%d.txt", i))
 		if file, err := MakeTmpTxtFile(fn, RandInt(1000)); err == nil {
@@ -283,12 +283,12 @@ func TestClientBuildSyncIndex(t *testing.T) {
 	}
 
 	// set up a new client drive and generate a last sync index of the files
-	root := service.NewDirectory("root", tmpClient.Conf.User, tmpClient.Drive.ID, tmpClient.Root)
+	root := svc.NewDirectory("root", tmpClient.Conf.User, tmpClient.Drive.ID, tmpClient.Root)
 	root.AddFiles(files)
 
-	drv := service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.Path, root.ID, root)
+	drv := svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.Path, root.ID, root)
 
-	idx := drv.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))
+	idx := drv.Root.WalkS(svc.NewSyncIndex(tmpClient.Conf.User))
 	assert.NotEqual(t, nil, idx)
 	assert.NotEqual(t, 0, len(idx.LastSync))
 	assert.Equal(t, total, len(idx.LastSync))
@@ -323,7 +323,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 
 	// make a bunch of dummy files for this "client"
 	total := RandInt(25)
-	files := make([]*service.File, 0, total)
+	files := make([]*svc.File, 0, total)
 	for i := 0; i < total; i++ {
 		fn := filepath.Join(tmpClient.Root, fmt.Sprintf("tmp-%d.txt", i))
 		if file, err := MakeTmpTxtFile(fn, RandInt(1000)); err == nil {
@@ -334,12 +334,12 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	}
 
 	// set up a new client drive and generate a last sync index of the files
-	root := service.NewDirectory("root", tmpClient.Conf.User, tmpClient.Drive.ID, tmpClient.Root)
+	root := svc.NewDirectory("root", tmpClient.Conf.User, tmpClient.Drive.ID, tmpClient.Root)
 	root.AddFiles(files)
-	tmpClient.Drive = service.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.UserID, root.Path, root.ID, root)
+	tmpClient.Drive = svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.UserID, root.Path, root.ID, root)
 
 	// create initial sync index
-	idx := tmpClient.Drive.Root.WalkS(service.NewSyncIndex(tmpClient.Conf.User))
+	idx := tmpClient.Drive.Root.WalkS(svc.NewSyncIndex(tmpClient.Conf.User))
 
 	// alter some files so we can mark them to be synced
 	root.Files = MutateFiles(t, root.Files)
@@ -358,9 +358,3 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 		log.Fatal(err)
 	}
 }
-
-// func TestClientContactServer(t *testing.T) {}
-
-// func TestClientGetSyncIndexFromServer(t *testing.T) {}
-
-// func TestClientSendSyncIndexToServer(t *testing.T) {}
