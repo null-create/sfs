@@ -96,6 +96,7 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 					file.Endpoint,
 				); err != nil {
 					log.Printf("[WARNING] failed to download file: %s\nerr: %v", file.Name, err)
+					return
 				}
 				if err := file.ValidateChecksum(); err != nil {
 					log.Printf("[WARNING] failed to validate checksum for file %v", file.Name)
@@ -133,7 +134,7 @@ func (c *Client) Diff() error {
 		return nil
 	}
 
-	// compare the two indicies, and generate a third index
+	// TODO: compare the two indicies, and generate a third index
 	// with the most recent LastSync times for each file and directory,
 	// then display the differences.
 	return nil
