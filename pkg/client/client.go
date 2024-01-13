@@ -59,10 +59,11 @@ type Client struct {
 // within their respective data structures.
 func (c *Client) setEndpoints() {
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
-
-	c.Endpoints["files"] = EndpointRootWithPort + "/v1/files/i/all/" + c.UserID
+	// general purpose endpoints.
+	// files and directories have their endpoints defined in their respective structures.
+	c.Endpoints["all files"] = EndpointRootWithPort + "/v1/files/i/all/" + c.UserID
 	c.Endpoints["new file"] = EndpointRootWithPort + "/v1/files/new"
-	c.Endpoints["dirs"] = EndpointRootWithPort + "/v1/i/dirs/all/" + c.UserID
+	c.Endpoints["all dirs"] = EndpointRootWithPort + "/v1/i/dirs/all/" + c.UserID
 	c.Endpoints["new dir"] = EndpointRootWithPort + "/v1/dirs/new"
 	c.Endpoints["drive"] = EndpointRootWithPort + "/v1/drive/" + c.DriveID
 	c.Endpoints["new drive"] = EndpointRootWithPort + "/v1/drive/new"
