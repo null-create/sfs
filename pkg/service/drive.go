@@ -22,11 +22,27 @@ must be under ../svcroot/users/<username>
 
 drives should have the following structure:
 
+[client]
 user/
-|---root/    <---- user files & directories live here
+|---root/      <---- user files & directories live here
 |---state/
-|   |---userID-d-m-y-hh-mm-ss.json
-|   |---driveID-d-m-y-hh-mm-ss.json
+|   |---client-state-d-m-y-hh-mm-ss.json
+
+[server]
+users/
+|----userA/
+|    |----root/     <---- user files & directories
+|    |----state/
+|    |    |----drive-state-d-m-y-hh-mm-ss.json
+|----userB/
+(etc)
+
+TODO:
+
+	possibly store clients files on the server in a "flat" directory?
+	doesn't have to match the client's local file system tree -- only be a
+	repository of back ups. would make search time linear instead of whatever the walk()
+	implementations in dirs.go are at currently.
 */
 func AllocateDrive(name string, ownerID string, svcRoot string) (*Drive, error) {
 	// new user service file paths
@@ -176,7 +192,7 @@ func (d *Drive) GetOwnerID() (string, error) {
 
 func (d *Drive) Lock(password string) {
 	if password != d.Key {
-		log.Printf("[DEBUG] wrong password: %v", password)
+		log.Printf("[INFO] wrong password: %v", password)
 	} else {
 		d.Protected = true
 	}
@@ -184,7 +200,7 @@ func (d *Drive) Lock(password string) {
 
 func (d *Drive) Unlock(password string) {
 	if password != d.Key {
-		log.Printf("[DEBUG] wrong password: %v", password)
+		log.Printf("[INFO] wrong password: %v", password)
 	} else {
 		d.Protected = false
 	}
@@ -194,17 +210,17 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 	if !d.Protected {
 		if password == d.Key {
 			d.Key = newPassword
-			log.Printf("[DEBUG] password updated")
+			log.Printf("[INFO] password updated")
 		} else {
-			log.Print("[DEBUG] wrong password")
+			log.Print("[INFO] wrong password")
 		}
 	} else {
 		if isAdmin {
-			log.Print("[DEBUG] admin password override")
+			log.Print("[INFO] admin password override")
 			d.Key = newPassword
 			return
 		}
-		log.Print("[DEBUG] drive protected. unlock with password.")
+		log.Print("[INFO] drive protected. unlock with password.")
 	}
 }
 
@@ -227,7 +243,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 		}
 		d.UsedSpace += float64(file.Size())
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -241,7 +257,7 @@ func (d *Drive) GetFile(fileID string) *File {
 		}
 		return d.Root.WalkF(fileID)
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -350,7 +366,7 @@ func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -365,7 +381,7 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -382,7 +398,7 @@ func (d *Drive) GetDir(dirID string) *Directory {
 		}
 		return d.Root.WalkD(dirID)
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -396,7 +412,7 @@ func (d *Drive) GetDirs() map[string]*Directory {
 		}
 		return d.Root.WalkDs()
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -411,9 +427,9 @@ func (d *Drive) removeDir(dirID string) error {
 		if dir.Parent != nil {
 			delete(dir.Parent.Dirs, dir.ID)
 		}
-		log.Printf("[DEBUG] directory (id=%s) removed", dirID)
+		log.Printf("[INFO] directory (id=%s) removed", dirID)
 	} else {
-		log.Printf("[DEBUG] directory (id=%s) not found", dirID)
+		log.Printf("[INFO] directory (id=%s) not found", dirID)
 	}
 	return nil
 }
@@ -431,7 +447,7 @@ func (d *Drive) RemoveDir(dirID string) error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -452,7 +468,7 @@ func (d *Drive) RemoveDirs(dirs []*Directory) error {
 			}
 		}
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -472,7 +488,7 @@ func (d *Drive) UpdateDir(dirID string, updatedDir *Directory) error {
 			return fmt.Errorf("failed to update dir %s: %v", parent.Name, err)
 		}
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
 	return nil
 }
@@ -489,7 +505,7 @@ func (d *Drive) ClearDrive() error {
 			return err
 		}
 	} else {
-		log.Printf("[DEBUG] drive protected")
+		log.Printf("[INFO] drive protected")
 	}
 	return nil
 }
