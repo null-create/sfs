@@ -32,7 +32,7 @@ type Client struct {
 
 	// server api endpoints.
 	// file objects have their own API field, this is for storing
-	// general operation endpoints like sync operations
+	// general operation endpoints like sync operations.
 	// key == file or dir uuid, val == associated server API endpoint
 	Endpoints map[string]string `json:"endpoints"`
 
@@ -40,10 +40,11 @@ type Client struct {
 	Monitor *monitor.Monitor `json:"-"`
 
 	// map of active event handlers for individual files
-	// key == filepath, value == new EventHandler() function
+	// key == filepath, value == new event hander function
 	Handlers map[string]func() `json:"-"`
 
 	// map of handler off switches. used during shutdown.
+	// key == filepath, value == chan bool
 	OffSwitches map[string]chan bool `json:"-"`
 
 	// file transfer component. handles file uploads and downloads.
@@ -57,7 +58,6 @@ type Client struct {
 // individual files and directories have endpoints defined
 // within their respective data structures.
 func (c *Client) setEndpoints() {
-
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 
 	c.Endpoints["files"] = EndpointRootWithPort + "/v1/files/i/all/" + c.UserID
