@@ -39,9 +39,6 @@ type Client struct {
 	// listener that checks for file or directory events
 	Monitor *monitor.Monitor `json:"-"`
 
-	// Channel for managing sync loop
-	Off chan bool `json:"-"`
-
 	// map of active event handlers for individual files
 	// key == filepath, value == new EventHandler() function
 	Handlers map[string]func() `json:"-"`
@@ -60,21 +57,22 @@ type Client struct {
 // individual files and directories have endpoints defined
 // within their respective data structures.
 func (c *Client) setEndpoints() {
+
 	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
 
-	c.Endpoints["files"] = fmt.Sprint(EndpointRootWithPort, "/v1/files/i/all/", c.UserID)
-	c.Endpoints["new file"] = fmt.Sprint(EndpointRootWithPort, "/v1/files/new")
-	c.Endpoints["dirs"] = fmt.Sprint(EndpointRootWithPort, "/v1/i/dirs/all/", c.UserID)
-	c.Endpoints["new dir"] = fmt.Sprint(EndpointRootWithPort, "/dirs/new")
-	c.Endpoints["drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/", c.DriveID)
-	c.Endpoints["new drive"] = fmt.Sprint(EndpointRootWithPort, "/v1/drive/new")
-	c.Endpoints["sync"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.DriveID)
-	c.Endpoints["get index"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/", c.DriveID)
-	c.Endpoints["gen index"] = fmt.Sprint(EndpointRootWithPort, "/v1/sync/index/", c.DriveID, "/index")
-	c.Endpoints["gen updates"] = fmt.Sprintf(EndpointRootWithPort, "/v1/sync/update/", c.DriveID, "/update")
-	c.Endpoints["user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/", c.UserID)
-	c.Endpoints["new user"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/new")
-	c.Endpoints["all users"] = fmt.Sprint(EndpointRootWithPort, "/v1/users/all")
+	c.Endpoints["files"] = EndpointRootWithPort + "/v1/files/i/all/" + c.UserID
+	c.Endpoints["new file"] = EndpointRootWithPort + "/v1/files/new"
+	c.Endpoints["dirs"] = EndpointRootWithPort + "/v1/i/dirs/all/" + c.UserID
+	c.Endpoints["new dir"] = EndpointRootWithPort + "/v1/dirs/new"
+	c.Endpoints["drive"] = EndpointRootWithPort + "/v1/drive/" + c.DriveID
+	c.Endpoints["new drive"] = EndpointRootWithPort + "/v1/drive/new"
+	c.Endpoints["sync"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID
+	c.Endpoints["get index"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID
+	c.Endpoints["gen index"] = EndpointRootWithPort + "/v1/sync/index/" + c.DriveID + "/index"
+	c.Endpoints["gen updates"] = EndpointRootWithPort + "/v1/sync/update/" + c.DriveID + "/update"
+	c.Endpoints["user"] = EndpointRootWithPort + "/v1/users/" + c.UserID
+	c.Endpoints["new user"] = EndpointRootWithPort + "/v1/users/new"
+	c.Endpoints["all users"] = EndpointRootWithPort + "/v1/users/all"
 }
 
 // creates a new client object. does not create actual service directories or
@@ -101,7 +99,6 @@ func NewClient(user *auth.User) (*Client, error) {
 		SfDir:       filepath.Join(svcRoot, "state"),
 		Endpoints:   make(map[string]string),
 		Monitor:     monitor.NewMonitor(drv.Root.Path),
-		Off:         make(chan bool),
 		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
@@ -136,7 +133,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	// within their respective data structures)
 	c.setEndpoints()
 
-	// add token componet
+	// add token component
 	c.Tok = auth.NewT()
 
 	// start monitoring services
@@ -191,9 +188,6 @@ func (c *Client) SaveState() error {
 
 // shutdown client side services
 func (c *Client) ShutDown() error {
-	// stop sync doc monitoring loop
-	c.Off <- true
-
 	// shut down monitor and handlers
 	if err := c.StopMonitoring(); err != nil {
 		return fmt.Errorf("failed to shutdown monitor: %v", err)
@@ -207,14 +201,14 @@ func (c *Client) ShutDown() error {
 }
 
 // start up client services
-func (c *Client) Start() (chan bool, error) {
+func (c *Client) Start() error {
 	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
 		root, err := c.Db.GetDirectory(c.Drive.RootID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get root directory: %v", err)
+			return fmt.Errorf("failed to get root directory: %v", err)
 		}
 		if root == nil {
-			return nil, fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
+			return fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
 		}
 		c.Drive.Root = c.Populate(root)
 		c.Drive.IsLoaded = true
@@ -222,27 +216,17 @@ func (c *Client) Start() (chan bool, error) {
 
 	// start monitoring services
 	if err := c.Monitor.Start(c.Drive.Root.Path); err != nil {
-		return nil, fmt.Errorf("failed to start monitoring: %v", err)
+		return fmt.Errorf("failed to start monitoring: %v", err)
 	}
 
 	// start monitoring event handlers
 	if err := c.StartHandlers(); err != nil {
-		return nil, fmt.Errorf("failed to start event handlers: %v", err)
+		return fmt.Errorf("failed to start event handlers: %v", err)
 	}
 
 	// save initial state
 	if err := c.SaveState(); err != nil {
-		return nil, fmt.Errorf("failed to save initial state: %v", err)
+		return fmt.Errorf("failed to save initial state: %v", err)
 	}
-
-	// allow background serices to continue.
-	// shut down when we recieve a ctrl c (for now)
-	sig := make(chan bool)
-	// var wait = func() {
-	// 	<-sig
-	// }
-
-	// wait()
-
-	return sig, nil
+	return nil
 }

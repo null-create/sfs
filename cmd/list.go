@@ -18,9 +18,9 @@ var (
 			remote, _ := cmd.Flags().GetString("remote")
 			switch {
 			case local != dflt:
-				c.ListLocalFiles()
+				clnt.ListLocalFiles()
 			case remote != dflt:
-				if err := c.ListRemoteFiles(); err != nil {
+				if err := clnt.ListRemoteFiles(); err != nil {
 					return err
 				}
 			}

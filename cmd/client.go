@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ccfg = client.ClientConfig() // client service configurations
-	sig  chan bool               // client shut down signal
+	clnt *client.Client // active client service instance
+
+	configs = client.ClientConfig()
 
 	// for flags
 	newClient   bool
@@ -29,28 +30,24 @@ var (
 
 			switch {
 			case newFlag:
-				newClient, err := client.Init(ccfg.NewService)
+				_, err := client.Init(configs.NewService)
 				if err != nil {
 					return err
 				}
-				c = newClient
 			case startFlag:
-				client, err := client.LoadClient()
+				c, err := client.LoadClient()
 				if err != nil {
 					return err
 				}
-				c = client
+				clnt = c
 				go func() {
-					off, err := c.Start()
-					if err != nil {
+					if err := clnt.Start(); err != nil {
 						log.Printf("failed to start client: %v", err)
 						return
 					}
-					sig = off
 				}()
 			case stopFlag:
-				sig <- true
-				return c.ShutDown()
+				return clnt.ShutDown()
 			}
 			return nil
 		},

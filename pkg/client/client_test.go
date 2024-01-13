@@ -174,17 +174,13 @@ func TestLoadAndStartClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
-	var off chan bool
 	go func() {
-		o, err := tmpClient.Start()
-		if err != nil {
+		if err := tmpClient.Start(); err != nil {
 			Fail(t, tmpDir, err)
 		}
-		off = o
 	}()
 
 	// shutdown the client monitoring
-	off <- true
 	tmpClient.ShutDown()
 
 	if err := Clean(t, tmpDir); err != nil {

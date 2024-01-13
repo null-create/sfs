@@ -123,15 +123,6 @@ func newUser(drvRoot string) (*auth.User, error) {
 	return newUser, nil
 }
 
-// // initial client service set up
-// func Setup() (*Client, error) {
-// 	client, err := setup(cfgs.Root)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return client, nil
-// }
-
 func loadStateFile() ([]byte, error) {
 	sfDir := filepath.Join(cfgs.Root, cfgs.User, "state")
 	entries, err := os.ReadDir(sfDir)

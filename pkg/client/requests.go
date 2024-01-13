@@ -372,7 +372,7 @@ func (c *Client) DeleteUserRequest(user *auth.User) (*http.Request, error) {
 
 // ------- sync requests --------------------------------
 
-func (c *Client) GenIndexRequest(dirID string) (*http.Request, error) {
+func (c *Client) GenIndexRequest() (*http.Request, error) {
 	var buf bytes.Buffer
 	req, err := http.NewRequest(http.MethodGet, c.Endpoints["gen index"], &buf)
 	if err != nil {
@@ -381,9 +381,18 @@ func (c *Client) GenIndexRequest(dirID string) (*http.Request, error) {
 	return req, nil
 }
 
-func (c *Client) GetIdxRequest(dirID string) (*http.Request, error) {
+func (c *Client) GetIdxRequest() (*http.Request, error) {
 	var buf bytes.Buffer
 	req, err := http.NewRequest(http.MethodGet, c.Endpoints["get index"], &buf)
+	if err != nil {
+		return nil, err
+	}
+	return req, nil
+}
+
+func (c *Client) GetIdxUpdates() (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["gen updates"], &buf)
 	if err != nil {
 		return nil, err
 	}

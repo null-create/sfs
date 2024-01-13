@@ -6,7 +6,10 @@ May need to build SyncIndex.ToUpdate map, or transfer individual files or direct
 */
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -110,13 +113,13 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 // TODO:
 func (c *Client) Diff() error {
 	// refresh ToUpdate
-	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 	if !c.Drive.IsIndexed() {
 		return fmt.Errorf("no files found for indexing")
 	}
+	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 
 	// retrieve the servers index for this client
-	req, err := c.GetIdxRequest(c.DriveID)
+	req, err := c.GetIdxRequest()
 	if err != nil {
 		return err
 	}
@@ -133,5 +136,45 @@ func (c *Client) Diff() error {
 	// compare the two indicies, and generate a third index
 	// with the most recent LastSync times for each file and directory,
 	// then display the differences.
+	return nil
+}
+
+// TODO:
+func (c *Client) Sync() error {
+	// get latest local index/Update map
+	if !c.Drive.IsIndexed() {
+		return fmt.Errorf("no files found for indexing")
+	}
+	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
+
+	// get latest server update map
+	req, err := c.GetIdxUpdates()
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[INFO] server returned non-200 status")
+		c.dump(resp, true)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	// retrieve index from response body
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return err
+	}
+	var svrIdx = new(svc.SyncIndex)
+	if err := json.Unmarshal(buf.Bytes(), &svrIdx); err != nil {
+		return err
+	}
+
+	// compare the two, then push/pull accordingly
+
 	return nil
 }
