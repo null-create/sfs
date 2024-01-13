@@ -575,14 +575,14 @@ func walk(d *Directory) *Directory {
 		return d
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries. nothing to search. ", d.ID)
+		log.Printf("[INFO] dir (id=%s) has no sub-directories. nothing to search.", d.ID)
 		return d
 	}
 	for _, entry := range entries {
 		entryPath := filepath.Join(d.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
-			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			log.Printf("[ERROR] could not get stat for %s\n%v", entryPath, err)
 			return d
 		}
 		if item.IsDir() {
