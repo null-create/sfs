@@ -157,10 +157,10 @@ func NewRouter() *chi.Mux {
 				// user files (in all directories) from server
 				r.Get("/", api.GetIdx)
 				// generate a new sync index for all files on the server
-				// for this user
+				// for this user. Populates LastSync map in index.
 				r.Get("/index", api.GenIndex)
-				// refreshes a drives update map, and returns the servers sync index
-				// for this drive/user
+				// refreshes a drives ToUpdate map (assumes LastSync is current),
+				// and returns the servers sync index for this drive/user
 				r.Get("/update", api.GetUpdates)
 			})
 		})
