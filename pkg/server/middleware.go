@@ -121,6 +121,10 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate token
 		dirToken := r.Header.Get("Authorization")
+		if dirToken == "" {
+			http.Error(w, "missing directory token", http.StatusBadRequest)
+			return
+		}
 		dirInfo, err := tokenValidator.Verify(dirToken)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify directory token: %v", err)
