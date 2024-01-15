@@ -397,7 +397,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 
 	log.Print("[TEST] initializing tmp service...")
 
-	// so we can add the test file directly to the db ahead of time
+	// so we can add the test drive directly to the db ahead of time
 	testSvc, err := Init(false, false)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
@@ -428,7 +428,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 
 	// ------ create a client and contact the indexing API endpoint
 
-	client := &http.Client{Timeout: time.Second * 600} // ten minute time out
+	client := &http.Client{Timeout: time.Minute * 10}
 	buf := new(bytes.Buffer)
 	req, err := http.NewRequest(http.MethodGet, LocalHost+"/v1/sync/"+tmpDrive.ID, buf)
 	if err != nil {
