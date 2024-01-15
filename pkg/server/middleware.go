@@ -99,8 +99,7 @@ func NewUserCtx(h http.Handler) http.Handler {
 		// unmarshal data and check database before creating a new user
 		newUser, err := auth.UnmarshalUser(userInfo)
 		if err != nil {
-			msg := fmt.Sprintf("failed to unmarshal user data: %v", err)
-			http.Error(w, msg, http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// check if this user already exists before adding
@@ -109,7 +108,7 @@ func NewUserCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("failed to query database for user: %v", err), http.StatusInternalServerError)
 			return
 		} else if user != nil {
-			http.Error(w, fmt.Sprintf("user %s (id=%s) already exists", newUser.Name, newUser.ID), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("%s (id=%s) already exists", newUser.Name, newUser.ID), http.StatusBadRequest)
 			return
 		}
 		newCtx := context.WithValue(r.Context(), User, newUser)
@@ -130,8 +129,7 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 		}
 		newDir, err := svc.UnmarshalDirStr(dirInfo)
 		if err != nil {
-			msg := fmt.Sprintf("failed to unmarshal directory data: %v", err)
-			http.Error(w, msg, http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// see if this directory is already in the DB first
@@ -155,7 +153,7 @@ func AuthenticateUser(reqToken string) (*auth.User, error) {
 	tokenValidator := auth.NewT()
 	userID, err := tokenValidator.Verify(reqToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate token: %v", err)
+		return nil, fmt.Errorf("failed to validate user token: %v", err)
 	}
 	// attempt to find data about the user from the the user db
 	user, err := findUser(userID, getDBConn("Users"))
@@ -217,19 +215,6 @@ func FileCtx(h http.Handler) http.Handler {
 	})
 }
 
-// multiple files context
-func FilesCtx(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := chi.URLParam(r, "userID")
-		if userID == "" {
-			http.Error(w, "userID is required", http.StatusBadRequest)
-			return
-		}
-		// TODO: retrieve files list from request. need to figure out how to
-		// send a list of files as part of a request.
-	})
-}
-
 func DirCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		dirID := chi.URLParam(r, "dirID")
@@ -255,6 +240,15 @@ func DriveIdCtx(h http.Handler) http.Handler {
 		driveID := chi.URLParam(r, "driveID")
 		if driveID == "" {
 			http.Error(w, "driveID not set", http.StatusBadRequest)
+			return
+		}
+		// verify the drive exists
+		drive, err := findDrive(driveID, getDBConn("Drives"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else if drive == nil {
+			http.Error(w, fmt.Sprintf("drive (id=%s) not found", driveID), http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), Drive, driveID)
@@ -301,19 +295,6 @@ func UserCtx(h http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), User, user)
-		h.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// retrieve the drive ID to run a sync index operation on.
-func SyncCtx(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		driveID := chi.URLParam(r, "driveID")
-		if driveID == "" {
-			http.Error(w, "missing drive ID", http.StatusBadRequest)
-			return
-		}
-		ctx := context.WithValue(r.Context(), Drive, driveID)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
