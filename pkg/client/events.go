@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/monitor"
+	svc "github.com/sfs/pkg/service"
 )
 
 // ---- file monitoring operations
@@ -85,7 +86,7 @@ func (c *Client) StartHandler(filePath string) error {
 func (c *Client) StartHandlers() error {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		log.Print("[WARNING] no files to start handlers for")
+		log.Print("[INFO] no files to start handlers for")
 		return nil
 	}
 	for _, f := range files {
@@ -160,6 +161,8 @@ func (c *Client) NewEHandler(filePath string) error {
 						return nil
 					}
 					if evts.StartSync {
+						// build update map and push file changes to server
+						c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 						if err := c.Push(); err != nil {
 							return err
 						}
