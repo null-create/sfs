@@ -177,12 +177,11 @@ func (s *Service) Discover(root *svc.Directory) (*svc.Directory, error) {
 }
 
 // Populate() populates a drive's root directory with all the users
-// files and subdirectories by searching the DB with the name
-// of each file or directory Populate() discoveres as it traverses the
-// users SFS filesystem.
+// files and subdirectories by recursively traersing the users file system
+// and searching the DB with the name of each file or directory Populate() discoveres
 //
 // Note that Populate() ignores files and subdirectories it doesn't find in the
-// database as its traversing the file system. This may or may not be a good thing.
+// database as its traversing the file system.
 func (s *Service) Populate(root *svc.Directory) *svc.Directory {
 	if root.Path == "" {
 		log.Print("[WARNING] can't traverse directory without a path")
@@ -379,58 +378,11 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	return drive, nil
 }
 
-// remove a drive and all the users files and directories, as well
-// as its info from the database.
-func (s *Service) RemoveDrive(driveID string) error {
-	drv := s.GetDrive(driveID)
-	if drv == nil {
-		log.Printf("[INFO] drive %s not found", driveID)
-		return nil
-	}
-	if drv.Root.IsNil() {
-		root, err := s.loadRoot(drv.RootID)
-		if err != nil {
-			return err
-		}
-		drv.Root = root
-	}
-	// remove drive physical files/directories
-	if err := Clean(drv.Root.Path); err != nil {
-		return fmt.Errorf("failed to remove drives files and directories: %v", err)
-	}
-	// remove all files and directories from the database
-	files := drv.GetFiles()
-	for _, f := range files {
-		if err := s.Db.RemoveFile(f.ID); err != nil {
-			return err
-		}
-	}
-	dirs := drv.GetDirs()
-	for _, d := range dirs {
-		if err := s.Db.RemoveDirectory(d.ID); err != nil {
-			return err
-		}
-	}
-	// remove root itself
-	if err := s.Db.RemoveDirectory(drv.Root.ID); err != nil {
-		return err
-	}
-	// remove drive from db
-	if err := s.Db.RemoveDrive(driveID); err != nil {
-		return err
-	}
-	// remove from drives map and save state
-	delete(s.Drives, driveID)
-	if err := s.SaveState(); err != nil {
-		return err
-	}
-	log.Printf("[INFO] drive %s removed", driveID)
-	return nil
-}
-
 // add a new drive and all files and subdirectories to the service instance.
 // the new drive should have the root directory instantiated but empty. AddDrive
-// calls s.Discover() and populates the drive and databases with what it discoveres.
+// calls s.Discover() and populates the drive and databases with what it discoveres,
+// then adds everything it finds to the database. AddDrive should only be used
+// for first-time set up.
 func (s *Service) AddDrive(drv *svc.Drive) error {
 	// check that the root dir is valid
 	if !drv.HasRoot() {
@@ -487,6 +439,55 @@ func (s *Service) UpdateDrive(drv *svc.Drive) error {
 	} else {
 		return fmt.Errorf("drive (id=%s) not found", drv.ID)
 	}
+	return nil
+}
+
+// remove a drive and all the users files and directories, as well
+// as its info from the database.
+func (s *Service) RemoveDrive(driveID string) error {
+	drv := s.GetDrive(driveID)
+	if drv == nil {
+		log.Printf("[INFO] drive %s not found", driveID)
+		return nil
+	}
+	if drv.Root.IsNil() {
+		root, err := s.loadRoot(drv.RootID)
+		if err != nil {
+			return err
+		}
+		drv.Root = root
+	}
+	// remove drive physical files/directories
+	if err := Clean(drv.Root.Path); err != nil {
+		return fmt.Errorf("failed to remove drives files and directories: %v", err)
+	}
+	// remove all files and directories from the database
+	files := drv.GetFiles()
+	for _, f := range files {
+		if err := s.Db.RemoveFile(f.ID); err != nil {
+			return err
+		}
+	}
+	dirs := drv.GetDirs()
+	for _, d := range dirs {
+		if err := s.Db.RemoveDirectory(d.ID); err != nil {
+			return err
+		}
+	}
+	// remove root itself
+	if err := s.Db.RemoveDirectory(drv.Root.ID); err != nil {
+		return err
+	}
+	// remove drive from db
+	if err := s.Db.RemoveDrive(driveID); err != nil {
+		return err
+	}
+	// remove from drives map and save state
+	delete(s.Drives, driveID)
+	if err := s.SaveState(); err != nil {
+		return err
+	}
+	log.Printf("[INFO] drive %s removed", driveID)
 	return nil
 }
 
@@ -778,8 +779,9 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 	// we'll need to remove all of them from the DB.
 	dir := drive.GetDir(dirID)
 	if dir == nil {
-		return fmt.Errorf("drive %s not found", dirID)
+		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
+	// remove all subdirs of this directory
 	subDirs := dir.GetSubDirs()
 	for _, subDir := range subDirs {
 		if err := drive.RemoveDir(subDir.ID); err != nil {
@@ -800,16 +802,16 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 		}
 	}
 	// remove directory itself
-	if err := drive.RemoveDir(dirID); err != nil {
-		return fmt.Errorf("failed to remove dir %s: %v", dirID, err)
-	}
 	if err := s.Db.RemoveDirectory(dirID); err != nil {
 		return fmt.Errorf("failed to remove directory from database: %v", err)
 	}
 	if err := s.Db.UpdateDir(drive.Root); err != nil {
 		return fmt.Errorf("failed to update root directory: %v", err)
 	}
-	return os.RemoveAll(dir.Path)
+	if err := drive.RemoveDir(dirID); err != nil {
+		return fmt.Errorf("failed to remove dir %s: %v", dirID, err)
+	}
+	return nil
 }
 
 // update a directory within a drive.
@@ -839,7 +841,7 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 	}
 	d := drive.Root.GetSubDirs()
 	if len(d) == 0 {
-		log.Printf("[INFO] no directories found for user %v", drive.OwnerID)
+		log.Printf("[INFO] no directories found for user (id=%s)", drive.OwnerID)
 		return nil, nil
 	}
 	dirs := make([]*svc.Directory, 0, len(d))
@@ -855,24 +857,26 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 func (s *Service) GenSyncIndex(driveID string) (*svc.SyncIndex, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("drive id=%s not found", driveID)
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
+	}
+	if drive.Root == nil {
+		return nil, fmt.Errorf("drive (id=%s) root not found", drive.RootID)
 	}
 	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
 	return drive.SyncIndex, nil
 }
 
 // retrieve a sync index for a given drive. used by the client
-// to compare against and initiate a sync operation, if necessary
+// to compare against and initiate a sync operation
 // will be used as the first step in a sync operation on the client side.
 // sync index will be nil if not found.
 func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("drive id=%s not found", driveID)
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
-	// build sync index if necessary
 	if !drive.IsIndexed() {
-		drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
+		return nil, fmt.Errorf("drive (id=%s) is not indexed", driveID)
 	}
 	return drive.SyncIndex, nil
 }
@@ -881,11 +885,11 @@ func (s *Service) GetSyncIdx(driveID string) (*svc.SyncIndex, error) {
 func (s *Service) RefreshUpdates(driveID string) (*svc.SyncIndex, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("drive id=%s not found", driveID)
+		return nil, fmt.Errorf("drive (id=%s)s not found", driveID)
 	}
 	// drive should already be indexed
 	if !drive.IsIndexed() {
-		return nil, fmt.Errorf("drive %s has not been indexed", driveID)
+		return nil, fmt.Errorf("drive (id=%s) has not been indexed", driveID)
 	}
 	drive.SyncIndex = svc.BuildToUpdate(drive.Root, drive.SyncIndex)
 	return drive.SyncIndex, nil

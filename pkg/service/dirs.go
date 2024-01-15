@@ -123,20 +123,22 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 	}
 }
 
+// unmarshal a directory info string (usually retrieved from a request token)
+// into a directory object.
+func UnmarshalDirStr(data string) (*Directory, error) {
+	dir := new(Directory)
+	if err := json.Unmarshal([]byte(data), &dir); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal dir data: %v", err)
+	}
+	return dir, nil
+}
+
 func (d *Directory) ToJSON() ([]byte, error) {
 	data, err := json.MarshalIndent(d, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
-}
-
-func UnmarshalDirStr(data string) (*Directory, error) {
-	dir := new(Directory)
-	if err := json.Unmarshal([]byte(data), &dir); err != nil {
-		return nil, err
-	}
-	return dir, nil
 }
 
 func (d *Directory) IsRoot() bool { return d.Root }
@@ -575,7 +577,6 @@ func walk(d *Directory) *Directory {
 		return d
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no sub-directories. nothing to search.", d.ID)
 		return d
 	}
 	for _, entry := range entries {
