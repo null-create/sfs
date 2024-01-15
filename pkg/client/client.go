@@ -79,13 +79,13 @@ func (c *Client) setEndpoints() {
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
 func NewClient(user *auth.User) (*Client, error) {
-	clientCfg := ClientConfig()
+	ccfg := ClientConfig()
 
 	// set up local client services
 	driveID := auth.NewUUID()
-	svcRoot := filepath.Join(clientCfg.Root, clientCfg.User)
-	root := svc.NewRootDirectory("root", clientCfg.User, driveID, filepath.Join(svcRoot, "root"))
-	drv := svc.NewDrive(driveID, clientCfg.User, user.ID, root.Path, root.ID, root)
+	svcRoot := filepath.Join(ccfg.Root, ccfg.User)
+	root := svc.NewRootDirectory("root", ccfg.User, driveID, filepath.Join(svcRoot, "root"))
+	drv := svc.NewDrive(driveID, ccfg.User, user.ID, root.Path, root.ID, root)
 	user.DriveID = driveID
 	user.DrvRoot = drv.DriveRoot
 	user.SvcRoot = root.Path
@@ -93,7 +93,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	// intialize client
 	c := &Client{
 		StartTime:   time.Now().UTC(),
-		Conf:        clientCfg,
+		Conf:        ccfg,
 		UserID:      user.ID,
 		User:        user,
 		Root:        filepath.Join(svcRoot, "root"),
@@ -105,7 +105,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
-		Transfer:    transfer.NewTransfer(clientCfg.Port),
+		Transfer:    transfer.NewTransfer(ccfg.Port),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
