@@ -51,7 +51,7 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 
 	// ------ attempt to retrieve all file info from the server
 	log.Printf("[TEST] retrieving file data...")
-	endpoint := fmt.Sprint(LocalHost, "/v1/i/files/all/", tmpDrive.OwnerID)
+	endpoint := fmt.Sprint(LocalHost, "/v1/files/i/all/", tmpDrive.OwnerID)
 
 	client := new(http.Client)
 	res, err := client.Get(endpoint)
