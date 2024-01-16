@@ -35,9 +35,6 @@ func (e *Event) ToString() string {
 // synchronization operations between client and server
 type EList []Event
 
-// arbitrary threshold limit for Elists
-const THRESHOLD = 10
-
 type Events struct {
 	threshold int   // buffer limit
 	Buffered  bool  // whether this event list is buffered
@@ -52,7 +49,7 @@ type Events struct {
 func NewEvents(buffered bool) *Events {
 	var threshold int
 	if buffered {
-		threshold = THRESHOLD
+		threshold = MonCfgs.BufSize
 	} else {
 		threshold = 1
 	}
