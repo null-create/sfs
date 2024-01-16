@@ -82,6 +82,11 @@ func TestGetAllFileInfoAPI(t *testing.T) {
 
 	log.Print("[TEST] shutting down test server...")
 	shutDown <- true
+
+	// clean up
+	if err := Clean(GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestNewFileAPI(t *testing.T) {
