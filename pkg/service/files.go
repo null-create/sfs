@@ -1,14 +1,12 @@
 package service
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"sync"
@@ -21,12 +19,13 @@ type File struct {
 	m sync.Mutex
 
 	// metadata
-	ID      string  `json:"id"`       // file id
-	Name    string  `json:"name"`     // file name
-	NMap    NameMap `json:"name_map"` // file name map
-	OwnerID string  `json:"owner"`    // file owner ID
-	DirID   string  `json:"dir_id"`   // id of the directory this file belongs to
-	DriveID string  `json:"drive_id"` // id of the drive this file belongs to
+	ID      string      `json:"id"`       // file id
+	Name    string      `json:"name"`     // file name
+	NMap    NameMap     `json:"name_map"` // file name map
+	OwnerID string      `json:"owner"`    // file owner ID
+	DirID   string      `json:"dir_id"`   // id of the directory this file belongs to
+	DriveID string      `json:"drive_id"` // id of the drive this file belongs to
+	Mode    fs.FileMode `json:"mode"`     // file permissions
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -48,27 +47,36 @@ type File struct {
 // creates a new file struct instance.
 // file contents are not loaded into memory.
 func NewFile(fileName string, driveID string, ownerID string, path string) *File {
+	cfg := NewSvcCfg()
+	// get baseline information about the file
+	item, err := os.Stat(path)
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to get file stats: %v", err))
+	}
+	if item.IsDir() {
+		log.Fatal(fmt.Errorf("item is a directory: %v", path))
+	}
+	// get baseline checksum
 	cs, err := CalculateChecksum(path, "sha256")
 	if err != nil {
 		log.Printf("[WARNING] error calculating checksum: %v", err)
 	}
-
+	// assign new id
 	uuid := auth.NewUUID()
-	cfg := NewSvcCfg()
-
 	return &File{
 		Name:       fileName,
 		ID:         uuid,
 		NMap:       newNameMap(fileName, uuid),
 		OwnerID:    ownerID,
 		DriveID:    driveID,
+		Mode:       item.Mode(),
 		Protected:  false,
 		Key:        "default",
 		LastSync:   time.Now().UTC(),
 		Path:       path,
 		ServerPath: path,
 		ClientPath: path,
-		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/files/", uuid),
+		Endpoint:   Endpoint + ":" + cfg.Port + "/v1/files/" + uuid,
 		CheckSum:   cs,
 		Algorithm:  "sha256",
 		Content:    make([]byte, 0),
@@ -233,18 +241,7 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 	}
 	defer file.Close()
 
-	var h hash.Hash
-	switch hashType {
-	case "md5":
-		h = md5.New()
-	case "sha1":
-		h = sha1.New()
-	case "sha256":
-		h = sha256.New()
-	default:
-		return "", fmt.Errorf("unsupported hash type: %s", hashType)
-	}
-
+	var h = sha256.New()
 	if _, err := io.Copy(h, file); err != nil {
 		return "", err
 	}
