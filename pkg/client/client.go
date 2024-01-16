@@ -190,9 +190,7 @@ func (c *Client) SaveState() error {
 // shutdown client side services
 func (c *Client) ShutDown() error {
 	// shut down monitor and handlers
-	if err := c.StopMonitoring(); err != nil {
-		return fmt.Errorf("failed to shutdown monitor: %v", err)
-	}
+	c.StopMonitoring()
 	c.StopHandlers()
 
 	if err := c.SaveState(); err != nil {

@@ -124,31 +124,26 @@ func (m *Monitor) GetPaths() []string {
 	return paths
 }
 
-// close a listener channel for a given file
+// close a listener channel for a given file.
+// will be a no-op if the file is not registered.
 func (m *Monitor) CloseChan(filePath string) {
 	if m.Exists(filePath) {
 		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
-		log.Printf("[INFO] file channel (%s) closed", filepath.Base(filePath))
+		log.Printf("[INFO] file monitoring channel (%s) closed", filepath.Base(filePath))
 	}
 }
 
 // shutdown all active monitoring threads
-func (m *Monitor) ShutDown() error {
+func (m *Monitor) ShutDown() {
 	if len(m.OffSwitches) == 0 {
-		log.Printf("[INFO] no event off channels available. nothing to shutdown.")
-		return nil
+		return
 	}
-	paths := m.GetPaths()
-	if paths == nil {
-		return fmt.Errorf("no paths available")
-	}
-	log.Print("[INFO] shutting down all active monitoring threads...")
-	for _, path := range paths {
+	log.Printf("[INFO] shutting down %d active monitoring threads...", len(m.OffSwitches))
+	for path := range m.OffSwitches {
 		m.OffSwitches[path] <- true
 	}
-	return nil
 }
 
 // ----------------------------------------------------------------------------

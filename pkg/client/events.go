@@ -19,12 +19,10 @@ func (c *Client) StartMonitor() error {
 	return nil
 }
 
-// stop all event listeners for this client
-func (c *Client) StopMonitoring() error {
-	if err := c.Monitor.ShutDown(); err != nil {
-		return err
-	}
-	return nil
+// stop all event listeners for this client.
+// will be a no-op if there's no active monitoring threads.
+func (c *Client) StopMonitoring() {
+	c.Monitor.ShutDown()
 }
 
 // adds a file to monitor, then creates and starts
@@ -47,7 +45,9 @@ func (c *Client) WatchFile(filePath string) error {
 // goroutine in place (call client.WatchFile(filePath) first).
 func (c *Client) NewHandler(filePath string) error {
 	if _, exists := c.Handlers[filePath]; !exists {
-		c.NewEHandler(filePath)
+		if err := c.NewEHandler(filePath); err != nil {
+			return err
+		}
 	} else {
 		return fmt.Errorf("file (%v) is already registered", filePath)
 	}
@@ -138,9 +138,7 @@ func (c *Client) NewEHandler(filePath string) error {
 	}
 	// handler off-switch
 	stopHandler := make(chan bool)
-	// event listener handler. returns an error chanel from
-	// the inner listener function so that errors can be handled externally
-	// of the gouroutine the listener is operating in.
+	// handler
 	handler := func() {
 		// event listener
 		listener := func() error {
@@ -178,6 +176,10 @@ func (c *Client) NewEHandler(filePath string) error {
 		go func() {
 			if err := listener(); err != nil {
 				log.Printf("[ERROR] listener failed: %v", err)
+				stopHandler <- true
+				// shut down monitoring thread for this event handler
+				// all monitoring threads must have a dedicated handler
+				c.Monitor.CloseChan(filePath)
 			}
 		}()
 	}
