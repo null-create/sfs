@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"log"
-
 	"github.com/sfs/pkg/client"
 
 	"github.com/spf13/cobra"
@@ -35,17 +33,7 @@ var (
 					return err
 				}
 			case startFlag:
-				c, err := client.LoadClient()
-				if err != nil {
-					return err
-				}
-				clnt = c
-				go func() {
-					if err := clnt.Start(); err != nil {
-						log.Printf("failed to start client: %v", err)
-						return
-					}
-				}()
+				// return clnt.Start()
 			case stopFlag:
 				return clnt.ShutDown()
 			}

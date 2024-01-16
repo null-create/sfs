@@ -8,7 +8,7 @@ import (
 var (
 	local  string
 	remote string
-	dflt   = ""
+	dflt   string
 
 	listCmd = &cobra.Command{
 		Use:   "list",
