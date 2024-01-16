@@ -3,9 +3,12 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -86,21 +89,17 @@ func (c *Client) SaveState() error {
 
 // shutdown client side services
 func (c *Client) ShutDown() error {
-	// shut down monitor and handlers
-	c.StopMonitoring()
 	c.StopHandlers()
-
+	c.StopMonitoring()
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
 
-// start up client services.
-// TODO: this needs to have some kind of CLI event loop that
-// allows the program to persist and recieve commands from the user,
-// like how the server persists when listening on the network.
-func (c *Client) Start() error {
+// start up client services. creates a blocking process
+// to facilitate monitoring and synchronization services.
+func (c *Client) start(shutDown chan os.Signal) error {
 	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
 		root, err := c.Db.GetDirectory(c.Drive.RootID)
 		if err != nil {
@@ -127,5 +126,25 @@ func (c *Client) Start() error {
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save initial state: %v", err)
 	}
-	return nil
+	// wait for signal (such as ctrl-c or some other syscall) to shutdown client.
+	// we want to make start a blocking process so all the goroutines
+	// that are monitoring files (and all their event listeners)
+	// can actually run.
+	<-shutDown
+
+	// gracefully shutdown
+	return c.ShutDown()
+}
+
+// start sfs client service. returns an chan os.Signal which
+// can be used to shut down the client (with ctrl-c, or some other syscall)
+func (c *Client) Start() (chan os.Signal, error) {
+	shutDown := make(chan os.Signal, 1)
+	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		if err := c.start(shutDown); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	return shutDown, nil
 }
