@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -191,6 +192,8 @@ func LoadClient() (*Client, error) {
 		user, err := client.Db.GetUser(client.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user: %v", err)
+		} else if user == nil {
+			return nil, fmt.Errorf("user %s not found", client.UserID)
 		}
 		client.User = user
 	}
@@ -201,7 +204,7 @@ func LoadClient() (*Client, error) {
 	}
 
 	// create (or refresh) sync index
-	client.Drive.SyncIndex = client.Drive.Root.WalkS(svc.NewSyncIndex(client.User.ID))
+	client.Drive.SyncIndex = svc.BuildSyncIndex(client.Drive.Root)
 
 	// add token validation and generation componet
 	client.Tok = auth.NewT()
@@ -226,6 +229,109 @@ func LoadClient() (*Client, error) {
 
 	client.StartTime = time.Now().UTC()
 	return client, nil
+}
+
+// build services endpoints map.
+// individual files and directories have endpoints defined
+// within their respective data structures.
+func (c *Client) setEndpoints() {
+	EndpointRootWithPort := fmt.Sprint(EndpointRoot, ":", c.Conf.Port)
+	// general purpose endpoints.
+	// files and directories have their endpoints defined in their respective structures.
+	c.Endpoints["all files"] = EndpointRootWithPort + "/v1/files/i/all/" + c.UserID
+	c.Endpoints["new file"] = EndpointRootWithPort + "/v1/files/new"
+	c.Endpoints["all dirs"] = EndpointRootWithPort + "/v1/i/dirs/all/" + c.UserID
+	c.Endpoints["new dir"] = EndpointRootWithPort + "/v1/dirs/new"
+	c.Endpoints["drive"] = EndpointRootWithPort + "/v1/drive/" + c.DriveID
+	c.Endpoints["new drive"] = EndpointRootWithPort + "/v1/drive/new"
+	c.Endpoints["sync"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID
+	c.Endpoints["get index"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID
+	c.Endpoints["gen index"] = EndpointRootWithPort + "/v1/sync/index/" + c.DriveID + "/index"
+	c.Endpoints["gen updates"] = EndpointRootWithPort + "/v1/sync/update/" + c.DriveID + "/update"
+	c.Endpoints["user"] = EndpointRootWithPort + "/v1/users/" + c.UserID
+	c.Endpoints["new user"] = EndpointRootWithPort + "/v1/users/new"
+	c.Endpoints["all users"] = EndpointRootWithPort + "/v1/users/all"
+}
+
+// creates a new client object. does not create actual service directories or
+// other necessary infrastructure -- only the client itself.
+func NewClient(user *auth.User) (*Client, error) {
+	ccfg := ClientConfig()
+
+	// set up local client services
+	driveID := auth.NewUUID()
+	svcRoot := filepath.Join(ccfg.Root, ccfg.User)
+	root := svc.NewRootDirectory("root", ccfg.User, driveID, filepath.Join(svcRoot, "root"))
+	drv := svc.NewDrive(driveID, ccfg.User, user.ID, root.Path, root.ID, root)
+	user.DriveID = driveID
+	user.DrvRoot = drv.DriveRoot
+	user.SvcRoot = root.Path
+
+	// intialize client
+	c := &Client{
+		StartTime:   time.Now().UTC(),
+		Conf:        ccfg,
+		UserID:      user.ID,
+		User:        user,
+		Root:        filepath.Join(svcRoot, "root"),
+		SfDir:       filepath.Join(svcRoot, "state"),
+		Endpoints:   make(map[string]string),
+		Monitor:     monitor.NewMonitor(drv.Root.Path),
+		DriveID:     driveID,
+		Drive:       drv,
+		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		Handlers:    make(map[string]func()),
+		OffSwitches: make(map[string]chan bool),
+		Transfer:    transfer.NewTransfer(ccfg.Port),
+		Client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
+
+	// run discover to populate the database and internal data structures
+	// with users files and directories
+	root, err := c.Discover(root)
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover user file system: %v", err)
+	}
+	drv.Root = root
+	drv.IsLoaded = true
+
+	// add drive itself to DB (root was added during discovery)
+	// then attach to client
+	if err := c.Db.AddDrive(drv); err != nil {
+		return nil, fmt.Errorf("failed to add client drive to database: %v", err)
+	}
+	if err := c.Db.AddDir(root); err != nil {
+		return nil, fmt.Errorf("failed to add root directory to database: %v", err)
+	}
+	c.Drive = drv
+
+	// build services endpoints map (files and directories have endpoints defined
+	// within their respective data structures)
+	c.setEndpoints()
+
+	// add token component
+	c.Tok = auth.NewT()
+
+	// start monitoring services
+	if err := c.Monitor.Start(root.Path); err != nil {
+		return nil, fmt.Errorf("failed to start monitor: %v", err)
+	}
+
+	// build and start monitoring event handlers
+	if err := c.BuildHandlers(); err != nil {
+		return nil, fmt.Errorf("failed to build event handlers: %v", err)
+	}
+	if err := c.StartHandlers(); err != nil {
+		return nil, fmt.Errorf("failed to start event handlers: %v", err)
+	}
+
+	// save initial state
+	if err := c.SaveState(); err != nil {
+		return nil, fmt.Errorf("failed to save initial state: %v", err)
+	}
+	return c, nil
 }
 
 // initialize client service
