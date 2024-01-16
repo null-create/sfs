@@ -262,7 +262,7 @@ const (
 
 	// find specific
 	FindDirByNameQuery          string = `SELECT * FROM Directories WHERE name = ?;`
-	FindAllUsersFilesQuery      string = `SELECT * FROM Files WHERE owner = ?;`
+	FindAllUsersFilesQuery      string = `SELECT * FROM Files WHERE owner_id = ?;`
 	FindFileIDWithPathQuery     string = `SELECT id FROM Files WHERE path = ?;`
 	FindFileQuery               string = `SELECT * FROM Files WHERE id = ?;`
 	FindFileByNameQuery         string = `SELECT * FROM Files WHERE name = ?;`
@@ -272,7 +272,7 @@ const (
 	FindDriveByUserID           string = `SELECT * FROM Drives WHERE owner_id = ?;`
 	FindUserQuery               string = `SELECT * FROM Users WHERE id = ?;`
 	FindUsersDriveIDQuery       string = `SELECT drive_id FROM Users WHERE id = ?;`
-	FindUsersIDWithDriveIDQuery string = `SELECT owner FROM Drives WHERE id = ?;`
+	FindUsersIDWithDriveIDQuery string = `SELECT owner_id FROM Drives WHERE id = ?;`
 
 	// ---------- SELECT statements for confirming existance -------------------
 

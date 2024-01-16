@@ -279,6 +279,8 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 			&file.ID,
 			&file.Name,
 			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
 			&file.Protected,
 			&file.Key,
 			&file.LastSync,
