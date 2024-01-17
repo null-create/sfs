@@ -168,7 +168,7 @@ func (d *Directory) clear() {
 	d.Dirs = nil
 	d.Files = make(map[string]*File, 0)
 	d.Dirs = make(map[string]*Directory, 0)
-	log.Printf("[INFO] dirID (%s) all directories and files cleared", d.ID)
+	log.Printf("[INFO] dirID (id=%s) all subdirectories and files cleared", d.ID)
 }
 
 // clears *in-memory* file and directory data structures.
@@ -305,7 +305,7 @@ func (d *Directory) addFile(file *File) {
 	file.DriveID = d.DriveID
 	file.LastSync = time.Now().UTC()
 	d.Files[file.ID] = file
-	log.Printf("[INFO] file %s (%s) added", file.Name, file.ID)
+	log.Printf("[INFO] file %s (id=%s) added", file.Name, file.ID)
 }
 
 func (d *Directory) AddFile(file *File) {
@@ -313,7 +313,7 @@ func (d *Directory) AddFile(file *File) {
 		if !d.HasFile(file.ID) {
 			d.addFile(file)
 		} else {
-			log.Printf("[INFO] file %s (%s) already present in directory", file.Name, file.ID)
+			log.Printf("[INFO] file %s (id=%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
 		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
@@ -329,7 +329,7 @@ func (d *Directory) AddFiles(files []*File) {
 			if !d.HasFile(f.ID) {
 				d.addFile(f)
 			} else {
-				log.Printf("[INFO] file (%v) already exists)", f.ID)
+				log.Printf("[INFO] file (id=%s) already exists)", f.ID)
 			}
 		}
 	} else {
@@ -363,9 +363,9 @@ func (d *Directory) removeFile(fileID string) error {
 		}
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("[INFO] file %s removed", file.ID)
+		log.Printf("[INFO] file (id=%s) removed", file.ID)
 	} else {
-		return fmt.Errorf("file %s not found", file.ID)
+		return fmt.Errorf("file (id=%s) not found", file.ID)
 	}
 	return nil
 }
@@ -393,7 +393,6 @@ func (d *Directory) GetFileMap() map[string]*File {
 func (d *Directory) GetFiles() []*File {
 	fileMap := d.WalkFs()
 	if len(fileMap) == 0 {
-		log.Printf("[INFO] dir (%s) has no files", d.ID)
 		return nil
 	}
 	var i int
@@ -421,7 +420,7 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 		subDir.Parent = d
 		d.Dirs[subDir.ID] = subDir
 	} else {
-		return fmt.Errorf("dir %s not found. need to add before updating", subDir.ID)
+		return fmt.Errorf("dir (id=%s) not found. need to add before updating", subDir.ID)
 	}
 	return nil
 }
@@ -449,7 +448,7 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		d.addSubDir(dir)
 	} else {
-		log.Printf("[DEBUG] dir %s is protected", d.Name)
+		log.Printf("[INFO] dir %s is protected", d.Name)
 	}
 	return nil
 }
@@ -458,7 +457,6 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 // does not create physical directories.
 func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	if len(dirs) == 0 {
-		log.Printf("[INFO] dir list is empty")
 		return nil
 	}
 	if !d.Protected {
@@ -477,9 +475,9 @@ func (d *Directory) removeDir(dirID string) error {
 			return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
 		}
 		delete(d.Dirs, dirID)
-		log.Printf("[INFO] directory (id=%s)  removed", dirID)
+		log.Printf("[INFO] directory (id=%s) removed", dirID)
 	} else {
-		log.Printf("[INFOs] directory (id=%s) is not found", dirID)
+		log.Printf("[INFO] directory (id=%s) is not found", dirID)
 	}
 	return nil
 }
@@ -518,29 +516,15 @@ func (d *Directory) RemoveSubDirs() error {
 	return nil
 }
 
-// directly returns the subdirectory if it exists within the *current* directory.
-func (d *Directory) GetSubDir(dirID string) *Directory {
-	if dir, ok := d.Dirs[dirID]; ok {
-		return dir
-	} else {
-		log.Printf("[INFO] dir (id=%s) not found", dirID)
-		return nil
-	}
-}
-
 // returns a map of all subdirectories starting from the current directory.
 // returns an empty map if nothing is not found
 func (d *Directory) GetSubDirs() map[string]*Directory {
-	if len(d.Dirs) == 0 {
-		log.Printf("[INFO] dir (id=%s) is empty", d.ID)
-		return nil
-	}
-	return d.Dirs
+	return d.WalkDs()
 }
 
 // attempts to locate the directory or subdirectory starting from the given directory.
 // returns nil if not found.
-func (d *Directory) FindDir(dirID string) *Directory {
+func (d *Directory) GetSubDir(dirID string) *Directory {
 	return d.WalkD(dirID)
 }
 
@@ -611,7 +595,6 @@ func walkF(dir *Directory, fileID string) *File {
 		return file
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (id=%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
@@ -637,7 +620,6 @@ func walkFs(dir *Directory, files map[string]*File) map[string]*File {
 		}
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no subdirectories. nothing to search", dir.ID)
 		return files
 	}
 	for _, subDir := range dir.Dirs {
@@ -658,7 +640,6 @@ func (d *Directory) WalkD(dirID string) *Directory {
 
 func walkD(dir *Directory, dirID string) *Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] %s (id=%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return nil
 	}
 	if d, ok := dir.Dirs[dirID]; ok {
@@ -684,7 +665,6 @@ func (d *Directory) WalkDs() map[string]*Directory {
 
 func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory {
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] %s (id=%s) has no sub directories. nothing to search", dir.Name, dir.ID)
 		return dirMap
 	}
 	for _, subDir := range dir.Dirs {
@@ -784,7 +764,6 @@ func walkO(dir *Directory, op func(f *File) error) error {
 		}
 	}
 	if len(dir.Dirs) == 0 {
-		log.Printf("[INFO] dir %s (id=%s) has no sub directories", dir.Name, dir.ID)
 		return nil
 	}
 	for _, subDirs := range dir.Dirs {
