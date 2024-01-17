@@ -69,7 +69,7 @@ func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
 
 // send user metadata.
 func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(*auth.User)
+	user := r.Context().Value(User).(*auth.User)
 	userData, err := user.ToJSON()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -80,24 +80,16 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(userData)
 }
 
-// return a list of all active users
+// return a list of all active users. used for admin and testing purposes.
 func (a *API) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	if usrs, err := a.Svc.Db.GetUsers(); err == nil {
-		if len(usrs) == 0 {
-			w.Write([]byte("\nno users available\n"))
+	users := r.Context().Value(Users).([]*auth.User)
+	for _, u := range users {
+		data, err := u.ToJSON()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		for _, u := range usrs {
-			data, err := u.ToJSON()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Write(data)
-		}
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		w.Write(data)
 	}
 }
 

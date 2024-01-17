@@ -44,6 +44,27 @@ func AllFilesCtx(h http.Handler) http.Handler {
 	})
 }
 
+func AllUsersCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "userID")
+		if userID == "" {
+			http.Error(w, "no user ID provided", http.StatusBadRequest)
+			return
+		}
+		users, err := getAllUsers(userID, getDBConn("Users"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(users) == 0 {
+			w.Write([]byte("no users found"))
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Users, users)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
 // -------- new item/user context --------------------------------
 
 // attempts to get filename, owner, and path from a requets

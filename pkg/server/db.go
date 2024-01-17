@@ -33,6 +33,15 @@ func getAllFiles(userID string, q *db.Query) ([]*svc.File, error) {
 	return files, nil
 }
 
+// get a slice of all registered users on the server. returns an empty slice if none are found.
+func getAllUsers(adminID string, q *db.Query) ([]*auth.User, error) {
+	users, err := q.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 // get user data from db. user will be nil if not found
 func findUser(userID string, q *db.Query) (*auth.User, error) {
 	u, err := q.GetUser(userID)
