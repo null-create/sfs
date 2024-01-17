@@ -101,15 +101,9 @@ func (c *Client) ShutDown() error {
 // to facilitate monitoring and synchronization services.
 func (c *Client) start(shutDown chan os.Signal) error {
 	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
-		root, err := c.Db.GetDirectory(c.Drive.RootID)
-		if err != nil {
-			return fmt.Errorf("failed to get root directory: %v", err)
+		if err := c.LoadDrive(); err != nil {
+			return err
 		}
-		if root == nil {
-			return fmt.Errorf("no root directory found for drive (id=%s)", c.Drive.ID)
-		}
-		c.Drive.Root = c.Populate(root)
-		c.Drive.IsLoaded = true
 	}
 
 	// start monitoring services
@@ -132,7 +126,7 @@ func (c *Client) start(shutDown chan os.Signal) error {
 	// can actually run.
 	<-shutDown
 
-	// gracefully shutdown
+	// gracefully shutdown when we receive a signal.
 	return c.ShutDown()
 }
 

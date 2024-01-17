@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/env"
@@ -155,43 +156,57 @@ func TestLoadClientSaveState(t *testing.T) {
 	}
 }
 
-// func TestLoadAndStartClient(t *testing.T) {
-// 	env.SetEnv(false)
+func TestLoadAndStartClient(t *testing.T) {
+	env.SetEnv(false)
 
-// 	// make sure we clean the right testing directory
-// 	e := env.NewE()
-// 	tmpDir, err := e.Get("CLIENT_ROOT")
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	// make sure we clean the right testing directory
+	e := env.NewE()
+	tmpDir, err := e.Get("CLIENT_ROOT")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	// initialize and load client
-// 	_, err = Init(true)
-// 	if err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-// 	tmpClient, err := LoadClient()
-// 	if err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-// 	if cSig, err := tmpClient.Start(); err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
+	// initialize and load client
+	tmpClient, err := Init(true)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if cSig, err := tmpClient.Start(); err == nil {
+		log.Print("[TEST] adding test file...")
+		time.Sleep(time.Millisecond * 500)
 
-// 	// shutdown the client monitoring
-// 	tmpClient.ShutDown()
+		// add a tmp file to see the client register the new file
+		f, err := MakeTmpTxtFile(filepath.Join(tmpClient.Drive.Root.Path, "tmp.txt"), RandInt(1000))
+		if err != nil {
+			Fail(t, tmpDir, err)
+		}
 
-// 	// stop client
-// 	cSig <- os.Interrupt
+		// alter the file to see if monitor is detecting changes
+		log.Print("[TEST] modifying test file...")
+		MutateFile(t, f)
+		time.Sleep(time.Millisecond * 500)
 
-// 	if err := Clean(t, tmpDir); err != nil {
-// 		// reset our .env file for other tests
-// 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
-// 			log.Fatal(err2)
-// 		}
-// 		log.Fatal(err)
-// 	}
-// }
+		// register the new file and apply more changes
+		log.Print("[TEST] registering test file and altering again...")
+		if err := tmpClient.AddFile(f.DirID, f); err != nil {
+			Fail(t, tmpDir, err)
+		}
+		MutateFile(t, f)
+		time.Sleep(time.Millisecond * 500)
+
+		// stop client
+		cSig <- os.Interrupt
+	} else {
+		Fail(t, tmpDir, err)
+	}
+	if err := Clean(t, tmpDir); err != nil {
+		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+}
 
 func TestClientUpdateUser(t *testing.T) {
 	env.SetEnv(false)

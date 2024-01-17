@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/sfs/pkg/client"
 
 	"github.com/spf13/cobra"
@@ -9,6 +11,8 @@ import (
 
 var (
 	clnt *client.Client // active client service instance
+
+	shutdown chan os.Signal
 
 	configs = client.ClientConfig()
 
@@ -33,9 +37,13 @@ var (
 					return err
 				}
 			case startFlag:
-				// return clnt.Start()
+				off, err := clnt.Start()
+				if err != nil {
+					return err
+				}
+				shutdown = off
 			case stopFlag:
-				return clnt.ShutDown()
+				shutdown <- os.Kill // stops blocking client process
 			}
 			return nil
 		},
