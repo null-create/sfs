@@ -629,7 +629,7 @@ func (s *Service) UpdateUser(user *auth.User) error {
 		if err != nil {
 			return err
 		} else if u == nil {
-			return fmt.Errorf("user %s not found", user.ID)
+			return fmt.Errorf("user (id=%s) not found", user.ID)
 		}
 		if err := s.updateUser(user); err != nil {
 			return err
@@ -647,11 +647,11 @@ func (s *Service) UpdateUser(user *auth.User) error {
 func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("drive id=%s not found", driveID)
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	file := drive.GetFile(fileID)
 	if file == nil {
-		return nil, fmt.Errorf("file %s not found", fileID)
+		return nil, fmt.Errorf("file (id=%s) not found", fileID)
 	}
 	return file, nil
 }
@@ -660,7 +660,7 @@ func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
 func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("drive id=%s not found", driveID)
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	files := drive.GetFiles()
 	if len(files) == 0 {
@@ -674,7 +674,7 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 func (s *Service) AddFile(dirID string, file *svc.File) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
-		return fmt.Errorf("drive id=%s not found", file.DriveID)
+		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
 	if err := drive.AddFile(dirID, file); err != nil {
 		return fmt.Errorf("failed to add file to drive: %v", err)
@@ -693,7 +693,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
-		return fmt.Errorf("drive id=%s not found", file.DriveID)
+		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
 	if err := drive.Root.UpdateFile(file, data); err != nil {
 		return err
