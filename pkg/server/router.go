@@ -93,6 +93,7 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/all", func(r chi.Router) {
 				// get a list of all active users
+				r.Use(AllUsersCtx)
 				r.Get("/", api.GetAllUsers)
 			})
 		})
