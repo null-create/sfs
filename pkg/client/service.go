@@ -420,7 +420,6 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 		return dir
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
 		return dir
 	}
 	for _, entry := range entries {
@@ -466,11 +465,7 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 // a new root directory object and attaches it to the drive.
 func (c *Client) RefreshDrive() error {
 	// refresh root against the database and create a new root object
-	newRoot := c.refreshDrive(c.Drive.Root)
-
-	// clear old contents from memory then add new root
-	c.Drive.Root.Clear(c.Drive.Root.Key)
-	c.Drive.Root = newRoot
+	c.Drive.Root = c.refreshDrive(c.Drive.Root)
 
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state file: %v", err)
@@ -489,7 +484,6 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 		return dir
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
 		return dir
 	}
 	for _, entry := range entries {
