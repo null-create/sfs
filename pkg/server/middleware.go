@@ -36,7 +36,7 @@ func AllFilesCtx(h http.Handler) http.Handler {
 			return
 		}
 		if len(files) == 0 {
-			http.Error(w, fmt.Sprintf("no files found for user %s", userID), http.StatusNotFound)
+			w.Write([]byte(fmt.Sprintf("no files found for user %s", userID)))
 			return
 		}
 		newCtx := context.WithValue(r.Context(), Files, files)
