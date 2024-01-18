@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -90,28 +89,8 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 	if err := c.WatchFile(file.ClientPath); err != nil {
 		return err
 	}
-	// now send new file to sfs server
-	req, err := c.GetFileReq(file, "new")
-	if err != nil {
-		return err
-	}
-	// first send metadata
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] failed to send new file metadata to sfs server. upload to server cancelled")
-		c.dump(resp, true)
-		// exit before transferring file.
-		// we only want physical files on the server
-		// we have a record for.
-		return nil
-	}
-	// then send actual file
-	if err := c.Transfer.Upload(http.MethodPost, file, c.Endpoints["new file"]); err != nil {
-		return err
-	}
+	// NOTE: file will be uploaded to the server via
+	// its event handler.
 	return nil
 }
 
@@ -132,10 +111,6 @@ func (c *Client) AddFiles(dirID string, files []*svc.File) error {
 			return err
 		}
 	}
-	// push new files to sfs server
-	if err := c.Push(); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -155,10 +130,6 @@ func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
 	if err := c.Db.UpdateFile(file); err != nil {
 		return err
 	}
-	// send updated file to the server
-	if err := c.Transfer.Upload(http.MethodPut, file, file.Endpoint); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -169,10 +140,6 @@ func (c *Client) RemoveFile(dirID string, file *svc.File) error {
 		return err
 	}
 	if err := c.Db.RemoveFile(file.ID); err != nil {
-		return err
-	}
-	// remove from server
-	if err := c.FileReq(file, "delete"); err != nil {
 		return err
 	}
 	return nil
@@ -213,22 +180,6 @@ func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
 		}
 		return err
 	}
-	// send metadata to the server
-	req, err := c.NewDirectoryRequest(dir)
-	if err != nil {
-		return err
-	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] failed to send dir metadata to server")
-		c.dump(resp, true)
-		return nil
-	}
-	// send dir as a zip archive
-
 	return nil
 }
 
@@ -250,8 +201,6 @@ func (c *Client) AddDirs(dirs []*svc.Directory) error {
 			return err
 		}
 	}
-	// send metadata to server
-
 	return nil
 }
 
@@ -273,20 +222,6 @@ func (c *Client) RemoveDir(dirID string) error {
 	//
 	// need to think about this. this could easily be a recursive operation,
 	// but there's a lot that needs to be accounted for if that's the route we want to go
-
-	// remove from server
-	req, err := c.DeleteDirectoryRequest(dir)
-	if err != nil {
-		return err
-	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] server returned code: %d", resp.StatusCode)
-		c.dump(resp, true)
-	}
 	return nil
 }
 
@@ -298,7 +233,6 @@ func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
 	if err := c.Db.RemoveDirectories(dirs); err != nil {
 		return err
 	}
-	// TODO: remove from server
 	return nil
 }
 
