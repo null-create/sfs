@@ -41,15 +41,12 @@ func NewSyncIndex(userID string) *SyncIndex {
 	}
 }
 
-func (s *SyncIndex) IsMapped() bool {
-	return len(s.LastSync) == 0
-}
-
-// resets ToUpdate
+// resets both LastSync and ToUpdate maps
 func (s *SyncIndex) Reset() {
-	for key := range s.ToUpdate {
-		delete(s.ToUpdate, key)
-	}
+	s.LastSync = nil
+	s.LastSync = make(map[string]time.Time)
+	s.ToUpdate = nil
+	s.ToUpdate = make(map[string]*File)
 }
 
 // converts to json format for transfer
@@ -124,7 +121,10 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 }
 
 // compares a given syncindex against a newly generated one and returns the differnece
-// between the two, favoring the newer one for any last sync times
+// between the two, favoring the newer one for any last sync times.
+//
+// the map this returns will only contain the itemps that were matched and found to have a
+// more recent time -- items that weren't matched will be ignored.
 func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	diff := NewSyncIndex(orig.UserID)
 	for fileID, lastSync := range new.LastSync {
