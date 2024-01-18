@@ -28,7 +28,7 @@ func (c *Client) StopMonitoring() {
 // adds a file to monitor, then creates and starts
 // a dedicated event listener and handler for this file.
 func (c *Client) WatchFile(filePath string) error {
-	if err := c.Monitor.WatchFile(filePath); err != nil {
+	if err := c.Monitor.WatchItem(filePath); err != nil {
 		return err
 	}
 	if err := c.NewHandler(filePath); err != nil {
@@ -158,7 +158,14 @@ func (c *Client) NewEHandler(filePath string) error {
 						log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
 						return nil
 					}
-					if evts.StartSync {
+					// TODO: need to decide how ofter to run sync operations once the
+					// events buffer reaches capacity (i ->n).
+					// should have some configs around whether we build the update map
+					// every time, or if its a single event. BuildToUpdate is mainly intended
+					// for large sync operations with files and directories processsed in batches.
+					//
+					// NOTE: whatever operations take place here will need to be thread safe!
+					if evts.AtCap {
 						// build update map and push file changes to server
 						c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 						if err := c.Push(); err != nil {

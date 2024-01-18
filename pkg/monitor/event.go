@@ -39,7 +39,7 @@ type Events struct {
 	threshold int   // buffer limit
 	Buffered  bool  // whether this event list is buffered
 	Total     int   // current total events
-	StartSync bool  // flag to indicate whether a sync operation should start
+	AtCap     bool  // flag to indicate whether we've reached the buffer limit
 	Events    EList // event object list
 }
 
@@ -63,7 +63,7 @@ func NewEvents(buffered bool) *Events {
 func (e *Events) Reset() {
 	e.Events = nil
 	e.Events = make(EList, 0)
-	e.StartSync = false
+	e.AtCap = false
 	e.Total = 0
 }
 
@@ -88,7 +88,7 @@ func (e *Events) AddEvent(evt Event) {
 		e.Events = append(e.Events, evt)
 		e.Total += 1
 		if e.Total == e.threshold {
-			e.StartSync = true
+			e.AtCap = true
 		}
 	} else {
 		log.Printf("[WARNING] event list threshold met. event %s not added!", evt.ID)

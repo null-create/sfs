@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -41,6 +42,7 @@ type Directory struct {
 	// should be something like:
 	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
+	// TODO: client path and server path
 
 	// security attributes
 	Protected bool   `json:"protected"`
@@ -153,6 +155,14 @@ func (d *Directory) IsNil() bool {
 
 func (d *Directory) IsEmpty() bool {
 	return len(d.Files) == 0 && len(d.Dirs) == 0
+}
+
+// check if the physical directory actually exists
+func (d *Directory) Exists() bool {
+	if _, err := os.Stat(d.Path); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
 
 // returns the total count of files for only this directory.
@@ -516,16 +526,16 @@ func (d *Directory) RemoveSubDirs() error {
 	return nil
 }
 
-// returns a map of all subdirectories starting from the current directory.
-// returns an empty map if nothing is not found
-func (d *Directory) GetSubDirs() map[string]*Directory {
-	return d.WalkDs()
-}
-
 // attempts to locate the directory or subdirectory starting from the given directory.
 // returns nil if not found.
 func (d *Directory) GetSubDir(dirID string) *Directory {
 	return d.WalkD(dirID)
+}
+
+// returns a map of all subdirectories starting from the current directory.
+// returns an empty map if nothing is not found
+func (d *Directory) GetSubDirs() map[string]*Directory {
+	return d.WalkDs()
 }
 
 // ------------------------------------------------------------

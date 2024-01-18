@@ -51,7 +51,7 @@ func TestStartHandler(t *testing.T) {
 	}
 
 	// monitor this new file for changes
-	c.Monitor.WatchFile(f.Path)
+	c.Monitor.WatchItem(f.Path)
 
 	// create a new handler and start listening for file events from the monitor
 	if err := c.NewHandler(f.Path); err != nil {

@@ -76,17 +76,11 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 // add a file to the events map and create a new monitoring
 // goroutine. will need a corresponding events handler. will be a no-op if the
 // given path is not a file path.
-func (m *Monitor) WatchFile(filePath string) error {
-	if isDir, err := m.IsDir(filePath); isDir {
-		log.Printf("[WARNING] path is a directory, not a file: %s", filePath)
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to read file path: %s\n %v", filePath, err)
-	}
-	if !m.Exists(filePath) {
+func (m *Monitor) WatchItem(path string) error {
+	if !m.Exists(path) {
 		stop := make(chan bool)
-		m.OffSwitches[filePath] = stop
-		m.Events[filePath] = watchFile(filePath, stop)
+		m.OffSwitches[path] = stop
+		m.Events[path] = watch(path, stop)
 	}
 	return nil
 }
@@ -150,10 +144,10 @@ func (m *Monitor) ShutDown() {
 
 // creates a new monitor goroutine for a given file.
 // returns a channel that sends events to the listener for handling
-func watchFile(filePath string, stop chan bool) chan Event {
-	initialStat, err := os.Stat(filePath)
+func watch(path string, stop chan bool) chan Event {
+	initialStat, err := os.Stat(path)
 	if err != nil {
-		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(filePath), err)
+		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(path), err)
 		return nil
 	}
 
@@ -161,15 +155,15 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	evt := make(chan Event)
 
 	go func() {
-		log.Printf("[INFO] monitoring %s ...", filepath.Base(filePath))
+		log.Printf("[INFO] monitoring %s ...", filepath.Base(path))
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] shutting down monitoring for %s...", filepath.Base(filePath))
+				log.Printf("[INFO] shutting down monitoring for %s...", filepath.Base(path))
 				close(evt)
 				return
 			default:
-				stat, err := os.Stat(filePath)
+				stat, err := os.Stat(path)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] failed to get file info: %v\nstopping monitoring...", err)
 					close(evt)
@@ -178,12 +172,12 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Printf("[INFO] %s deleted. stopping monitoring ...", filepath.Base(filePath))
+					log.Printf("[INFO] %s deleted. stopping monitoring ...", filepath.Base(path))
 					evt <- Event{
 						Type: FileDelete,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: filePath,
+						Path: path,
 					}
 					close(evt)
 					return
@@ -194,7 +188,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 						Type: FileChange,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: filePath,
+						Path: path,
 					}
 					initialStat = stat
 				// file modification time change
@@ -204,7 +198,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 						Type: FileChange,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: filePath,
+						Path: path,
 					}
 					initialStat = stat
 				default:
@@ -227,7 +221,7 @@ func watchAll(path string, m *Monitor) error {
 			return err
 		}
 		// m.WatchFile handles whether this is a directory or a file
-		if err := m.WatchFile(filePath); err != nil {
+		if err := m.WatchItem(filePath); err != nil {
 			return err
 		}
 		return nil

@@ -11,6 +11,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/server"
 	svc "github.com/sfs/pkg/service"
 
 	"github.com/alecthomas/assert/v2"
@@ -171,34 +172,64 @@ func TestLoadAndStartClient(t *testing.T) {
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
+
+	// add test drive to service so the server can
+	// synchronize with the client
+	testService, err := server.Init(false, false)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := testService.AddDrive(tmpClient.Drive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// run a test server to register the file when added to the client
+	shutDown := make(chan bool)
+	testServer := server.NewServer()
+	go func() {
+		testServer.Start(shutDown)
+	}()
+
 	if cSig, err := tmpClient.Start(); err == nil {
 		log.Print("[TEST] adding test file...")
 		time.Sleep(time.Millisecond * 500)
 
 		// add a tmp file to see the client register the new file
-		f, err := MakeTmpTxtFile(filepath.Join(tmpClient.Drive.Root.Path, "tmp.txt"), RandInt(1000))
+		// with the monitoring components
+		testFile, err := MakeTmpTxtFile(
+			filepath.Join(tmpClient.Drive.Root.Path, "tmp.txt"),
+			RandInt(1000),
+		)
 		if err != nil {
+			shutDown <- true
 			Fail(t, tmpDir, err)
 		}
 
 		// alter the file to see if monitor is detecting changes
 		log.Print("[TEST] modifying test file...")
-		MutateFile(t, f)
+		MutateFile(t, testFile)
 		time.Sleep(time.Millisecond * 500)
 
 		// register the new file and apply more changes
 		log.Print("[TEST] registering test file and altering again...")
-		if err := tmpClient.AddFile(f.DirID, f); err != nil {
+		testFile.DirID = tmpClient.Drive.Root.ID
+		if err := tmpClient.AddFile(testFile.DirID, testFile); err != nil {
 			Fail(t, tmpDir, err)
 		}
-		MutateFile(t, f)
+		MutateFile(t, testFile)
 		time.Sleep(time.Millisecond * 500)
 
 		// stop client
 		cSig <- os.Interrupt
 	} else {
+		shutDown <- true
 		Fail(t, tmpDir, err)
 	}
+
+	// shutdown test server
+	shutDown <- true
+
+	// clean up
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
@@ -355,15 +386,15 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	tmpClient.Drive = svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.UserID, root.Path, root.ID, root)
 
 	// create initial sync index
-	idx := tmpClient.Drive.Root.WalkS(svc.NewSyncIndex(tmpClient.Conf.User))
+	tmpClient.Drive.SyncIndex = svc.BuildSyncIndex(tmpClient.Drive.Root)
 
 	// alter some files so we can mark them to be synced
 	root.Files = MutateFiles(t, root.Files)
 
 	// build ToUpdate map
-	idx = tmpClient.Drive.Root.WalkU(idx)
-	assert.NotEqual(t, nil, idx.ToUpdate)
-	assert.NotEqual(t, 0, len(idx.ToUpdate))
+	tmpClient.Drive.SyncIndex = svc.BuildToUpdate(tmpClient.Drive.Root, tmpClient.Drive.SyncIndex)
+	assert.NotEqual(t, nil, tmpClient.Drive.SyncIndex.ToUpdate)
+	assert.NotEqual(t, 0, len(tmpClient.Drive.SyncIndex.ToUpdate))
 
 	// clean up
 	if err := Clean(t, tmpDir); err != nil {

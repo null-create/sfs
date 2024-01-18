@@ -50,15 +50,18 @@ func TestGetServerSyncIndex(t *testing.T) {
 	}()
 
 	// retrieve index from server API and confirm non-empty fields
-	idx := client.GetServerIdx()
-	if idx == nil {
+	idx, err := client.GetServerIdx()
+	if err != nil || idx == nil {
 		shutDown <- true
 		if err := Clean(t, client.Root); err != nil {
 			t.Fatal(err)
 		}
-		Fail(t, clientRoot, fmt.Errorf("failed to retrieve sync index from server"))
+		if err != nil {
+			Fail(t, clientRoot, err)
+		} else if idx == nil {
+			Fail(t, clientRoot, fmt.Errorf("sync index was nil"))
+		}
 	}
-
 	// display the sync index
 	idxJson, err := idx.ToJSON()
 	if err != nil {

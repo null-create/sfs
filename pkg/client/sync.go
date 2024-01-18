@@ -179,3 +179,35 @@ func (c *Client) Sync() error {
 
 	return nil
 }
+
+// retrieve the current sync index for this user from the server
+func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["get index"], &buf)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.dump(resp, true)
+		return nil, fmt.Errorf("failed to get server sync index: %v", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	var idxBuf bytes.Buffer
+	_, err = io.Copy(&idxBuf, resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var idx *svc.SyncIndex
+	if err = json.Unmarshal(idxBuf.Bytes(), &idx); err != nil {
+		return nil, err
+	}
+	return idx, nil
+}
+
+// TODO:
+// ------- single-operation pushes and pulls from the server -------------
