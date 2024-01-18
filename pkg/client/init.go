@@ -84,7 +84,6 @@ func Setup() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.User = newUser
 	newUser.DriveID = client.Drive.ID
 	newUser.DrvRoot = client.Drive.Root.Path
 

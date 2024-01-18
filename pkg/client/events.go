@@ -151,10 +151,8 @@ func (c *Client) NewEHandler(filePath string) error {
 					switch e.Type {
 					case monitor.FileCreate:
 						evts.AddEvent(e)
-						// TODO: should EHandler create new files it discoveres?
 					case monitor.FileChange:
 						evts.AddEvent(e)
-						// TODO: should EHandler update files in the service?
 					case monitor.FileDelete:
 						off <- true // shutdown monitoring thread, remove from index, and shut down handler
 						log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
