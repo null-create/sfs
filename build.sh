@@ -7,6 +7,13 @@ build() {
 	GOOS=$1 GOARCH=$2 go build -o $3
 }
 
+# check if go is installed first
+if ! command -v go &> /dev/null; then
+    echo "golang is not installed"
+    echo "install before running build script"
+    exit 1
+fi
+
 OUTFILE=""
 
 # build executable based on the host OS
@@ -32,11 +39,11 @@ case "$(uname -s)" in
 esac
 
 # set path varible for sfs CLI, then test
-BINPATH="$(pwd)/${OUT_FILE}"
-export PATH="$PATH:${BINPATH}"
+# BINPATH="$(pwd)/${OUT_FILE}"
+# export PATH="$PATH:${BINPATH}"
 ./sfs -h
 if [[ $? -ne 0 ]]; then
-  echo "failed to set PATH variable"
+  echo "failed to create executable"
   exit 1
 fi
 
