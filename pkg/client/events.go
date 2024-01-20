@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"log"
+	"path/filepath"
 	"time"
 
 	"github.com/sfs/pkg/monitor"
@@ -27,14 +28,14 @@ func (c *Client) StopMonitoring() {
 
 // adds a file to monitor, then creates and starts
 // a dedicated event listener and handler for this file.
-func (c *Client) WatchFile(filePath string) error {
-	if err := c.Monitor.WatchItem(filePath); err != nil {
+func (c *Client) WatchItem(path string) error {
+	if err := c.Monitor.WatchItem(path); err != nil {
 		return err
 	}
-	if err := c.NewHandler(filePath); err != nil {
+	if err := c.NewHandler(path); err != nil {
 		return err
 	}
-	if err := c.StartHandler(filePath); err != nil {
+	if err := c.StartHandler(path); err != nil {
 		return err
 	}
 	return nil
@@ -43,13 +44,13 @@ func (c *Client) WatchFile(filePath string) error {
 // add a new event handler for the given file.
 // path to the given file must already have a monitoring
 // goroutine in place (call client.WatchFile(filePath) first).
-func (c *Client) NewHandler(filePath string) error {
-	if _, exists := c.Handlers[filePath]; !exists {
-		if err := c.NewEHandler(filePath); err != nil {
+func (c *Client) NewHandler(path string) error {
+	if _, exists := c.Handlers[path]; !exists {
+		if err := c.NewEHandler(path); err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("file (%v) is already registered", filePath)
+		return fmt.Errorf("%s is already registered", filepath.Base(path))
 	}
 	return nil
 }
@@ -129,71 +130,68 @@ func (c *Client) BuildHandlers() error {
 
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
-func (c *Client) NewEHandler(filePath string) error {
+func (c *Client) NewEHandler(path string) error {
 	// retrieve the event monitor channel, the monitor
 	// off switch, the associated fileID, and a new events buffer
-	evtChan, off, fileID, evts, err := c.setupHandler(filePath)
-	if err != nil {
-		return err
-	}
 	// handler off-switch
 	stopHandler := make(chan bool)
 	// handler
 	handler := func() {
-		// event listener
-		listener := func() error {
-			for {
-				select {
-				case <-stopHandler:
-					log.Printf("[INFO] stopping event handler for file id=%v ...", fileID)
-					return nil
-				case e := <-evtChan:
-					switch e.Type {
-					case monitor.FileCreate:
-						evts.AddEvent(e)
-					case monitor.FileChange:
-						evts.AddEvent(e)
-					case monitor.FileDelete:
-						off <- true // shutdown monitoring thread, remove from index, and shut down handler
-						log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
-						return nil
-					}
-					// TODO: need to decide how ofter to run sync operations once the
-					// events buffer reaches capacity (i ->n).
-					// should have some configs around whether we build the update map
-					// every time, or if its a single event. BuildToUpdate is mainly intended
-					// for large sync operations with files and directories processsed in batches.
-					//
-					// NOTE: whatever operations take place here will need to be thread safe!
-					if evts.AtCap {
-						// build update map and push file changes to server
-						c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-						if err := c.Push(); err != nil {
-							return err
-						}
-						evts.Reset()             // resets events buffer
-						time.Sleep(monitor.WAIT) // wait before resuming event handler
-					}
-				default:
-					continue
-				}
-			}
-		}
 		// start listener
 		go func() {
-			if err := listener(); err != nil {
+			if err := c.listener(path, stopHandler); err != nil {
 				log.Printf("[ERROR] listener failed: %v", err)
 				stopHandler <- true
 				// shut down monitoring thread for this event handler
 				// all monitoring threads must have a dedicated handler
-				c.Monitor.CloseChan(filePath)
+				c.Monitor.CloseChan(path)
 			}
 		}()
 	}
-
 	// save the handler and its off-switch
-	c.Handlers[filePath] = handler
-	c.OffSwitches[filePath] = stopHandler
-
+	c.Handlers[path] = handler
+	c.OffSwitches[path] = stopHandler
 	return nil
+}
+
+func (c *Client) listener(path string, stop chan bool) error {
+	evtChan, off, fileID, evts, err := c.setupHandler(path)
+	if err != nil {
+		return err
+	}
+	// main listening loop for events
+	for {
+		select {
+		case <-stop:
+			log.Printf("[INFO] stopping event handler for file id=%v ...", fileID)
+			return nil
+		case e := <-evtChan:
+			switch e.Type {
+			case monitor.Change:
+				evts.AddEvent(e)
+			case monitor.Delete:
+				off <- true // shutdown monitoring thread, remove from index, and shut down handler
+				log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
+				return nil
+			}
+			// TODO: need to decide how ofter to run sync operations once the
+			// events buffer reaches capacity (i ->n).
+			// should have some configs around whether we build the update map
+			// every time, or if its a single event. BuildToUpdate is mainly intended
+			// for large sync operations with files and directories processsed in batches.
+			//
+			// NOTE: whatever operations take place here will need to be thread safe!
+			if evts.AtCap {
+				// build update map and push file changes to server
+				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
+				if err := c.Push(); err != nil {
+					return err
+				}
+				evts.Reset()             // resets events buffer
+				time.Sleep(monitor.WAIT) // wait before resuming event handler
+			}
+		default:
+			continue
+		}
+	}
 }

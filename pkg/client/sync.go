@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"sync"
 	"time"
 
 	svc "github.com/sfs/pkg/service"
@@ -45,21 +46,22 @@ func (c *Client) dump(resp *http.Response, body bool) {
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
 func (c *Client) Push() error {
-	if len(c.Drive.SyncIndex.ToUpdate) == 0 || c.Drive.SyncIndex.ToUpdate == nil {
+	if len(c.Drive.SyncIndex.ToUpdate) == 0 {
 		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
 	}
 	queue := svc.BuildQ(c.Drive.SyncIndex)
-	if len(queue.Queue) == 0 || queue == nil {
+	if queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
-	// TODO: use a channel to block Push() right before c.reset() until
-	// all files have been uploaded
+	var wg sync.WaitGroup
 	for len(queue.Queue) > 0 {
 		batch := queue.Dequeue()
 		for _, file := range batch.Files {
 			// TODO: some apis are contingent on http method: file post/put is new vs update
 			// need a way to handle these cases on the fly.
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				log.Printf("[INFO] uploading %s to %s...", file.Name, file.Endpoint)
 				if err := c.Transfer.Upload(
 					http.MethodPost,
@@ -71,6 +73,7 @@ func (c *Client) Push() error {
 			}()
 		}
 	}
+	wg.Wait()
 	c.reset()
 	return nil
 }
@@ -87,10 +90,13 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 	if len(queue.Queue) == 0 || queue == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
+	var wg sync.WaitGroup
 	for len(queue.Queue) > 0 {
 		batch := queue.Dequeue()
 		for _, file := range batch.Files {
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				if err := c.Transfer.Download(
 					file.ClientPath,
 					file.Endpoint,
@@ -107,6 +113,7 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 			}()
 		}
 	}
+	wg.Wait()
 	c.reset()
 	return nil
 }
@@ -120,16 +127,12 @@ func (c *Client) Diff() error {
 	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 
 	// retrieve the servers index for this client
-	req, err := c.GetIdxRequest()
-	if err != nil {
-		return err
-	}
-	resp, err := c.Client.Do(req)
+	resp, err := c.Client.Get(c.Endpoints["gen updates"])
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[INFO] server returned non-200 status")
+		log.Printf("[ERROR] server returned status code: %v", resp.StatusCode)
 		c.dump(resp, true)
 		return nil
 	}
@@ -149,11 +152,7 @@ func (c *Client) Sync() error {
 	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 
 	// get latest server update map
-	req, err := c.GetIdxUpdates()
-	if err != nil {
-		return err
-	}
-	resp, err := c.Client.Do(req)
+	resp, err := c.Client.Get(c.Endpoints["gen updates"])
 	if err != nil {
 		return err
 	}
@@ -182,12 +181,7 @@ func (c *Client) Sync() error {
 
 // retrieve the current sync index for this user from the server
 func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
-	var buf bytes.Buffer
-	req, err := http.NewRequest(http.MethodGet, c.Endpoints["get index"], &buf)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.Client.Do(req)
+	resp, err := c.Client.Get(c.Endpoints["get index"])
 	if err != nil {
 		return nil, err
 	}

@@ -32,15 +32,15 @@ type File struct {
 	Key       string `json:"key"`
 
 	// synchronization and file integrity fields
-	LastSync   time.Time `json:"last_sync"`
-	Path       string    `json:"path"` // temp. will be replaced by server/client path at some point
-	ServerPath string    `json:"server_path"`
-	ClientPath string    `json:"client_path"`
-	Endpoint   string    `json:"endpoint"` // unique server API endpoint
-	CheckSum   string    `json:"checksum"`
-	Algorithm  string    `json:"algorithm"`
+	LastSync   time.Time `json:"last_sync"`   // last sync time for this file
+	Path       string    `json:"path"`        // temp. will be replaced by server/client path at some point
+	ServerPath string    `json:"server_path"` // path to file on the server
+	ClientPath string    `json:"client_path"` // path to file on the client
+	Endpoint   string    `json:"endpoint"`    // unique server API endpoint
+	CheckSum   string    `json:"checksum"`    // file checksum
+	Algorithm  string    `json:"algorithm"`   // checksum algorithm
 
-	// file content/bytes
+	// file content
 	Content []byte
 }
 

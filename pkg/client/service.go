@@ -86,7 +86,7 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 	if err := c.Db.AddFile(file); err != nil {
 		return err
 	}
-	if err := c.WatchFile(file.ClientPath); err != nil {
+	if err := c.WatchItem(file.ClientPath); err != nil {
 		return err
 	}
 	// NOTE: file will be uploaded to the server via
@@ -107,7 +107,7 @@ func (c *Client) AddFiles(dirID string, files []*svc.File) error {
 		if err := c.Db.AddFile(file); err != nil {
 			return err
 		}
-		if err := c.WatchFile(file.ClientPath); err != nil {
+		if err := c.WatchItem(file.ClientPath); err != nil {
 			return err
 		}
 	}

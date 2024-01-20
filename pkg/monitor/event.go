@@ -8,13 +8,11 @@ import (
 
 type EventType string
 
+// event enums
 const (
-	FileCreate EventType = "create"
-	FileDelete EventType = "delete"
-	FileChange EventType = "change"
-	DirCreate  EventType = "create"
-	DirDelete  EventType = "delete"
-	DirChange  EventType = "change"
+	Create EventType = "create"
+	Delete EventType = "delete"
+	Change EventType = "change"
 )
 
 type Event struct {

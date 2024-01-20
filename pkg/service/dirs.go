@@ -38,11 +38,16 @@ type Directory struct {
 	// size in MB
 	Size float64 `json:"size"`
 
+	// TODO: remove this
 	// absolute path to this directory.
 	// should be something like:
 	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
-	// TODO: client path and server path
+
+	// TODO: client path and server path. add to DB schema
+	// and update DB functions
+	ClientPath string `json:"client_path"`
+	ServerPath string `json:"server_path"`
 
 	// security attributes
 	Protected bool   `json:"protected"`
