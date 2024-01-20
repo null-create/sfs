@@ -163,6 +163,38 @@ func (q *Query) GetFile(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
+// find a file in the database by searching with its path
+func (q *Query) GetFileByPath(filePath string) (*svc.File, error) {
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	file := new(svc.File)
+	if err := q.Conn.QueryRow(FindFileByPathQuery, filePath).Scan(
+		&file.ID,
+		&file.Name,
+		&file.OwnerID,
+		&file.DirID,
+		&file.DriveID,
+		&file.Protected,
+		&file.Key,
+		&file.LastSync,
+		&file.Path,
+		&file.ServerPath,
+		&file.ClientPath,
+		&file.Endpoint,
+		&file.CheckSum,
+		&file.Algorithm,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows returned (path=%s): %v", filePath, err)
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get file metadata: %v", err)
+	}
+	return file, nil
+}
+
 // get a file by name. returns nil if no file is found in the db.
 func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 	q.WhichDB("files")
