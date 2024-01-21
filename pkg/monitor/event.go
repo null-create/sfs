@@ -9,10 +9,16 @@ import (
 type EventType string
 
 // event enums
+// TODO: more specific enums (file mode change, path change, etc...)
 const (
-	Create EventType = "create"
-	Delete EventType = "delete"
-	Change EventType = "change"
+	Create  EventType = "create"
+	Delete  EventType = "delete"
+	Change  EventType = "change"
+	ModTime EventType = "modtime"
+	Size    EventType = "size"
+	Mode    EventType = "mode"
+	Path    EventType = "path"
+	Name    EventType = "name"
 )
 
 type Event struct {
