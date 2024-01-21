@@ -89,7 +89,45 @@ func TestFindFileByName(t *testing.T) {
 	}
 }
 
-func TestFindUserByID(t *testing.T) {}
+func TestFindFileByPath(t *testing.T) {
+	env.SetEnv(false)
+
+	testDir := GetTestingDir()
+
+	// make testing objects
+	tmpFile, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// create tmp table
+	NewTable(filepath.Join(testDir, "tmp-db"), CreateFileTable)
+
+	// test query
+	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
+
+	// add file
+	if err := q.AddFile(tmpFile); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// search by file path
+	file, err := q.GetFileByPath(tmpFile.Path)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if file == nil {
+		Fail(t, GetTestingDir(), fmt.Errorf("file not found: %v", tmpFile.Name))
+	}
+	if file.Path != tmpFile.Path {
+		Fail(t, GetTestingDir(), fmt.Errorf("file name mismatch. orig: %s new: %s", tmpFile.Name, file.Name))
+	}
+
+	// clean up tmp db
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+}
 
 func TestFindDirByName(t *testing.T) {}
 
