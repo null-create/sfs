@@ -11,6 +11,8 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
+const txtData string = "all work and no play makes jack a dull boy\n"
+
 // handles test failures,
 // supplies [ERROR] prefix to supplied error messages
 //
@@ -32,6 +34,40 @@ func GetTestingDir() string {
 		}
 	}
 	return filepath.Join(curDir, "testing")
+}
+
+// make a temp .txt file of n size (in bytes).
+//
+// n is determined by textReps since that will be how
+// many times testData is written to the text file
+//
+// returns a file pointer to the new temp file
+func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error creating file: %v", err)
+	}
+	defer file.Close()
+
+	var data string
+	f := svc.NewFile(filepath.Base(filePath), "some-rand-id", "me", filePath)
+	for i := 0; i < textReps; i++ {
+		data += txtData
+	}
+	if err = f.Save([]byte(data)); err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+// make an empty test dir object. does not create a physical directory.
+func MakeTestDir(path string) *svc.Directory {
+	return svc.NewDirectory("bill", "bill buttlicker", "some-rand-id", filepath.Join(path, "bill"))
+}
+
+// make a tmp user for testing
+func MakeTestUser(testDir string) *auth.User {
+	return auth.NewUser("bill buttlicker", "billb", "bill@bill.com", filepath.Join(testDir, "bill"), false)
 }
 
 func MakeTestItems(t *testing.T, testDir string) (*svc.Drive, *svc.Directory, *auth.User) {

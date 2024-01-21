@@ -1,5 +1,12 @@
 package db
 
+import (
+	"log"
+	"math/rand"
+	"testing"
+	"time"
+)
+
 // compare two unordered slices of equal length and determine
 // whether they contain the same elements
 
@@ -23,4 +30,27 @@ func AreEqualSlices(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// Generate a random integer in the range [1, n)
+func RandInt(limit int) int {
+	// Seed the random number generator with the current time
+	rand.Seed(time.Now().UnixNano())
+
+	num := rand.Intn(limit)
+	if num == 0 {
+		return 1
+	}
+	return num
+}
+
+// handle test failures
+//
+// similar to Fatal(), except you can supply a
+// testing/tmp directy path to clean
+func Fail(t *testing.T, dir string, err error) {
+	if err := Clean(t, dir); err != nil {
+		log.Fatal(err)
+	}
+	t.Fatalf("[ERROR] %v", err)
 }
