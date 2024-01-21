@@ -311,7 +311,7 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 			}
 			// new file
 			if file == nil {
-				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, filepath.Join(item.Name(), dir.Path))
+				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, filepath.Join(dir.Path, item.Name()))
 				if err := s.Db.AddFile(newFile); err != nil {
 					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
 					continue // TEMP until there's a better way to handle this error

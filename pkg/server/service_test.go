@@ -347,12 +347,58 @@ func TestUpdateDrive(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
+	// verify the name of the owner of the drive
+	drv, err := testSvc.Db.GetDrive(testDrv.ID)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if drv.OwnerName != testDrv.OwnerName {
+		Fail(t, GetTestingDir(), fmt.Errorf("owner name mismatch. orig: %s new: %s", testDrv.OwnerName, drv.OwnerName))
+	}
+
 	if err := Clean(GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
 	}
 }
 
-// func TestRefreshDrive(t *testing.T) {}
+func TestRefreshDrive(t *testing.T) {
+	env.SetEnv(false)
+
+	// test service
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// test drive
+	testDrv := MakeTmpDrive(t)
+	if err := testSvc.AddDrive(testDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// add a file to the test drive
+	file, err := MakeTmpTxtFile(filepath.Join(testDrv.Root.Path, "new-tmp.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if err := testSvc.RefreshDrive(testDrv.ID); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	file2, err := testSvc.Db.GetFileByName(file.Name)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if file2.Path != file.Path {
+		Fail(t, GetTestingDir(), fmt.Errorf("file path mismatch: orig: %s new: %s", file.Path, file2.Path))
+	}
+	if file2.Name != file.Name {
+		Fail(t, GetTestingDir(), fmt.Errorf("file name mismatch. orig: %s new: %s", file.Name, file2.Name))
+	}
+
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
+	}
+}
 
 // func TestRemoveDrive(t *testing.T) {}
 
