@@ -203,8 +203,41 @@ func TestFindDirByPaths(t *testing.T) {
 	}
 }
 
-func TestFindDriveByUserID(t *testing.T) {}
+func TestFindDriveByUserID(t *testing.T) {
+	env.SetEnv(false)
 
-func TestFindDriveIDWithUserID(t *testing.T) {}
+	testDir := GetTestingDir()
+
+	// make testing objects
+	tmpDrv, _, _ := MakeTestItems(t, GetTestingDir())
+
+	// create tmp table
+	NewTable(filepath.Join(testDir, "tmp-db"), CreateDriveTable)
+
+	// test query
+	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
+
+	// add drive
+	if err := q.AddDrive(tmpDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// search by userID
+	drv, err := q.GetDriveByUserID(tmpDrv.OwnerID)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if drv == nil {
+		Fail(t, GetTestingDir(), fmt.Errorf("drive was not found"))
+	}
+	if drv.OwnerID != tmpDrv.OwnerID {
+		Fail(t, GetTestingDir(), fmt.Errorf("owner ID mismatch. orig: %s new: %s", tmpDrv.OwnerID, drv.OwnerID))
+	}
+
+	// clean up tmp db
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+}
 
 func TestFindUsersIdWithDriveID(t *testing.T) {}
