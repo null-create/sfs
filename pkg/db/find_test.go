@@ -143,7 +143,7 @@ func TestFindDirByName(t *testing.T) {
 	// test query
 	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
 
-	// add file
+	// add dir
 	if err := q.AddDir(tmpDir); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -180,12 +180,12 @@ func TestFindDirByPaths(t *testing.T) {
 	// test query
 	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
 
-	// add file
+	// add dir
 	if err := q.AddDir(tmpDir); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	// search by name
+	// search by path
 	dir, err := q.GetDirectoryByPath(tmpDir.Path)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
@@ -240,4 +240,37 @@ func TestFindDriveByUserID(t *testing.T) {
 	}
 }
 
-func TestFindUsersIdWithDriveID(t *testing.T) {}
+func TestFindUsersIdWithDriveID(t *testing.T) {
+	env.SetEnv(false)
+
+	testDir := GetTestingDir()
+
+	// make testing objects
+	tmpDrv, _, _ := MakeTestItems(t, GetTestingDir())
+
+	// create tmp table
+	NewTable(filepath.Join(testDir, "tmp-db"), CreateDriveTable)
+
+	// test query
+	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
+
+	// add user
+	if err := q.AddDrive(tmpDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// search by drive ID
+	userID, err := q.GetUserIDFromDriveID(tmpDrv.ID)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if userID == "" {
+		Fail(t, GetTestingDir(), fmt.Errorf("userID not found"))
+	}
+
+	// clean up tmp db
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+
+}

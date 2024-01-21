@@ -63,7 +63,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 // get a userID from a driveID.
 // will return an empty string if no userID is found with this driveID
 func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
-	q.WhichDB("users")
+	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
 
@@ -72,7 +72,7 @@ func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
 	}
 
 	var userID string
-	if err := q.Conn.QueryRow(FindUsersDriveIDQuery, driveID).Scan(&userID); err != nil {
+	if err := q.Conn.QueryRow(FindUsersIDWithDriveIDQuery, driveID).Scan(&userID); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[INFO] no user associated with driveID %s", driveID)
 			return "", nil
