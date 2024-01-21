@@ -7,10 +7,13 @@ import (
 	"testing"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/env"
 	svc "github.com/sfs/pkg/service"
 )
 
 func TestAddAndRemoveFile(t *testing.T) {
+	env.SetEnv(false)
+
 	testDir := GetTestingDir()
 
 	NewTable(filepath.Join(testDir, "Files"), CreateFileTable)
