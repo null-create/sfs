@@ -178,5 +178,3 @@ func TestAddAndFindUser(t *testing.T) {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
-
-// func TestUserExists(t *testing.T) {}
