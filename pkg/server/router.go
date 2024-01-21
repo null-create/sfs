@@ -54,7 +54,7 @@ func NewRouter() *chi.Mux {
 	// instantiate router
 	r := chi.NewRouter()
 
-	// chi's default middleware
+	// standard middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
@@ -69,12 +69,10 @@ func NewRouter() *chi.Mux {
 	// r.Use(AuthUserHandler)
 	r.Use(ContentTypeJson) // will be overridden by streaming API endpoints
 
-	// r.Use(render.SetContentType(render.ContentTypeJSON))
-
 	// placeholder for sfs "homepage"
 	// this will eventually display a simple service index page
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("\nhi\n"))
+		w.Write([]byte("hi"))
 	})
 
 	//v1 routing

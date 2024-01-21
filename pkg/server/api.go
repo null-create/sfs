@@ -162,16 +162,15 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+	defer r.Body.Close()
+	// save file to server
 	if err := newFile.Save(buf.Bytes()); err != nil {
 		msg := fmt.Sprintf("\nfailed to save file to server: %v\n", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	// update service. remove physical file if update fails.
+	// update service
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
-		if err := os.Remove(newFile.ServerPath); err != nil {
-			log.Printf("[WARNING] failed to remove %s (id=%s) from server: %v", newFile.Name, newFile.ID, err)
-		}
 		http.Error(w, fmt.Sprintf("\nfailed to add file to service: %v\n", err), http.StatusInternalServerError)
 		return
 	}
@@ -214,8 +213,7 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	file := r.Context().Value(File).(*svc.File)
 	if err := a.Svc.DeleteFile(file); err != nil {
-		msg := fmt.Sprintf("\nfailed to delete file: %v\n", err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("\nfailed to delete file: %v\n", err), http.StatusInternalServerError)
 		return
 	}
 	msg := fmt.Sprintf("\n%s (id=%s) deleted from server\n", file.Name, file.ID)
@@ -348,7 +346,7 @@ func (a *API) GenIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := idx.ToJSON()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("\nfailed to encode sync index: %v\n", err), http.StatusInternalServerError)
 		return
 	}
 	w.Write(data)

@@ -156,15 +156,15 @@ func (s *Service) DriveExists(driveID string) bool {
 // This should ideally be used for starting a new sfs service in a
 // users root directly that already has files and/or subdirectories.
 func (s *Service) Discover(root *svc.Directory) (*svc.Directory, error) {
-	root = root.Walk()     // traverse users SFS file system
-	files := root.WalkFs() // send everything to the database
+	root = root.Walk()       // traverse users SFS file system
+	files := root.GetFiles() // send everything to the database
 	for _, file := range files {
 		if err := s.Db.AddFile(file); err != nil {
 			return nil, fmt.Errorf("failed to add file to database: %v", err)
 		}
 	}
-	dirs := root.WalkDs()
-	for _, d := range dirs {
+	subDirs := root.GetSubDirs()
+	for _, d := range subDirs {
 		if err := s.Db.AddDir(d); err != nil {
 			return nil, fmt.Errorf("failed to add directory to database: %v", err)
 		}
@@ -541,11 +541,12 @@ func (s *Service) addUser(user *auth.User) error {
 	return nil
 }
 
-// allocate a new service drive for a new user.
+// allocate a new service drive for a new user. used for first time set up.
 //
-// creates a new service drive, adds the user to the
-// user database and service instance, and adds the
-// drive to the drive database.
+// creates a new service drive, creates a new physical root
+// directory on the server for the users files and directories,
+// and adds the new drive, root, user, and all other necessary
+// info to the database.
 func (s *Service) AddUser(newUser *auth.User) error {
 	if _, exists := s.Users[newUser.ID]; !exists {
 		if err := s.addUser(newUser); err != nil {
@@ -753,6 +754,10 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
 	if err := drive.AddSubDir(destDirID, newDir); err != nil {
+		// remove the directory if adding fails
+		if err2 := os.Remove(newDir.Path); err2 != nil {
+			log.Printf("[ERROR] failed to remove directory: %v", err2)
+		}
 		return err
 	}
 	if err := s.Db.AddDir(newDir); err != nil {
@@ -763,7 +768,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 
 // remove a physical directory from a user's drive service.
 // use with caution! will remove all children of this subdirectory
-// as well
+// as well.
 //
 // it's assumed dirID is a sub-directory within the drive, and not
 // the drives root directory itself.

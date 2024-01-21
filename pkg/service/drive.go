@@ -423,7 +423,7 @@ func (d *Drive) removeDir(dirID string) error {
 		if err := os.RemoveAll(dir.Path); err != nil {
 			return err
 		}
-		// this should only really apply to any non-root directory
+		// this should only apply to child directories
 		if dir.Parent != nil {
 			delete(dir.Parent.Dirs, dir.ID)
 		}
