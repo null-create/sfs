@@ -379,13 +379,11 @@ func TestFileDeleteAPI(t *testing.T) {
 	if err != nil {
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to create HTTP request: %v", err))
 	}
-
 	res, err := client.Do(req)
 	if err != nil {
 		shutDown <- true
 		Fail(t, testSvc.UserDir, fmt.Errorf("failed to contact server: %v", err))
 	}
-
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)

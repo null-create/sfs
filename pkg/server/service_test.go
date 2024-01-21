@@ -309,7 +309,7 @@ func TestAddDrive(t *testing.T) {
 	// test service
 	testSvc, err := Init(false, false)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		t.Fail()
 	}
 
 	// test drive
@@ -330,7 +330,7 @@ func TestUpdateDrive(t *testing.T) {
 	// test service
 	testSvc, err := Init(false, false)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		t.Fail()
 	}
 
 	// test drive
@@ -367,7 +367,7 @@ func TestRefreshDrive(t *testing.T) {
 	// test service
 	testSvc, err := Init(false, false)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		t.Fail()
 	}
 
 	// test drive
@@ -407,7 +407,7 @@ func TestDiscover(t *testing.T) {
 
 	testSvc, err := Init(false, false)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		t.Fail()
 	}
 
 	MakeTmpDirs(t)
@@ -438,7 +438,7 @@ func TestPopulate(t *testing.T) {
 
 	testSvc, err := Init(false, false)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		t.Fail()
 	}
 
 	// create a test drive with files and directories
