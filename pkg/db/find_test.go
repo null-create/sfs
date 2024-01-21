@@ -129,7 +129,42 @@ func TestFindFileByPath(t *testing.T) {
 	}
 }
 
-func TestFindDirByName(t *testing.T) {}
+func TestFindDirByName(t *testing.T) {
+	env.SetEnv(false)
+
+	testDir := GetTestingDir()
+
+	// make testing objects
+	tmpDir := MakeTestDir(filepath.Join(GetTestingDir(), "tmp"))
+
+	// create tmp table
+	NewTable(filepath.Join(testDir, "tmp-db"), CreateDirectoryTable)
+
+	// test query
+	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
+
+	// add file
+	if err := q.AddDir(tmpDir); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// search by name
+	dir, err := q.GetDirectoryByName(tmpDir.Name)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if dir == nil {
+		Fail(t, GetTestingDir(), fmt.Errorf("dir not found"))
+	}
+	if dir.Name != tmpDir.Name {
+		Fail(t, GetTestingDir(), fmt.Errorf("dir name mismatch. orig: %s new: %s", tmpDir.Name, dir.Name))
+	}
+
+	// clean up tmp db
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+}
 
 func TestFindDirByPaths(t *testing.T) {}
 
