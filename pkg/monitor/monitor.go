@@ -154,35 +154,34 @@ func (m *Monitor) ShutDown() {
 // returns a channel that sends events to the listener for handling
 func watch(path string, stop chan bool) chan Event {
 	initialStat, err := os.Stat(path)
+	baseName := filepath.Base(path)
 	if err != nil {
-		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(path), err)
+		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", baseName, err)
 		return nil
 	}
-
 	// event channel used by the event handler goroutine
 	evt := make(chan Event)
-
-	go func() {
-		log.Printf("[INFO] monitoring %s...", filepath.Base(path))
+	// dedicated watcher function
+	var watcher = func() {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] shutting down monitoring for %s...", filepath.Base(path))
+				log.Printf("[INFO] shutting down monitoring for %s...", baseName)
 				close(evt)
 				return
 			default:
 				stat, err := os.Stat(path)
 				if err != nil && err != os.ErrNotExist {
-					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, filepath.Base(path))
+					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, baseName)
 					close(evt)
 					return
 				}
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Printf("[INFO] %s deleted. stopping monitoring...", filepath.Base(path))
+					log.Printf("[INFO] %s deleted. stopping monitoring...", baseName)
 					evt <- Event{
-						Type: Change,
+						Type: Delete,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
 						Path: path,
@@ -193,7 +192,7 @@ func watch(path string, stop chan bool) chan Event {
 				case stat.Size() != initialStat.Size():
 					log.Printf("[INFO] size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000))
 					evt <- Event{
-						Type: Change,
+						Type: Size,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
 						Path: path,
@@ -203,7 +202,27 @@ func watch(path string, stop chan bool) chan Event {
 				case stat.ModTime() != initialStat.ModTime():
 					log.Printf("[INFO] mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime())
 					evt <- Event{
-						Type: Change,
+						Type: ModTime,
+						ID:   auth.NewUUID(),
+						Time: time.Now().UTC(),
+						Path: path,
+					}
+					initialStat = stat
+				// file mode change
+				case stat.Mode() != initialStat.Mode():
+					log.Printf("[INFO] mode change detected: %v -> %v", initialStat.Mode(), stat.Mode())
+					evt <- Event{
+						Type: Mode,
+						ID:   auth.NewUUID(),
+						Time: time.Now().UTC(),
+						Path: path,
+					}
+					initialStat = stat
+				// file name change
+				case stat.Name() != initialStat.Name():
+					log.Printf("[INFO] file name change detected: %v -> %v", initialStat.Name(), stat.Name())
+					evt <- Event{
+						Type: Name,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
 						Path: path,
@@ -215,8 +234,12 @@ func watch(path string, stop chan bool) chan Event {
 				}
 			}
 		}
+	}
+	// start watcher
+	go func() {
+		log.Printf("[INFO] monitoring %s...", baseName)
+		watcher()
 	}()
-
 	return evt
 }
 
