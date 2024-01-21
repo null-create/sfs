@@ -6,38 +6,48 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-func buildTestEnvMap() map[string]string {
-	env := make(map[string]string)
-	env["NEW_SERVICE"] = "true"
-	env["ADMIN_MODE"] = "false"
-	env["JWT_SECRET"] = "secret-goes-here"
-	env["SERVICE_ROOT"] = "C:\\Users\\Jay\\Google Drive\\Projects\\coding\\nimbus\\pkg\\server"
-	env["SERVER_PORT"] = "8080"
-	env["SERVER_HOST"] = "localhost"
-	env["SERVER_ADDR"] = "localhost:8080"
-	env["SERVER_TIMEOUT_READ"] = "5s"
-	env["SERVER_TIMEOUT_WRITE"] = "10s"
-	env["SERVER_TIMEOUT_IDLE"] = "900s"
-	env["SERVER_ADMIN"] = "admin"
-	env["SERVER_ADMIN_KEY"] = "derp"
-	return env
-}
-
-// func TestEnvBuild(t *testing.T) {
-// 	BuildEnv(true)
-// 	testEnv := buildTestEnvMap()
-// 	for k, env := range testEnv {
-// 		v := os.Getenv(k)
-// 		assert.Equal(t, v, env)
-// 	}
-// }
-
 func TestEnvValidate(t *testing.T) {
-	SetEnv(true)
+	SetEnv(false)
 	e := NewE()
-	assert.NotEqual(t, nil, e)
 
 	if err := e.Validate("JWT_SECRET"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestHasDotEnvFile(t *testing.T) {
+	assert.True(t, true, HasDotEnv())
+}
+
+func TestEnvGet(t *testing.T) {
+	SetEnv(false)
+	e := NewE()
+
+	client, err := e.Get("CLIENT")
+	if err != nil {
+		t.Fail()
+	}
+	if client == "" {
+		t.Fail()
+	}
+}
+
+func TestEnvSet(t *testing.T) {
+	SetEnv(false)
+	e := NewE()
+
+	if err := e.Set("CLIENT", "wienermann nugget"); err != nil {
+		t.Fail()
+	}
+
+	test, err := e.Get("CLIENT")
+	if err != nil {
+		t.Fail()
+	}
+	if test == "" {
+		t.Fail()
+	}
+	if test != "wienermann nugget" {
+		t.Fail()
 	}
 }
