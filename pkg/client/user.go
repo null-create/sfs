@@ -56,7 +56,9 @@ func (c *Client) RemoveUser(userID string) error {
 		return fmt.Errorf("no user (id=%s) found", userID)
 	} else if c.User.ID == userID {
 		// remove drive and users files
-		c.Drive.ClearDrive()
+		if err := c.Drive.ClearDrive(); err != nil {
+			return err
+		}
 		// remove user and info from database
 		if err := c.Db.RemoveUser(c.UserID); err != nil {
 			return err
