@@ -12,6 +12,8 @@ import (
 // Query to check user existence
 func (q *Query) UserExists(userID string) (bool, error) {
 	q.WhichDB("users")
+	q.Connect()
+	defer q.Close()
 
 	var exists bool
 	err := q.Conn.QueryRow(ExistsQuery, "Users", userID).Scan(&exists)
@@ -21,7 +23,6 @@ func (q *Query) UserExists(userID string) (bool, error) {
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
-
 	return exists, nil
 }
 
@@ -56,7 +57,6 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] unable to execute query: %v", err)
 	}
-
 	return user, nil
 }
 
@@ -402,6 +402,40 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows found for dir: %s", dirName)
+			return nil, nil
+		}
+		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+	}
+	return d, nil
+}
+
+// find a directory by name. returns nil if no directory is found.
+func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	d := new(svc.Directory)
+	d.Files = make(map[string]*svc.File, 0)
+	d.Dirs = make(map[string]*svc.Directory, 0)
+
+	if err := q.Conn.QueryRow(FindDirByPathQuery, dirPath).Scan(
+		&d.ID,
+		&d.Name,
+		&d.OwnerID,
+		&d.DriveID,
+		&d.Size,
+		&d.Path,
+		&d.Protected,
+		&d.AuthType,
+		&d.Key,
+		&d.Overwrite,
+		&d.LastSync,
+		&d.Root,
+		&d.RootPath,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[DEBUG] no rows found for dir: %s", dirPath)
 			return nil, nil
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
