@@ -76,8 +76,8 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 // start an event handler for a given file. will be a no-op
 // if the handler does not exist, otherwise will listen
 // for whether the handlers errChan sends an error
-func (c *Client) StartHandler(filePath string) error {
-	if handler, exists := c.Handlers[filePath]; exists {
+func (c *Client) StartHandler(path string) error {
+	if handler, exists := c.Handlers[path]; exists {
 		handler() // TODO: need error handling
 	}
 	return nil
@@ -154,7 +154,9 @@ func (c *Client) NewEHandler(path string) error {
 	return nil
 }
 
+// dedicated listener for item events
 func (c *Client) listener(path string, stop chan bool) error {
+	// get all necessary components for the handler
 	evtChan, off, fileID, evts, err := c.setupHandler(path)
 	if err != nil {
 		return err
@@ -163,7 +165,7 @@ func (c *Client) listener(path string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			log.Printf("[INFO] stopping event handler for file id=%v ...", fileID)
+			log.Printf("[INFO] stopping event handler for item id=%v ...", fileID)
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
@@ -171,7 +173,7 @@ func (c *Client) listener(path string, stop chan bool) error {
 				evts.AddEvent(e)
 			case monitor.Delete:
 				off <- true // shutdown monitoring thread, remove from index, and shut down handler
-				log.Printf("[INFO] handler for file (id=%s) stopping. file was deleted.", fileID)
+				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", fileID)
 				return nil
 			}
 			// TODO: need to decide how ofter to run sync operations once the

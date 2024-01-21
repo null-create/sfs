@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,5 +39,7 @@ func TestBuildDbs(t *testing.T) {
 	}
 
 	// clean up temporary databases
-	Clean(t, testDir)
+	if err := Clean(t, testDir); err != nil {
+		log.Fatal(err)
+	}
 }

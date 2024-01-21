@@ -76,7 +76,7 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 
 // add a file or directory to the events map and create a new monitoring
 // goroutine. will need a corresponding events handler. will be a no-op if the
-// given path is not a file path.
+// given path is already being monitored.
 func (m *Monitor) WatchItem(path string) error {
 	// make sure this item actually exists
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
@@ -98,7 +98,7 @@ func (m *Monitor) GetEventChan(filePath string) chan Event {
 	if evtChan, exists := m.Events[filePath]; exists {
 		return evtChan
 	}
-	log.Printf("[ERROR] file (%s) event channel not found", filepath.Base(filePath))
+	log.Print("[ERROR] event channel not found")
 	return nil
 }
 
@@ -108,7 +108,7 @@ func (m *Monitor) GetOffSwitch(filePath string) chan bool {
 	if offSwitch, exists := m.OffSwitches[filePath]; exists {
 		return offSwitch
 	}
-	log.Printf("[ERROR] off switch not found for file (%s) monitoring goroutine", filepath.Base(filePath))
+	log.Print("[ERROR] off switch not found for monitoring goroutine")
 	return nil
 }
 

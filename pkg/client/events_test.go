@@ -94,5 +94,3 @@ func TestStartHandler(t *testing.T) {
 		log.Fatal(err)
 	}
 }
-
-// func TestBuildHandlers(t *testing.T) {}
