@@ -83,8 +83,6 @@ but its in place as a mechanism for resource management.
 func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// remember which ones we added so we don't have to modify the
 	// files slice in-place as we're iterating over it
-	//
-	// remember which files were/weren't added or were ignored
 	c := NewCtx()
 
 	// take our unsorted slice of file objets and sort by size, then
