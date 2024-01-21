@@ -20,10 +20,6 @@ import (
 
 const LocalHost = "http://localhost:8080"
 
-// NOTE: this endpoint was pulled straight from the DB and might not always
-// work. may have to manually update if needed.
-const ServerFile = "http://localhost:8080/v1/files/i/4e539b7b-9ed7-11ee-aef3-0a0027000014"
-
 func TestGetAllFileInfoAPI(t *testing.T) {
 	env.SetEnv(false)
 
@@ -137,6 +133,29 @@ func TestNewFileAPI(t *testing.T) {
 func TestGetSingleFileInfoAPI(t *testing.T) {
 	env.SetEnv(false)
 
+	// ---- set up test service ---------------------------------------
+
+	// so we can add the test file directly to the db ahead of time
+	testSvc, err := Init(false, false)
+	if err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to initialize test service: %v", err))
+	}
+
+	// create tmp test drive.
+	tmpDrive := MakeTmpDriveWithPath(t, testSvc.UserDir)
+	if err := testSvc.AddDrive(tmpDrive); err != nil {
+		Fail(t, testSvc.UserDir, fmt.Errorf("failed to create test drive: %v", err))
+	}
+
+	// pick a file from the tmp drive to get info about
+	files := tmpDrive.Root.GetFiles()
+	if len(files) == 0 {
+		Fail(t, testSvc.UserDir, fmt.Errorf("no test files found"))
+	}
+	testFile := files[RandInt(len(files)-1)]
+
+	// ------set up server ----------------------------------------------
+
 	// shut down signal to the server
 	shutDown := make(chan bool)
 
@@ -147,40 +166,47 @@ func TestGetSingleFileInfoAPI(t *testing.T) {
 		testServer.Start(shutDown)
 	}()
 
+	// ----- start client -----------------------------------------------
+
 	// attempt to retrieve file info about one file from the server
 	log.Printf("[TEST] retrieving test file data...")
 	client := new(http.Client)
 	client.Timeout = time.Second * 600
 
-	res, err := client.Get(ServerFile)
+	res, err := client.Get(testFile.Endpoint)
 	if err != nil {
 		shutDown <- true
-		Fail(t, GetTestingDir(), err)
+		Fail(t, testSvc.UserDir, err)
 	}
 	if res.StatusCode != http.StatusOK {
 		shutDown <- true
 		b, err := httputil.DumpResponse(res, true)
 		if err != nil {
-			Fail(t, GetTestingDir(), err)
+			Fail(t, testSvc.UserDir, err)
 		}
 		msg := fmt.Sprintf(
 			"response code was not 200: %d\n response: %v\n",
 			res.StatusCode, string(b),
 		)
-		Fail(t, GetTestingDir(), fmt.Errorf(msg))
+		Fail(t, testSvc.UserDir, fmt.Errorf(msg))
 	}
 
 	// display response/results
 	log.Printf("[TEST] response code: %d", res.StatusCode)
-	b, err := httputil.DumpResponse(res, true)
+	b, err := httputil.DumpResponse(res, false)
 	if err != nil {
 		log.Printf("[TEST] failed to parse response : %v", err)
 	} else {
 		log.Printf("[TEST] response: %v", string(b))
 	}
 
-	log.Print("[TEST] shutting down test server...")
+	// shut down test server
 	shutDown <- true
+
+	// clean up
+	if err := Clean(testSvc.UserDir); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestFileGetAPI(t *testing.T) {
