@@ -205,7 +205,6 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 	return idx, nil
 }
 
-// TODO:
 // ------- single-operation pushes and pulls from the server -------------
 
 // send a new (or updated) file to the server.
