@@ -106,7 +106,6 @@ func loadUsers(svc *Service) (*Service, error) {
 		return svc, fmt.Errorf("failed to retrieve user data from Users database: %v", err)
 	}
 	if len(usrs) == 0 {
-		log.Print("[WARNING] no users found in Users database")
 		return svc, nil
 	}
 	// NOTE: this assumes the physical files for each
@@ -115,8 +114,6 @@ func loadUsers(svc *Service) (*Service, error) {
 	for _, u := range usrs {
 		if _, exists := svc.Users[u.ID]; !exists {
 			svc.Users[u.ID] = u
-		} else {
-			log.Printf("[DEBUG] user %v already exists", u.ID)
 		}
 	}
 	return svc, nil
@@ -129,7 +126,6 @@ func loadDrives(svc *Service) (*Service, error) {
 		return svc, fmt.Errorf("failed to query database for drives: %v", err)
 	}
 	if len(drives) == 0 {
-		log.Print("[INFO] no drives found")
 		return svc, nil
 	}
 	for _, drive := range drives {
@@ -174,13 +170,13 @@ root/
 // initialize a new service and corresponding databases
 func SvcInit(svcRoot string) (*Service, error) {
 	// make root service directory (wherever it should located)
-	log.Print("creating root service directory...")
+	log.Print("[INFO] creating root service directory...")
 	if err := os.Mkdir(svcRoot, 0644); err != nil {
 		return nil, fmt.Errorf("failed to make service root directory: %v", err)
 	}
 
 	//create top-level service directories
-	log.Print("creating service subdirectories...")
+	log.Print("[INFO] creating service subdirectories...")
 	svcPaths := []string{
 		filepath.Join(svcRoot, "users"),
 		filepath.Join(svcRoot, "state"),
@@ -193,13 +189,13 @@ func SvcInit(svcRoot string) (*Service, error) {
 	}
 
 	// create new service databases
-	log.Print("creating service databases...")
+	log.Print("[INFO] creating service databases...")
 	if err := db.InitDBs(svcPaths[2]); err != nil {
 		return nil, fmt.Errorf("failed to initialize service databases: %v", err)
 	}
 
 	// create new service instance and save initial state
-	log.Print("initializng new service instance...")
+	log.Print("[INFO] initializng new service instance...")
 	svc := NewService(svcRoot)
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("failed to save service state: %v", err)
@@ -212,7 +208,7 @@ func SvcInit(svcRoot string) (*Service, error) {
 		return nil, fmt.Errorf("failed to update service .env file: %v", err)
 	}
 
-	log.Print("all set :)")
+	log.Print("[INFO] all set :)")
 	return svc, nil
 }
 
@@ -270,14 +266,12 @@ func SvcLoad(svcPath string) (*Service, error) {
 	// attempt to populate from users and drive databases if state file had no user
 	// or drive data.
 	if len(svc.Users) == 0 {
-		log.Printf("[WARNING] state file had no user data. attempting to populate from users database...")
 		_, err := loadUsers(svc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve user data: %v", err)
 		}
 	}
 	if len(svc.Drives) == 0 {
-		log.Printf("[WARNING] state file had no drive data. attempting to populate from drives database...")
 		_, err := loadDrives(svc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
