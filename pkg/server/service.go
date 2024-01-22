@@ -324,7 +324,7 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 }
 
 // attempts to retrieve a drive from the drive map. does not
-// check database.
+// check database. does not populate the drive.
 func (s *Service) GetDrive(driveID string) *svc.Drive {
 	if drive, exists := s.Drives[driveID]; exists {
 		return drive
@@ -345,6 +345,9 @@ func (s *Service) loadRoot(rootID string) (*svc.Directory, error) {
 	root, err := s.Db.GetDirectory(rootID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get root directory: %v", err)
+	}
+	if root == nil {
+		return nil, fmt.Errorf("root directory (id=%s) not found", rootID)
 	}
 	popRoot := s.Populate(root)
 	return popRoot, nil
@@ -378,11 +381,10 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	return drive, nil
 }
 
-// add a new drive and all files and subdirectories to the service instance.
+// add a new drive and all files and subdirectories (if any) to the service instance.
 // the new drive should have the root directory instantiated but empty. AddDrive
-// calls s.Discover() and populates the drive and databases with what it discoveres,
-// then adds everything it finds to the database. AddDrive should only be used
-// for first-time set up.
+// calls s.Discover() and populates the drive and databases with what it discoveres.
+// s.AddDrive() should only be used for first-time set up.
 func (s *Service) AddDrive(drv *svc.Drive) error {
 	// check that the root dir is valid
 	if !drv.HasRoot() {
@@ -487,7 +489,7 @@ func (s *Service) RemoveDrive(driveID string) error {
 	if err := s.SaveState(); err != nil {
 		return err
 	}
-	log.Printf("[INFO] drive %s removed", driveID)
+	log.Printf("[INFO] drive (id=%s) removed", driveID)
 	return nil
 }
 
@@ -743,7 +745,6 @@ func (s *Service) MoveFile(destDirID string, file *svc.File) error {
 		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
 	}
 	// add file object to destination directory
-	file.ServerPath = filepath.Join(destDir.Path, file.Name)
 	destDir.AddFile(file)
 	// copy physical file
 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
@@ -795,7 +796,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if err := drive.AddSubDir(destDirID, newDir); err != nil {
 		// remove the directory if adding fails
 		if err2 := os.Remove(newDir.Path); err2 != nil {
-			log.Printf("[ERROR] failed to remove directory: %v", err2)
+			log.Printf("[ERROR] %v", err2)
 		}
 		return err
 	}
