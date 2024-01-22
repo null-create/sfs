@@ -11,8 +11,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"sync"
 	"time"
 
@@ -157,7 +159,7 @@ func (c *Client) Sync() error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[INFO] server returned non-200 status")
+		log.Printf("[ERROR] server returned non-200 status")
 		c.dump(resp, true)
 		return nil
 	}
@@ -196,7 +198,7 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	var idx *svc.SyncIndex
+	var idx = new(svc.SyncIndex)
 	if err = json.Unmarshal(idxBuf.Bytes(), &idx); err != nil {
 		return nil, err
 	}
@@ -205,3 +207,78 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 
 // TODO:
 // ------- single-operation pushes and pulls from the server -------------
+
+// send a new (or updated) file to the server.
+func (c *Client) PushFile(file *svc.File) error {
+	// load file into fileWriter
+	var bodyBuf bytes.Buffer
+	bodyWriter := multipart.NewWriter(&bodyBuf)
+	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", file.Name)
+	if err != nil {
+		return err
+	}
+	defer bodyWriter.Close()
+
+	f, err := os.Open(file.Path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(fileWriter, f)
+	if err != nil {
+		return err
+	}
+
+	// generate a request with file metadata
+	req, err := http.NewRequest(http.MethodPost, c.Endpoints["new file"], &bodyBuf)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeFile(file)
+	if err != nil {
+		return fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
+
+	// send the file
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[WARNING] received non 200 response: %v", resp.StatusCode)
+	}
+	c.dump(resp, true)
+	return nil
+}
+
+// download a file from the server. this assumes the file is already on the server,
+// and that the client is intendending to update the local version of this file.
+//
+// not intended for new files discovered on the server -- this will be handled by a
+// separate function TBD
+func (c *Client) PullFile(file *svc.File) error {
+	resp, err := c.Client.Get(file.Endpoint)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[WARNING] received non 200 return code from server")
+		c.dump(resp, true)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	// copy file
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return err
+	}
+	if err := file.Save(buf.Bytes()); err != nil {
+		return err
+	}
+	return nil
+}
