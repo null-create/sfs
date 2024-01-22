@@ -18,6 +18,7 @@ import (
 	"github.com/sfs/pkg/transfer"
 )
 
+// Client-side SFS service instance.
 type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
