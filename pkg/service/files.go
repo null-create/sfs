@@ -213,19 +213,19 @@ func (f *File) Clear() error {
 
 // copy this file to another location
 func (f *File) Copy(destPath string) error {
-	s, err := os.Open(f.Path)
+	src, err := os.Open(f.Path)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer src.Close()
 
-	d, err := os.Create(destPath)
+	dest, err := os.Create(destPath)
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer dest.Close()
 
-	_, err = io.Copy(d, s)
+	_, err = io.Copy(dest, src)
 	if err != nil {
 		return err
 	}
