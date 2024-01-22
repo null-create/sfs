@@ -818,6 +818,10 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 	if drive == nil {
 		return fmt.Errorf("drive %s not found", driveID)
 	}
+	// just to be sure
+	if dirID == drive.Root.ID {
+		return fmt.Errorf("dir (id=%s) is drive root. cant remove root", dirID)
+	}
 	// get the directory to be removed, as well as all potential children.
 	// we'll need to remove all of them from the DB.
 	dir := drive.GetDir(dirID)
