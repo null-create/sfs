@@ -212,14 +212,14 @@ func (f *File) Clear() error {
 }
 
 // copy this file to another location
-func (f *File) Copy(dst string) error {
+func (f *File) Copy(destPath string) error {
 	s, err := os.Open(f.Path)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 
-	d, err := os.Create(dst)
+	d, err := os.Create(destPath)
 	if err != nil {
 		return err
 	}

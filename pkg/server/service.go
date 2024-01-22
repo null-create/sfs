@@ -516,7 +516,7 @@ func (s *Service) addUser(user *auth.User) error {
 	if dID, err := s.Db.GetDriveID(user.ID); err != nil {
 		return fmt.Errorf("failed to get drive ID: %v", err)
 	} else if dID != "" {
-		return fmt.Errorf("user (%s) already has a drive (%s): ", user.ID, dID)
+		return fmt.Errorf("user (id=%s) already has a drive (id=%s): ", user.ID, dID)
 	}
 
 	// allocate new drive and base service files
@@ -690,7 +690,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	return nil
 }
 
-// update a file in the service
+// update a file in the service.
 func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
@@ -723,6 +723,45 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	}
 	if err := s.SaveState(); err != nil {
 		log.Printf("[WARNING] failed to save state: %v", err)
+	}
+	return nil
+}
+
+// move a file from one directory to another.
+func (s *Service) MoveFile(destDirID string, file *svc.File) error {
+	drive := s.GetDrive(file.DriveID)
+	if drive == nil {
+		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
+	}
+	// move file
+	origDir := drive.GetDir(file.DirID)
+	if origDir == nil {
+		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
+	}
+	destDir := drive.GetDir(destDirID)
+	if destDir == nil {
+		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
+	}
+	// add file object to destination directory
+	file.ServerPath = filepath.Join(destDir.Path, file.Name)
+	destDir.AddFile(file)
+	// copy physical file
+	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
+		return err
+	}
+	// remove from origial file (also deletes original physical file)
+	if err := origDir.RemoveFile(file.ID); err != nil {
+		return err
+	}
+	// update dbs
+	if err := s.Db.UpdateDir(origDir); err != nil {
+		return err
+	}
+	if err := s.Db.UpdateDir(destDir); err != nil {
+		return err
+	}
+	if err := s.Db.UpdateFile(file); err != nil {
+		return err
 	}
 	return nil
 }

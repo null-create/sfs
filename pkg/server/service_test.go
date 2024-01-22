@@ -155,6 +155,77 @@ func TestCreateNewService(t *testing.T) {
 	}
 }
 
+// -------- file tests -------------------------------
+
+func TestMoveFile(t *testing.T) {
+	env.SetEnv(false)
+
+	// test service
+	testSvc, err := Init(false, false)
+	if err != nil {
+		t.Fail()
+	}
+
+	// test drive
+	testDrv := MakeTmpDrive(t)
+	if err := testSvc.AddDrive(testDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if err := testSvc.AddDrive(testDrv); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// pick a file to move
+	files := testDrv.Root.GetFiles()
+	file := files[RandInt(len(files)-1)]
+	file.DriveID = testDrv.ID
+
+	// make a temp folder in testing directory to move the file to
+	tmpFolder := filepath.Join(GetTestingDir(), "new-tmp")
+
+	// new directory object to represent the temp folder
+	tmpDir := svc.NewDirectory(filepath.Base(tmpFolder), "some-rand-id", testDrv.ID, tmpFolder)
+	tmpDir.AddFile(file)
+
+	if err := testSvc.NewDir(testDrv.ID, testDrv.Root.ID, tmpDir); err != nil {
+		if err2 := os.Remove(tmpFolder); err2 != nil {
+			t.Error(err2)
+		}
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// attempt to move and then verify the new file path
+	// with the file object, as well as DB
+	if err := testSvc.MoveFile(tmpDir.ID, file); err != nil {
+		if err2 := os.Remove(tmpFolder); err2 != nil {
+			t.Error(err2)
+		}
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// verifications
+	entries, err := os.ReadDir(tmpDir.Path)
+	if err != nil {
+		if err2 := os.Remove(tmpFolder); err2 != nil {
+			t.Error(err2)
+		}
+		Fail(t, GetTestingDir(), err)
+	}
+	if len(entries) != 1 {
+		if err2 := os.Remove(tmpFolder); err2 != nil {
+			t.Error(err2)
+		}
+		Fail(t, GetTestingDir(), fmt.Errorf("file was not copied"))
+	}
+
+	// clean up
+	if err := Clean(GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+}
+
+// ------- user tests --------------------------------
+
 func TestAddAndRemoveUser(t *testing.T) {
 	env.SetEnv(false)
 

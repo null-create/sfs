@@ -318,6 +318,7 @@ func (d *Directory) Unlock(password string) bool {
 func (d *Directory) addFile(file *File) {
 	file.DirID = d.ID
 	file.DriveID = d.DriveID
+	file.Path = filepath.Join(d.Path, file.Name)
 	file.LastSync = time.Now().UTC()
 	d.Files[file.ID] = file
 	log.Printf("[INFO] file %s (id=%s) added", file.Name, file.ID)
