@@ -684,7 +684,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		return fmt.Errorf("failed to add file to database: %v", err)
 	}
 	if err := s.SaveState(); err != nil {
-		log.Printf("[WARNING] failed to save state: %v", err)
+		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
@@ -695,14 +695,19 @@ func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
-	if err := drive.Root.UpdateFile(file, data); err != nil {
+	// make sure we update this file in the correct directory
+	dir := drive.GetDir(file.DirID)
+	if dir == nil {
+		return fmt.Errorf("file's directory not found")
+	}
+	if err := dir.UpdateFile(file, data); err != nil {
 		return err
 	}
 	if err := s.Db.UpdateFile(file); err != nil {
 		return err
 	}
 	if err := s.SaveState(); err != nil {
-		log.Printf("[WARNING] failed to save state: %v", err)
+		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
@@ -721,13 +726,13 @@ func (s *Service) DeleteFile(file *svc.File) error {
 		return fmt.Errorf("failed to remove %s (id=%s) from database: %v", file.Name, file.ID, err)
 	}
 	if err := s.SaveState(); err != nil {
-		log.Printf("[WARNING] failed to save state: %v", err)
+		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
 
 // move a file from one directory to another.
-func (s *Service) MoveFile(destDirID string, file *svc.File) error {
+func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
@@ -747,9 +752,11 @@ func (s *Service) MoveFile(destDirID string, file *svc.File) error {
 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
 		return err
 	}
-	// remove from origial file (also deletes original physical file)
-	if err := origDir.RemoveFile(file.ID); err != nil {
-		return err
+	if !keepOrig {
+		// remove from origial file (also deletes original physical file)
+		if err := origDir.RemoveFile(file.ID); err != nil {
+			return err
+		}
 	}
 	// update dbs
 	if err := s.Db.UpdateDir(origDir); err != nil {

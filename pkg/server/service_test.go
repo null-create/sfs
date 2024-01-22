@@ -196,7 +196,7 @@ func TestMoveFile(t *testing.T) {
 
 	// attempt to move and then verify the new file path
 	// with the file object, as well as DB
-	if err := testSvc.MoveFile(tmpDir.ID, file); err != nil {
+	if err := testSvc.CopyFile(tmpDir.ID, file, false); err != nil {
 		if err2 := os.Remove(tmpFolder); err2 != nil {
 			t.Error(err2)
 		}
