@@ -40,7 +40,7 @@ func (q *Query) UpdateFile(f *svc.File) error {
 }
 
 func (q *Query) UpdateDir(d *svc.Directory) error {
-	q.WhichDB("files")
+	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 

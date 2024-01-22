@@ -46,6 +46,8 @@ func TestCreateAndUpdateAFile(t *testing.T) {
 }
 
 func TestCreateAndUpdateADirectory(t *testing.T) {
+	env.SetEnv(false)
+
 	testDir := GetTestingDir()
 
 	// test db and query
