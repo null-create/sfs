@@ -159,6 +159,40 @@ func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
 	return nil
 }
 
+// move a file from one directory to another.
+func (c *Client) MoveFile(destDirID string, file *svc.File) error {
+	// move file
+	origDir := c.Drive.GetDir(file.DirID)
+	if origDir == nil {
+		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
+	}
+	destDir := c.Drive.GetDir(destDirID)
+	if destDir == nil {
+		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
+	}
+	// add file object to destination directory
+	destDir.AddFile(file)
+	// copy physical file
+	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
+		return err
+	}
+	// remove from origial file (also deletes original physical file)
+	if err := origDir.RemoveFile(file.ID); err != nil {
+		return err
+	}
+	// update dbs
+	if err := c.Db.UpdateDir(origDir); err != nil {
+		return err
+	}
+	if err := c.Db.UpdateDir(destDir); err != nil {
+		return err
+	}
+	if err := c.Db.UpdateFile(file); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ----- directories --------------------------------
 
 func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
