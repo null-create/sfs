@@ -127,7 +127,7 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // retrieve a file from the server
 func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
-	// file existance as confirmed in middleware by this point
+	// file existance was confirmed by the middleware at this point
 	file := r.Context().Value(File).(*svc.File)
 
 	// Set the response header for the download
@@ -278,14 +278,14 @@ func (a *API) GetManyDirsInfo(w http.ResponseWriter, r *http.Request) {
 func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	// create a tmp .zip file so we can transfer the directory and its contents
-	archive := filepath.Join(dir.Path, fmt.Sprintf(dir.Name, ".zip"))
+	archive := filepath.Join(dir.Path, dir.Name+".zip")
 	if err := transfer.Zip(dir.Path, archive); err != nil {
 		http.Error(w, fmt.Sprintf("\nfailed to compress directory: %v\n", err), http.StatusInternalServerError)
 		return
 	}
 	// send archive file
 	http.ServeFile(w, r, archive)
-	// remove tmp .zip file and tmp folder
+	// remove tmp archive file
 	if err := os.Remove(archive); err != nil {
 		log.Printf("[WARNING] failed to remove temp archive %s: %v", archive, err)
 	}
@@ -322,6 +322,10 @@ func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 }
 
 // -------- drives --------------------------------
+
+/*
+NOTE: drive create/delete are handled by user API functions.
+*/
 
 // sends drive metadata. does not return entire contents of drive.
 func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {

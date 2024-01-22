@@ -14,13 +14,7 @@ import (
 )
 
 /*
-Service Drive directory.
-Container for all user Drives (dirs w/metadata and a sub dir for the users stuff).
-
-Top level entry point for internal user file system and their operations.
-Will likely be the entry point used for when a server is spun up.
-
-All service configurations may end up living here.
+Server-side SFS service instance.
 */
 type Service struct {
 	InitTime time.Time `json:"init_time"`
