@@ -513,9 +513,9 @@ func (d *Directory) RemoveSubDir(dirID string) error {
 		// remove from subdir map & update sync time
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("[INFO] directory %s deleted", dirID)
+		log.Printf("[INFO] directory (id=%s) deleted", dirID)
 	} else {
-		log.Printf("[INFO] directory %s is protected", dirID)
+		log.Printf("[INFO] directory (id=%s) is protected", dirID)
 	}
 	return nil
 }
