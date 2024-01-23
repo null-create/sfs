@@ -183,7 +183,6 @@ func (d *Directory) clear() {
 	d.Dirs = nil
 	d.Files = make(map[string]*File, 0)
 	d.Dirs = make(map[string]*Directory, 0)
-	log.Printf("[INFO] dirID (id=%s) all subdirectories and files cleared", d.ID)
 }
 
 // clears *in-memory* file and directory data structures.
@@ -266,6 +265,10 @@ func (d *Directory) DirSize() (float64, error) {
 		}
 		return nil
 	})
+	if err != nil {
+		return 0, err
+	}
+	d.Size = size
 	return size, err
 }
 
@@ -560,10 +563,7 @@ func (d *Directory) Walk() *Directory {
 		return d
 	}
 	if d.IsNil() {
-		log.Printf(
-			"[WARNING] can't traverse directory with nil maps: \nfiles=%v dirs=%v",
-			d.Files, d.Dirs,
-		)
+		log.Printf("[WARNING] dir is not instantiated")
 		return d
 	}
 	return walk(d)
