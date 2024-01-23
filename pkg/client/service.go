@@ -37,11 +37,7 @@ func (c *Client) ListLocalFilesDB() error {
 
 // list all files known to the remote SFS server
 func (c *Client) ListRemoteFiles() error {
-	req, err := c.GetInfoRequest(c.Endpoints["all files"])
-	if err != nil {
-		return err
-	}
-	resp, err := c.Client.Do(req)
+	resp, err := c.Client.Get(c.Endpoints["all files"])
 	if err != nil {
 		return err
 	}
@@ -76,7 +72,7 @@ func (c *Client) GetFile(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
-// add a file to a specified directory. adds to monitoring services
+// add a new file to a specified directory. adds to monitoring services
 // and pushes the new file to the SFS server.
 func (c *Client) AddFile(dirID string, file *svc.File) error {
 	// add to drive, local database, and monitoring services
@@ -89,27 +85,9 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 	if err := c.WatchItem(file.ClientPath); err != nil {
 		return err
 	}
-	// NOTE: file will be uploaded to the server via
-	// its event handler.
-	return nil
-}
-
-// add a series of files to a specified directory
-func (c *Client) AddFiles(dirID string, files []*svc.File) error {
-	if len(files) == 0 {
-		return fmt.Errorf("no files to add")
-	}
-	// add new files to drive and local databases and monitoring service
-	for _, file := range files {
-		if err := c.Drive.AddFile(dirID, file); err != nil {
-			return err
-		}
-		if err := c.Db.AddFile(file); err != nil {
-			return err
-		}
-		if err := c.WatchItem(file.ClientPath); err != nil {
-			return err
-		}
+	// send new file to server
+	if err := c.PushFile(file); err != nil {
+		return err
 	}
 	return nil
 }
@@ -141,20 +119,6 @@ func (c *Client) RemoveFile(dirID string, file *svc.File) error {
 	}
 	if err := c.Db.RemoveFile(file.ID); err != nil {
 		return err
-	}
-	return nil
-}
-
-// remove files from a specied directory
-func (c *Client) RemoveFiles(dirID string, fileIDs []string) error {
-	for _, fileID := range fileIDs {
-		file := c.Drive.GetFile(fileID)
-		if file == nil { // didn't find the file. ignore.
-			continue
-		}
-		if err := c.Drive.RemoveFile(dirID, file); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -217,27 +181,6 @@ func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
 	return nil
 }
 
-// adds the directories to the client service,
-// creates new empty directories for each directory object,
-// updates database, then attempts to send metadata to server
-// and create directories on the server as well.
-func (c *Client) AddDirs(dirs []*svc.Directory) error {
-	// add to service instance
-	if err := c.Drive.AddDirs(dirs); err != nil {
-		return err
-	}
-	if err := c.Db.AddDirs(dirs); err != nil {
-		return err
-	}
-	// create each (empty) physical directory
-	for _, dir := range dirs {
-		if err := os.Mkdir(dir.Path, svc.PERMS); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // remove a directory from local and remote service instances.
 func (c *Client) RemoveDir(dirID string) error {
 	// remove from service instance
@@ -256,17 +199,6 @@ func (c *Client) RemoveDir(dirID string) error {
 	//
 	// need to think about this. this could easily be a recursive operation,
 	// but there's a lot that needs to be accounted for if that's the route we want to go
-	return nil
-}
-
-// remove directories from local and remove service instances
-func (c *Client) RemoveDirs(dirs []*svc.Directory) error {
-	if err := c.Drive.RemoveDirs(dirs); err != nil {
-		return err
-	}
-	if err := c.Db.RemoveDirectories(dirs); err != nil {
-		return err
-	}
 	return nil
 }
 
