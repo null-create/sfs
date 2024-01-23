@@ -169,6 +169,10 @@ func (c *Client) listener(path string, stop chan bool) error {
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
+			case monitor.Name:
+			case monitor.Mode:
+			case monitor.Size:
+			case monitor.ModTime:
 			case monitor.Change:
 				evts.AddEvent(e)
 			case monitor.Delete:
