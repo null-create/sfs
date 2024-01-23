@@ -212,6 +212,20 @@ func (c *Client) GetFileRequest(file *svc.File) (*http.Request, error) {
 	return req, nil
 }
 
+func (c *Client) GetAllFilesRequest(user *auth.User) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["all files"], &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeUser(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", reqToken)
+	return req, nil
+}
+
 func (c *Client) GetDirRequest(dir *svc.Directory) (*http.Request, error) {
 	var buf bytes.Buffer
 	req, err := http.NewRequest(http.MethodGet, dir.Endpoint, &buf)
