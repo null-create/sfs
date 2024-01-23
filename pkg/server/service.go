@@ -789,7 +789,7 @@ func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
 func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory) error {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return fmt.Errorf("drive %s not found", driveID)
+		return fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	if err := os.Mkdir(newDir.Path, svc.PERMS); err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
