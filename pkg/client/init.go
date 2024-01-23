@@ -203,7 +203,7 @@ func LoadClient() (*Client, error) {
 	}
 
 	// create (or refresh) sync index
-	client.Drive.SyncIndex = svc.BuildSyncIndex(client.Drive.Root)
+	client.Drive.BuildSyncIdx()
 
 	// add token validation and generation componet
 	client.Tok = auth.NewT()

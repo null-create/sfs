@@ -775,10 +775,14 @@ func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) erro
 
 // find a directory in the database. does not populate with files or subdirectories,
 // just returns metadata.
-func (s *Service) FindDir(dirID string) (*svc.Directory, error) {
-	dir, err := s.Db.GetDirectory(dirID)
-	if err != nil {
-		return nil, err
+func (s *Service) FindDir(driveID string, dirID string) (*svc.Directory, error) {
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
+	}
+	dir := drive.GetDir(dirID)
+	if dir == nil {
+		return nil, fmt.Errorf("directory (id=%s) not found", dirID)
 	}
 	return dir, nil
 }

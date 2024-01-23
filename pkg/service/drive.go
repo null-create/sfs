@@ -459,7 +459,6 @@ func (d *Drive) RemoveDirs(dirs []*Directory) error {
 			return fmt.Errorf("no root directory")
 		}
 		if len(dirs) == 0 {
-			log.Print("[INFO] no subdirectories to remove")
 			return nil
 		}
 		for _, dir := range dirs {
@@ -512,13 +511,8 @@ func (d *Drive) ClearDrive() error {
 
 // ---- sync operations --------------------------------
 
-func (d *Drive) BuildSyncIdx() error {
-	idx := BuildSyncIndex(d.Root)
-	if idx == nil {
-		return fmt.Errorf("unable to build sync index")
-	}
-	d.SyncIndex = idx
-	return nil
+func (d *Drive) BuildSyncIdx() {
+	d.SyncIndex = BuildSyncIndex(d.Root)
 }
 
 func (d *Drive) BuildToUpdate() error {
@@ -526,8 +520,5 @@ func (d *Drive) BuildToUpdate() error {
 		return fmt.Errorf("no sync index to build from")
 	}
 	d.SyncIndex = BuildToUpdate(d.Root, d.SyncIndex)
-	if len(d.SyncIndex.ToUpdate) == 0 {
-		return fmt.Errorf("no files matched for syncing")
-	}
 	return nil
 }
