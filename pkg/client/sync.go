@@ -270,13 +270,16 @@ func (c *Client) PullFile(file *svc.File) error {
 	}
 	defer resp.Body.Close()
 
-	// copy file
+	// copy file & update the database
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
 		return err
 	}
 	if err := file.Save(buf.Bytes()); err != nil {
+		return err
+	}
+	if err := c.Db.UpdateFile(file); err != nil {
 		return err
 	}
 	return nil
