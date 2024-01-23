@@ -801,7 +801,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if err := drive.AddSubDir(destDirID, newDir); err != nil {
 		// remove the directory if adding fails
 		if err2 := os.Remove(newDir.Path); err2 != nil {
-			log.Printf("[ERROR] %v", err2)
+			log.Printf("[ERROR] failed to remove dir: %v", err2)
 		}
 		return err
 	}

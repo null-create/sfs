@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -37,9 +38,17 @@ func (c *Client) ListLocalFilesDB() error {
 
 // list all files known to the remote SFS server
 func (c *Client) ListRemoteFiles() error {
-	resp, err := c.Client.Get(c.Endpoints["all files"])
+	req, err := c.GetAllFilesRequest(c.User)
 	if err != nil {
 		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.dump(resp, true)
+		return nil
 	}
 	defer resp.Body.Close()
 

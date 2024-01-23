@@ -9,7 +9,6 @@ import (
 type EventType string
 
 // event enums
-// TODO: more specific enums (file mode change, path change, etc...)
 const (
 	Create  EventType = "create"
 	Delete  EventType = "delete"
@@ -81,7 +80,7 @@ func (e *Events) HasEvent(evt Event) bool {
 }
 
 // add events until threshold is met.
-// sets StartSync to true when threshold is met.
+// sets e.AtCap to true when threshold is met.
 //
 // additional events will be ignored until e.Reset() is called.
 //
@@ -103,7 +102,7 @@ func (e *Events) AddEvent(evt Event) {
 // during sync operations
 func (e *Events) GetPaths() ([]string, error) {
 	if len(e.Events) == 0 {
-		return []string{}, fmt.Errorf("event list is empty")
+		return nil, fmt.Errorf("event list is empty")
 	}
 	var paths []string
 	for _, evt := range e.Events {

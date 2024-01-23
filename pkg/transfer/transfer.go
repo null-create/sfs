@@ -101,13 +101,9 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
 	}
-	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		t.dump(resp, true)
-		return fmt.Errorf("server returned non-OK status: %v", resp.Status)
 	}
-	t.dump(resp, true)
 	return nil
 }
 
