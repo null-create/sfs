@@ -123,9 +123,9 @@ func NewRouter() *chi.Mux {
 			// specific directories
 			r.Route("/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx)
-				r.Get("/", api.Placeholder)    // get a directory as a zip file
-				r.Put("/", api.Placeholder)    // update a directory on the server by sending a zip file and unpacking
-				r.Delete("/", api.Placeholder) // delete a directory
+				r.Get("/", api.GetDir)       // get a directory as a zip file
+				r.Put("/", api.PutDir)       // update a directory on the server by sending a zip file and unpacking
+				r.Delete("/", api.DeleteDir) // delete a directory
 			})
 			// create a new directory
 			r.Route("/new", func(r chi.Router) {
@@ -135,6 +135,10 @@ func NewRouter() *chi.Mux {
 			// get info about a directory
 			r.Route("/i/{dirID}", func(r chi.Router) {
 				r.Use(DirCtx) // TODO: need a new context for all dirs for a specific user
+				r.Get("/", api.GetDirInfo)
+			})
+			r.Route("/i/all/{userID}", func(r chi.Router) {
+				// r.Use(AllDirsCtx) // TODO: need a new context
 				r.Get("/", api.GetManyDirsInfo)
 			})
 		})
