@@ -750,21 +750,23 @@ func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) erro
 	if destDir == nil {
 		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
 	}
+	// copy physical file first. updating in destDir will change
+	// the file object's original path before we need move it.
+	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
+		return err
+	}
 	// add file object to destination directory
 	if err := destDir.AddFile(file); err != nil {
 		return fmt.Errorf("failed to add file to destination directory: %v", err)
 	}
-	// copy physical file
-	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
-		return err
-	}
 	if !keepOrig {
-		// remove from origial file (also deletes original physical file)
+		// remove physical file from original directory
+		// (also deletes original physical file)
 		if err := origDir.RemoveFile(file.ID); err != nil {
 			return err
 		}
 	}
-	// update dbs
+	// update directory dbs
 	if err := s.Db.UpdateDir(origDir); err != nil {
 		return err
 	}
