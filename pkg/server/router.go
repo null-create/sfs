@@ -144,28 +144,24 @@ func NewRouter() *chi.Mux {
 		})
 
 		// drives
-		r.Route("/drive", func(r chi.Router) {
-			r.Route("/{driveID}", func(r chi.Router) {
-				r.Use(DriveCtx)
-				r.Get("/", api.GetDrive) // "home" page data for all user's files, directories, etc.
-				// NOTE: new drives are created when a new user is added.
-			})
+		r.Route("/drive/{driveID}", func(r chi.Router) {
+			r.Use(DriveCtx)
+			r.Get("/", api.GetDrive) // "home" page data for all user's files, directories, etc.
+			// NOTE: new drives are created when a new user is added.
 		})
 
 		// sync operations
-		r.Route("/sync", func(r chi.Router) {
-			r.Route("/{driveID}", func(r chi.Router) {
-				r.Use(DriveIdCtx)
-				// fetch file last sync times for all
-				// user files (in all directories) from server
-				r.Get("/", api.GetIdx)
-				// generate a new sync index for all files on the server
-				// for this user. Populates LastSync map in index.
-				r.Get("/index", api.GenIndex)
-				// refreshes a drives ToUpdate map (assumes LastSync is current),
-				// and returns the servers sync index for this drive/user
-				r.Get("/update", api.GetUpdates)
-			})
+		r.Route("/sync/{driveID}", func(r chi.Router) {
+			r.Use(DriveIdCtx)
+			// fetch file last sync times for all
+			// user files (in all directories) from server
+			r.Get("/", api.GetIdx)
+			// generate a new sync index for all files on the server
+			// for this user. Populates LastSync map in index.
+			r.Get("/index", api.GenIndex)
+			// refreshes a drives ToUpdate map (assumes LastSync is current),
+			// and returns the servers sync index for this drive/user
+			r.Get("/update", api.GetUpdates)
 		})
 	})
 
