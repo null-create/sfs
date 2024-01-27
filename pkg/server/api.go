@@ -291,6 +291,16 @@ func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// update the directory on the server
+func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
+	dir := r.Context().Value(Directory).(*svc.Directory)
+	if err := a.Svc.UpdateDir(dir.DriveID, dir); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("directory (id=%s) has been updated", dir.ID)))
+}
+
 // TODO:
 // create a new directory with supplied contents on the server.
 // should take a .zip file sent from the user, unpack it in the
