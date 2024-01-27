@@ -359,8 +359,8 @@ func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 }
 
 // add a sub directory to a directory within the drive file system.
-// does not create a physical sub directory at the path assigned within
-// the directory parameter.
+// creates a physical sub directory at the path assigned within
+// the directory parameter, and adds directory object to drive service.
 func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 	if !d.Protected {
 		if !d.HasRoot() {
@@ -439,9 +439,8 @@ func (d *Drive) removeDir(dirID string) error {
 }
 
 // removed a directory from the drive.
-// removes physical drive and all its children,
-// as well as deletes the directory entry from the
-// sfs filesystem.
+// removes physical directory and all its children, as well as deletes
+// the directory entry from the sfs filesystem.
 func (d *Drive) RemoveDir(dirID string) error {
 	if !d.Protected {
 		if !d.HasRoot() {

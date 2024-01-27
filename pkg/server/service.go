@@ -801,9 +801,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", driveID)
 	}
-	if err := os.Mkdir(newDir.Path, svc.PERMS); err != nil {
-		return fmt.Errorf("failed to create directory: %v", err)
-	}
+	// add directory to service. creates physical directory.
 	if err := drive.AddSubDir(destDirID, newDir); err != nil {
 		// remove the directory if adding fails
 		if err2 := os.Remove(newDir.Path); err2 != nil {
@@ -838,7 +836,7 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 	if dir == nil {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
-	// remove all subdirs of this directory
+	// remove all subdirs of this directory from the db
 	subDirs := dir.GetSubDirs()
 	for _, subDir := range subDirs {
 		if err := drive.RemoveDir(subDir.ID); err != nil {
@@ -875,7 +873,7 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 func (s *Service) UpdateDir(driveID string, dir *svc.Directory) error {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return fmt.Errorf("drive %s not found", driveID)
+		return fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	if err := drive.UpdateDir(dir.ID, dir); err != nil {
 		return fmt.Errorf("failed to update dir %s (id=%s): %v", dir.Name, dir.ID, err)
@@ -890,13 +888,16 @@ func (s *Service) UpdateDir(driveID string, dir *svc.Directory) error {
 // returns nil if no directories are available.
 func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 	drive := s.GetDrive(driveID)
-	d := drive.Root.GetSubDirs()
-	if len(d) == 0 {
+	if drive == nil {
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
+	}
+	subDirs := drive.GetDirs()
+	if len(subDirs) == 0 {
 		log.Printf("[INFO] no directories found for user (id=%s)", drive.OwnerID)
 		return nil, nil
 	}
-	dirs := make([]*svc.Directory, 0, len(d))
-	for _, sd := range d {
+	dirs := make([]*svc.Directory, 0, len(subDirs))
+	for _, sd := range subDirs {
 		dirs = append(dirs, sd)
 	}
 	return dirs, nil
@@ -904,6 +905,9 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 
 func (s *Service) MoveDir(driveID string, dirID string, destDirID string) error {
 	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return fmt.Errorf("drive (id=%s) not found", driveID)
+	}
 
 	// directory to move
 	dir := drive.GetDir(dirID)
