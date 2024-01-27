@@ -102,11 +102,11 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 					file.ClientPath,
 					file.Endpoint,
 				); err != nil {
-					log.Printf("[WARNING] failed to download file: %s\nerr: %v", file.Name, err)
+					log.Printf("[WARNING] failed to download %s:  %v", file.Name, err)
 					return
 				}
 				if err := file.ValidateChecksum(); err != nil {
-					log.Printf("[WARNING] failed to validate checksum for file %v", file.Name)
+					log.Printf("[WARNING] failed to validate checksum for %s: %v", file.Name, err)
 				}
 				if err := c.Db.UpdateFile(file); err != nil {
 					log.Printf("[ERROR] failed to update files database: %v", err)
@@ -209,8 +209,8 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 // send a new (or updated) file to the server.
 func (c *Client) PushFile(file *svc.File) error {
 	// load file into fileWriter
-	var bodyBuf bytes.Buffer
-	bodyWriter := multipart.NewWriter(&bodyBuf)
+	var buf bytes.Buffer
+	bodyWriter := multipart.NewWriter(&buf)
 	defer bodyWriter.Close()
 
 	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", file.Name)
@@ -225,7 +225,7 @@ func (c *Client) PushFile(file *svc.File) error {
 	}
 
 	// generate a request with file metadata
-	req, err := http.NewRequest(http.MethodPost, c.Endpoints["new file"], &bodyBuf)
+	req, err := http.NewRequest(http.MethodPost, c.Endpoints["new file"], &buf)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
