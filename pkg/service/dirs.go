@@ -327,16 +327,18 @@ func (d *Directory) addFile(file *File) {
 	log.Printf("[INFO] file %s (id=%s) added", file.Name, file.ID)
 }
 
-func (d *Directory) AddFile(file *File) {
+// add a file to this directory if not already present.
+func (d *Directory) AddFile(file *File) error {
 	if !d.Protected {
 		if !d.HasFile(file.ID) {
 			d.addFile(file)
 		} else {
-			log.Printf("[INFO] file %s (id=%s) already present in directory", file.Name, file.ID)
+			return fmt.Errorf("file %s (id=%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
 		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
 	}
+	return nil
 }
 
 func (d *Directory) AddFiles(files []*File) {

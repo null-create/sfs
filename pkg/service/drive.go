@@ -233,13 +233,17 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 			return fmt.Errorf("no root directory")
 		}
 		if dirID == d.Root.ID {
-			d.Root.AddFile(file)
+			if err := d.Root.AddFile(file); err != nil {
+				return err
+			}
 		} else {
 			dir := d.GetDir(dirID)
 			if dir == nil {
 				return fmt.Errorf("dir (id=%s) not found", dirID)
 			}
-			dir.AddFile(file)
+			if err := dir.AddFile(file); err != nil {
+				return err
+			}
 		}
 		d.UsedSpace += float64(file.Size())
 	} else {

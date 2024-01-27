@@ -229,7 +229,9 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 			if file == nil {
 				continue // not found
 			}
-			dir.AddFile(file)
+			if err := dir.AddFile(file); err != nil {
+				log.Printf("[ERROR] could not add file (id=%s): %v", item.Name(), err)
+			}
 		}
 	}
 	return dir
@@ -310,7 +312,9 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
 					continue // TEMP until there's a better way to handle this error
 				}
-				dir.AddFile(newFile)
+				if err := dir.AddFile(newFile); err != nil {
+					log.Printf("[ERROR] could not add file (%s) to service: %v", item.Name(), err)
+				}
 			}
 		}
 	}
@@ -747,7 +751,9 @@ func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) erro
 		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
 	}
 	// add file object to destination directory
-	destDir.AddFile(file)
+	if err := destDir.AddFile(file); err != nil {
+		return fmt.Errorf("failed to add file to destination directory: %v", err)
+	}
 	// copy physical file
 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
 		return err

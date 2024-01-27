@@ -73,12 +73,11 @@ func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, s
 	return evtChan, offSwitch, fileID, evts, nil
 }
 
-// start an event handler for a given file. will be a no-op
-// if the handler does not exist, otherwise will listen
-// for whether the handlers errChan sends an error
+// start an event handler for a given file.
+// will be a no-op if the handler does not exist.
 func (c *Client) StartHandler(path string) error {
 	if handler, exists := c.Handlers[path]; exists {
-		handler() // TODO: need error handling
+		handler()
 	}
 	return nil
 }
@@ -131,8 +130,6 @@ func (c *Client) BuildHandlers() error {
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
-	// retrieve the event monitor channel, the monitor
-	// off switch, the associated fileID, and a new events buffer
 	// handler off-switch
 	stopHandler := make(chan bool)
 	// handler
@@ -142,13 +139,12 @@ func (c *Client) NewEHandler(path string) error {
 			if err := c.listener(path, stopHandler); err != nil {
 				log.Printf("[ERROR] listener failed: %v", err)
 				stopHandler <- true
-				// shut down monitoring thread for this event handler
-				// all monitoring threads must have a dedicated handler
+				// shut down monitoring thread for this event handler.
+				// all monitoring threads must have a dedicated handler.
 				c.Monitor.CloseChan(path)
 			}
 		}()
 	}
-	// save the handler and its off-switch
 	c.Handlers[path] = handler
 	c.OffSwitches[path] = stopHandler
 	return nil
@@ -156,7 +152,7 @@ func (c *Client) NewEHandler(path string) error {
 
 // dedicated listener for item events
 func (c *Client) listener(path string, stop chan bool) error {
-	// get all necessary components for the handler
+	// get all necessary params for the handler
 	evtChan, off, fileID, evts, err := c.setupHandler(path)
 	if err != nil {
 		return err

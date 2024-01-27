@@ -38,7 +38,9 @@ func SyncDisks(srcDir *Directory, destRootDir *Directory) error {
 					log.Printf("[WARNING] failed to copy file (id=%s) \n%v", file.ID, err)
 				}
 				// update dir struct
-				destRootDir.AddFile(file)
+				if err := destRootDir.AddFile(file); err != nil {
+					log.Printf("[WARNING] failed to update dir: %v", err)
+				}
 			}()
 		}
 	}

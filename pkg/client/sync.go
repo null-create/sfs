@@ -85,7 +85,7 @@ func (c *Client) Push() error {
 // create goroutines for each download and 'fans-in' once all are complete.
 func (c *Client) Pull(idx *svc.SyncIndex) error {
 	if len(idx.ToUpdate) == 0 {
-		log.Print("[INFO] no sync index return from server. nothing to pull")
+		log.Print("[INFO] no sync index returned from the server. nothing to pull")
 		return nil
 	}
 	queue := svc.BuildQ(idx)

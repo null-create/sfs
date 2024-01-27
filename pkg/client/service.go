@@ -144,7 +144,9 @@ func (c *Client) MoveFile(destDirID string, file *svc.File) error {
 		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
 	}
 	// add file object to destination directory
-	destDir.AddFile(file)
+	if err := destDir.AddFile(file); err != nil {
+		return err
+	}
 	// copy physical file
 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
 		return err
@@ -363,7 +365,9 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 			if file == nil {
 				continue
 			}
-			dir.AddFile(file)
+			if err := dir.AddFile(file); err != nil {
+				log.Printf("[ERROR] could not add file (%s) to service: %v", item.Name(), err)
+			}
 		}
 	}
 	return dir
@@ -417,7 +421,9 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 					continue
 				}
 				subDir = c.refreshDrive(subDir)
-				dir.AddSubDir(subDir)
+				if err := dir.AddSubDir(subDir); err != nil {
+					log.Print(err)
+				}
 			}
 		} else {
 			file, err := c.Db.GetFileByName(item.Name())
@@ -432,7 +438,9 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
 					continue // TEMP until there's a better way to handle this error
 				}
-				dir.AddFile(newFile)
+				if err := dir.AddFile(newFile); err != nil {
+					log.Printf("[ERROR] could not add file (%s) service: %v", item.Name(), err)
+				}
 			}
 		}
 	}
