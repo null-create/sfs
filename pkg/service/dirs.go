@@ -446,9 +446,17 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 	return nil
 }
 
-// creates a new subdirectory and updates internal data structures.
+// create a physical directory
+func (d *Directory) MkDir(dirPath string) error {
+	return os.Mkdir(dirPath, PERMS)
+}
+
+// creates a new physical subdirectory and updates internal data structures.
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
+		if err := d.MkDir(dir.ServerPath); err != nil {
+			return err
+		}
 		dir.Parent = d
 		dir.DriveID = d.DriveID
 		d.Dirs[dir.ID] = dir

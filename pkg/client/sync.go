@@ -14,7 +14,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
-	"os"
 	"sync"
 	"time"
 
@@ -212,21 +211,17 @@ func (c *Client) PushFile(file *svc.File) error {
 	// load file into fileWriter
 	var bodyBuf bytes.Buffer
 	bodyWriter := multipart.NewWriter(&bodyBuf)
+	defer bodyWriter.Close()
+
 	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", file.Name)
 	if err != nil {
 		return err
 	}
-	defer bodyWriter.Close()
-
-	f, err := os.Open(file.Path)
-	if err != nil {
-		return err
+	if len(file.Content) == 0 {
+		file.Load()
 	}
-	defer f.Close()
-
-	_, err = io.Copy(fileWriter, f)
-	if err != nil {
-		return err
+	if _, err = fileWriter.Write(file.Content); err != nil {
+		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
 
 	// generate a request with file metadata
