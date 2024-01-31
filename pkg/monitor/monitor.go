@@ -60,9 +60,12 @@ func (m *Monitor) Exists(filePath string) bool {
 }
 
 // recursively builds watchers for all files in the directory
-// and subdirectories
+// and subdirectories, then starts each event channel
 func (m *Monitor) Start(dirpath string) error {
-	return watchAll(dirpath, m)
+	if err := watchAll(dirpath, m); err != nil {
+		return fmt.Errorf("failed to start monitor: %v", err)
+	}
+	return nil
 }
 
 func (m *Monitor) IsDir(path string) (bool, error) {
