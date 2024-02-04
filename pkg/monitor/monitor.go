@@ -52,8 +52,8 @@ func NewMonitor(drvRoot string) *Monitor {
 }
 
 // see if an event channel exists for a given filepath.
-func (m *Monitor) IsMonitored(filePath string) bool {
-	if _, exists := m.Events[filePath]; exists {
+func (m *Monitor) IsMonitored(path string) bool {
+	if _, exists := m.Events[path]; exists {
 		return true
 	}
 	return false
@@ -61,13 +61,14 @@ func (m *Monitor) IsMonitored(filePath string) bool {
 
 // recursively builds watchers for all files in the directory
 // and subdirectories, then starts each event channel
-func (m *Monitor) Start(dirpath string) error {
-	if err := watchAll(dirpath, m); err != nil {
+func (m *Monitor) Start(rootpath string) error {
+	if err := watchAll(rootpath, m); err != nil {
 		return fmt.Errorf("failed to start monitor: %v", err)
 	}
 	return nil
 }
 
+// make sure the physical file or directory actually exists
 func (m *Monitor) Exists(path string) bool {
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
 		return false
@@ -77,6 +78,7 @@ func (m *Monitor) Exists(path string) bool {
 	return true
 }
 
+// is this item a directory?
 func (m *Monitor) IsDir(path string) (bool, error) {
 	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 		return true, nil
