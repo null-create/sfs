@@ -73,14 +73,19 @@ func NewFileCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate token
-		fileToken := r.Header.Get("Authorization")
-		if fileToken == "" {
+		rawToken := r.Header.Get("Authorization")
+		if rawToken == "" {
 			http.Error(w, "no authorization token provided", http.StatusBadRequest)
+			return
+		}
+		fileToken, err := tokenValidator.Extract(rawToken)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("authorization failed: %v", err), http.StatusBadRequest)
 			return
 		}
 		fileInfo, err := tokenValidator.Verify(fileToken)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to verify file token: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to verify token: %v", err), http.StatusInternalServerError)
 			return
 		}
 		// unmarshal new file data and check if it already exists before creating
@@ -106,9 +111,14 @@ func NewUserCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate request token
-		userToken := r.Header.Get("Authorization")
-		if userToken == "" {
+		rawToken := r.Header.Get("Authorization")
+		if rawToken == "" {
 			http.Error(w, "no authorization token provided", http.StatusBadRequest)
+			return
+		}
+		userToken, err := tokenValidator.Extract(rawToken)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to extract token: %v", err), http.StatusBadRequest)
 			return
 		}
 		userInfo, err := tokenValidator.Verify(userToken)
