@@ -38,7 +38,7 @@ func getSecret() ([]byte, error) {
 
 // retrieve jwt token from request
 func (t *Token) Extract(rawReqToken string) (string, error) {
-	splitToken := strings.Split(rawReqToken, "Bearer ")
+	splitToken := strings.Split(rawReqToken, " ")
 	if len(splitToken) != 2 { // bearer token not in proper format
 		return "", fmt.Errorf("invalid token format")
 	}
