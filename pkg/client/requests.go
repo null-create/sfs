@@ -139,7 +139,7 @@ func (c *Client) NewUserRequest(newUser *auth.User) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -153,7 +153,7 @@ func (c *Client) NewFileRequest(newFile *svc.File) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -167,7 +167,7 @@ func (c *Client) NewDirectoryRequest(newDir *svc.Directory) (*http.Request, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -181,7 +181,7 @@ func (c *Client) NewDriveRequest(newDrv *svc.Drive) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -208,7 +208,7 @@ func (c *Client) GetFileRequest(file *svc.File) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -222,7 +222,7 @@ func (c *Client) GetAllFilesRequest(user *auth.User) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -236,7 +236,7 @@ func (c *Client) GetDirRequest(dir *svc.Directory) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -250,7 +250,7 @@ func (c *Client) GetDriveRequest(drv *svc.Drive) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -264,7 +264,7 @@ func (c *Client) GetUserRequest(user *auth.User) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -280,7 +280,7 @@ func (c *Client) UpdateFileRequest(file *svc.File) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -294,7 +294,7 @@ func (c *Client) UpdateDirectoryRequest(dir *svc.Directory) (*http.Request, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -308,7 +308,7 @@ func (c *Client) UpdateDriveRequest(drv *svc.Drive) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -322,7 +322,7 @@ func (c *Client) UpdateUserRequest(user *auth.User) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -338,7 +338,7 @@ func (c *Client) DeleteFileRequest(file *svc.File) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -352,7 +352,7 @@ func (c *Client) DeleteDirectoryRequest(dir *svc.Directory) (*http.Request, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -366,7 +366,7 @@ func (c *Client) DeleteDriveRequest(drv *svc.Drive) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
@@ -380,7 +380,7 @@ func (c *Client) DeleteUserRequest(user *auth.User) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", "Bearer "+reqToken)
 	return req, nil
 }
 
