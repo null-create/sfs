@@ -40,3 +40,21 @@ func TestTokenVerification(t *testing.T) {
 	assert.NotEqual(t, "", id)
 	assert.Equal(t, userID, id)
 }
+
+func TestTokenExtraction(t *testing.T) {
+	env.SetEnv(false)
+
+	tok := NewT()
+	userID := NewUUID()
+	rawToken, err := tok.Create(userID)
+	if err != nil {
+		t.Fatalf("create token failed: %v", err)
+	}
+	fakeHeader := "Bearer " + rawToken
+	tokenString, err := tok.Extract(fakeHeader)
+	if err != nil {
+		t.Fatalf("token extraction failed: %v", err)
+	}
+	assert.NotContains(t, tokenString, "Bearer")
+	assert.NotEqual(t, "", tokenString)
+}
