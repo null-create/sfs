@@ -155,7 +155,7 @@ func (c *Client) Sync() error {
 	// get latest server update map
 	resp, err := c.Client.Get(c.Endpoints["gen updates"])
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to contact server: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[ERROR] server returned non-200 status")
@@ -184,7 +184,7 @@ func (c *Client) Sync() error {
 func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 	resp, err := c.Client.Get(c.Endpoints["get index"])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to contact server: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		c.dump(resp, true)
@@ -192,13 +192,13 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 	}
 	defer resp.Body.Close()
 
-	var idxBuf bytes.Buffer
-	_, err = io.Copy(&idxBuf, resp.Body)
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
 		return nil, err
 	}
 	var idx = new(svc.SyncIndex)
-	if err = json.Unmarshal(idxBuf.Bytes(), &idx); err != nil {
+	if err = json.Unmarshal(buf.Bytes(), &idx); err != nil {
 		return nil, err
 	}
 	return idx, nil
@@ -213,6 +213,7 @@ func (c *Client) PushFile(file *svc.File) error {
 	bodyWriter := multipart.NewWriter(&buf)
 	defer bodyWriter.Close()
 
+	// load file data into fileWriter
 	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", file.Name)
 	if err != nil {
 		return err
