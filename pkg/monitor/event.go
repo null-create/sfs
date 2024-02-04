@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
 	"time"
 )
@@ -10,6 +11,7 @@ type EventType string
 
 // event enums
 const (
+	Add     EventType = "add"
 	Create  EventType = "create"
 	Delete  EventType = "delete"
 	Change  EventType = "change"
@@ -21,10 +23,11 @@ const (
 )
 
 type Event struct {
-	ID   string    // UUID of the event
-	Time time.Time // time of the event
-	Type EventType // type of file event, i.e. create, edit, or delete
-	Path string    // location of the file event (path to the file itself)
+	ID    string        // UUID of the event
+	Time  time.Time     // time of the event
+	Type  EventType     // type of file event, i.e. create, edit, or delete
+	Path  string        // location of the file event (path to the file itself)
+	Items []fs.DirEntry // list of files in the directory that were added, created, or deleted
 }
 
 func (e *Event) ToString() string {

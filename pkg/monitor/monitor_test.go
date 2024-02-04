@@ -16,7 +16,7 @@ import (
 func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
 		log.Print("listening for events...")
-		fileChan := watch(path, stopMonitor)
+		fileChan := watchFile(path, stopMonitor)
 		for {
 			select {
 			case evt := <-fileChan:
