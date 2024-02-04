@@ -133,7 +133,7 @@ func (c *Client) RemoveFile(dirID string, file *svc.File) error {
 }
 
 // move a file from one directory to another.
-func (c *Client) MoveFile(destDirID string, file *svc.File) error {
+func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error {
 	// move file
 	origDir := c.Drive.GetDir(file.DirID)
 	if origDir == nil {
@@ -151,9 +151,11 @@ func (c *Client) MoveFile(destDirID string, file *svc.File) error {
 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
 		return err
 	}
-	// remove from origial file (also deletes original physical file)
-	if err := origDir.RemoveFile(file.ID); err != nil {
-		return err
+	if !keepOrig {
+		// remove from origial file (also deletes original physical file)
+		if err := origDir.RemoveFile(file.ID); err != nil {
+			return err
+		}
 	}
 	// update dbs
 	if err := c.Db.UpdateDir(origDir); err != nil {
@@ -171,19 +173,12 @@ func (c *Client) MoveFile(destDirID string, file *svc.File) error {
 // ----- directories --------------------------------
 
 func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
-	// make physical directory for the client
-	if err := os.Mkdir(dir.Path, svc.PERMS); err != nil {
-		return err
-	}
 	// add dir to client service instance
 	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
-		// remove if this fails. we only want items we have records for.
-		if remErr := os.Remove(dir.Path); remErr != nil {
-			log.Printf("[WARNING] failed to remove directory: %v", remErr)
-		}
-		return err
+		return fmt.Errorf("failed to add directory: %v", err)
 	}
 	if err := c.Db.AddDir(dir); err != nil {
+		// remove dir. we only want directories we have a record for.
 		if remErr := os.Remove(dir.Path); remErr != nil {
 			log.Printf("[WARNING] failed to remove directory: %v", remErr)
 		}
@@ -210,6 +205,9 @@ func (c *Client) RemoveDir(dirID string) error {
 	//
 	// need to think about this. this could easily be a recursive operation,
 	// but there's a lot that needs to be accounted for if that's the route we want to go
+	// subDirs := dir.GetSubDirs()
+	// files := dir.GetFiles()
+
 	return nil
 }
 
@@ -350,7 +348,6 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 			if subDir == nil {
 				continue
 			}
-			subDir.Parent = dir
 			subDir = c.populate(subDir)
 			if err := dir.AddSubDir(subDir); err != nil {
 				log.Printf("[ERROR] could not add directory: %v", err)

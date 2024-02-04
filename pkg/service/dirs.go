@@ -77,7 +77,7 @@ type Directory struct {
 
 	// disignator for whether this directory is considerd the "root" directory
 	Root     bool   `json:"root"`
-	RootPath string `json:"rootPath"`
+	RootPath string `json:"root_path"`
 }
 
 // create a new root directory object. does not create physical directory.
@@ -185,23 +185,8 @@ func (d *Directory) clear() {
 	d.Dirs = make(map[string]*Directory, 0)
 }
 
-// clears *in-memory* file and directory data structures.
-// does not actually remove physical files or directories.
-//
-// used to securely run clear().
-func (d *Directory) Clear(password string) {
-	if !d.Protected {
-		d.clear()
-	} else {
-		if password == d.Key {
-			d.clear()
-		} else {
-			log.Print("[INFO] wrong password. contents not cleared")
-		}
-	}
-}
-
-// clean all files and subdirectories from the top-level directory
+// clean all files and subdirectories from the top-level directory.
+// ***use with caution***
 func clean(dirPath string) error {
 	d, err := os.Open(dirPath)
 	if err != nil {
@@ -324,7 +309,6 @@ func (d *Directory) addFile(file *File) {
 	file.Path = filepath.Join(d.Path, file.Name)
 	file.LastSync = time.Now().UTC()
 	d.Files[file.ID] = file
-	log.Printf("[INFO] file %s (id=%s) added", file.Name, file.ID)
 }
 
 // add a file to this directory if not already present.
@@ -384,7 +368,6 @@ func (d *Directory) removeFile(fileID string) error {
 		}
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("[INFO] file (id=%s) removed", file.ID)
 	} else {
 		return fmt.Errorf("file (id=%s) not found", file.ID)
 	}
@@ -447,21 +430,18 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 }
 
 // create a physical directory
-func (d *Directory) MkDir(dirPath string) error {
+func (d *Directory) Mkdir(dirPath string) error {
 	return os.Mkdir(dirPath, PERMS)
 }
 
-// creates a new physical subdirectory and updates internal data structures.
+// adds a new subdirectory and updates internal state.
+// does *not* create a physical directory
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
-		if err := d.MkDir(dir.ServerPath); err != nil {
-			return err
-		}
 		dir.Parent = d
 		dir.DriveID = d.DriveID
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
-		log.Printf("[INFO] dir %s (id=%s) added", dir.Name, dir.ID)
 	} else {
 		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
@@ -471,8 +451,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 // add a single sub directory to the current directory.
 // sets dir's parent pointer to the directory this
 // function is attached to.
-//
-// does not create physical directory.
+// does *not* create a physical directory
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		d.addSubDir(dir)
@@ -483,7 +462,6 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 }
 
 // add a slice of directory objects to the current directory.
-// does not create physical directories.
 func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	if len(dirs) == 0 {
 		return nil
@@ -579,7 +557,8 @@ func (d *Directory) Walk() *Directory {
 	return walk(d)
 }
 
-// walk recursively descends the directory tree and populates all files and subdirectory maps
+// walk recursively descends the directory tree and populates all files
+// and subdirectory maps
 func walk(d *Directory) *Directory {
 	entries, err := os.ReadDir(d.Path)
 	if err != nil {

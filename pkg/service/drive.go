@@ -421,6 +421,7 @@ func (d *Drive) GetDirs() map[string]*Directory {
 	return nil
 }
 
+// TODO: return all the contents of this removed directory
 func (d *Drive) removeDir(dirID string) error {
 	dir := d.GetDir(dirID)
 	if dir != nil {
