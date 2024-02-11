@@ -172,8 +172,8 @@ func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error
 
 // ----- directories --------------------------------
 
+// add dir to client service instance
 func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
-	// add dir to client service instance
 	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
 		return fmt.Errorf("failed to add directory: %v", err)
 	}
@@ -189,7 +189,6 @@ func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
 
 // remove a directory from local and remote service instances.
 func (c *Client) RemoveDir(dirID string) error {
-	// remove from service instance
 	dir := c.Drive.GetDir(dirID)
 	if dir == nil {
 		return fmt.Errorf("no such dir: %v", dirID)
@@ -208,6 +207,20 @@ func (c *Client) RemoveDir(dirID string) error {
 	// subDirs := dir.GetSubDirs()
 	// files := dir.GetFiles()
 
+	return nil
+}
+
+func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
+	oldDir := c.Drive.GetDir(updatedDir.ID)
+	if oldDir == nil {
+		return fmt.Errorf("no such dir: %v", updatedDir.Name)
+	}
+	if err := c.Drive.UpdateDir(oldDir.ID, updatedDir); err != nil {
+		return fmt.Errorf("failed to update directory in drive: %v", err)
+	}
+	if err := c.Db.UpdateDir(updatedDir); err != nil {
+		return fmt.Errorf("failed to update directory in database: %v", err)
+	}
 	return nil
 }
 
