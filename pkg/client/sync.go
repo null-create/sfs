@@ -236,6 +236,7 @@ func (c *Client) PushFile(file *svc.File) error {
 	}
 	req.Header.Set("Authorization", reqToken)
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
+	req.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 
 	// send the file
 	resp, err := c.Client.Do(req)
