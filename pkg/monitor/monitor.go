@@ -83,7 +83,7 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 		return true, nil
 	} else if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get stats for %v: %v", filepath.Base(path), err)
 	}
 	return false, nil
 }
@@ -97,12 +97,13 @@ func (m *Monitor) WatchItem(path string) error {
 		return fmt.Errorf("%s does not exist", filepath.Base(path))
 	}
 	if !m.IsMonitored(path) {
-		stop := make(chan bool)
-		m.OffSwitches[path] = stop
 		isdir, err := m.IsDir(path)
 		if err != nil {
 			return err
 		}
+		// add stop channel before starting monitoring
+		stop := make(chan bool)
+		m.OffSwitches[path] = stop
 		if isdir {
 			m.Events[path] = watchDir(path, stop)
 		} else {
@@ -279,7 +280,9 @@ func watchDir(path string, stop chan bool) chan Event {
 	}
 
 	// add initial items to context
-	dirCtx := new(DirCtx)
+	dirCtx := NewDirCtx()
+	// NOTE: need to make sure these are added to the service
+	// if they're not already present! not watchDir's responsibility, though.
 	dirCtx.AddItems(initialItems)
 
 	// event channel used by the event handler goroutine
@@ -316,7 +319,7 @@ func watchDir(path string, stop chan bool) chan Event {
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
-					diffs := dirCtx.GetDiffs(currItems) // get list of deleted items
+					diffs := dirCtx.UpdateCtx(currItems) // get list of deleted items
 					evt <- Event{
 						ID:    auth.NewUUID(),
 						Time:  time.Now().UTC(),
@@ -327,7 +330,7 @@ func watchDir(path string, stop chan bool) chan Event {
 					initialItems = currItems
 				// item(s) were added
 				case len(currItems) > len(initialItems):
-					diffs := dirCtx.GetDiffs(currItems) // get list of removed items
+					diffs := dirCtx.UpdateCtx(currItems) // get list of removed items
 					evt <- Event{
 						ID:    auth.NewUUID(),
 						Time:  time.Now().UTC(),

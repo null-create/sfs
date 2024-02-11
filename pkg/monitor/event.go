@@ -96,8 +96,6 @@ func (e *Events) AddEvent(evt Event) {
 		if e.Total == e.threshold {
 			e.AtCap = true
 		}
-	} else if e.HasEvent(evt) {
-		log.Printf("[INFO] event (id=%s) was already added", evt.ID)
 	} else {
 		log.Printf("[WARNING] event list threshold met. event (id=%s) not added!", evt.ID)
 	}

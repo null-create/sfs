@@ -71,7 +71,7 @@ func (c *Client) GetFile(fileID string) (*svc.File, error) {
 			return nil, err
 		}
 		if file == nil {
-			return nil, fmt.Errorf("file %s not found", fileID)
+			return nil, fmt.Errorf("file (id=%s) not found", fileID)
 		}
 		// add this since we didn't have it before
 		if err := c.Drive.AddFile(file.DirID, file); err != nil {
@@ -81,10 +81,20 @@ func (c *Client) GetFile(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
+// check db using a given file path
+func (c *Client) GetFileByPath(path string) (*svc.File, error) {
+	file, err := c.Db.GetFileByPath(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file by path: %v", err)
+	} else if file == nil {
+		return nil, fmt.Errorf("%s not found", filepath.Base(path))
+	}
+	return file, nil
+}
+
 // add a new file to a specified directory. adds to monitoring services
 // and pushes the new file to the SFS server.
 func (c *Client) AddFile(dirID string, file *svc.File) error {
-	// add to drive, local database, and monitoring services
 	if err := c.Drive.AddFile(dirID, file); err != nil {
 		return err
 	}
@@ -101,9 +111,8 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 	return nil
 }
 
-// update a file in a specied directory
-func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
-	// update local file
+// update file contents in a specied directory
+func (c *Client) ModifyFile(dirID string, fileID string, data []byte) error {
 	file := c.Drive.GetFile(fileID)
 	if file == nil {
 		return fmt.Errorf("no file (id=%s) found", fileID)
@@ -111,7 +120,7 @@ func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
 	if len(data) == 0 {
 		return fmt.Errorf("no data received")
 	}
-	if err := c.Drive.UpdateFile(dirID, file, data); err != nil {
+	if err := c.Drive.ModifyFile(dirID, file, data); err != nil {
 		return err
 	}
 	if err := c.Db.UpdateFile(file); err != nil {
@@ -120,9 +129,23 @@ func (c *Client) UpdateFile(dirID string, fileID string, data []byte) error {
 	return nil
 }
 
-// remove a file in a specied directory
+// update file metadata in the service instance
+func (c *Client) UpdateFile(updatedFile *svc.File) error {
+	oldFile := c.Drive.GetFile(updatedFile.ID)
+	if oldFile == nil {
+		return fmt.Errorf("file (id=%s) not found", updatedFile.ID)
+	}
+	if err := c.Drive.UpdateFile(oldFile.DirID, updatedFile); err != nil {
+		return fmt.Errorf("failed to update file (id=%s): %v", updatedFile.ID, err)
+	}
+	if err := c.Db.UpdateFile(updatedFile); err != nil {
+		return fmt.Errorf("failed to update file (id=%s) in database: %v", updatedFile.ID, err)
+	}
+	return nil
+}
+
+// remove a file in a specied directory.
 func (c *Client) RemoveFile(dirID string, file *svc.File) error {
-	// remove physical file and update local database
 	if err := c.Drive.RemoveFile(dirID, file); err != nil {
 		return err
 	}
@@ -132,9 +155,9 @@ func (c *Client) RemoveFile(dirID string, file *svc.File) error {
 	return nil
 }
 
-// move a file from one directory to another.
+// move a file from one directory to another. set keepOrig to true
+// to keep a copy in the original local.
 func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error {
-	// move file
 	origDir := c.Drive.GetDir(file.DirID)
 	if origDir == nil {
 		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
@@ -224,6 +247,24 @@ func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	return nil
 }
 
+func (c *Client) GetDirectory(id string) (*svc.Directory, error) {
+	dir := c.Drive.GetDir(id)
+	if dir == nil {
+		return nil, fmt.Errorf("directory %v not found", id)
+	}
+	return dir, nil
+}
+
+func (c *Client) GetDirByPath(path string) (*svc.Directory, error) {
+	dir, err := c.Db.GetDirectoryByPath(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get directory: %v", err)
+	} else if dir == nil {
+		return nil, fmt.Errorf("directory does not exist: %s", path)
+	}
+	return dir, nil
+}
+
 // ----- drive --------------------------------
 
 // Loads drive from the database, populates root directory,
@@ -236,6 +277,9 @@ func (c *Client) LoadDrive() error {
 	root, err := c.Db.GetDirectory(drive.RootID)
 	if err != nil {
 		return err
+	}
+	if root == nil {
+		return fmt.Errorf("no root directory associated with drive")
 	}
 	c.Drive = drive
 	c.Drive.Root = c.Populate(root)
@@ -259,10 +303,16 @@ func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
 		if err != nil {
 			return nil, err
 		}
+		if drive == nil {
+			return nil, fmt.Errorf("no such drive: %v", driveID)
+		}
 		// get root directory for the drive and create a sync index if necessary
 		root, err := c.Db.GetDirectory(drive.RootID)
 		if err != nil {
 			return nil, err
+		}
+		if root == nil {
+			return nil, fmt.Errorf("no root associated with drive")
 		}
 		drive.Root = c.Populate(root)
 		if !drive.IsIndexed() {

@@ -136,10 +136,8 @@ func (c *Client) start(shutDown chan os.Signal) error {
 func (c *Client) Start() (chan os.Signal, error) {
 	shutDown := make(chan os.Signal, 1)
 	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func() {
-		if err := c.start(shutDown); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	if err := c.start(shutDown); err != nil {
+		log.Fatal(err)
+	}
 	return shutDown, nil
 }

@@ -35,12 +35,13 @@ func (ctx *DirCtx) AddItems(items []fs.DirEntry) {
 }
 
 // finds all items that aren't current being monitored and returns
-// a map containing the items
-func (ctx *DirCtx) GetDiffs(new []fs.DirEntry) []fs.DirEntry {
+// a map containing the items. also adds the new items to the current context.
+func (ctx *DirCtx) UpdateCtx(new []fs.DirEntry) []fs.DirEntry {
 	diffs := make([]fs.DirEntry, 0)
 	for _, item := range new {
 		if _, exist := ctx.currItems[item.Name()]; !exist {
 			diffs = append(diffs, item)
+			ctx.currItems[item.Name()] = item
 		}
 	}
 	return diffs

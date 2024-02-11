@@ -13,6 +13,8 @@ const (
 			owner_id VARCHAR(50),
 			directory_id VARCHAR(50),
 			drive_id VARCHAR(50),
+			size INTEGER,
+			mode VARCHAR(50),
 			protected BIT,
 			key VARCHAR(100),
 			last_sync DATETIME,
@@ -86,6 +88,8 @@ const (
 			owner_id,
 			directory_id,
 			drive_id,
+			mode, 
+			size, 
 			protected,
 			key,
 			last_sync,
@@ -96,7 +100,7 @@ const (
 			checksum,
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT OR IGNORE INTO Directories (
@@ -158,6 +162,8 @@ const (
 				owner_id = ?,
 				directory_id = ?,
 				drive_id = ?, 
+				mode = ?, 
+				size = ?, 
 				protected = ?, 
 				key = ?,
 				last_sync = ?, 

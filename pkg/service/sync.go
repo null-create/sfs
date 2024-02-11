@@ -152,7 +152,7 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 func wontFit(files []*File, limit int64) bool {
 	var total int
 	for _, f := range files {
-		if f.Size() > limit {
+		if f.GetSize() > limit {
 			total += 1
 		}
 	}
@@ -176,7 +176,7 @@ func GetLargeFiles(files []*File) []*File {
 	}
 	f := make([]*File, 0, len(files))
 	for _, file := range files {
-		if file.Size() > MAX {
+		if file.GetSize() > MAX {
 			f = append(f, file)
 		}
 	}

@@ -704,7 +704,7 @@ func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 	if dir == nil {
 		return fmt.Errorf("file's directory not found")
 	}
-	if err := dir.UpdateFile(file, data); err != nil {
+	if err := dir.ModifyFile(file, data); err != nil {
 		return err
 	}
 	if err := s.Db.UpdateFile(file); err != nil {

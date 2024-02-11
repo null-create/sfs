@@ -108,9 +108,9 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 			// number of times we need to iterate over the list of files (and remaning subsets after
 			// each batch) and where k is the size of the *current* list we're iterating over and
 			// building a batch from (assuming slice shrinkage with each pass).
-			if b.Cap-f.File.Size() >= 0 {
+			if b.Cap-f.File.GetSize() >= 0 {
 				b.Files[f.File.ID] = f.File
-				b.Cap -= f.File.Size()
+				b.Cap -= f.File.GetSize()
 				b.Total += 1
 				c.Added = append(c.Added, f.File)
 				if b.Cap == 0 { // don't bother checking the rest
@@ -119,7 +119,7 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 			} else {
 				// we want to check the other files in this list
 				// since they may be small enough to add onto this batch.
-				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.File.Size(), b.Cap)
+				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.File.GetSize(), b.Cap)
 				c.NotAdded = append(c.NotAdded, f.File)
 				continue
 			}

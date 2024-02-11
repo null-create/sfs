@@ -26,6 +26,7 @@ type File struct {
 	DirID   string      `json:"dir_id"`   // id of the directory this file belongs to
 	DriveID string      `json:"drive_id"` // id of the drive this file belongs to
 	Mode    fs.FileMode `json:"mode"`     // file permissions
+	Size    int64       `json:"size"`     // file size in bytes
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -70,6 +71,7 @@ func NewFile(fileName string, driveID string, ownerID string, path string) *File
 		OwnerID:    ownerID,
 		DriveID:    driveID,
 		Mode:       item.Mode(),
+		Size:       item.Size(),
 		Protected:  false,
 		Key:        "default",
 		LastSync:   time.Now().UTC(),
@@ -94,7 +96,7 @@ func UnmarshalFileStr(fileInfo string) (*File, error) {
 // returns file size in bytes
 //
 // uses os.Stat() - "length in bytes for regular files; system-dependent for others"
-func (f *File) Size() int64 {
+func (f *File) GetSize() int64 {
 	info, err := os.Stat(f.Path)
 	if err != nil {
 		log.Fatalf("unable to determine file size: %v", err)

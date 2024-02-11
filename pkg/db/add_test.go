@@ -58,39 +58,37 @@ func TestAddAndFindMultipleFiles(t *testing.T) {
 	q := NewQuery(filepath.Join(testDir, "Files"), false)
 	q.Debug = true
 
+	// tmp dir
+	dir, err := MakeTmpDir(t, filepath.Join(GetTestingDir(), "tmp"))
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
 	// make a bunch of dummy files
 	total := svc.RandInt(100)
-	testFiles := make([]*svc.File, 0, total)
-	for i := 0; i < total; i++ {
-		fn := fmt.Sprintf("test-%d.txt", i)
-		f := svc.NewFile(fn, "some-rand-id", "me", filepath.Join(testDir, fn))
-		testFiles = append(testFiles, f)
+	testFiles, err := MakeABunchOfTxtFiles(total)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
 	}
+	dir.AddFiles(testFiles)
 
 	// add files to db
 	if err := q.AddFiles(testFiles); err != nil {
-		Fatal(t, err)
+		Fail(t, GetTestingDir(), err)
 	}
 
 	// attempt to retrieve all the test files we just added
 	results, err := q.GetFiles()
 	if err != nil {
-		Fatal(t, err)
+		Fail(t, GetTestingDir(), err)
+	}
+	// clean up first in case soemthing fails
+	if err := Clean(t, GetTestingDir()); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 	assert.NotEqual(t, nil, results)
 	assert.Equal(t, total, len(results))
 	assert.Equal(t, len(testFiles), len(results))
-
-	// TODO: rework this to skip lastSync as it's updated
-	// when we pull the data from the db
-
-	// for i, testFile := range results {
-	// 	assert.Equal(t, testFiles[i], testFile)
-	// }
-
-	if err := Clean(t, GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
 }
 
 func TestAddAndFindDirectory(t *testing.T) {

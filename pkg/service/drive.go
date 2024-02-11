@@ -252,7 +252,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 				return err
 			}
 		}
-		d.UsedSpace += float64(file.Size())
+		d.UsedSpace += float64(file.GetSize())
 	} else {
 		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
@@ -287,14 +287,14 @@ func (d *Drive) GetFiles() map[string]*File {
 	return nil
 }
 
-// update a file
-func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
+// update/ modify a files contents
+func (d *Drive) ModifyFile(dirID string, file *File, data []byte) error {
 	if !d.Protected {
 		if !d.HasRoot() {
 			return fmt.Errorf("no root directory")
 		}
 		if d.Root.ID == dirID {
-			if err := d.Root.UpdateFile(file, data); err != nil {
+			if err := d.Root.ModifyFile(file, data); err != nil {
 				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
 			}
 		} else {
@@ -302,12 +302,36 @@ func (d *Drive) UpdateFile(dirID string, file *File, data []byte) error {
 			if dir == nil {
 				return fmt.Errorf("dir (id=%s) not found", dirID)
 			}
-			if err := dir.UpdateFile(file, data); err != nil {
+			if err := dir.ModifyFile(file, data); err != nil {
 				return err
 			}
 			// TODO: get the difference between old and new file sizes
 			// and adjust the drives used space value accordingly.
 		}
+	} else {
+		log.Printf("[INFO] drive is protected")
+	}
+	return nil
+}
+
+// update files metadata in the drive
+func (d *Drive) UpdateFile(dirID string, file *File) error {
+	if !d.Protected {
+		// if d.Root.ID == dirID {
+		// 	if err := d.Root.UpdateFile(file, data); err != nil {
+		// 		return fmt.Errorf("failed to update file %s: %v", file.ID, err)
+		// 	}
+		// } else {
+		// 	dir := d.GetDir(dirID)
+		// 	if dir == nil {
+		// 		return fmt.Errorf("dir (id=%s) not found", dirID)
+		// 	}
+		// 	if err := dir.UpdateFile(file, data); err != nil {
+		// 		return err
+		// 	}
+		// 	// TODO: get the difference between old and new file sizes
+		// 	// and adjust the drives used space value accordingly.
+		// }
 	} else {
 		log.Printf("[INFO] drive is protected")
 	}
@@ -335,7 +359,7 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 			if err := dir.RemoveFile(file.ID); err != nil {
 				return err
 			}
-			d.UsedSpace -= float64(file.Size())
+			d.UsedSpace -= float64(file.GetSize())
 			return nil
 		}
 	} else {

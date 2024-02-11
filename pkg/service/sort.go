@@ -13,7 +13,7 @@ https://stackoverflow.com/questions/18695346/how-can-i-sort-a-mapstringint-by-it
 func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
 	m := make(map[*File]int64)
 	for _, f := range files {
-		m[f] = f.Size()
+		m[f] = f.GetSize()
 	}
 	return m
 }

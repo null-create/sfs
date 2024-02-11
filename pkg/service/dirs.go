@@ -345,7 +345,7 @@ func (d *Directory) AddFiles(files []*File) {
 // save new data to a file. file will be created or truncated,
 // depending on its state at time of writing. does not check
 // subdirectories for the existence of this file.
-func (d *Directory) UpdateFile(f *File, data []byte) error {
+func (d *Directory) ModifyFile(f *File, data []byte) error {
 	if !d.Protected {
 		if d.HasFile(f.ID) {
 			if err := f.Save(data); err != nil {
@@ -354,6 +354,18 @@ func (d *Directory) UpdateFile(f *File, data []byte) error {
 		} else {
 			log.Printf("[ERROR] file (id=%s) does not belong to this directory", f.ID)
 			return nil
+		}
+	} else {
+		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
+	}
+	return nil
+}
+
+// update files metadata in the directory
+func (d *Directory) UpdateFile(file *File) error {
+	if !d.Protected {
+		if d.HasFile(file.ID) {
+			d.addFile(file)
 		}
 	} else {
 		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)

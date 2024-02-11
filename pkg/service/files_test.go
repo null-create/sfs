@@ -60,7 +60,7 @@ func TestGetFileSize(t *testing.T) {
 	}
 
 	for _, f := range testFiles {
-		fSize := f.Size()
+		fSize := f.GetSize()
 		assert.NotEqual(t, 0, fSize)
 
 		f.Clear()

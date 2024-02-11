@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -131,14 +132,13 @@ func (c *Client) BuildHandlers() error {
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
 	// handler off-switch
-	stopHandler := make(chan bool)
+	offSwitch := make(chan bool)
 	// handler
 	handler := func() {
 		// start listener
 		go func() {
-			if err := c.listener(path, stopHandler); err != nil {
+			if err := c.listener(path, offSwitch); err != nil {
 				log.Printf("[ERROR] listener failed: %v", err)
-				stopHandler <- true
 				// shut down monitoring thread for this event handler.
 				// all monitoring threads must have a dedicated handler.
 				c.Monitor.CloseChan(path)
@@ -146,14 +146,15 @@ func (c *Client) NewEHandler(path string) error {
 		}()
 	}
 	c.Handlers[path] = handler
-	c.OffSwitches[path] = stopHandler
+	c.OffSwitches[path] = offSwitch
 	return nil
 }
 
-// dedicated listener for item events
+// dedicated listener for item events.
+// items can be either files or directories.
 func (c *Client) listener(path string, stop chan bool) error {
 	// get all necessary params for the handler
-	evtChan, off, fileID, evts, err := c.setupHandler(path)
+	evtChan, off, parentID, evts, err := c.setupHandler(path)
 	if err != nil {
 		return err
 	}
@@ -161,19 +162,166 @@ func (c *Client) listener(path string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			log.Printf("[INFO] stopping event handler for item id=%v ...", fileID)
+			log.Printf("[INFO] stopping event handler for item id=%v ...", parentID)
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
+			// new file or directory was added to a monitored directory
+			case monitor.Add:
+				item, err := os.Stat(e.Path)
+				if err != nil {
+					log.Printf("[ERROR] failed to get item information: %v", err)
+					break
+				}
+				if item.IsDir() {
+					newDir := svc.NewDirectory(item.Name(), c.UserID, c.DriveID, e.Path)
+					if err := c.AddDir(newDir.ID, newDir); err != nil {
+						log.Printf("[ERROR] failed to add new directory: %v", err)
+						break
+					}
+				} else {
+					newFile := svc.NewFile(item.Name(), c.DriveID, c.UserID, e.Path)
+					if err := c.AddFile(parentID, newFile); err != nil {
+						log.Printf("[ERROR] failed to add new file: %v", err)
+						break
+					}
+				}
+				evts.AddEvent(e)
+			// item name change
 			case monitor.Name:
+				item, err := os.Stat(e.Path)
+				if err != nil {
+					log.Printf("[ERROR] failed to get item information: %v", err)
+					break
+				}
+				// update name in instance and DB
+				if item.IsDir() {
+					dir, err := c.GetDirByPath(e.Path)
+					if err != nil {
+						log.Printf("[ERROR] %v", err)
+						break
+					}
+					dir.Name = item.Name()
+					if err := c.UpdateDirectory(dir); err != nil {
+						log.Printf("[ERROR] failed to update directory information: %v", err)
+						break
+					}
+				} else {
+					file, err := c.GetFileByPath(e.Path)
+					if err != nil {
+						log.Printf("[ERROR] %v", err)
+						break
+					}
+					file.Name = item.Name()
+					// TODO: update file info client function
+				}
+				evts.AddEvent(e)
+			// item mode change
 			case monitor.Mode:
+				item, err := os.Stat(e.Path)
+				if err != nil {
+					log.Printf("[ERROR] failed to get item information: %v", err)
+					break
+				}
+				if item.IsDir() {
+					// dir, err := c.GetDirByPath(e.Path)
+					// if err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+
+				} else {
+					file, err := c.GetFileByPath(e.Path)
+					if err != nil {
+						log.Printf("[ERROR] %v", err)
+						break
+					}
+					file.Mode = item.Mode()
+					if err := c.UpdateFile(file); err != nil {
+						log.Printf("[ERROR] %v", err)
+						break
+					}
+				}
+				evts.AddEvent(e)
+			// item size change
 			case monitor.Size:
+				item, err := os.Stat(e.Path)
+				if err != nil {
+					log.Printf("[ERROR] failed to get item information: %v", err)
+					break
+				}
+				if item.IsDir() {
+					// dir, err := c.GetDirByPath(e.Path)
+					// if err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+				} else {
+					file, err := c.GetFileByPath(e.Path)
+					if err != nil {
+						log.Printf("[ERROR] %v", err)
+						break
+					}
+					file.Size = item.Size()
+					if err := c.UpdateFile(file); err != nil {
+						log.Printf("[ERROR] %v", err)
+						break
+					}
+				}
+				evts.AddEvent(e)
+			// item mod time change
 			case monitor.ModTime:
+				item, err := os.Stat(e.Path)
+				if err != nil {
+					log.Printf("[ERROR] failed to get item information: %v", err)
+					break
+				}
+				if item.IsDir() {
+					// dir, err := c.GetDirByPath(e.Path)
+					// if err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+				} else {
+					// file, err := c.GetFileByPath(e.Path)
+					// if err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+					// if err := c.Db.UpdateFile(file); err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+				}
+				evts.AddEvent(e)
+			// items content change
 			case monitor.Change:
+				item, err := os.Stat(e.Path)
+				if err != nil {
+					log.Printf("[ERROR] failed to get item information: %v", err)
+					break
+				}
+				if item.IsDir() {
+					// dir, err := c.GetDirByPath(e.Path)
+					// if err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+				} else {
+					// file, err := c.GetFileByPath(e.Path)
+					// if err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+					// if err := c.Db.UpdateFile(file); err != nil {
+					// 	log.Printf("[ERROR] %v", err)
+					// 	break
+					// }
+				}
 				evts.AddEvent(e)
 			case monitor.Delete:
 				off <- true // shutdown monitoring thread, remove from index, and shut down handler
-				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", fileID)
+				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", parentID)
 				return nil
 			}
 			// TODO: need to decide how ofter to run sync operations once the

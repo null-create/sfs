@@ -31,7 +31,7 @@ func TestBatchLimit(t *testing.T) {
 
 	var totalSize int64
 	for _, testFile := range testFiles {
-		totalSize += testFile.Size()
+		totalSize += testFile.GetSize()
 	}
 	// make sure our test file content size is greater than our
 	// established capacity. we want to check for left over files
