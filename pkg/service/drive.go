@@ -67,10 +67,10 @@ func AllocateDrive(name string, ownerID string, svcRoot string) (*Drive, error) 
 
 /*
 "Drives" are just abstractions of a protrected root directory,
-managed by Simple File Sync, containing backups of a user's files and other subdirectories
-to facilitate synchronization across multiple devices.
+managed by Simple File Sync, containing backups of a user's files and
+other subdirectoriesto to facilitate synchronization across multiple devices.
 
-It's basically just a directory containing some metadata about a users
+Its basically just a directory containing some metadata about a users
 drive size, state, and some security configurations, which itself
 contains the user's "root" directory. Its this "root" directory where
 all the users files live, in whatever arragement they end up using.
@@ -123,7 +123,14 @@ func check(driveID string, ownerName string, ownerID string, rootPath string, ro
 }
 
 // creates a new drive service for a user. does not create new physical files
-func NewDrive(driveID string, ownerName string, ownerID string, rootPath string, rootID string, root *Directory) *Drive {
+func NewDrive(
+	driveID string,
+	ownerName string,
+	ownerID string,
+	rootPath string,
+	rootID string,
+	root *Directory,
+) *Drive {
 	if !check(driveID, ownerName, ownerID, rootPath, root) {
 		return nil
 	}
