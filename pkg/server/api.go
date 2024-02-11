@@ -40,7 +40,7 @@ func NewAPI(newService bool, isAdmin bool) *API {
 	}
 }
 
-// -------- testing ---------------------------------------
+// -------- testing ----------------------------------------------------
 
 // placeholder handler for testing purposes
 func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +130,7 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 	// file existance was confirmed by the middleware at this point
 	file := r.Context().Value(File).(*svc.File)
 
-	// Set the response header for the download
+	// set the response header for the download
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 	w.Header().Set("Content-Type", "application/octet-stream")
 

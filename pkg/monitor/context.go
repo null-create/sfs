@@ -8,6 +8,12 @@ type DirCtx struct {
 	currItems map[string]fs.DirEntry
 }
 
+func NewDirCtx() *DirCtx {
+	return &DirCtx{
+		currItems: make(map[string]fs.DirEntry),
+	}
+}
+
 func (ctx *DirCtx) Clear() {
 	ctx.currItems = nil
 	ctx.currItems = make(map[string]fs.DirEntry)
@@ -18,12 +24,6 @@ func (ctx *DirCtx) HasItem(itemName string) bool {
 		return true
 	}
 	return false
-}
-
-func (ctx *DirCtx) AddItem(item fs.DirEntry) {
-	if !ctx.HasItem(item.Name()) {
-		ctx.currItems[item.Name()] = item
-	}
 }
 
 func (ctx *DirCtx) AddItems(items []fs.DirEntry) {
