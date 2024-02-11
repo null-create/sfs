@@ -10,11 +10,9 @@ import (
 )
 
 var (
-	clnt *client.Client // active client service instance
-
-	shutdown chan os.Signal
-
-	configs = client.ClientConfig()
+	clnt     *client.Client // active client service instance
+	shutdown chan os.Signal // shutdown signal
+	configs  = client.ClientConfig()
 
 	// for flags
 	newClient   bool
@@ -37,6 +35,10 @@ var (
 					return err
 				}
 			case startFlag:
+				clnt, err := client.LoadClient()
+				if err != nil {
+					return err
+				}
 				off, err := clnt.Start()
 				if err != nil {
 					return err
