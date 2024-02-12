@@ -166,158 +166,45 @@ func (c *Client) listener(path string, stop chan bool) error {
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
-			// new file or directory was added to a monitored directory
+			// new files or directories were added to a monitored directory
 			case monitor.Add:
-				item, err := os.Stat(e.Path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get item information: %v", err)
-					break
-				}
-				if item.IsDir() {
-					newDir := svc.NewDirectory(item.Name(), c.UserID, c.DriveID, e.Path)
-					if err := c.AddDir(newDir.ID, newDir); err != nil {
-						log.Printf("[ERROR] failed to add new directory: %v", err)
-						break
+				for _, f := range e.Items {
+					item, err := os.Stat(e.Path)
+					if err != nil {
+						log.Printf("[ERROR] failed to get item information: %v", err)
 					}
-				} else {
-					newFile := svc.NewFile(item.Name(), c.DriveID, c.UserID, e.Path)
-					if err := c.AddFile(parentID, newFile); err != nil {
-						log.Printf("[ERROR] failed to add new file: %v", err)
-						break
+					if item.IsDir() {
+						newDir := svc.NewDirectory(f.Name(), c.UserID, c.DriveID, e.Path)
+						if err := c.AddDir(newDir.ID, newDir); err != nil {
+							log.Printf("[ERROR] failed to add new directory: %v", err)
+						}
+					} else {
+						newFile := svc.NewFile(f.Name(), c.DriveID, c.UserID, e.Path)
+						if err := c.AddFile(parentID, newFile); err != nil {
+							log.Printf("[ERROR] failed to add new file: %v", err)
+						}
 					}
 				}
 				evts.AddEvent(e)
 			// item name change
 			case monitor.Name:
-				item, err := os.Stat(e.Path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get item information: %v", err)
-					break
-				}
-				// update name in instance and DB
-				if item.IsDir() {
-					dir, err := c.GetDirByPath(e.Path)
-					if err != nil {
-						log.Printf("[ERROR] %v", err)
-						break
-					}
-					dir.Name = item.Name()
-					if err := c.UpdateDirectory(dir); err != nil {
-						log.Printf("[ERROR] failed to update directory information: %v", err)
-						break
-					}
-				} else {
-					file, err := c.GetFileByPath(e.Path)
-					if err != nil {
-						log.Printf("[ERROR] %v", err)
-						break
-					}
-					file.Name = item.Name()
-					// TODO: update file info client function
-				}
+				c.apply(parentID, e.Path, "name")
 				evts.AddEvent(e)
 			// item mode change
 			case monitor.Mode:
-				item, err := os.Stat(e.Path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get item information: %v", err)
-					break
-				}
-				if item.IsDir() {
-					// dir, err := c.GetDirByPath(e.Path)
-					// if err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-
-				} else {
-					file, err := c.GetFileByPath(e.Path)
-					if err != nil {
-						log.Printf("[ERROR] %v", err)
-						break
-					}
-					file.Mode = item.Mode()
-					if err := c.UpdateFile(file); err != nil {
-						log.Printf("[ERROR] %v", err)
-						break
-					}
-				}
+				c.apply(parentID, e.Path, "mode")
 				evts.AddEvent(e)
 			// item size change
 			case monitor.Size:
-				item, err := os.Stat(e.Path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get item information: %v", err)
-					break
-				}
-				if item.IsDir() {
-					// dir, err := c.GetDirByPath(e.Path)
-					// if err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-				} else {
-					file, err := c.GetFileByPath(e.Path)
-					if err != nil {
-						log.Printf("[ERROR] %v", err)
-						break
-					}
-					file.Size = item.Size()
-					if err := c.UpdateFile(file); err != nil {
-						log.Printf("[ERROR] %v", err)
-						break
-					}
-				}
+				c.apply(parentID, e.Path, "size")
 				evts.AddEvent(e)
 			// item mod time change
 			case monitor.ModTime:
-				item, err := os.Stat(e.Path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get item information: %v", err)
-					break
-				}
-				if item.IsDir() {
-					// dir, err := c.GetDirByPath(e.Path)
-					// if err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-				} else {
-					// file, err := c.GetFileByPath(e.Path)
-					// if err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-					// if err := c.Db.UpdateFile(file); err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-				}
+				c.apply(parentID, e.Path, "modtime")
 				evts.AddEvent(e)
 			// items content change
 			case monitor.Change:
-				item, err := os.Stat(e.Path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get item information: %v", err)
-					break
-				}
-				if item.IsDir() {
-					// dir, err := c.GetDirByPath(e.Path)
-					// if err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-				} else {
-					// file, err := c.GetFileByPath(e.Path)
-					// if err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-					// if err := c.Db.UpdateFile(file); err != nil {
-					// 	log.Printf("[ERROR] %v", err)
-					// 	break
-					// }
-				}
+				c.apply(parentID, e.Path, "change")
 				evts.AddEvent(e)
 			case monitor.Delete:
 				off <- true // shutdown monitoring thread, remove from index, and shut down handler
@@ -344,4 +231,77 @@ func (c *Client) listener(path string, stop chan bool) error {
 			continue
 		}
 	}
+}
+
+// apply the given action using the supplied event object
+func (c *Client) apply(parentID string, itemPath string, action string) error {
+	item, err := os.Stat(itemPath)
+	if err != nil {
+		return err
+	}
+	if item.IsDir() {
+		dir, err := c.GetDirByPath(itemPath)
+		if err != nil {
+			return err
+		}
+		switch action {
+		case "name":
+			dir.Name = item.Name()
+			if err := c.UpdateDirectory(dir); err != nil {
+				return err
+			}
+		case "size":
+			dir.Size = item.Size()
+			if err := c.UpdateDirectory(dir); err != nil {
+				return err
+			}
+		case "modtime":
+			dir.LastSync = item.ModTime()
+			if err := c.UpdateDirectory(dir); err != nil {
+				return err
+			}
+		case "change":
+		case "delete":
+			if err := c.RemoveDir(dir.ID); err != nil {
+				return err
+			}
+		default:
+			return nil
+		}
+	} else {
+		file, err := c.GetFileByPath(itemPath)
+		if err != nil {
+			return err
+		}
+		switch action {
+		case "name":
+			file.Name = item.Name()
+			if err := c.UpdateFile(file); err != nil {
+				return err
+			}
+		case "mode":
+			file.Mode = item.Mode()
+			if err := c.UpdateFile(file); err != nil {
+				return err
+			}
+		case "size":
+			file.Size = item.Size()
+			if err := c.UpdateFile(file); err != nil {
+				return err
+			}
+		case "modtime":
+			file.LastSync = item.ModTime()
+			if err := c.UpdateFile(file); err != nil {
+				return err
+			}
+		case "change":
+		case "delete":
+			if err := c.RemoveFile(file.DirID, file); err != nil {
+				return err
+			}
+		default:
+			return nil
+		}
+	}
+	return nil
 }
