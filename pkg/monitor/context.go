@@ -31,13 +31,13 @@ func (ctx *DirCtx) HasItem(itemName string) bool {
 
 // adds all new fs.DirEntry objects to the current context and returns
 // a slice of the newly added entries.
-func (ctx *DirCtx) AddItems(new []fs.DirEntry, path string) []EItem {
+func (ctx *DirCtx) AddItems(new []fs.DirEntry, dirPath string) []EItem {
 	diffs := make([]EItem, 0)
 	for _, item := range new {
 		if _, exist := ctx.currItems[item.Name()]; !exist {
 			eitem := EItem{
 				name: item.Name(),
-				Path: filepath.Join(path, item.Name()),
+				Path: filepath.Join(dirPath, item.Name()),
 			}
 			diffs = append(diffs, eitem)
 			ctx.currItems[eitem.Name()] = eitem
