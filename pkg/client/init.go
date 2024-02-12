@@ -205,7 +205,7 @@ func LoadClient() (*Client, error) {
 	// create (or refresh) sync index
 	client.Drive.BuildSyncIdx()
 
-	// add token validation and generation componet
+	// add token validation and generation component
 	client.Tok = auth.NewT()
 
 	// set up server endpoints map
