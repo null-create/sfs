@@ -283,7 +283,7 @@ func watchDir(path string, stop chan bool) chan Event {
 	dirCtx := NewDirCtx()
 	// NOTE: need to make sure these are added to the service
 	// if they're not already present! not watchDir's responsibility, though.
-	dirCtx.AddItems(initialItems)
+	dirCtx.AddItems(initialItems, path)
 
 	// event channel used by the event handler goroutine
 	evt := make(chan Event)
@@ -319,7 +319,7 @@ func watchDir(path string, stop chan bool) chan Event {
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
-					diffs := dirCtx.UpdateCtx(currItems) // get list of deleted items
+					diffs := dirCtx.AddItems(currItems, path) // get list of deleted items
 					evt <- Event{
 						ID:    auth.NewUUID(),
 						Time:  time.Now().UTC(),
@@ -330,7 +330,7 @@ func watchDir(path string, stop chan bool) chan Event {
 					initialItems = currItems
 				// item(s) were added
 				case len(currItems) > len(initialItems):
-					diffs := dirCtx.UpdateCtx(currItems) // get list of removed items
+					diffs := dirCtx.AddItems(currItems, path) // get list of removed items
 					evt <- Event{
 						ID:    auth.NewUUID(),
 						Time:  time.Now().UTC(),

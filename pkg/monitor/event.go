@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"fmt"
-	"io/fs"
 	"log"
 	"time"
 )
@@ -22,12 +21,20 @@ const (
 	Name    EventType = "name"
 )
 
+// an associated item (file or directory) for a given event
+type EItem struct {
+	name string
+	Path string
+}
+
+func (e *EItem) Name() string { return e.name }
+
 type Event struct {
-	ID    string        // UUID of the event
-	Time  time.Time     // time of the event
-	Type  EventType     // type of file event, i.e. create, edit, or delete
-	Path  string        // location of the file event (path to the file itself)
-	Items []fs.DirEntry // list of files in the directory that were added, created, or deleted
+	ID    string    // UUID of the event
+	Time  time.Time // time of the event
+	Type  EventType // type of file event, i.e. create, edit, or delete
+	Path  string    // location of the file event (path to the file itself)
+	Items []EItem   // list of files in the directory that were added, created, or deleted
 }
 
 func (e *Event) ToString() string {
