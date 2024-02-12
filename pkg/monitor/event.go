@@ -34,7 +34,7 @@ type Event struct {
 	Time  time.Time // time of the event
 	Type  EventType // type of file event, i.e. create, edit, or delete
 	Path  string    // location of the file event (path to the file itself)
-	Items []EItem   // list of files in the directory that were added, created, or deleted
+	Items []EItem   // list of files or subdirectories in the directory that were added, created, or deleted
 }
 
 func (e *Event) ToString() string {
