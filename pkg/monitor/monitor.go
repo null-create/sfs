@@ -73,6 +73,7 @@ func (m *Monitor) Exists(path string) bool {
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
 		return false
 	} else if err != nil {
+		log.Printf("[ERROR] failed to retrieve stat for: %s\n %v", path, err)
 		return false
 	}
 	return true
@@ -136,7 +137,6 @@ func (m *Monitor) GetOffSwitch(filePath string) chan bool {
 // returns nil if none are available.
 func (m *Monitor) GetPaths() []string {
 	if len(m.Events) == 0 {
-		log.Print("[WARNING] no event channels available")
 		return nil
 	}
 	paths := make([]string, 0, len(m.Events))
@@ -153,7 +153,6 @@ func (m *Monitor) CloseChan(filePath string) {
 		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
-		log.Printf("[INFO] file monitoring channel (%s) closed", filepath.Base(filePath))
 	}
 }
 
@@ -172,13 +171,13 @@ func (m *Monitor) ShutDown() {
 
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
-func watchFile(path string, stop chan bool) chan Event {
-	initialStat, err := os.Stat(path)
+func watchFile(filePath string, stop chan bool) chan Event {
+	initialStat, err := os.Stat(filePath)
 	if err != nil {
-		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(path), err)
+		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(filePath), err)
 		return nil
 	}
-	baseName := filepath.Base(path)
+	baseName := filepath.Base(filePath)
 
 	// event channel used by the event handler goroutine
 	evt := make(chan Event)
@@ -192,7 +191,7 @@ func watchFile(path string, stop chan bool) chan Event {
 				close(evt)
 				return
 			default:
-				stat, err := os.Stat(path)
+				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, baseName)
 					close(evt)
@@ -206,7 +205,7 @@ func watchFile(path string, stop chan bool) chan Event {
 						Type: Delete,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
 					}
 					close(evt)
 					return
@@ -217,7 +216,7 @@ func watchFile(path string, stop chan bool) chan Event {
 						Type: Size,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
 					}
 					initialStat = stat
 				// file modification time change
@@ -227,7 +226,7 @@ func watchFile(path string, stop chan bool) chan Event {
 						Type: ModTime,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
 					}
 					initialStat = stat
 				// file mode change
@@ -237,7 +236,7 @@ func watchFile(path string, stop chan bool) chan Event {
 						Type: Mode,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
 					}
 					initialStat = stat
 				// file name change
@@ -247,7 +246,7 @@ func watchFile(path string, stop chan bool) chan Event {
 						Type: Name,
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
-						Path: path,
+						Path: filePath,
 					}
 					initialStat = stat
 				default:
@@ -266,14 +265,9 @@ func watchFile(path string, stop chan bool) chan Event {
 }
 
 // watch for changes in a directory
-func watchDir(path string, stop chan bool) chan Event {
-	// get initial info
-	initialStat, err := os.Stat(path)
-	if err != nil {
-		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(path), err)
-		return nil
-	}
-	initialItems, err := os.ReadDir(path)
+func watchDir(dirPath string, stop chan bool) chan Event {
+	// get initial slice of file and subdirectories
+	initialItems, err := os.ReadDir(dirPath)
 	if err != nil {
 		log.Printf("[ERROR] failed to ready directory contents: %v", err)
 		return nil
@@ -283,7 +277,7 @@ func watchDir(path string, stop chan bool) chan Event {
 	dirCtx := NewDirCtx()
 	// NOTE: need to make sure these are added to the service
 	// if they're not already present! not watchDir's responsibility, though.
-	dirCtx.AddItems(initialItems, path)
+	dirCtx.AddItems(initialItems, dirPath)
 
 	// event channel used by the event handler goroutine
 	evt := make(chan Event)
@@ -293,15 +287,10 @@ func watchDir(path string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] stopping monitor for %s...", filepath.Base(path))
+				log.Printf("[INFO] stopping monitor for %s...", filepath.Base(dirPath))
 				return
 			default:
-				stat, err := os.Stat(path)
-				if err != nil {
-					log.Printf("[ERROR] failed to get stat: %v", err)
-					return
-				}
-				currItems, err := os.ReadDir(path)
+				currItems, err := os.ReadDir(dirPath)
 				if err != nil {
 					log.Printf("[ERROR] failed to read directory: %v", err)
 					return
@@ -313,58 +302,41 @@ func watchDir(path string, stop chan bool) chan Event {
 						ID:   auth.NewUUID(),
 						Time: time.Now().UTC(),
 						Type: Delete,
-						Path: path,
+						Path: dirPath,
 					}
 					close(evt)
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
-					diffs := dirCtx.AddItems(currItems, path) // get list of deleted items
+					diffs := dirCtx.AddItems(currItems, dirPath) // get list of deleted items
 					evt <- Event{
 						ID:    auth.NewUUID(),
 						Time:  time.Now().UTC(),
 						Type:  Delete,
-						Path:  path,
+						Path:  dirPath,
 						Items: diffs,
 					}
 					initialItems = currItems
 				// item(s) were added
 				case len(currItems) > len(initialItems):
-					diffs := dirCtx.AddItems(currItems, path) // get list of removed items
+					diffs := dirCtx.AddItems(currItems, dirPath) // get list of removed items
 					evt <- Event{
 						ID:    auth.NewUUID(),
 						Time:  time.Now().UTC(),
 						Type:  Add,
-						Path:  path,
+						Path:  dirPath,
 						Items: diffs,
 					}
 					initialItems = currItems
-				// directory name changed
-				case stat.Name() != initialStat.Name():
-					evt <- Event{
-						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
-						Type: Name,
-						Path: path,
-					}
-					initialStat = stat
-				// directory permissions changed
-				case stat.Mode() != initialStat.Mode():
-					evt <- Event{
-						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
-						Type: Mode,
-						Path: path,
-					}
-					initialStat = stat
 				}
+				// TODO: other directory changes?
 			}
 		}
 	}
 
 	// start watcher
 	go func() {
-		log.Printf("[INFO] monitoring %s...", filepath.Base(path))
+		log.Printf("[INFO] monitoring %s...", filepath.Base(dirPath))
 		watcher()
 	}()
 
