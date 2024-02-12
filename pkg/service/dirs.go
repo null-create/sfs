@@ -36,7 +36,7 @@ type Directory struct {
 	DriveID string  `json:"drive_id"` // drive ID this directory belongs to
 
 	// size in MB
-	Size float64 `json:"size"`
+	Size int64 `json:"size"`
 
 	// TODO: remove this
 	// absolute path to this directory.
@@ -237,16 +237,14 @@ func (d *Directory) HasDir(dirID string) bool {
 }
 
 // returns the size of a directory with all its contents, including subdirectories
-func (d *Directory) DirSize() (float64, error) {
-	var size float64
+func (d *Directory) DirSize() (int64, error) {
+	var size int64
 	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
-			// TODO: investigate how the conversion of
-			// int64 to float64 can effect results.
-			size += float64(info.Size())
+			size += info.Size()
 		}
 		return nil
 	})
@@ -254,7 +252,7 @@ func (d *Directory) DirSize() (float64, error) {
 		return 0, err
 	}
 	d.Size = size
-	return size, err
+	return size, nil
 }
 
 /*
