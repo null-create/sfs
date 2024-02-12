@@ -114,7 +114,13 @@ type Drive struct {
 	SyncIndex *SyncIndex `json:"sync_index"`
 }
 
-func check(driveID string, ownerName string, ownerID string, rootPath string, root *Directory) bool {
+func check(
+	driveID string,
+	ownerName string,
+	ownerID string,
+	rootPath string,
+	root *Directory,
+) bool {
 	if driveID == "" || ownerName == "" || ownerID == "" || rootPath == "" || root == nil {
 		log.Printf("[ERROR] invalid drive parameters. none can be empty!")
 		return false
@@ -263,7 +269,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
 		if !d.HasRoot() {
-			log.Printf("[WARNING] drive (id=%s) has no root directory", d.ID)
+			log.Printf("[ERROR] drive (id=%s) has no root directory", d.ID)
 			return nil
 		}
 		return d.Root.WalkF(fileID)
@@ -277,7 +283,7 @@ func (d *Drive) GetFile(fileID string) *File {
 func (d *Drive) GetFiles() map[string]*File {
 	if !d.Protected {
 		if !d.HasRoot() {
-			log.Printf("[WARNING] drive (id=%s) has no root directory", d.ID)
+			log.Printf("[ERROR] drive (id=%s) has no root directory", d.ID)
 			return nil
 		}
 		return d.Root.WalkFs()
@@ -317,21 +323,21 @@ func (d *Drive) ModifyFile(dirID string, file *File, data []byte) error {
 // update files metadata in the drive
 func (d *Drive) UpdateFile(dirID string, file *File) error {
 	if !d.Protected {
-		// if d.Root.ID == dirID {
-		// 	if err := d.Root.UpdateFile(file, data); err != nil {
-		// 		return fmt.Errorf("failed to update file %s: %v", file.ID, err)
-		// 	}
-		// } else {
-		// 	dir := d.GetDir(dirID)
-		// 	if dir == nil {
-		// 		return fmt.Errorf("dir (id=%s) not found", dirID)
-		// 	}
-		// 	if err := dir.UpdateFile(file, data); err != nil {
-		// 		return err
-		// 	}
-		// 	// TODO: get the difference between old and new file sizes
-		// 	// and adjust the drives used space value accordingly.
-		// }
+		if d.Root.ID == dirID {
+			if err := d.Root.UpdateFile(file); err != nil {
+				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
+			}
+		} else {
+			dir := d.GetDir(dirID)
+			if dir == nil {
+				return fmt.Errorf("dir (id=%s) not found", dirID)
+			}
+			if err := dir.UpdateFile(file); err != nil {
+				return err
+			}
+			// TODO: get the difference between old and new file sizes
+			// and adjust the drives used space value accordingly.
+		}
 	} else {
 		log.Printf("[INFO] drive is protected")
 	}
