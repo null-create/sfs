@@ -104,10 +104,6 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 	if err := c.WatchItem(file.ClientPath); err != nil {
 		return err
 	}
-	// send new file to server
-	if err := c.PushFile(file); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -247,10 +243,10 @@ func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	return nil
 }
 
-func (c *Client) GetDirectory(id string) (*svc.Directory, error) {
-	dir := c.Drive.GetDir(id)
+func (c *Client) GetDirectory(dirID string) (*svc.Directory, error) {
+	dir := c.Drive.GetDir(dirID)
 	if dir == nil {
-		return nil, fmt.Errorf("directory %v not found", id)
+		return nil, fmt.Errorf("directory %v not found", dirID)
 	}
 	return dir, nil
 }
@@ -274,6 +270,9 @@ func (c *Client) LoadDrive() error {
 	if err != nil {
 		return err
 	}
+	if drive == nil {
+		return fmt.Errorf("no drive found")
+	}
 	root, err := c.Db.GetDirectory(drive.RootID)
 	if err != nil {
 		return err
@@ -291,36 +290,6 @@ func (c *Client) LoadDrive() error {
 		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
-}
-
-// retrieves drive with root directory attached, but unpopulated.
-// also updates drive sync index.
-func (c *Client) GetDrive(driveID string) (*svc.Drive, error) {
-	if c.Drive == nil {
-		log.Print("[WARNING] drive not found! attempting to load...")
-		// find drive by id
-		drive, err := c.Db.GetDrive(driveID)
-		if err != nil {
-			return nil, err
-		}
-		if drive == nil {
-			return nil, fmt.Errorf("no such drive: %v", driveID)
-		}
-		// get root directory for the drive and create a sync index if necessary
-		root, err := c.Db.GetDirectory(drive.RootID)
-		if err != nil {
-			return nil, err
-		}
-		if root == nil {
-			return nil, fmt.Errorf("no root associated with drive")
-		}
-		drive.Root = c.Populate(root)
-		if !drive.IsIndexed() {
-			drive.SyncIndex = drive.Root.WalkS(svc.NewSyncIndex(drive.OwnerID))
-		}
-		c.Drive = drive
-	}
-	return c.Drive, nil
 }
 
 // save drive metadata in the db
