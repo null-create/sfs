@@ -213,7 +213,7 @@ func TestLoadAndStartClient(t *testing.T) {
 		// register the new file and apply more changes
 		log.Print("[TEST] registering test file and altering again...")
 		testFile.DirID = tmpClient.Drive.Root.ID
-		if err := tmpClient.AddFile(testFile.DirID, testFile); err != nil {
+		if err := tmpClient.AddFile(testFile.DirID, testFile.Path); err != nil {
 			Fail(t, tmpDir, err)
 		}
 		MutateFile(t, testFile)
@@ -399,6 +399,39 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	// clean up
 	if err := Clean(t, tmpDir); err != nil {
 		// reset our .env file for other tests
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+}
+
+func TestClientRefreshDrive(t *testing.T) {
+	env.SetEnv(false)
+	e := env.NewE()
+
+	// make a test client
+	tmpClient, err := Init(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make a bunch of dummy files for the test clinet
+	tmpClient.Drive = MakeTmpDriveWithPath(t, GetTestingDir())
+
+	// add some more files
+	_, err = MakeABunchOfTxtFiles(RandInt(25))
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// run refresh
+	if err := tmpClient.RefreshDrive(); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// clean up before asserts so nothing gets left behind if there's failures
+	if err := Clean(t, GetTestingDir()); err != nil {
 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
 			log.Fatal(err2)
 		}
