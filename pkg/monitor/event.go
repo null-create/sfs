@@ -3,7 +3,6 @@ package monitor
 import (
 	"fmt"
 	"log"
-	"time"
 )
 
 type EventType string
@@ -31,7 +30,6 @@ func (e *EItem) Name() string { return e.name }
 
 type Event struct {
 	ID    string    // UUID of the event
-	Time  time.Time // time of the event
 	Type  EventType // type of file event, i.e. create, edit, or delete
 	Path  string    // location of the file event (path to the file itself)
 	Items []EItem   // list of files or subdirectories in the directory that were added, created, or deleted
@@ -39,8 +37,8 @@ type Event struct {
 
 func (e *Event) ToString() string {
 	return fmt.Sprintf(
-		"file event \n(id=%s) -> time: %v | type: %s | path: %s",
-		e.ID, e.Time, e.Type, e.Path,
+		"file event \n(id=%s) -> type: %s | path: %s",
+		e.ID, e.Type, e.Path,
 	)
 }
 

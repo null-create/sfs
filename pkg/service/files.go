@@ -47,18 +47,18 @@ type File struct {
 
 // creates a new file struct instance.
 // file contents are not loaded into memory.
-func NewFile(fileName string, driveID string, ownerID string, path string) *File {
+func NewFile(fileName string, driveID string, ownerID string, filePath string) *File {
 	cfg := NewSvcCfg()
 	// get baseline information about the file
-	item, err := os.Stat(path)
+	item, err := os.Stat(filePath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to get file stats: %v", err))
 	}
 	if item.IsDir() {
-		log.Fatal(fmt.Errorf("item is a directory: %v", path))
+		log.Fatal(fmt.Errorf("item is a directory: %v", filePath))
 	}
 	// get baseline checksum
-	cs, err := CalculateChecksum(path, "sha256")
+	cs, err := CalculateChecksum(filePath)
 	if err != nil {
 		log.Printf("[WARNING] error calculating checksum: %v", err)
 	}
@@ -75,9 +75,9 @@ func NewFile(fileName string, driveID string, ownerID string, path string) *File
 		Protected:  false,
 		Key:        "default",
 		LastSync:   time.Now().UTC(),
-		Path:       path,
-		ServerPath: path,
-		ClientPath: path,
+		Path:       filePath,
+		ServerPath: filePath,
+		ClientPath: filePath,
 		Endpoint:   Endpoint + ":" + cfg.Port + "/v1/files/" + uuid,
 		CheckSum:   cs,
 		Algorithm:  "sha256",
@@ -236,7 +236,7 @@ func (f *File) Copy(destPath string) error {
 
 // ----------- File integrity
 
-func CalculateChecksum(filePath string, hashType string) (string, error) {
+func CalculateChecksum(filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
@@ -253,7 +253,7 @@ func CalculateChecksum(filePath string, hashType string) (string, error) {
 }
 
 func (f *File) ValidateChecksum() error {
-	cs, err := CalculateChecksum(f.Path, f.Algorithm)
+	cs, err := CalculateChecksum(f.Path)
 	if err != nil {
 		return fmt.Errorf("unable to calculate checksum: %v", err)
 	}
@@ -264,7 +264,7 @@ func (f *File) ValidateChecksum() error {
 }
 
 func (f *File) UpdateChecksum() error {
-	newCs, err := CalculateChecksum(f.Path, f.Algorithm)
+	newCs, err := CalculateChecksum(f.Path)
 	if err != nil {
 		return fmt.Errorf("CalculateChecksum failed: %v", err)
 	}

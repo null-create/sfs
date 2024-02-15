@@ -204,7 +204,6 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					evt <- Event{
 						Type: Delete,
 						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
 						Path: filePath,
 					}
 					close(evt)
@@ -215,7 +214,6 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					evt <- Event{
 						Type: Size,
 						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
 						Path: filePath,
 					}
 					initialStat = stat
@@ -225,7 +223,6 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					evt <- Event{
 						Type: ModTime,
 						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
 						Path: filePath,
 					}
 					initialStat = stat
@@ -235,7 +232,6 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					evt <- Event{
 						Type: Mode,
 						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
 						Path: filePath,
 					}
 					initialStat = stat
@@ -245,7 +241,6 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					evt <- Event{
 						Type: Name,
 						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
 						Path: filePath,
 					}
 					initialStat = stat
@@ -299,8 +294,6 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				// directory was deleted
 				case err == os.ErrExist:
 					evt <- Event{
-						ID:   auth.NewUUID(),
-						Time: time.Now().UTC(),
 						Type: Delete,
 						Path: dirPath,
 					}
@@ -310,8 +303,6 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				case len(currItems) < len(initialItems):
 					diffs := dirCtx.AddItems(currItems, dirPath) // get list of deleted items
 					evt <- Event{
-						ID:    auth.NewUUID(),
-						Time:  time.Now().UTC(),
 						Type:  Delete,
 						Path:  dirPath,
 						Items: diffs,
@@ -321,8 +312,6 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				case len(currItems) > len(initialItems):
 					diffs := dirCtx.AddItems(currItems, dirPath) // get list of removed items
 					evt <- Event{
-						ID:    auth.NewUUID(),
-						Time:  time.Now().UTC(),
 						Type:  Add,
 						Path:  dirPath,
 						Items: diffs,
@@ -359,6 +348,6 @@ func watchAll(path string, m *Monitor) error {
 	if err != nil {
 		return fmt.Errorf("failed to walk directory: %v", err)
 	}
-	log.Printf("[INFO] monitor is running. watching %d files", len(m.Events))
+	log.Printf("[INFO] monitor is running. watching %d items", len(m.Events))
 	return nil
 }

@@ -132,7 +132,7 @@ func TestFileChecksum(t *testing.T) {
 	if err := tf.Save([]byte(testData2)); err != nil {
 		t.Fatalf("[ERROR] failed to save new content: %v", err)
 	}
-	tf.CheckSum, err = CalculateChecksum(tf.Path, tf.Algorithm)
+	tf.CheckSum, err = CalculateChecksum(tf.Path)
 	if err != nil {
 		t.Fatalf("[ERROR] failed to calculate checksum: %v", err)
 	}
