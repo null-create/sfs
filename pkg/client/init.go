@@ -123,6 +123,13 @@ func newUser(drvRoot string) (*auth.User, error) {
 	return newUser, nil
 }
 
+// initialize a new http.Client object
+func newHttpClient() *http.Client {
+	return &http.Client{
+		Timeout: 30 * time.Second,
+	}
+}
+
 func loadStateFile() ([]byte, error) {
 	sfDir := filepath.Join(cfgs.Root, cfgs.User, "state")
 	entries, err := os.ReadDir(sfDir)
@@ -201,6 +208,9 @@ func LoadClient() (*Client, error) {
 	if err := loadDrive(client); err != nil {
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
+
+	// initialize http client
+	client.Client = newHttpClient()
 
 	// create (or refresh) sync index
 	client.Drive.BuildSyncIdx()
