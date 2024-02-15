@@ -105,6 +105,11 @@ func (c *Client) start(shutDown chan os.Signal) error {
 		if err := c.LoadDrive(); err != nil {
 			return err
 		}
+		// refresh drive on startup. this will find anything that was
+		// added if SFS wasn't running at the time.
+		if err := c.RefreshDrive(); err != nil {
+			return err
+		}
 	}
 
 	// start monitoring services
