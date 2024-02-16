@@ -81,8 +81,8 @@ func (m *Monitor) Exists(path string) bool {
 
 // is this item a directory?
 func (m *Monitor) IsDir(path string) (bool, error) {
-	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
-		return true, nil
+	if stat, err := os.Stat(path); err == nil {
+		return stat.IsDir(), nil
 	} else if err != nil {
 		return false, fmt.Errorf("failed to get stats for %v: %v", filepath.Base(path), err)
 	}

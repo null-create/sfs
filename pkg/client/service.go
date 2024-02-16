@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +14,16 @@ import (
 )
 
 // ----- files --------------------------------------
+
+func (c *Client) Exists(path string) bool {
+	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
+		return false
+	} else if err != nil {
+		log.Printf("[ERROR] failed to retrieve stat for: %s\n %v", path, err)
+		return false
+	}
+	return true
+}
 
 // list all local files managed by the sfs service.
 // does not check database.
@@ -92,8 +103,8 @@ func (c *Client) GetFileByPath(path string) (*svc.File, error) {
 	return file, nil
 }
 
-// add a new file to a specified directory. adds to monitoring services
-// and pushes the new file to the SFS server.
+// add a new file to a specified directory.
+// adds file to database and monitoring services.
 func (c *Client) AddFile(dirID string, file *svc.File) error {
 	if err := c.Drive.AddFile(dirID, file); err != nil {
 		return err
@@ -251,6 +262,7 @@ func (c *Client) GetDirectory(dirID string) (*svc.Directory, error) {
 	return dir, nil
 }
 
+// get a directory object from the database using its path
 func (c *Client) GetDirByPath(path string) (*svc.Directory, error) {
 	dir, err := c.Db.GetDirectoryByPath(path)
 	if err != nil {
@@ -259,6 +271,17 @@ func (c *Client) GetDirByPath(path string) (*svc.Directory, error) {
 		return nil, fmt.Errorf("directory does not exist: %s", path)
 	}
 	return dir, nil
+}
+
+// get a directory id from the DB using its file path
+func (c *Client) GetDirIDFromPath(path string) (string, error) {
+	dir, err := c.Db.GetDirectoryByPath(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to get directory: %v", err)
+	} else if dir == nil {
+		return "", fmt.Errorf("directory does not exist: %s", path)
+	}
+	return dir.ID, nil
 }
 
 // ----- drive --------------------------------
@@ -406,9 +429,7 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 // finds to what is in the database, adding new items as it goes. generates
 // a new root directory object and attaches it to the drive.
 func (c *Client) RefreshDrive() error {
-	// refresh root against the database and create a new root object
 	c.Drive.Root = c.refreshDrive(c.Drive.Root)
-
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state file: %v", err)
 	}
@@ -462,7 +483,7 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 			}
 			// new file
 			if file == nil {
-				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, filepath.Join(item.Name(), dir.Path))
+				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, filepath.Join(dir.Path, item.Name()))
 				if err := c.Db.AddFile(newFile); err != nil {
 					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
 					continue // TEMP until there's a better way to handle this error

@@ -57,21 +57,21 @@ func (c *Client) NewHandler(path string) error {
 }
 
 // get alll the necessary things for the event handler to operate independently
-func (c *Client) setupHandler(filePath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
-	evtChan := c.Monitor.GetEventChan(filePath)
-	offSwitch := c.Monitor.GetOffSwitch(filePath)
-	fileID, err := c.Db.GetFileID(filePath)
+func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
+	evtChan := c.Monitor.GetEventChan(itemPath)
+	offSwitch := c.Monitor.GetOffSwitch(itemPath)
+	itemID, err := c.Db.GetFileID(itemPath) // NOTE this is only for files! not directories
 	if err != nil {
 		return nil, nil, "", nil, err
 	}
-	if evtChan == nil || offSwitch == nil || fileID == "" {
+	if evtChan == nil || offSwitch == nil || itemID == "" {
 		return nil, nil, "", nil, fmt.Errorf(
-			"failed to get param: evt=%v off=%v fileID=%s",
-			evtChan, offSwitch, fileID,
+			"failed to get param: evt=%v off=%v id=%s",
+			evtChan, offSwitch, itemID,
 		)
 	}
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
-	return evtChan, offSwitch, fileID, evts, nil
+	return evtChan, offSwitch, itemID, evts, nil
 }
 
 // start an event handler for a given file.
@@ -154,7 +154,7 @@ func (c *Client) NewEHandler(path string) error {
 // items can be either files or directories.
 func (c *Client) listener(path string, stop chan bool) error {
 	// get all necessary params for the handler
-	evtChan, off, parentID, evts, err := c.setupHandler(path)
+	evtChan, off, itemID, evts, err := c.setupHandler(path)
 	if err != nil {
 		return err
 	}
@@ -162,25 +162,25 @@ func (c *Client) listener(path string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			log.Printf("[INFO] stopping event handler for item id=%v ...", parentID)
+			log.Printf("[INFO] stopping event handler for item id=%v ...", itemID)
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
 			// new files or directories were added to a monitored directory
 			case monitor.Add:
-				for _, f := range e.Items {
-					item, err := os.Stat(e.Path)
+				for _, eitem := range e.Items {
+					item, err := os.Stat(eitem.Path)
 					if err != nil {
 						log.Printf("[ERROR] failed to get item information: %v", err)
 					}
 					if item.IsDir() {
-						newDir := svc.NewDirectory(f.Name(), c.UserID, c.DriveID, e.Path)
+						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path)
 						if err := c.AddDir(newDir.ID, newDir); err != nil {
 							log.Printf("[ERROR] failed to add new directory: %v", err)
 						}
 					} else {
-						newFile := svc.NewFile(f.Name(), c.DriveID, c.UserID, e.Path)
-						if err := c.AddFile(parentID, newFile); err != nil {
+						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, e.Path)
+						if err := c.AddFile(itemID, newFile); err != nil {
 							log.Printf("[ERROR] failed to add new file: %v", err)
 						}
 					}
@@ -188,27 +188,27 @@ func (c *Client) listener(path string, stop chan bool) error {
 				evts.AddEvent(e)
 			// item name change
 			case monitor.Name:
-				c.apply(parentID, e.Path, "name")
+				c.applyChange(e.Path, "name")
 				evts.AddEvent(e)
 			// item mode change
 			case monitor.Mode:
-				c.apply(parentID, e.Path, "mode")
+				c.applyChange(e.Path, "mode")
 				evts.AddEvent(e)
-			// item size change
+			// item size changevedbooboo
 			case monitor.Size:
-				c.apply(parentID, e.Path, "size")
+				c.applyChange(e.Path, "size")
 				evts.AddEvent(e)
 			// item mod time change
 			case monitor.ModTime:
-				c.apply(parentID, e.Path, "modtime")
+				c.applyChange(e.Path, "modtime")
 				evts.AddEvent(e)
 			// items content change
 			case monitor.Change:
-				c.apply(parentID, e.Path, "change")
+				c.applyChange(e.Path, "change")
 				evts.AddEvent(e)
 			case monitor.Delete:
 				off <- true // shutdown monitoring thread, remove from index, and shut down handler
-				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", parentID)
+				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", itemID)
 				return nil
 			}
 			// TODO: need to decide how ofter to run sync operations once the
@@ -233,8 +233,8 @@ func (c *Client) listener(path string, stop chan bool) error {
 	}
 }
 
-// apply the given action using the supplied event object
-func (c *Client) apply(parentID string, itemPath string, action string) error {
+// applyChange the given action using the supplied event object
+func (c *Client) applyChange(itemPath string, action string) error {
 	item, err := os.Stat(itemPath)
 	if err != nil {
 		return err

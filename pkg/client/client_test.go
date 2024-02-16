@@ -168,7 +168,7 @@ func TestLoadAndStartClient(t *testing.T) {
 	}
 
 	// initialize and load client
-	tmpClient, err := Init(true)
+	tmpClient, err := Init(false)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -213,7 +213,7 @@ func TestLoadAndStartClient(t *testing.T) {
 		// register the new file and apply more changes
 		log.Print("[TEST] registering test file and altering again...")
 		testFile.DirID = tmpClient.Drive.Root.ID
-		if err := tmpClient.AddFile(testFile.DirID, testFile.Path); err != nil {
+		if err := tmpClient.AddFile(testFile.DirID, testFile); err != nil {
 			Fail(t, tmpDir, err)
 		}
 		MutateFile(t, testFile)

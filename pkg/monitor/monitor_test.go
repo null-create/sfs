@@ -212,3 +212,37 @@ func TestMonitorWatchAll(t *testing.T) {
 		log.Fatal(err)
 	}
 }
+
+func TestMonitorDirectory(t *testing.T) {
+	env.SetEnv(false)
+
+	// make temp files to monitor
+	tmp := MakeTmpDirs(t)
+
+	// initialize new monitor with watching goroutines
+	// for all files under tmp. none of the watchers will have event
+	// listeners, we just want to see if they all independently
+	// detect file changes.
+	monitor := NewMonitor(tmp.Path)
+	if err := monitor.Start(tmp.Path); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// make a new file in the temp directory
+	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), tmp.Path), RandInt(500))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// see if we have an off switch for the new file.
+	// this means a new monitor has been automatically created for the
+	// newly created file.
+	off := monitor.GetOffSwitch(file.Path)
+	if off == nil {
+		Fail(t, GetTestingDir(), fmt.Errorf("no off switch found for %s", file.Path))
+	}
+
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+}

@@ -19,25 +19,42 @@ var (
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "SFS Server Commands",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			newFlag, _ := cmd.Flags().GetBool("new")
-			startFlag, _ := cmd.Flags().GetBool("start")
-			stopFlag, _ := cmd.Flags().GetBool("stop")
-			switch {
-			case newFlag:
-				return newServer()
-			case startFlag:
-				return startServer()
-			case stopFlag:
-				shutDown <- true
-			}
-			return nil
-		},
+		RunE:  runCmd,
 	}
 )
 
-// TODO: make this a non-blocking persistent background process.
-// need to shut down via command line, not ctrl-c
+func init() {
+	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "start the sfs server")
+	serverCmd.PersistentFlags().BoolVar(&stop, "stop", false, "stop the sfs server")
+	serverCmd.PersistentFlags().BoolVarP(&new, "new", "n", false, "create a new sfs server side service instance")
+
+	viper.BindPFlag("start", serverCmd.PersistentFlags().Lookup("start"))
+	viper.BindPFlag("stop", serverCmd.PersistentFlags().Lookup("stop"))
+	viper.BindPFlag("new", serverCmd.PersistentFlags().Lookup("new"))
+
+	rootCmd.AddCommand(serverCmd)
+}
+
+func runCmd(cmd *cobra.Command, args []string) error {
+	newFlag, _ := cmd.Flags().GetBool("new")
+	startFlag, _ := cmd.Flags().GetBool("start")
+	stopFlag, _ := cmd.Flags().GetBool("stop")
+
+	switch {
+	case newFlag:
+		if err := newServer(); err != nil {
+			return err
+		}
+	case startFlag:
+		if err := startServer(); err != nil {
+			return err
+		}
+	case stopFlag:
+		shutDown <- true
+	}
+	return nil
+}
+
 func startServer() error {
 	svr := server.NewServer()
 	svr.Start(shutDown)
@@ -50,16 +67,4 @@ func newServer() error {
 		return err
 	}
 	return nil
-}
-
-func init() {
-	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "start the sfs server")
-	serverCmd.PersistentFlags().BoolVar(&stop, "stop", false, "stop the sfs server")
-	serverCmd.PersistentFlags().BoolVarP(&new, "new", "n", false, "create a new sfs server side service instance")
-
-	viper.BindPFlag("start", serverCmd.PersistentFlags().Lookup("start"))
-	viper.BindPFlag("stop", serverCmd.PersistentFlags().Lookup("stop"))
-	viper.BindPFlag("new", serverCmd.PersistentFlags().Lookup("new"))
-
-	rootCmd.AddCommand(serverCmd)
 }
