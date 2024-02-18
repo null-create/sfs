@@ -179,7 +179,12 @@ func loadDrive(client *Client) error {
 // load client from state file, if possible.
 // does not start client services. use client.Start()
 // to start monitoring and synchronization services.
-func LoadClient() (*Client, error) {
+//
+// set persist to true when using as a long-running operation
+// and to utilize real-time monitoring and synchronization services,
+// otherwise set to false if the client should be used for
+// one-off operations.
+func LoadClient(persist bool) (*Client, error) {
 	// load client state
 	data, err := loadStateFile()
 	if err != nil {
@@ -224,12 +229,17 @@ func LoadClient() (*Client, error) {
 	// add transfer component
 	client.Transfer = transfer.NewTransfer(client.Conf.Port)
 
-	// add monitoring component
-	client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
+	// load persistent services only when necessary.
+	// sometimes we just need to load for the the data or
+	// a few one-off interactions with the server.
+	if persist {
+		// add monitoring component
+		client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
 
-	// initialize handlers map
-	if err := client.BuildHandlers(); err != nil {
-		return nil, fmt.Errorf("failed to initialize handlers: %v", err)
+		// initialize handlers map
+		if err := client.BuildHandlers(); err != nil {
+			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
+		}
 	}
 
 	// TODO: pull sync index from server and compare against local index,
@@ -352,7 +362,7 @@ func Init(newClient bool) (*Client, error) {
 		}
 		return client, nil
 	} else {
-		client, err := LoadClient()
+		client, err := LoadClient(true)
 		if err != nil {
 			return nil, err
 		}

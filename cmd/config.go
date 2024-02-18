@@ -42,7 +42,7 @@ func RunConfCmd(cmd *cobra.Command, args []string) {
 
 	switch {
 	case get:
-		c, err := client.LoadClient()
+		c, err := client.LoadClient(false)
 		if err != nil {
 			showerr(err)
 		}
