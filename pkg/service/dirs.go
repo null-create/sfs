@@ -439,7 +439,8 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 	return nil
 }
 
-// create a physical directory
+// create a physical directory. does not check for whether
+// this path is managed by the system, just creates a physical directory.
 func (d *Directory) Mkdir(dirPath string) error {
 	return os.Mkdir(dirPath, PERMS)
 }
@@ -461,7 +462,8 @@ func (d *Directory) addSubDir(dir *Directory) error {
 // add a single sub directory to the current directory.
 // sets dir's parent pointer to the directory this
 // function is attached to.
-// does *not* create a physical directory
+// does *not* create a physical directory!
+// use dir.MkDir(path) instead.
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		d.addSubDir(dir)

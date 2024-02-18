@@ -41,7 +41,7 @@ func TestNewClient(t *testing.T) {
 	assert.NotEqual(t, nil, client.Monitor)
 	assert.NotEqual(t, nil, client.Drive)
 	assert.NotEqual(t, nil, client.Db)
-	assert.NotEqual(t, nil, client.Handlers)
+	assert.NotEqual(t, nil, client.Listeners)
 	assert.NotEqual(t, nil, client.Transfer)
 
 	// check that .env was updated after initialization,
@@ -213,7 +213,7 @@ func TestLoadAndStartClient(t *testing.T) {
 		// register the new file and apply more changes
 		log.Print("[TEST] registering test file and altering again...")
 		testFile.DirID = tmpClient.Drive.Root.ID
-		if err := tmpClient.AddFile(testFile.DirID, testFile); err != nil {
+		if err := tmpClient.AddFileWithID(testFile.DirID, testFile); err != nil {
 			Fail(t, tmpDir, err)
 		}
 		MutateFile(t, testFile)

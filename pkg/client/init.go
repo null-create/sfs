@@ -237,7 +237,7 @@ func LoadClient(persist bool) (*Client, error) {
 		client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
 
 		// initialize handlers map
-		if err := client.BuildHandlers(); err != nil {
+		if err := client.BuildListeners(); err != nil {
 			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
 		}
 	}
@@ -299,7 +299,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		Handlers:    make(map[string]func()),
+		Listeners:   make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
 		Transfer:    transfer.NewTransfer(ccfg.Port),
 		Client: &http.Client{
@@ -339,10 +339,10 @@ func NewClient(user *auth.User) (*Client, error) {
 	}
 
 	// build and start monitoring event handlers
-	if err := c.BuildHandlers(); err != nil {
+	if err := c.BuildListeners(); err != nil {
 		return nil, fmt.Errorf("failed to build event handlers: %v", err)
 	}
-	if err := c.StartHandlers(); err != nil {
+	if err := c.StartListeners(); err != nil {
 		return nil, fmt.Errorf("failed to start event handlers: %v", err)
 	}
 

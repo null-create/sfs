@@ -234,7 +234,7 @@ func (c *Client) PushFile(file *svc.File) error {
 	if err != nil {
 		return fmt.Errorf("failed to create request token: %v", err)
 	}
-	req.Header.Set("Authorization", reqToken)
+	req.Header.Set("Authorization", reqToken) // TODO: fix formatting. should be Bearer <token>
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 	req.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
 

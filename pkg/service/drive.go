@@ -396,8 +396,8 @@ func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 }
 
 // add a sub directory to a directory within the drive file system.
-// creates a physical sub directory at the path assigned within
-// the directory parameter, and adds directory object to drive service.
+// does NOT create a physical sub directory! only adds metadata to the
+// directory management system.
 func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 	if !d.Protected {
 		if !d.HasRoot() {

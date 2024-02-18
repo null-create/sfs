@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/sfs/pkg/server"
 
 	"github.com/spf13/cobra"
@@ -10,10 +8,8 @@ import (
 )
 
 var (
-	new   bool           // whether we should create a new sfs server
-	start bool           // whether we should start the server
-	stop  bool           // whether we should stop the server
-	sig   chan os.Signal // shutdown channel for the server
+	new   bool // whether we should create a new sfs server
+	start bool // whether we should start the server
 
 	svcCfg = server.ServiceConfig() // server-side service configurations
 
@@ -21,46 +17,37 @@ var (
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "SFS Server Commands",
-		RunE:  runCmd,
+		Run:   RunServerCmd,
 	}
 )
 
 func init() {
-	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "start the sfs server. stop with ctrl-c.")
-	serverCmd.PersistentFlags().BoolVar(&stop, "stop", false, "stop the sfs server")
+	serverCmd.PersistentFlags().BoolVarP(&start, "start", "s", false, "start the sfs server. stop with ctrl-c.")
 	serverCmd.PersistentFlags().BoolVarP(&new, "new", "n", false, "create a new sfs server side service instance")
 
 	viper.BindPFlag("start", serverCmd.PersistentFlags().Lookup("start"))
-	viper.BindPFlag("stop", serverCmd.PersistentFlags().Lookup("stop"))
 	viper.BindPFlag("new", serverCmd.PersistentFlags().Lookup("new"))
 
 	rootCmd.AddCommand(serverCmd)
 }
 
-func runCmd(cmd *cobra.Command, args []string) error {
-	newFlag, _ := cmd.Flags().GetBool("new")
-	startFlag, _ := cmd.Flags().GetBool("start")
-	stopFlag, _ := cmd.Flags().GetBool("stop")
-
+func RunServerCmd(cmd *cobra.Command, args []string) {
+	new, _ := cmd.Flags().GetBool("new")
+	start, _ := cmd.Flags().GetBool("start")
 	switch {
-	case newFlag:
+	case new:
 		if err := newService(); err != nil {
-			return err
+			showerr(err)
+			return
 		}
-	case startFlag:
-		if err := startServer(); err != nil {
-			return err
-		}
-	case stopFlag:
-		sig <- os.Interrupt
+	case start:
+		startServer()
 	}
-	return nil
 }
 
-func startServer() error {
+func startServer() {
 	svr := server.NewServer()
 	svr.Run()
-	return nil
 }
 
 func newService() error {

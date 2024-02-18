@@ -21,7 +21,7 @@ func (c *Client) StartMonitor() error {
 	return nil
 }
 
-// stop all event listeners for this client.
+// stop all event monitors for this client.
 // will be a no-op if there's no active monitoring threads.
 func (c *Client) StopMonitoring() {
 	c.Monitor.ShutDown()
@@ -33,10 +33,10 @@ func (c *Client) WatchItem(path string) error {
 	if err := c.Monitor.WatchItem(path); err != nil {
 		return err
 	}
-	if err := c.NewHandler(path); err != nil {
+	if err := c.NewListener(path); err != nil {
 		return err
 	}
-	if err := c.StartHandler(path); err != nil {
+	if err := c.StartListener(path); err != nil {
 		return err
 	}
 	return nil
@@ -45,9 +45,9 @@ func (c *Client) WatchItem(path string) error {
 // add a new event handler for the given file.
 // path to the given file must already have a monitoring
 // goroutine in place (call client.WatchFile(filePath) first).
-func (c *Client) NewHandler(path string) error {
-	if _, exists := c.Handlers[path]; !exists {
-		if err := c.NewEHandler(path); err != nil {
+func (c *Client) NewListener(path string) error {
+	if _, exists := c.Listeners[path]; !exists {
+		if err := c.NewEListener(path); err != nil {
 			return err
 		}
 	} else {
@@ -57,7 +57,7 @@ func (c *Client) NewHandler(path string) error {
 }
 
 // get alll the necessary things for the event handler to operate independently
-func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
+func (c *Client) setupListener(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
 	evtChan := c.Monitor.GetEventChan(itemPath)
 	offSwitch := c.Monitor.GetOffSwitch(itemPath)
 	itemID, err := c.Db.GetFileID(itemPath) // NOTE this is only for files! not directories
@@ -76,22 +76,22 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, s
 
 // start an event handler for a given file.
 // will be a no-op if the handler does not exist.
-func (c *Client) StartHandler(path string) error {
-	if handler, exists := c.Handlers[path]; exists {
+func (c *Client) StartListener(path string) error {
+	if handler, exists := c.Listeners[path]; exists {
 		handler()
 	}
 	return nil
 }
 
-// start all available handlers
-func (c *Client) StartHandlers() error {
+// start all available listeners
+func (c *Client) StartListeners() error {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		log.Print("[INFO] no files to start handlers for")
+		log.Print("[INFO] no files to start listeners for")
 		return nil
 	}
 	for _, f := range files {
-		if err := c.StartHandler(f.Path); err != nil {
+		if err := c.StartListener(f.Path); err != nil {
 			return err
 		}
 	}
@@ -99,8 +99,8 @@ func (c *Client) StartHandlers() error {
 }
 
 // stops all event handler goroutines.
-func (c *Client) StopHandlers() {
-	log.Printf("[INFO] shutting down monitoring handlers...")
+func (c *Client) StopListeners() {
+	log.Printf("[INFO] shutting down event listeners...")
 	for _, off := range c.OffSwitches {
 		off <- true
 	}
@@ -112,14 +112,14 @@ func (c *Client) StopHandlers() {
 // are present during the build call then this will be a no-op.
 //
 // should ideally only be called once during initialization
-func (c *Client) BuildHandlers() error {
+func (c *Client) BuildListeners() error {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
 		return nil
 	}
 	for _, file := range files {
-		if _, exists := c.Handlers[file.Path]; !exists {
-			if err := c.NewEHandler(file.Path); err != nil {
+		if _, exists := c.Listeners[file.Path]; !exists {
+			if err := c.NewEListener(file.Path); err != nil {
 				return err
 			}
 		}
@@ -129,11 +129,11 @@ func (c *Client) BuildHandlers() error {
 
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
-func (c *Client) NewEHandler(path string) error {
-	// handler off-switch
+func (c *Client) NewEListener(path string) error {
+	// listener off-switch
 	offSwitch := make(chan bool)
-	// handler
-	handler := func() {
+	// listener
+	listener := func() {
 		// start listener
 		go func() {
 			if err := c.listener(path, offSwitch); err != nil {
@@ -144,16 +144,18 @@ func (c *Client) NewEHandler(path string) error {
 			}
 		}()
 	}
-	c.Handlers[path] = handler
+	c.Listeners[path] = listener
 	c.OffSwitches[path] = offSwitch
 	return nil
 }
 
 // dedicated listener for item events.
 // items can be either files or directories.
-func (c *Client) listener(path string, stop chan bool) error {
+func (c *Client) listener(itemPath string, stop chan bool) error {
 	// get all necessary params for the handler
-	evtChan, off, itemID, evts, err := c.setupHandler(path)
+	// TODO: setupHandler needs to differentiate between files and directories.
+	// currently only looks for files.
+	evtChan, off, itemID, evts, err := c.setupListener(itemPath)
 	if err != nil {
 		return err
 	}
@@ -174,12 +176,12 @@ func (c *Client) listener(path string, stop chan bool) error {
 					}
 					if item.IsDir() {
 						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
-						if err := c.AddDir(newDir.ID, newDir); err != nil {
+						if err := c.AddDirWithID(newDir.ID, newDir); err != nil {
 							log.Printf("[ERROR] failed to add new directory: %v", err)
 						}
 					} else {
 						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, e.Path)
-						if err := c.AddFile(itemID, newFile); err != nil {
+						if err := c.AddFileWithID(itemID, newFile); err != nil {
 							log.Printf("[ERROR] failed to add new file: %v", err)
 						}
 					}
@@ -187,23 +189,38 @@ func (c *Client) listener(path string, stop chan bool) error {
 				evts.AddEvent(e)
 			// item name change
 			case monitor.Name:
-				c.apply(e.Path, "name")
+				if err := c.apply(e.Path, "name"); err != nil {
+					log.Printf("[ERROR] failed to apply action: %v", err)
+					break
+				}
 				evts.AddEvent(e)
 			// item mode change
 			case monitor.Mode:
-				c.apply(e.Path, "mode")
+				if err := c.apply(e.Path, "mode"); err != nil {
+					log.Printf("[ERROR] failed to apply action: %v", err)
+					break
+				}
 				evts.AddEvent(e)
 			// item size changevedbooboo
 			case monitor.Size:
-				c.apply(e.Path, "size")
+				if err := c.apply(e.Path, "size"); err != nil {
+					log.Printf("[ERROR] failed to apply action: %v", err)
+					break
+				}
 				evts.AddEvent(e)
 			// item mod time change
 			case monitor.ModTime:
-				c.apply(e.Path, "modtime")
+				if err := c.apply(e.Path, "modtime"); err != nil {
+					log.Printf("[ERROR] failed to apply action: %v", err)
+					break
+				}
 				evts.AddEvent(e)
 			// items content change
 			case monitor.Change:
-				c.apply(e.Path, "change")
+				if err := c.apply(e.Path, "change"); err != nil {
+					log.Printf("[ERROR] failed to apply action: %v", err)
+					break
+				}
 				evts.AddEvent(e)
 			case monitor.Delete:
 				off <- true // shutdown monitoring thread, remove from index, and shut down handler
@@ -220,9 +237,10 @@ func (c *Client) listener(path string, stop chan bool) error {
 			if evts.AtCap {
 				// build update map and push file changes to server
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-				if err := c.Push(); err != nil {
-					return err
-				}
+				// temporarily removed while were still testing...
+				// if err := c.Push(); err != nil {
+				// 	return err
+				// }
 				evts.Reset()             // resets events buffer
 				time.Sleep(monitor.WAIT) // wait before resuming event handler
 			}

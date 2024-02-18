@@ -23,15 +23,15 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 */
 
 // arbitrary wait time between checks
-const WAIT = time.Millisecond * 500
+const WAIT = time.Millisecond * 250
 
 type Monitor struct {
 	// path to the users drive root to monitor
 	Path string
 
 	// map of channels to active listeners.
-	// key is the absolute file path, value is the channel to the watchFile() thread
-	// associated with that file
+	// key is the absolute file path, value is the channel to the watchFile()
+	// or watchDir() goroutine associated with that file or directory
 	//
 	// key = file path, val is Event channel
 	Events map[string]chan Event
@@ -39,7 +39,7 @@ type Monitor struct {
 	// map of channels to active listeners that will shut down the watcher goroutine
 	// when set to true.
 	//
-	// key = file path, val is bool chan
+	// key = file path, val is chan bool
 	OffSwitches map[string]chan bool
 }
 
@@ -129,7 +129,10 @@ func (m *Monitor) GetOffSwitch(filePath string) chan bool {
 	if offSwitch, exists := m.OffSwitches[filePath]; exists {
 		return offSwitch
 	}
-	log.Print("[ERROR] off switch not found for monitoring goroutine")
+	log.Printf(
+		"[ERROR] off switch not found for %s monitoring goroutine",
+		filepath.Base(filePath),
+	)
 	return nil
 }
 
@@ -269,10 +272,10 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 	}
 
 	// add initial items to context
-	dirCtx := NewDirCtx()
+	dirCtx := NewDirCtx(dirPath)
 	// NOTE: need to make sure these are added to the service
 	// if they're not already present! not watchDir's responsibility, though.
-	dirCtx.AddItems(initialItems, dirPath)
+	dirCtx.AddItems(initialItems)
 
 	// event channel used by the event handler goroutine
 	evt := make(chan Event)
@@ -294,6 +297,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				// directory was deleted
 				case err == os.ErrExist:
 					evt <- Event{
+						ID:   auth.NewUUID(),
 						Type: Delete,
 						Path: dirPath,
 					}
@@ -301,8 +305,9 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
-					diffs := dirCtx.AddItems(currItems, dirPath) // get list of deleted items
+					diffs := dirCtx.RemoveItems(currItems) // get list of deleted items
 					evt <- Event{
+						ID:    auth.NewUUID(),
 						Type:  Delete,
 						Path:  dirPath,
 						Items: diffs,
@@ -310,8 +315,9 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					initialItems = currItems
 				// item(s) were added
 				case len(currItems) > len(initialItems):
-					diffs := dirCtx.AddItems(currItems, dirPath) // get list of removed items
+					diffs := dirCtx.AddItems(currItems) // get list of removed items
 					evt <- Event{
+						ID:    auth.NewUUID(),
 						Type:  Add,
 						Path:  dirPath,
 						Items: diffs,

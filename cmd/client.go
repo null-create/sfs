@@ -18,9 +18,6 @@ type ClientFlagPole struct {
 	local   bool   // list all local files managed by SFS
 	remote  bool   // list all remote files managed by SFS
 	refresh bool   // refresh local drive
-	sync    bool   // sync with the server
-	push    string // push a file to the server
-	pull    string // pull a file from the server
 	add     string // add a file or directory to the local sfs service
 	remove  string // remove a file or directory from the local sfs service
 	info    bool   // get information about the client
@@ -32,7 +29,7 @@ var (
 	clientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "Execute SFS Client Commands",
-		RunE:  RunClientCmd,
+		RunE:  ClientCmd,
 	}
 )
 
@@ -44,9 +41,6 @@ func init() {
 	clientCmd.PersistentFlags().BoolVar(&flags.local, "local", false, "List local files managed by SFS service")
 	clientCmd.PersistentFlags().BoolVar(&flags.remote, "remote", false, "List remote files managed by SFSService")
 	clientCmd.PersistentFlags().BoolVar(&flags.refresh, "refresh", false, "Refresh drive. will search and add newly discovered files and directories")
-	clientCmd.PersistentFlags().BoolVar(&flags.sync, "sync", false, "Sync with the remote server")
-	clientCmd.PersistentFlags().StringVar(&flags.push, "push", "", "Push a file to the remote server. Add path to flag.")
-	clientCmd.PersistentFlags().StringVar(&flags.pull, "pull", "", "Pull a file from the remote server. Add filename to flag.")
 	clientCmd.PersistentFlags().StringVar(&flags.add, "add", "", "Add a file to the local SFS filesystem. Pass file path to file to be added.")
 	clientCmd.PersistentFlags().StringVar(&flags.remove, "remove", "", "Remove a file from the local SFS filesystem. Pass the file path of the file to be removed.")
 	clientCmd.PersistentFlags().BoolVar(&flags.info, "info", false, "Get info about the local SFS client")
@@ -56,7 +50,6 @@ func init() {
 	viper.BindPFlag("new", clientCmd.PersistentFlags().Lookup("new"))
 	viper.BindPFlag("local", clientCmd.PersistentFlags().Lookup("local"))
 	viper.BindPFlag("remote", clientCmd.PersistentFlags().Lookup("remote"))
-	viper.BindPFlag("sync", clientCmd.PersistentFlags().Lookup("sync"))
 	viper.BindPFlag("push", clientCmd.PersistentFlags().Lookup("push"))
 	viper.BindPFlag("pull", clientCmd.PersistentFlags().Lookup("pull"))
 	viper.BindPFlag("add", clientCmd.PersistentFlags().Lookup("add"))
@@ -72,9 +65,6 @@ func getflags(cmd *cobra.Command) ClientFlagPole {
 	stop, _ := cmd.Flags().GetBool("stop")
 	local, _ := cmd.Flags().GetBool("local")
 	remote, _ := cmd.Flags().GetBool("remote")
-	sync, _ := cmd.Flags().GetBool("sync")
-	push, _ := cmd.Flags().GetString("push")
-	pull, _ := cmd.Flags().GetString("pull")
 	refresh, _ := cmd.Flags().GetBool("refresh")
 	add, _ := cmd.Flags().GetString("add")
 	remove, _ := cmd.Flags().GetString("remove")
@@ -86,9 +76,6 @@ func getflags(cmd *cobra.Command) ClientFlagPole {
 		stop:    stop,
 		local:   local,
 		remote:  remote,
-		sync:    sync,
-		push:    push,
-		pull:    pull,
 		refresh: refresh,
 		add:     add,
 		remove:  remove,
@@ -96,7 +83,7 @@ func getflags(cmd *cobra.Command) ClientFlagPole {
 	}
 }
 
-func RunClientCmd(cmd *cobra.Command, args []string) error {
+func ClientCmd(cmd *cobra.Command, args []string) error {
 	f := getflags(cmd)
 	switch {
 	case f.new:
@@ -132,36 +119,6 @@ func RunClientCmd(cmd *cobra.Command, args []string) error {
 		if err := c.ListRemoteFiles(); err != nil {
 			showerr(err)
 		}
-	case f.sync:
-		// TODO:
-	case f.push != "":
-		c, err := client.LoadClient(true)
-		if err != nil {
-			showerr(err)
-		}
-		// push file
-		var path = f.push
-		file, err := c.GetFileByPath(path)
-		if err != nil {
-			showerr(err)
-		}
-		if err := c.PushFile(file); err != nil {
-			showerr(err)
-		}
-	case f.pull != "":
-		c, err := client.LoadClient(true)
-		if err != nil {
-			showerr(err)
-		}
-		// pull files
-		var path = f.pull
-		file, err := c.GetFileByPath(path)
-		if err != nil {
-			showerr(err)
-		}
-		if err := c.PullFile(file); err != nil {
-			showerr(err)
-		}
 	case f.add != "": // NOTE add will have the path of the file to be added
 		c, err := client.LoadClient(false)
 		if err != nil {
@@ -175,7 +132,7 @@ func RunClientCmd(cmd *cobra.Command, args []string) error {
 		// NOTE: both newFile.DirID == "" and newDir.ID == "" here.
 		if item.IsDir() {
 			newDir := svc.NewDirectory(item.Name(), c.UserID, c.DriveID, f.add)
-			if err := c.AddDir(newDir.ID, newDir); err != nil {
+			if err := c.AddDirWithID(newDir.ID, newDir); err != nil {
 				showerr(err)
 			}
 		} else {
@@ -193,7 +150,7 @@ func RunClientCmd(cmd *cobra.Command, args []string) error {
 			// - a file can be added by the passing its current path in the users
 			//   machine and be monitored *without* having to move it to a
 			//   sfs root directory.
-			if err := c.AddFile(newFile.DirID, newFile); err != nil {
+			if err := c.AddFileWithID(newFile.DirID, newFile); err != nil {
 				showerr(err)
 			}
 		}

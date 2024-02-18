@@ -43,11 +43,11 @@ type Client struct {
 	// listener that checks for file or directory events
 	Monitor *monitor.Monitor `json:"-"`
 
-	// map of active event handlers for individual files
-	// key == filepath, value == new event hander function
-	Handlers map[string]func() `json:"-"`
+	// map of active event listeners for individual files and directories
+	// key == item path, value == event listener function
+	Listeners map[string]func() `json:"-"`
 
-	// map of handler off switches. used during shutdown.
+	// map of listener off switches. used during shutdown.
 	// key == filepath, value == chan bool
 	OffSwitches map[string]chan bool `json:"-"`
 
@@ -90,8 +90,8 @@ func (c *Client) SaveState() error {
 
 // shutdown client side services
 func (c *Client) ShutDown() error {
-	c.StopHandlers()
 	c.StopMonitoring()
+	c.StopListeners()
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
 	}
@@ -118,7 +118,7 @@ func (c *Client) start(shutDown chan os.Signal) error {
 	}
 
 	// start monitoring event handlers
-	if err := c.StartHandlers(); err != nil {
+	if err := c.StartListeners(); err != nil {
 		return fmt.Errorf("failed to start event handlers: %v", err)
 	}
 
