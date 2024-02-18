@@ -37,7 +37,7 @@ func (ctx *DirCtx) AddItems(new []fs.DirEntry, dirPath string) []EItem {
 		if _, exist := ctx.currItems[item.Name()]; !exist {
 			eitem := EItem{
 				name: item.Name(),
-				Path: filepath.Join(dirPath, item.Name()),
+				path: filepath.Join(dirPath, item.Name()),
 			}
 			diffs = append(diffs, eitem)
 			ctx.currItems[eitem.Name()] = eitem

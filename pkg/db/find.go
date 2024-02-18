@@ -341,9 +341,6 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 		}
 		fs = append(fs, file)
 	}
-	if len(fs) == 0 {
-		log.Print("[DEBUG] no files returned")
-	}
 	return fs, nil
 }
 
@@ -455,7 +452,7 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 
 // geta a slice of *all* directories on the server, regardless
 // of owner. only for admin users.
-func (q *Query) GetDirectories(limit int) ([]*svc.Directory, error) {
+func (q *Query) GetDirectories() ([]*svc.Directory, error) {
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()

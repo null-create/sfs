@@ -15,23 +15,51 @@ import (
 // creates a new listener goroutine and checks received events
 func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
-		log.Print("listening for events...")
+		log.Printf("[TEST] listening for %s events...", filepath.Base(path))
 		fileChan := watchFile(path, stopMonitor)
 		for {
 			select {
 			case evt := <-fileChan:
 				switch evt.Type {
 				case Change:
-					log.Print("file change event received")
+					log.Print("[TEST] file change event received")
 					assert.Equal(t, Change, evt.Type)
 					assert.Equal(t, path, evt.Path)
 				case Delete:
-					log.Print("file delete event received")
+					log.Print("[TEST] file delete event received")
 					assert.Equal(t, Delete, evt.Type)
 					assert.Equal(t, path, evt.Path)
 				}
 			case <-stopListener:
-				log.Print("shutting down listener...")
+				log.Print("[TEST] shutting down listener...")
+				return
+			default:
+				continue
+			}
+		}
+	}()
+}
+
+func testMonitorListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
+	go func() {
+		log.Print("[TEST] monitoring directory: " + filepath.Base(path))
+		dirChan := watchDir(path, stopMonitor)
+		for {
+			select {
+			case evt := <-dirChan:
+				switch evt.Type {
+				case Add:
+					log.Print("[TEST] add event detected: " + evt.Path)
+					var items string
+					for _, evt := range evt.Items {
+						items += evt.name + "\n"
+					}
+					log.Printf("[TEST] items: " + items)
+				default:
+					continue
+				}
+			case <-stopListener:
+				log.Print("[TEST] stopping listener...")
 				return
 			default:
 				continue
@@ -49,12 +77,17 @@ func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
 	return stopMonitor, stopListener
 }
 
+func NewTestMonitorListener(t *testing.T, path string) (chan bool, chan bool) {
+	stopMonitor := make(chan bool)
+	stopListener := make(chan bool)
+	testMonitorListener(t, path, stopMonitor, stopListener)
+	return stopMonitor, stopListener
+}
+
 func TestMonitorWithOneFile(t *testing.T) {
 	env.SetEnv(false)
 
-	fn := filepath.Join(GetTestingDir(), "tmp.txt")
-
-	file, err := MakeTmpTxtFile(fn, RandInt(1000))
+	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -90,9 +123,7 @@ func TestMonitorWithOneFile(t *testing.T) {
 func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 	env.SetEnv(false)
 
-	fn := filepath.Join(GetTestingDir(), "tmp.txt")
-
-	file, err := MakeTmpTxtFile(fn, RandInt(1000))
+	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -130,9 +161,7 @@ func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 	env.SetEnv(false)
 
-	fn := filepath.Join(GetTestingDir(), "tmp.txt")
-
-	file, err := MakeTmpTxtFile(fn, RandInt(1000))
+	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
@@ -162,11 +191,6 @@ func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 		log.Fatal(err)
 	}
 }
-
-// type OffSwitches struct {
-// 	StopMonitor  chan bool
-// 	StopListener chan bool
-// }
 
 func TestMonitorWatchAll(t *testing.T) {
 	env.SetEnv(false)
@@ -228,20 +252,26 @@ func TestMonitorDirectory(t *testing.T) {
 		Fail(t, GetTestingDir(), err)
 	}
 
-	// make a new file in the temp directory
-	file, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), tmp.Path), RandInt(500))
+	// add a test listener for the temp directory
+	stopListener := make(chan bool)
+	testMonitorListener(t, tmp.Path, make(chan bool), stopListener)
+
+	// make a new file in the temp directory and add to the monitor
+	file, err := MakeTmpTxtFile(filepath.Join(tmp.Path, "new-thing.txt"), RandInt(500))
 	if err != nil {
+		monitor.ShutDown()
+		stopListener <- true
 		Fatal(t, err)
 	}
-
-	// see if we have an off switch for the new file.
-	// this means a new monitor has been automatically created for the
-	// newly created file.
-	off := monitor.GetOffSwitch(file.Path)
-	if off == nil {
-		Fail(t, GetTestingDir(), fmt.Errorf("no off switch found for %s", file.Path))
+	if err := monitor.WatchItem(file.Path); err != nil {
+		monitor.ShutDown()
+		stopListener <- true
+		Fail(t, GetTestingDir(), err)
 	}
 
+	// shut down and clean up
+	monitor.ShutDown()
+	stopListener <- true
 	if err := Clean(t, GetTestingDir()); err != nil {
 		log.Fatal(err)
 	}

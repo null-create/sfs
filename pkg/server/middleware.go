@@ -23,7 +23,7 @@ func ContentTypeJson(h http.Handler) http.Handler {
 
 // -------- all item contexts ------------------------------------
 
-func AllFilesCtx(h http.Handler) http.Handler {
+func AllUsersFilesCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "userID")
 		if userID == "" {
@@ -37,6 +37,22 @@ func AllFilesCtx(h http.Handler) http.Handler {
 		}
 		if len(files) == 0 {
 			w.Write([]byte(fmt.Sprintf("no files found for user (id=%s)", userID)))
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Files, files)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
+func AllFilesCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		files, err := getAllTheFiles(getDBConn("Files"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to get files from database: %v", err), http.StatusInternalServerError)
+			return
+		}
+		if len(files) == 0 {
+			w.Write([]byte("no files found"))
 			return
 		}
 		newCtx := context.WithValue(r.Context(), Files, files)
@@ -61,6 +77,22 @@ func AllUsersCtx(h http.Handler) http.Handler {
 			return
 		}
 		newCtx := context.WithValue(r.Context(), Users, users)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
+func AllDirsCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		dirs, err := findAllTheDirs(getDBConn("Directories"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(dirs) == 0 {
+			w.Write([]byte("no directories found"))
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Directories, dirs)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }

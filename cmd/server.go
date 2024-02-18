@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/sfs/pkg/server"
 
 	"github.com/spf13/cobra"
@@ -8,12 +10,12 @@ import (
 )
 
 var (
-	new      bool      // whether we should create a new sfs server
-	start    bool      // whether we should start the server
-	stop     bool      // whether we should stop the server
-	shutDown chan bool // shutdown channel for the server
+	new   bool           // whether we should create a new sfs server
+	start bool           // whether we should start the server
+	stop  bool           // whether we should stop the server
+	sig   chan os.Signal // shutdown channel for the server
 
-	scfg = server.ServiceConfig() // server-side service configurations
+	svcCfg = server.ServiceConfig() // server-side service configurations
 
 	// server command
 	serverCmd = &cobra.Command{
@@ -24,7 +26,7 @@ var (
 )
 
 func init() {
-	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "start the sfs server")
+	serverCmd.PersistentFlags().BoolVar(&start, "start", false, "start the sfs server. stop with ctrl-c.")
 	serverCmd.PersistentFlags().BoolVar(&stop, "stop", false, "stop the sfs server")
 	serverCmd.PersistentFlags().BoolVarP(&new, "new", "n", false, "create a new sfs server side service instance")
 
@@ -42,7 +44,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 
 	switch {
 	case newFlag:
-		if err := newServer(); err != nil {
+		if err := newService(); err != nil {
 			return err
 		}
 	case startFlag:
@@ -50,19 +52,19 @@ func runCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	case stopFlag:
-		shutDown <- true
+		sig <- os.Interrupt
 	}
 	return nil
 }
 
 func startServer() error {
 	svr := server.NewServer()
-	svr.Start(shutDown)
+	svr.Run()
 	return nil
 }
 
-func newServer() error {
-	_, err := server.Init(scfg.NewService, scfg.IsAdmin)
+func newService() error {
+	_, err := server.Init(svcCfg.NewService, svcCfg.IsAdmin)
 	if err != nil {
 		return err
 	}

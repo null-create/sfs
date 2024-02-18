@@ -105,7 +105,7 @@ func NewRouter() *chi.Mux {
 				r.Delete("/", api.DeleteFile) // delete a file on the server
 			})
 			r.Route("/i/all/{userID}", func(r chi.Router) {
-				r.Use(AllFilesCtx)
+				r.Use(AllUsersFilesCtx)
 				r.Get("/", api.GetAllFileInfo) // get info about all user-specific files
 			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
@@ -115,6 +115,11 @@ func NewRouter() *chi.Mux {
 			r.Route("/i/{fileID}", func(r chi.Router) {
 				r.Use(FileCtx)
 				r.Get("/", api.GetFileInfo) // get info about a file
+			})
+			// temp for testing
+			r.Route("/all", func(r chi.Router) {
+				r.Use(AllFilesCtx)
+				r.Get("/", api.GetAllFileInfo) // get info
 			})
 		})
 
@@ -140,6 +145,11 @@ func NewRouter() *chi.Mux {
 			r.Route("/i/all/{userID}", func(r chi.Router) {
 				// r.Use(AllDirsCtx) // TODO: need a new context
 				r.Get("/", api.GetManyDirsInfo)
+			})
+			// temp for testing
+			r.Route("/all", func(r chi.Router) {
+				r.Use(AllDirsCtx)
+				r.Get("/", api.GetAllDirsInfo)
 			})
 		})
 

@@ -55,6 +55,6 @@ func FirstTimeSetup() error {
 
 // names of all required internal packages
 var Packages = []string{
-	"auth", "bin", "client", "db", "env", "models",
-	"monitor", "network", "server", "service", "transfer",
+	"auth", "client", "db", "env", "monitor", "network",
+	"server", "service", "transfer",
 }

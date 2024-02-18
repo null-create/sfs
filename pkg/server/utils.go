@@ -59,3 +59,9 @@ func saveJSON(dir, filename string, data any) {
 		log.Fatalf("[ERROR] unable to write JSON file %s: %s\n", filename, err)
 	}
 }
+
+func secondsToTimeStr(seconds float64) string {
+	duration := time.Duration(int64(seconds)) * time.Second
+	timeValue := time.Time{}.Add(duration)
+	return timeValue.Format("15:04:05")
+}

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -99,4 +100,25 @@ func Exists(filename string) bool {
 		log.Fatalf("unable to get file status: %v", err)
 	}
 	return true
+}
+
+// converts a struct to a map.
+// mainly so we can make a struct iterable.
+func structToMap(s interface{}) map[string]interface{} {
+	m := make(map[string]interface{})
+	v := reflect.ValueOf(s)
+	t := reflect.TypeOf(s)
+
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		v = v.Elem()
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i).Interface()
+		m[field.Name] = value
+	}
+
+	return m
 }

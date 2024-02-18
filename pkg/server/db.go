@@ -33,6 +33,15 @@ func getAllFiles(userID string, q *db.Query) ([]*svc.File, error) {
 	return files, nil
 }
 
+// get a slice of *all* files in the files database. returns an nil if none are available.
+func getAllTheFiles(q *db.Query) ([]*svc.File, error) {
+	files, err := q.GetFiles()
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // get a slice of all registered users on the server. returns an empty slice if none are found.
 func getAllUsers(adminID string, q *db.Query) ([]*auth.User, error) {
 	users, err := q.GetUsers()
@@ -58,6 +67,15 @@ func findDir(dirID string, q *db.Query) (*svc.Directory, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// get a slice of all directories from db. dir will be nil if none are found.
+func findAllTheDirs(q *db.Query) ([]*svc.Directory, error) {
+	dirs, err := q.GetDirectories()
+	if err != nil {
+		return nil, err
+	}
+	return dirs, nil
 }
 
 // get drive data from db. drive will be nil if not found.

@@ -30,12 +30,6 @@ func NewServer() *Server {
 	}
 }
 
-func secondsToTimeStr(seconds float64) string {
-	duration := time.Duration(int64(seconds)) * time.Second
-	timeValue := time.Time{}.Add(duration)
-	return timeValue.Format("15:04:05")
-}
-
 // returns the current run time of the server
 // as a HH:MM:SS formatted string.
 func (s *Server) RunTime() string {

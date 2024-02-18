@@ -22,11 +22,12 @@ const (
 
 // an associated item (file or directory) for a given event
 type EItem struct {
-	name string
-	Path string
+	name string // item name
+	path string // item path
 }
 
 func (e *EItem) Name() string { return e.name }
+func (e *EItem) Path() string { return e.path }
 
 type Event struct {
 	ID    string    // UUID of the event

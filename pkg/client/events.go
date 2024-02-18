@@ -115,7 +115,6 @@ func (c *Client) StopHandlers() {
 func (c *Client) BuildHandlers() error {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		log.Print("[INFO] no files to build handlers for")
 		return nil
 	}
 	for _, file := range files {
@@ -169,12 +168,12 @@ func (c *Client) listener(path string, stop chan bool) error {
 			// new files or directories were added to a monitored directory
 			case monitor.Add:
 				for _, eitem := range e.Items {
-					item, err := os.Stat(eitem.Path)
+					item, err := os.Stat(eitem.Path())
 					if err != nil {
 						log.Printf("[ERROR] failed to get item information: %v", err)
 					}
 					if item.IsDir() {
-						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path)
+						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
 						if err := c.AddDir(newDir.ID, newDir); err != nil {
 							log.Printf("[ERROR] failed to add new directory: %v", err)
 						}
@@ -188,23 +187,23 @@ func (c *Client) listener(path string, stop chan bool) error {
 				evts.AddEvent(e)
 			// item name change
 			case monitor.Name:
-				c.applyChange(e.Path, "name")
+				c.apply(e.Path, "name")
 				evts.AddEvent(e)
 			// item mode change
 			case monitor.Mode:
-				c.applyChange(e.Path, "mode")
+				c.apply(e.Path, "mode")
 				evts.AddEvent(e)
 			// item size changevedbooboo
 			case monitor.Size:
-				c.applyChange(e.Path, "size")
+				c.apply(e.Path, "size")
 				evts.AddEvent(e)
 			// item mod time change
 			case monitor.ModTime:
-				c.applyChange(e.Path, "modtime")
+				c.apply(e.Path, "modtime")
 				evts.AddEvent(e)
 			// items content change
 			case monitor.Change:
-				c.applyChange(e.Path, "change")
+				c.apply(e.Path, "change")
 				evts.AddEvent(e)
 			case monitor.Delete:
 				off <- true // shutdown monitoring thread, remove from index, and shut down handler
@@ -233,8 +232,8 @@ func (c *Client) listener(path string, stop chan bool) error {
 	}
 }
 
-// applyChange the given action using the supplied event object
-func (c *Client) applyChange(itemPath string, action string) error {
+// apply the given action using the supplied event object
+func (c *Client) apply(itemPath string, action string) error {
 	item, err := os.Stat(itemPath)
 	if err != nil {
 		return err

@@ -13,6 +13,21 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
+// ------ user --------------------------------------
+
+func (c *Client) GetUserInfo() string {
+	if c.User == nil {
+		log.Print("[ERROR] no user info available!")
+		return ""
+	}
+	data, err := c.User.ToJSON()
+	if err != nil {
+		log.Printf("error getting user info: %v", err)
+		return ""
+	}
+	return string(data)
+}
+
 // ----- files --------------------------------------
 
 func (c *Client) Exists(path string) bool {

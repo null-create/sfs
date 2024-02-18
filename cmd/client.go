@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/sfs/pkg/client"
@@ -10,43 +11,45 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	c        *client.Client // active client service instance
-	shutdown chan os.Signal // shutdown signal
-	configs  = client.ClientConfig()
+type ClientFlagpole struct {
+	new     bool   // create a new client
+	start   bool   // start a client
+	stop    bool   // stop a client
+	local   bool   // list all local files managed by SFS
+	remote  bool   // list all remote files managed by SFS
+	refresh bool   // refresh local drive
+	sync    bool   // sync with the server
+	push    string // push a file to the server
+	pull    string // pull a file from the server
+	add     string // add a file or directory to the local sfs service
+	remove  string // remove a file or directory from the local sfs service
+	info    bool   // get information about the client
+}
 
-	// flags
-	newClient    bool   // create a new client
-	startClient  bool   // start a client
-	stopClient   bool   // stop a client
-	listLoc      bool   // list all local files managed by SFS
-	listRemote   bool   // list all remote files managed by SFS
-	refreshDrive bool   // refresh local drive
-	sync         bool   // sync with the server
-	push         string // push a file to the server
-	pull         string // pull a file from the server
-	add          string // add a file or directory to the local sfs service
-	remove       string // remove a file or directory from the local sfs service
+var (
+	shutdown chan os.Signal // shutdown signal
 
 	clientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "Execute SFS Client Commands",
-		RunE:  RunCmd,
+		RunE:  RunClientCmd,
 	}
 )
 
 func init() {
-	clientCmd.PersistentFlags().BoolVar(&newClient, "new", false, "Initialize a new client service instance")
-	clientCmd.PersistentFlags().BoolVar(&startClient, "start", false, "Start client services")
-	clientCmd.PersistentFlags().BoolVar(&stopClient, "stop", false, "Stop client services")
-	clientCmd.PersistentFlags().BoolVar(&listLoc, "local", false, "List local files managed by SFS service")
-	clientCmd.PersistentFlags().BoolVar(&listRemote, "remote", false, "List remote files managed by SFSService")
-	clientCmd.PersistentFlags().BoolVar(&refreshDrive, "refresh", false, "Refresh drive. will search and add newly discovered files and directories")
-	clientCmd.PersistentFlags().BoolVar(&sync, "sync", false, "Sync with the remote server")
-	clientCmd.PersistentFlags().StringVar(&push, "push", "", "Push a file to the remote server. Add path to flag.")
-	clientCmd.PersistentFlags().StringVar(&pull, "pull", "", "Pull a file from the remote server. Add filename to flag.")
-	clientCmd.PersistentFlags().StringVar(&add, "add", "", "Add a file to the local SFS filesystem. Pass file path to file to be added.")
-	clientCmd.PersistentFlags().StringVar(&remove, "remove", "", "Remove a file from the local SFS filesystem. Pass the file path of the file to be removed.")
+	cfp := ClientFlagpole{}
+	clientCmd.PersistentFlags().BoolVar(&cfp.new, "new", false, "Initialize a new client service instance")
+	clientCmd.PersistentFlags().BoolVar(&cfp.start, "start", false, "Start client services")
+	clientCmd.PersistentFlags().BoolVar(&cfp.stop, "stop", false, "Stop client services")
+	clientCmd.PersistentFlags().BoolVar(&cfp.local, "local", false, "List local files managed by SFS service")
+	clientCmd.PersistentFlags().BoolVar(&cfp.remote, "remote", false, "List remote files managed by SFSService")
+	clientCmd.PersistentFlags().BoolVar(&cfp.refresh, "refresh", false, "Refresh drive. will search and add newly discovered files and directories")
+	clientCmd.PersistentFlags().BoolVar(&cfp.sync, "sync", false, "Sync with the remote server")
+	clientCmd.PersistentFlags().StringVar(&cfp.push, "push", "", "Push a file to the remote server. Add path to flag.")
+	clientCmd.PersistentFlags().StringVar(&cfp.pull, "pull", "", "Pull a file from the remote server. Add filename to flag.")
+	clientCmd.PersistentFlags().StringVar(&cfp.add, "add", "", "Add a file to the local SFS filesystem. Pass file path to file to be added.")
+	clientCmd.PersistentFlags().StringVar(&cfp.remove, "remove", "", "Remove a file from the local SFS filesystem. Pass the file path of the file to be removed.")
+	clientCmd.PersistentFlags().BoolVar(&cfp.info, "info", false, "Get info about the local SFS client")
 
 	viper.BindPFlag("start", clientCmd.PersistentFlags().Lookup("start"))
 	viper.BindPFlag("stop", clientCmd.PersistentFlags().Lookup("stop"))
@@ -58,11 +61,12 @@ func init() {
 	viper.BindPFlag("pull", clientCmd.PersistentFlags().Lookup("pull"))
 	viper.BindPFlag("add", clientCmd.PersistentFlags().Lookup("add"))
 	viper.BindPFlag("remove", clientCmd.PersistentFlags().Lookup("remove"))
+	viper.BindPFlag("info", clientCmd.PersistentFlags().Lookup("info"))
 
 	rootCmd.AddCommand(clientCmd)
 }
 
-func RunCmd(cmd *cobra.Command, args []string) error {
+func getflags(cmd *cobra.Command) ClientFlagpole {
 	new, _ := cmd.Flags().GetBool("new")
 	start, _ := cmd.Flags().GetBool("start")
 	stop, _ := cmd.Flags().GetBool("stop")
@@ -71,95 +75,131 @@ func RunCmd(cmd *cobra.Command, args []string) error {
 	sync, _ := cmd.Flags().GetBool("sync")
 	push, _ := cmd.Flags().GetString("push")
 	pull, _ := cmd.Flags().GetString("pull")
+	refresh, _ := cmd.Flags().GetBool("refresh")
 	add, _ := cmd.Flags().GetString("add")
 	remove, _ := cmd.Flags().GetString("remove")
+	info, _ := cmd.Flags().GetBool("info")
 
+	return ClientFlagpole{
+		new:     new,
+		start:   start,
+		stop:    stop,
+		local:   local,
+		remote:  remote,
+		sync:    sync,
+		push:    push,
+		pull:    pull,
+		refresh: refresh,
+		add:     add,
+		remove:  remove,
+		info:    info,
+	}
+}
+
+func RunClientCmd(cmd *cobra.Command, args []string) error {
+	f := getflags(cmd)
 	switch {
-	case new:
+	case f.new:
 		_, err := client.Init(configs.NewService)
 		if err != nil {
-			return err
+			showerr(err)
 		}
-	case start:
+	case f.start:
 		c, err := client.LoadClient()
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		off, err := c.Start()
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		shutdown = off
-	case stop:
+	case f.stop:
 		shutdown <- os.Kill
-	case local:
+	case f.local:
 		c, err := client.LoadClient()
 		if err != nil {
-			return err
+			showerr(err)
 		}
-		c.ListLocalFiles()
-	case remote:
+		if err := c.ListLocalFilesDB(); err != nil {
+			showerr(err)
+		}
+	case f.remote:
 		c, err := client.LoadClient()
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		if err := c.ListRemoteFiles(); err != nil {
-			return err
+			showerr(err)
 		}
-	case sync:
+	case f.sync:
 		// TODO:
-	case push != "":
+	case f.push != "":
 		c, err := client.LoadClient()
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		// push file
-		var path = push
+		var path = f.push
 		file, err := c.GetFileByPath(path)
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		if err := c.PushFile(file); err != nil {
-			return err
+			showerr(err)
 		}
-	case pull != "":
+	case f.pull != "":
 		c, err := client.LoadClient()
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		// pull files
-		var path = pull
+		var path = f.pull
 		file, err := c.GetFileByPath(path)
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		if err := c.PullFile(file); err != nil {
-			return err
+			showerr(err)
 		}
-	case add != "":
+	case f.add != "":
 		c, err := client.LoadClient()
 		if err != nil {
-			return err
+			showerr(err)
 		}
 		// determine item type, then add
-		item, err := os.Stat(add)
+		item, err := os.Stat(f.add)
 		if err != nil {
 			return err
 		}
 		// NOTE: both newFile.DirID == "" and newDir.ID == "" here.
 		if item.IsDir() {
-			newDir := svc.NewDirectory(item.Name(), c.UserID, c.DriveID, add)
+			newDir := svc.NewDirectory(item.Name(), c.UserID, c.DriveID, f.add)
 			if err := c.AddDir(newDir.ID, newDir); err != nil {
-				return err
+				showerr(err)
 			}
 		} else {
-			newFile := svc.NewFile(item.Name(), c.DriveID, c.UserID, add)
+			newFile := svc.NewFile(item.Name(), c.DriveID, c.UserID, f.add)
 			if err := c.AddFile(newFile.DirID, newFile); err != nil {
-				return err
+				showerr(err)
 			}
 		}
-	case remove != "":
+	case f.remove != "":
+		return nil
+	case f.refresh:
+		c, err := client.LoadClient()
+		if err != nil {
+			showerr(err)
+		}
+		if err := c.RefreshDrive(); err != nil {
+			showerr(err)
+		}
+	case f.info:
+		c, err := client.LoadClient()
+		if err != nil {
+			showerr(err)
+		}
+		fmt.Print(c.GetUserInfo())
 	}
-
 	return nil
 }

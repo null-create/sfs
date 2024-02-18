@@ -187,7 +187,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] shutting down monitoring for %s...", baseName)
+				log.Printf("[INFO] shutting down monitoring for %s...", filePath)
 				close(evt)
 				return
 			default:

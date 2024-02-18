@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/sfs/pkg/env"
@@ -34,3 +35,14 @@ func ClientConfig() *Conf {
 
 // client env, user, and service configurations
 var cfgs = ClientConfig()
+
+// TODO: client setters and getters.
+// will need to be interactive at the terminal for setters.
+
+func (c *Client) GetConfigs() {
+	cfg := structToMap(c.Conf)
+	fmt.Print("\n")
+	for k, v := range cfg {
+		fmt.Printf("%s: %v\n", k, v)
+	}
+}

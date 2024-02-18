@@ -228,6 +228,19 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 // ------- directories --------------------------------
 
+// temp for testing
+func (a *API) GetAllDirsInfo(w http.ResponseWriter, r *http.Request) {
+	dirs := r.Context().Value(Directories).([]*svc.Directory)
+	for _, dir := range dirs {
+		data, err := dir.ToJSON()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write(data)
+	}
+}
+
 // returns metadata for a single directory (not its children).
 func (a *API) GetDirInfo(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
