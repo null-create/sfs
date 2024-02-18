@@ -39,8 +39,9 @@ case "$(uname -s)" in
 esac
 
 # set path varible for sfs CLI, then test
-# BINPATH="$(pwd)/${OUT_FILE}"
-# export PATH="$PATH:${BINPATH}"
+BINPATH="$($PWD)/${OUT_FILE}"
+export PATH="$PATH:${BINPATH}"
+
 ./sfs -h
 if [[ $? -ne 0 ]]; then
   echo "failed to create executable"
