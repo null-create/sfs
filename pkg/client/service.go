@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	svc "github.com/sfs/pkg/service"
 )
@@ -88,7 +89,7 @@ func (c *Client) ListRemoteFiles() error {
 }
 
 // retrieve a local file. returns nil if the file is not found.
-func (c *Client) GetFile(fileID string) (*svc.File, error) {
+func (c *Client) GetFileByID(fileID string) (*svc.File, error) {
 	file := c.Drive.GetFile(fileID)
 	if file == nil {
 		// try database before giving up.
@@ -118,9 +119,21 @@ func (c *Client) GetFileByPath(path string) (*svc.File, error) {
 	return file, nil
 }
 
-// add a new file to a specified directory.
+// retrieve a file from the database by searching with its name
+func (c *Client) GetFileByName(name string) (*svc.File, error) {
+	file, err := c.Db.GetFileByName(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file from database: %v", err)
+	}
+	if file == nil {
+		return nil, fmt.Errorf("file %s not found", name)
+	}
+	return file, nil
+}
+
+// add a new file to a specified directory using a directory ID.
 // adds file to database and monitoring services.
-func (c *Client) AddFile(dirID string, file *svc.File) error {
+func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
 	if err := c.Drive.AddFile(dirID, file); err != nil {
 		return err
 	}
@@ -128,6 +141,55 @@ func (c *Client) AddFile(dirID string, file *svc.File) error {
 		return err
 	}
 	if err := c.WatchItem(file.ClientPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO: add a file to the service using its file path.
+// should check for whether the directory it resides in is
+// monitored by SFS -- though not contingent on it!
+//
+// SFS should be able to monitor files outside of the designated root directory.
+// if we add a file this way then we should automatically make a backup of it
+// in the SFS root directory with each detected change.
+func (c *Client) AddFile(filePath string) error {
+	// see if we already have this file in the system
+	file, err := c.Db.GetFileByPath(filePath)
+	if err != nil {
+		return err
+	}
+	if file != nil {
+		return fmt.Errorf("file already exists")
+	}
+
+	// create new file object
+	newFile := svc.NewFile(filepath.Base(filePath), c.DriveID, c.UserID, filePath)
+
+	// see if we already have this directory in the filesystem
+	nfDir := filepath.Dir(filePath)
+	dir, err := c.GetDirByPath(nfDir)
+	if err != nil && strings.Contains(err.Error(), "does not exist") {
+		log.Printf("[WARNING] file's parent directory is not in SFS the filesystem. adding...")
+		// create a new directory record for this directory (don't parse contents,
+		// just create metadata) so we can add the new file. the "parent" for this
+		// directory will be root since we don't want to have to recursively build
+		// an entire system bottom up for one file.
+		newDir := svc.NewDirectory(filepath.Base(nfDir), c.UserID, c.DriveID, nfDir)
+		if err := c.AddDirWithID(c.Drive.RootID, newDir); err != nil {
+			return err
+		}
+		newFile.DirID = newDir.ID
+	} else if err != nil {
+		return err
+	} else {
+		newFile.DirID = dir.ID
+	}
+	// add file to sfs system
+	if err := c.Drive.AddFile(newFile.DirID, newFile); err != nil {
+		return err
+	}
+	if err := c.Db.AddFile(newFile); err != nil {
 		return err
 	}
 	return nil
@@ -218,7 +280,7 @@ func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error
 // ----- directories --------------------------------
 
 // add dir to client service instance
-func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
+func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
 		return fmt.Errorf("failed to add directory: %v", err)
 	}
@@ -227,6 +289,45 @@ func (c *Client) AddDir(dirID string, dir *svc.Directory) error {
 		if remErr := os.Remove(dir.Path); remErr != nil {
 			log.Printf("[WARNING] failed to remove directory: %v", remErr)
 		}
+		return err
+	}
+	return nil
+}
+
+// add a new directory to the sfs file system. if its parent directory
+// is already known, it will be added to there, otherwise will automatically
+// be placed under root.
+func (c *Client) AddDir(dirPath string) error {
+	dir, err := c.Db.GetDirectoryByPath(dirPath)
+	if err != nil {
+		return err
+	}
+	if dir != nil {
+		return fmt.Errorf("%s already exists in sfs system", filepath.Base(dirPath))
+	}
+
+	// create new directory object. (parent is not set)
+	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
+
+	// see if the parent for this directory is already known.
+	// if it is, then add this new directory as a subdirectory there,
+	// otherwise place new directory under sfs root.
+	parent := filepath.Dir(dirPath)
+	pDir, err := c.Db.GetDirectoryByPath(parent)
+	if err != nil {
+		return err
+	}
+	if pDir != nil {
+		newDir.Parent = pDir
+	} else {
+		newDir.Parent = c.Drive.Root
+	}
+
+	// add directory to service
+	if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
+		return err
+	}
+	if err := c.Db.AddDir(newDir); err != nil {
 		return err
 	}
 	return nil
