@@ -32,8 +32,8 @@ func (p PairList) Less(i, j int) bool { return p[i].Size < p[j].Size }
 
 // sort a map of files by file size and return as a PairList
 func (b *Batch) SortMapByValue(m map[*File]int64) PairList {
-	p := make(PairList, len(m))
 	i := 0
+	p := make(PairList, len(m))
 	for k, v := range m {
 		p[i] = Pair{k, v}
 		i++
