@@ -137,7 +137,7 @@ func (c *Client) StartHandlers() error {
 }
 
 // stop an existening event listener.
-func (c *Client) StopListener(itemPath string) error {
+func (c *Client) StopHandler(itemPath string) error {
 	if _, ok := c.OffSwitches[itemPath]; ok {
 		c.OffSwitches[itemPath] <- true
 	}
@@ -148,16 +148,11 @@ func (c *Client) StopListener(itemPath string) error {
 }
 
 // stops all event handler goroutines.
-func (c *Client) StopListeners() {
-	log.Printf("[INFO] shutting down event listeners...")
+func (c *Client) StopHandlers() {
+	log.Printf("[INFO] shutting down %d event listeners...", len(c.OffSwitches))
 	for _, off := range c.OffSwitches {
 		off <- true
 	}
-	c.DestroyListeners()
-}
-
-// remove all listener instances
-func (c *Client) DestroyListeners() {
 	for path := range c.Handlers {
 		c.Handlers[path] = nil
 	}

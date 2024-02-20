@@ -92,6 +92,8 @@ func (c *Client) SaveState() error {
 // shutdown client side services
 func (c *Client) ShutDown() {
 	c.StopMonitoring()
+	c.StopHandlers()
+
 	if err := c.SaveState(); err != nil {
 		log.Printf("[ERROR] failed to save state file: %v", err)
 	}
