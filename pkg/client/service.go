@@ -285,9 +285,14 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 // remove a file in a specied directory.
 func (c *Client) RemoveFile(file *svc.File) error {
 	// stop monitoring the file
-	c.Monitor.CloseChan(file.Path)
-
+	c.Monitor.StopWatching(file.Path)
+	// we're implementing "soft" deletes here. if a user wants to
+	// actually Delete a file, we can implement another function for that later.
 	// remove from drive and database
+	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
+		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
+	}
+	// remove physical file from original location
 	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
 	}

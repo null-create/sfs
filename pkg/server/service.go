@@ -724,6 +724,12 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
+	// we're implementing "soft" deletes here. if a user wants to
+	// actually Delete a file, we can implement another function for that later.
+	if err := file.Copy(filepath.Join(drive.RecycleBin, file.Name)); err != nil {
+		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
+	}
+	// remove physical file from original location
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
 	}

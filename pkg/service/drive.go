@@ -27,6 +27,7 @@ user/
 |---root/      <---- user files & directories live here
 |---state/
 |   |---client-state-d-m-y-hh-mm-ss.json
+|   recycled/     <---- "deleted" files & directories
 
 [server]
 users/
@@ -34,6 +35,7 @@ users/
 |    |----root/     <---- user files & directories
 |    |----state/
 |    |    |----drive-state-d-m-y-hh-mm-ss.json
+|    |    recycled/     <---- "deleted" files & directories
 |----userB/
 (etc)
 
@@ -49,9 +51,10 @@ func AllocateDrive(name string, ownerID string, svcRoot string) (*Drive, error) 
 	userRoot := filepath.Join(svcRoot, "users", name)
 	contentsRoot := filepath.Join(userRoot, "root")
 	stateFileDir := filepath.Join(userRoot, "state")
+	removedDir := filepath.Join(userRoot, "recycled")
 
 	// make each directory
-	dirs := []string{userRoot, contentsRoot, stateFileDir}
+	dirs := []string{userRoot, contentsRoot, stateFileDir, removedDir}
 	for _, d := range dirs {
 		if err := os.Mkdir(d, PERMS); err != nil {
 			return nil, err
@@ -112,6 +115,9 @@ type Drive struct {
 	RootID    string     `json:"root_id"`
 	Root      *Directory `json:"-"` // ignored to avoid json cycle errors
 	SyncIndex *SyncIndex `json:"sync_index"`
+
+	// folder for placing "deleted" files and directories
+	RecycleBin string `json:"recycle_bin"`
 }
 
 func check(
@@ -141,17 +147,18 @@ func NewDrive(
 		return nil
 	}
 	return &Drive{
-		ID:        driveID,
-		OwnerName: ownerName,
-		OwnerID:   ownerID,
-		TotalSize: MAX_SIZE,
-		UsedSpace: 0,
-		FreeSpace: MAX_SIZE,
-		Protected: false,
-		Key:       "default",
-		DriveRoot: rootPath,
-		RootID:    rootID,
-		Root:      root,
+		ID:         driveID,
+		OwnerName:  ownerName,
+		OwnerID:    ownerID,
+		TotalSize:  MAX_SIZE,
+		UsedSpace:  0,
+		FreeSpace:  MAX_SIZE,
+		Protected:  false,
+		Key:        "default",
+		DriveRoot:  rootPath,
+		RootID:     rootID,
+		Root:       root,
+		RecycleBin: filepath.Join(root.Path, "recycle"),
 	}
 }
 
@@ -345,7 +352,7 @@ func (d *Drive) UpdateFile(dirID string, file *File) error {
 }
 
 // remove file from a directory. removes physical file and
-// updates internal data structures.
+// updates internal data structures. use with caution.
 func (d *Drive) RemoveFile(dirID string, file *File) error {
 	if !d.Protected {
 		if !d.HasRoot() {

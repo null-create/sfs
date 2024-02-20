@@ -24,10 +24,11 @@ type Client struct {
 	StartTime time.Time `json:"start_time"`      // start time for this client
 	Conf      *Conf     `json:"client_settings"` // client service settings
 
-	User   *auth.User `json:"user"`           // user object
-	UserID string     `json:"user_id"`        // usersID for this client
-	Root   string     `json:"root"`           // path to root sfs directory for users files and directories
-	SfDir  string     `json:"state_file_dir"` // path to state file
+	User       *auth.User `json:"user"`           // user object
+	UserID     string     `json:"user_id"`        // usersID for this client
+	Root       string     `json:"root"`           // path to root sfs directory for users files and directories
+	SfDir      string     `json:"state_file_dir"` // path to state file
+	RecycleBin string     `json:"recycle_bin"`    // path to recycle bin
 
 	DriveID string     `json:"drive_id"` // drive ID for this client
 	Drive   *svc.Drive `json:"drive"`    // client drive for managing users files and directories
