@@ -45,7 +45,7 @@ type Client struct {
 	Monitor *monitor.Monitor `json:"-"`
 
 	// wait group for managing event listeners
-	Wg *sync.WaitGroup
+	Wg *sync.WaitGroup `json:"-"`
 
 	// map of active event listeners for individual files and directories
 	// key == item path, value == event listener function
@@ -96,6 +96,9 @@ func (c *Client) SaveState() error {
 func (c *Client) ShutDown() {
 	c.StopMonitoring()
 	c.DestroyListeners()
+	if err := c.SaveState(); err != nil {
+		log.Printf("[ERROR] failed to save state file: %v", err)
+	}
 }
 
 // start up client services. creates a blocking process
