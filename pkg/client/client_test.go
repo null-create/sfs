@@ -40,7 +40,7 @@ func TestNewClient(t *testing.T) {
 	assert.NotEqual(t, nil, client.Monitor)
 	assert.NotEqual(t, nil, client.Drive)
 	assert.NotEqual(t, nil, client.Db)
-	assert.NotEqual(t, nil, client.Listeners)
+	assert.NotEqual(t, nil, client.Handlers)
 	assert.NotEqual(t, nil, client.Transfer)
 
 	// check that .env was updated after initialization,

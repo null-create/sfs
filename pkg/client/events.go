@@ -33,10 +33,10 @@ func (c *Client) WatchItem(path string) error {
 	if err := c.Monitor.WatchItem(path); err != nil {
 		return err
 	}
-	if err := c.NewListener(path); err != nil {
+	if err := c.NewHandler(path); err != nil {
 		return err
 	}
-	if err := c.StartListener(path); err != nil {
+	if err := c.StartHandler(path); err != nil {
 		return err
 	}
 	return nil
@@ -45,9 +45,9 @@ func (c *Client) WatchItem(path string) error {
 // add a new event handler for the given file.
 // path to the given file must already have a monitoring
 // goroutine in place (call client.WatchFile(filePath) first).
-func (c *Client) NewListener(path string) error {
-	if _, exists := c.Listeners[path]; !exists {
-		if err := c.NewEListener(path); err != nil {
+func (c *Client) NewHandler(path string) error {
+	if _, exists := c.Handlers[path]; !exists {
+		if err := c.NewEHandler(path); err != nil {
 			return err
 		}
 	} else {
@@ -102,22 +102,34 @@ func (c *Client) setupListener(itemPath string) (chan monitor.Event, chan bool, 
 
 // start an event handler for a given file.
 // will be a no-op if the handler does not exist.
-func (c *Client) StartListener(path string) error {
-	if listener, exists := c.Listeners[path]; exists {
-		listener()
+func (c *Client) StartHandler(path string) error {
+	if handler, exists := c.Handlers[path]; exists {
+		handler()
 	}
 	return nil
 }
 
 // start all available listeners
-func (c *Client) StartListeners() error {
+func (c *Client) StartHandlers() error {
+	// start file handlers
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		log.Print("[INFO] no files to start listeners for")
 		return nil
 	}
+	log.Printf("[INFO] starting %d file handler(s)...", len(files))
 	for _, f := range files {
-		if err := c.StartListener(f.Path); err != nil {
+		if err := c.StartHandler(f.Path); err != nil {
+			return err
+		}
+	}
+	// start directory handlers
+	dirs := c.Drive.GetDirs()
+	if len(dirs) == 0 {
+		return nil
+	}
+	log.Printf("[INFO] starting %d directory handler(s)...", len(dirs))
+	for _, d := range dirs {
+		if err := c.StartHandler(d.Path); err != nil {
 			return err
 		}
 	}
@@ -129,8 +141,8 @@ func (c *Client) StopListener(itemPath string) error {
 	if _, ok := c.OffSwitches[itemPath]; ok {
 		c.OffSwitches[itemPath] <- true
 	}
-	if _, ok := c.Listeners[itemPath]; ok {
-		c.Listeners[itemPath] = nil
+	if _, ok := c.Handlers[itemPath]; ok {
+		c.Handlers[itemPath] = nil
 	}
 	return nil
 }
@@ -141,16 +153,13 @@ func (c *Client) StopListeners() {
 	for _, off := range c.OffSwitches {
 		off <- true
 	}
-	for path := range c.Listeners {
-		c.Listeners[path] = nil
-	}
-	c.Wg.Wait()
+	c.DestroyListeners()
 }
 
 // remove all listener instances
 func (c *Client) DestroyListeners() {
-	for path := range c.Listeners {
-		c.Listeners[path] = nil
+	for path := range c.Handlers {
+		c.Handlers[path] = nil
 	}
 }
 
@@ -160,15 +169,15 @@ func (c *Client) DestroyListeners() {
 // are present during the build call then this will be a no-op.
 //
 // should ideally only be called once during initialization
-func (c *Client) BuildListeners() error {
+func (c *Client) BuildHandlers() error {
 	// TODO: we should ideally be using c.Drive.GetFiles()
 	files, err := c.Db.GetUsersFiles(c.UserID)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
-		if _, exists := c.Listeners[file.Path]; !exists {
-			if err := c.NewEListener(file.Path); err != nil {
+		if _, exists := c.Handlers[file.Path]; !exists {
+			if err := c.NewEHandler(file.Path); err != nil {
 				return err
 			}
 		}
@@ -178,27 +187,25 @@ func (c *Client) BuildListeners() error {
 
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
-func (c *Client) NewEListener(path string) error {
+func (c *Client) NewEHandler(path string) error {
 	// listener off-switch
 	offSwitch := make(chan bool)
-	// listener
-	listener := func() {
-		// start listener
+	// handler
+	handler := func() {
 		go func() {
-			if err := c.listener(path, offSwitch); err != nil {
+			if err := c.handler(path, offSwitch); err != nil {
 				log.Printf("[ERROR] listener failed: %v", err)
 			}
 		}()
 	}
-	c.Wg.Add(1)
-	c.Listeners[path] = listener
+	c.Handlers[path] = handler
 	c.OffSwitches[path] = offSwitch
 	return nil
 }
 
-// dedicated listener for item events.
+// dedicated handler for item events.
 // items can be either files or directories.
-func (c *Client) listener(itemPath string, stop chan bool) error {
+func (c *Client) handler(itemPath string, stop chan bool) error {
 	// get all necessary params for the event listener.
 	evtChan, off, itemID, evts, err := c.setupListener(itemPath)
 	if err != nil {
@@ -209,7 +216,6 @@ func (c *Client) listener(itemPath string, stop chan bool) error {
 		select {
 		case <-stop:
 			log.Printf("[INFO] stopping event handler for item id=%v ...", itemID)
-			c.Wg.Done()
 			return nil
 		case e := <-evtChan:
 			switch e.Type {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -442,7 +443,7 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 		&d.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows found for dir: %s", dirPath)
+			log.Printf("[DEBUG] no rows found for dir: %s", filepath.Base(dirPath))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)

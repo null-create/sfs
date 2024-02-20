@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -27,6 +26,7 @@ root/
 |	  |---root/     <------ users files and directories live here
 |	  |---state/
 |   |   |---client-state-d-m-y-hh-mm-ss.json
+|   |---recycle/   <------ "deleted" files and directories live here.
 |   |---dbs/
 |   |   |---users
 |   |   |---files
@@ -62,9 +62,10 @@ func Setup() (*Client, error) {
 		filepath.Join(svcDir, "dbs"),
 		filepath.Join(svcDir, "root"),
 		filepath.Join(svcDir, "state"),
+		filepath.Join(svcDir, "recycle"),
 	}
-	for _, svcPath := range svcPaths {
-		if err := os.Mkdir(svcPath, svc.PERMS); err != nil {
+	for _, dirPath := range svcPaths {
+		if err := os.Mkdir(dirPath, svc.PERMS); err != nil {
 			return nil, err
 		}
 	}
@@ -235,8 +236,7 @@ func LoadClient(persist bool) (*Client, error) {
 	// sometimes we just need to load for the the data or
 	// a few one-off interactions with the server.
 	if persist {
-		client.Wg = new(sync.WaitGroup)
-		client.Listeners = make(map[string]func())
+		client.Handlers = make(map[string]func())
 		client.OffSwitches = make(map[string]chan bool)
 
 		// add monitoring component
@@ -245,8 +245,12 @@ func LoadClient(persist bool) (*Client, error) {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}
 		// initialize handlers map
-		if err := client.BuildListeners(); err != nil {
+		if err := client.BuildHandlers(); err != nil {
 			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
+		}
+		// start event handlers
+		if err := client.StartHandlers(); err != nil {
+			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
 
 		// TODO: pull sync index from server and compare against local index,
@@ -303,12 +307,11 @@ func NewClient(user *auth.User) (*Client, error) {
 		Root:        filepath.Join(svcRoot, "root"),
 		SfDir:       filepath.Join(svcRoot, "state"),
 		Endpoints:   make(map[string]string),
-		Wg:          new(sync.WaitGroup),
 		Monitor:     monitor.NewMonitor(drv.Root.Path),
 		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		Listeners:   make(map[string]func()),
+		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
 		Transfer:    transfer.NewTransfer(),
 		Client: &http.Client{
@@ -348,10 +351,10 @@ func NewClient(user *auth.User) (*Client, error) {
 	}
 
 	// build and start monitoring event handlers
-	if err := c.BuildListeners(); err != nil {
+	if err := c.BuildHandlers(); err != nil {
 		return nil, fmt.Errorf("failed to build event handlers: %v", err)
 	}
-	if err := c.StartListeners(); err != nil {
+	if err := c.StartHandlers(); err != nil {
 		return nil, fmt.Errorf("failed to start event handlers: %v", err)
 	}
 

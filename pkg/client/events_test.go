@@ -57,13 +57,13 @@ func TestStartHandler(t *testing.T) {
 	}
 
 	// create a new handler and start listening for file events from the monitor
-	if err := client.NewListener(file.Path); err != nil {
+	if err := client.NewHandler(file.Path); err != nil {
 		if err2 := Clean(t, GetTestingDir()); err2 != nil {
 			t.Fatal(err2)
 		}
 		Fail(t, tmpDir, err)
 	}
-	if err = client.StartListener(file.Path); err != nil {
+	if err = client.StartHandler(file.Path); err != nil {
 		if err2 := Clean(t, GetTestingDir()); err2 != nil {
 			t.Fatal(err2)
 		}

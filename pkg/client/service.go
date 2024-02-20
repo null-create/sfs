@@ -94,7 +94,7 @@ func (c *Client) Exists(path string) bool {
 func (c *Client) ListLocalFiles() {
 	files := c.Drive.GetFiles()
 	for _, f := range files {
-		output := fmt.Sprintf("id: %s\n name: %s\n loc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		output := fmt.Sprintf("id: %s\nname: %s\nloc: %s\n", f.ID, f.Name, f.ClientPath)
 		fmt.Print(output)
 	}
 }
@@ -106,7 +106,7 @@ func (c *Client) ListLocalFilesDB() error {
 		return err
 	}
 	for _, f := range files {
-		fmt.Printf("id: %s\n name: %s\n loc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		fmt.Printf("id: %s\nname: %s\nloc: %s\n", f.ID, f.Name, f.ClientPath)
 	}
 	return nil
 }

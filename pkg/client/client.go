@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
 	"time"
 
@@ -28,7 +27,7 @@ type Client struct {
 	UserID     string     `json:"user_id"`        // usersID for this client
 	Root       string     `json:"root"`           // path to root sfs directory for users files and directories
 	SfDir      string     `json:"state_file_dir"` // path to state file
-	RecycleBin string     `json:"recycle_bin"`    // path to recycle bin
+	RecycleBin string     `json:"recycle_bin"`    // path to recycle bin. "deleted" items live here.
 
 	DriveID string     `json:"drive_id"` // drive ID for this client
 	Drive   *svc.Drive `json:"drive"`    // client drive for managing users files and directories
@@ -45,12 +44,9 @@ type Client struct {
 	// listener that checks for file or directory events
 	Monitor *monitor.Monitor `json:"-"`
 
-	// wait group for managing event listeners
-	Wg *sync.WaitGroup `json:"-"`
-
-	// map of active event listeners for individual files and directories
-	// key == item path, value == event listener function
-	Listeners map[string]func() `json:"-"`
+	// map of active event handlers for individual files and directories
+	// key == item path, value == event handler function
+	Handlers map[string]func() `json:"-"`
 
 	// map of listener off switches. used during shutdown.
 	// key == filepath, value == chan bool
@@ -96,7 +92,6 @@ func (c *Client) SaveState() error {
 // shutdown client side services
 func (c *Client) ShutDown() {
 	c.StopMonitoring()
-	c.DestroyListeners()
 	if err := c.SaveState(); err != nil {
 		log.Printf("[ERROR] failed to save state file: %v", err)
 	}
@@ -125,7 +120,7 @@ func (c *Client) start(shutDown chan os.Signal) error {
 	}
 
 	// start monitoring event handlers
-	if err := c.StartListeners(); err != nil {
+	if err := c.StartHandlers(); err != nil {
 		return fmt.Errorf("failed to start event handlers: %v", err)
 	}
 

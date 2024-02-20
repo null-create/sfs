@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -26,14 +25,11 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 // arbitrary wait time between checks
 const WAIT = time.Millisecond * 250
 
-type Watcher func(string, *sync.WaitGroup, chan bool) chan Event
+type Watcher func(string, chan bool) chan Event
 
 type Monitor struct {
 	// path to the users drive root to monitor
 	Path string
-
-	// waitgroup for managing item watchers
-	Wg *sync.WaitGroup
 
 	// map of channels to active watchers.
 	// key is the absolute file path, value is the channel to the watchFile()
@@ -56,7 +52,6 @@ type Monitor struct {
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
 		Path:        drvRoot,
-		Wg:          new(sync.WaitGroup),
 		Events:      make(map[string]chan Event),
 		Watchers:    make(map[string]Watcher),
 		OffSwitches: make(map[string]chan bool),
@@ -109,9 +104,9 @@ func (m *Monitor) AddWatcher(path string, watcher Watcher) {
 }
 
 // start a watcher goroutine for a given path.
-func (m *Monitor) StartWatcher(path string, wg *sync.WaitGroup, stop chan bool) {
+func (m *Monitor) StartWatcher(path string, stop chan bool) {
 	if m.IsMonitored(path) {
-		evts := m.Watchers[path](path, wg, stop)
+		evts := m.Watchers[path](path, stop)
 		m.Events[path] = evts
 	}
 }
@@ -136,7 +131,7 @@ func (m *Monitor) WatchItem(path string) error {
 		} else {
 			m.AddWatcher(path, watchFile)
 		}
-		m.StartWatcher(path, m.Wg, stop)
+		m.StartWatcher(path, stop)
 	}
 	return nil
 }
@@ -196,14 +191,13 @@ func (m *Monitor) ShutDown() {
 	for path := range m.OffSwitches {
 		m.OffSwitches[path] <- true
 	}
-	m.Wg.Wait()
 }
 
 // ----------------------------------------------------------------------------
 
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
-func watchFile(filePath string, wg *sync.WaitGroup, stop chan bool) chan Event {
+func watchFile(filePath string, stop chan bool) chan Event {
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
 		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(filePath), err)
@@ -221,14 +215,12 @@ func watchFile(filePath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 			case <-stop:
 				log.Printf("[INFO] shutting down monitoring for %s...", filePath)
 				close(evt)
-				wg.Done()
 				return
 			default:
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, baseName)
 					close(evt)
-					wg.Done()
 					return
 				}
 				switch {
@@ -241,7 +233,6 @@ func watchFile(filePath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 						Path: filePath,
 					}
 					close(evt)
-					wg.Done()
 					return
 				// file size change
 				case stat.Size() != initialStat.Size():
@@ -291,12 +282,11 @@ func watchFile(filePath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 		log.Printf("[INFO] monitoring %s...", baseName)
 		watcher()
 	}()
-	wg.Add(1)
 	return evt
 }
 
 // watch for changes in a directory
-func watchDir(dirPath string, wg *sync.WaitGroup, stop chan bool) chan Event {
+func watchDir(dirPath string, stop chan bool) chan Event {
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -319,13 +309,11 @@ func watchDir(dirPath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 			select {
 			case <-stop:
 				log.Printf("[INFO] stopping monitor for %s...", filepath.Base(dirPath))
-				wg.Done()
 				return
 			default:
 				currItems, err := os.ReadDir(dirPath)
 				if err != nil {
 					log.Printf("[ERROR] failed to read directory: %v", err)
-					wg.Done()
 					return
 				}
 				switch {
@@ -337,7 +325,6 @@ func watchDir(dirPath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 						Path: dirPath,
 					}
 					close(evt)
-					wg.Done()
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
@@ -370,7 +357,6 @@ func watchDir(dirPath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 		log.Printf("[INFO] monitoring %s...", filepath.Base(dirPath))
 		watcher()
 	}()
-	wg.Add(1)
 
 	return evt
 }
