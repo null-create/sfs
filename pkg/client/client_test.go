@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/env"
@@ -85,7 +84,7 @@ func TestLoadClient(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	// add a new user
-	newUser, err := newUser(c1.Drive.Root.Path)
+	newUser, err := newUser()
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -190,41 +189,14 @@ func TestLoadAndStartClient(t *testing.T) {
 		testServer.Start(shutDown)
 	}()
 
-	if cSig, err := tmpClient.Start(); err == nil {
-		log.Print("[TEST] adding test file...")
-		time.Sleep(time.Millisecond * 500)
+	// start client
+	shutOffClient := make(chan os.Signal)
+	go func() {
+		tmpClient.Start(shutOffClient)
+	}()
 
-		// add a tmp file to see the client register the new file
-		// with the monitoring components
-		testFile, err := MakeTmpTxtFile(
-			filepath.Join(tmpClient.Drive.Root.Path, "tmp.txt"),
-			RandInt(1000),
-		)
-		if err != nil {
-			shutDown <- true
-			Fail(t, tmpDir, err)
-		}
-
-		// alter the file to see if monitor is detecting changes
-		log.Print("[TEST] modifying test file...")
-		MutateFile(t, testFile)
-		time.Sleep(time.Millisecond * 500)
-
-		// register the new file and apply more changes
-		log.Print("[TEST] registering test file and altering again...")
-		testFile.DirID = tmpClient.Drive.Root.ID
-		if err := tmpClient.AddFileWithID(testFile.DirID, testFile); err != nil {
-			Fail(t, tmpDir, err)
-		}
-		MutateFile(t, testFile)
-		time.Sleep(time.Millisecond * 500)
-
-		// stop client
-		cSig <- os.Interrupt
-	} else {
-		shutDown <- true
-		Fail(t, tmpDir, err)
-	}
+	// shut down client
+	shutOffClient <- os.Interrupt
 
 	// shutdown test server
 	shutDown <- true

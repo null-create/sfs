@@ -29,6 +29,54 @@ func (c *Client) GetUserInfo() string {
 	return string(data)
 }
 
+// ------ service --------------------------------
+
+// add a file or directory to the local SFS service
+// does not add the file to the SFS server.
+func (c *Client) AddItem(itemPath string) error {
+	item, err := os.Stat(itemPath)
+	if err != nil {
+		return err
+	}
+	if item.IsDir() {
+		if err := c.AddDir(itemPath); err != nil {
+			return err
+		}
+	} else {
+		if err := c.AddFile(itemPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// remove an item from the local SFS service.
+// does not remove the item from the server.
+func (c *Client) RemoveItem(itemPath string) error {
+	item, err := os.Stat(itemPath)
+	if err != nil {
+		return err
+	}
+	if item.IsDir() {
+		dir, err := c.Db.GetDirectoryByPath(itemPath)
+		if err != nil {
+			return err
+		}
+		if err := c.RemoveDir(dir); err != nil {
+			return err
+		}
+	} else {
+		file, err := c.Db.GetFileByPath(itemPath)
+		if err != nil {
+			return nil
+		}
+		if err := c.RemoveFile(file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ----- files --------------------------------------
 
 func (c *Client) Exists(path string) bool {
@@ -131,21 +179,6 @@ func (c *Client) GetFileByName(name string) (*svc.File, error) {
 	return file, nil
 }
 
-// add a new file to a specified directory using a directory ID.
-// adds file to database and monitoring services.
-func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
-	if err := c.Drive.AddFile(dirID, file); err != nil {
-		return err
-	}
-	if err := c.Db.AddFile(file); err != nil {
-		return err
-	}
-	if err := c.WatchItem(file.ClientPath); err != nil {
-		return err
-	}
-	return nil
-}
-
 // TODO: add a file to the service using its file path.
 // should check for whether the directory it resides in is
 // monitored by SFS -- though not contingent on it!
@@ -153,6 +186,8 @@ func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
 // SFS should be able to monitor files outside of the designated root directory.
 // if we add a file this way then we should automatically make a backup of it
 // in the SFS root directory with each detected change.
+
+// add a file to the client-side service. does not push file to server.
 func (c *Client) AddFile(filePath string) error {
 	// see if we already have this file in the system
 	file, err := c.Db.GetFileByPath(filePath)
@@ -166,7 +201,7 @@ func (c *Client) AddFile(filePath string) error {
 	// create new file object
 	newFile := svc.NewFile(filepath.Base(filePath), c.DriveID, c.UserID, filePath)
 
-	// see if we already have this directory in the filesystem
+	// see if we already have the file's parent directory in the file system
 	nfDir := filepath.Dir(filePath)
 	dir, err := c.GetDirByPath(nfDir)
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
@@ -190,6 +225,25 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	if err := c.Db.AddFile(newFile); err != nil {
+		return err
+	}
+	// add file to monitoring system
+	if err := c.WatchItem(newFile.ClientPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+// add a new file to a specified directory using a directory ID.
+// adds file to database and monitoring services.
+func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
+	if err := c.Drive.AddFile(dirID, file); err != nil {
+		return err
+	}
+	if err := c.Db.AddFile(file); err != nil {
+		return err
+	}
+	if err := c.WatchItem(file.ClientPath); err != nil {
 		return err
 	}
 	return nil
@@ -229,8 +283,12 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 }
 
 // remove a file in a specied directory.
-func (c *Client) RemoveFile(dirID string, file *svc.File) error {
-	if err := c.Drive.RemoveFile(dirID, file); err != nil {
+func (c *Client) RemoveFile(file *svc.File) error {
+	// stop monitoring the file
+	c.Monitor.CloseChan(file.Path)
+
+	// remove from drive and database
+	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
 	}
 	if err := c.Db.RemoveFile(file.ID); err != nil {
@@ -334,15 +392,11 @@ func (c *Client) AddDir(dirPath string) error {
 }
 
 // remove a directory from local and remote service instances.
-func (c *Client) RemoveDir(dirID string) error {
-	dir := c.Drive.GetDir(dirID)
-	if dir == nil {
-		return fmt.Errorf("no such dir: %v", dirID)
-	}
-	if err := c.Drive.RemoveDir(dirID); err != nil {
+func (c *Client) RemoveDir(dir *svc.Directory) error {
+	if err := c.Drive.RemoveDir(dir.ID); err != nil {
 		return err
 	}
-	if err := c.Db.RemoveDirectory(dirID); err != nil {
+	if err := c.Db.RemoveDirectory(dir.ID); err != nil {
 		return err
 	}
 
@@ -370,7 +424,8 @@ func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	return nil
 }
 
-func (c *Client) GetDirectory(dirID string) (*svc.Directory, error) {
+// get a directory using its SFS ID
+func (c *Client) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 	dir := c.Drive.GetDir(dirID)
 	if dir == nil {
 		return nil, fmt.Errorf("directory %v not found", dirID)
@@ -412,7 +467,7 @@ func (c *Client) LoadDrive() error {
 	if drive == nil {
 		return fmt.Errorf("no drive found")
 	}
-	root, err := c.Db.GetDirectory(drive.RootID)
+	root, err := c.Db.GetDirectoryByID(drive.RootID)
 	if err != nil {
 		return err
 	}
@@ -552,10 +607,12 @@ func (c *Client) RefreshDrive() error {
 	return nil
 }
 
-// descends users directory tree and compares what it finds
+// descends users sfs directory tree and compares what it finds
 // to what is in the database. if a new file or directory is found
 // along the way it will be added to the database and new objects
 // will created for them.
+//
+// does not account for files or directories not stored in the sfs file system!
 func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
@@ -574,7 +631,7 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 		}
 		// add directory then recurse
 		if item.IsDir() {
-			subDir, err := c.Db.GetDirectoryByName(item.Name())
+			subDir, err := c.Db.GetDirectoryByPath(entryPath)
 			if err != nil {
 				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
 				continue
@@ -592,7 +649,7 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 				}
 			}
 		} else {
-			file, err := c.Db.GetFileByName(item.Name())
+			file, err := c.Db.GetFileByPath(entryPath)
 			if err != nil {
 				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
 				continue
@@ -600,6 +657,7 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 			// new file
 			if file == nil {
 				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, entryPath)
+				newFile.DirID = dir.ID
 				if err := c.Db.AddFile(newFile); err != nil {
 					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
 					continue // TEMP until there's a better way to handle this error

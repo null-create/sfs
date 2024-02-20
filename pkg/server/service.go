@@ -210,7 +210,7 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 		}
 		// add directory then recurse
 		if item.IsDir() {
-			subDir, err := s.Db.GetDirectoryByName(item.Name())
+			subDir, err := s.Db.GetDirectoryByPath(entryPath)
 			if err != nil {
 				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
 				continue
@@ -221,7 +221,7 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 			subDir = s.populate(subDir)
 			dir.AddSubDir(subDir)
 		} else { // add file
-			file, err := s.Db.GetFileByName(item.Name())
+			file, err := s.Db.GetFileByPath(entryPath)
 			if err != nil {
 				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
 				continue
@@ -230,7 +230,7 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 				continue // not found
 			}
 			if err := dir.AddFile(file); err != nil {
-				log.Printf("[ERROR] could not add file (id=%s): %v", item.Name(), err)
+				log.Printf("[ERROR] could not add file %s (id=%s): %v", file.Name, file.ID, err)
 			}
 		}
 	}
@@ -244,7 +244,7 @@ func (s *Service) RefreshDrive(driveID string) error {
 	if s.DriveExists(driveID) {
 		// get current full drive state
 		drive := s.GetDrive(driveID)
-		if drive.Root.IsNil() {
+		if !drive.IsLoaded {
 			// load and populate the root directory if needed
 			root, err := s.loadRoot(drive.RootID)
 			if err != nil {
@@ -307,7 +307,8 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 			}
 			// new file
 			if file == nil {
-				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, filepath.Join(dir.Path, item.Name()))
+				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, entryPath)
+				newFile.DirID = dir.ID
 				if err := s.Db.AddFile(newFile); err != nil {
 					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
 					continue // TEMP until there's a better way to handle this error
@@ -341,9 +342,9 @@ func (s *Service) SaveDrive(drv *svc.Drive) error {
 	return nil
 }
 
-// load and populate the root directory if needed
+// load and populate the root directory
 func (s *Service) loadRoot(rootID string) (*svc.Directory, error) {
-	root, err := s.Db.GetDirectory(rootID)
+	root, err := s.Db.GetDirectoryByID(rootID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get root directory: %v", err)
 	}
@@ -364,7 +365,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	if drive == nil {
 		return nil, fmt.Errorf("drive %s not found", driveID)
 	}
-	root, err := s.Db.GetDirectory(drive.RootID)
+	root, err := s.Db.GetDirectoryByID(drive.RootID)
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,11 +13,14 @@ import (
 	"github.com/sfs/pkg/env"
 )
 
+var wg *sync.WaitGroup
+
 // creates a new listener goroutine and checks received events
 func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
+		defer wg.Done()
 		log.Printf("[TEST] listening for %s events...", filepath.Base(path))
-		fileChan := watchFile(path, stopMonitor)
+		fileChan := watchFile(path, wg, stopMonitor)
 		for {
 			select {
 			case evt := <-fileChan:
@@ -38,12 +42,14 @@ func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener
 			}
 		}
 	}()
+	wg.Add(1)
 }
 
 func testMonitorListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
+		defer wg.Done()
 		log.Print("[TEST] monitoring directory: " + filepath.Base(path))
-		dirChan := watchDir(path, stopMonitor)
+		dirChan := watchDir(path, wg, stopMonitor)
 		for {
 			select {
 			case evt := <-dirChan:
@@ -66,6 +72,7 @@ func testMonitorListener(t *testing.T, path string, stopMonitor chan bool, stopL
 			}
 		}
 	}()
+	wg.Add(1)
 }
 
 // starts a new testListner for a given file.

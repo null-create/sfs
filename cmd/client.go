@@ -14,7 +14,6 @@ import (
 type ClientFlagPole struct {
 	new     bool   // create a new client
 	start   bool   // start a client
-	stop    bool   // stop a client
 	local   bool   // list all local files managed by SFS
 	remote  bool   // list all remote files managed by SFS
 	refresh bool   // refresh local drive
@@ -24,8 +23,6 @@ type ClientFlagPole struct {
 }
 
 var (
-	shutdown chan os.Signal // shutdown signal
-
 	clientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "Execute SFS Client Commands",
@@ -37,7 +34,6 @@ func init() {
 	flags := ClientFlagPole{}
 	clientCmd.PersistentFlags().BoolVar(&flags.new, "new", false, "Initialize a new client service instance")
 	clientCmd.PersistentFlags().BoolVar(&flags.start, "start", false, "Start client services")
-	clientCmd.PersistentFlags().BoolVar(&flags.stop, "stop", false, "Stop client services")
 	clientCmd.PersistentFlags().BoolVar(&flags.local, "local", false, "List local files managed by SFS service")
 	clientCmd.PersistentFlags().BoolVar(&flags.remote, "remote", false, "List remote files managed by SFSService")
 	clientCmd.PersistentFlags().BoolVar(&flags.refresh, "refresh", false, "Refresh drive. will search and add newly discovered files and directories")
@@ -62,7 +58,6 @@ func init() {
 func getflags(cmd *cobra.Command) ClientFlagPole {
 	new, _ := cmd.Flags().GetBool("new")
 	start, _ := cmd.Flags().GetBool("start")
-	stop, _ := cmd.Flags().GetBool("stop")
 	local, _ := cmd.Flags().GetBool("local")
 	remote, _ := cmd.Flags().GetBool("remote")
 	refresh, _ := cmd.Flags().GetBool("refresh")
@@ -73,7 +68,6 @@ func getflags(cmd *cobra.Command) ClientFlagPole {
 	return ClientFlagPole{
 		new:     new,
 		start:   start,
-		stop:    stop,
 		local:   local,
 		remote:  remote,
 		refresh: refresh,
@@ -96,13 +90,11 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			showerr(err)
 		}
-		off, err := c.Start()
+		var shutdown = make(chan os.Signal)
+		err = c.Start(shutdown)
 		if err != nil {
 			showerr(err)
 		}
-		shutdown = off
-	case f.stop:
-		shutdown <- os.Kill
 	case f.local:
 		c, err := client.LoadClient(false)
 		if err != nil {
@@ -112,7 +104,7 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 			showerr(err)
 		}
 	case f.remote:
-		c, err := client.LoadClient(true)
+		c, err := client.LoadClient(false)
 		if err != nil {
 			showerr(err)
 		}

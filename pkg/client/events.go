@@ -60,25 +60,51 @@ func (c *Client) NewListener(path string) error {
 func (c *Client) setupListener(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
 	evtChan := c.Monitor.GetEventChan(itemPath)
 	offSwitch := c.Monitor.GetOffSwitch(itemPath)
-	itemID, err := c.Db.GetFileID(itemPath) // NOTE this is only for files! not directories
+
+	thing, err := os.Stat(itemPath)
 	if err != nil {
 		return nil, nil, "", nil, err
 	}
-	if evtChan == nil || offSwitch == nil || itemID == "" {
+	var id string
+	if thing.IsDir() {
+		itemID, err := c.Db.GetDirIDFromPath(itemPath)
+		if err != nil {
+			return nil, nil, "", nil, err
+		}
+		if itemID == "" {
+			return nil, nil, "", nil, fmt.Errorf("no id found for directory %s", itemPath)
+		}
+		id = itemID
+	} else {
+		itemID, err := c.Db.GetFileID(itemPath)
+		if err != nil {
+			return nil, nil, "", nil, err
+		}
+		if itemID == "" {
+			return nil, nil, "", nil, fmt.Errorf("no id found for file %s", itemPath)
+		}
+		id = itemID
+	}
+	if evtChan == nil || offSwitch == nil || id == "" {
 		return nil, nil, "", nil, fmt.Errorf(
 			"failed to get param: evt=%v off=%v id=%s",
-			evtChan, offSwitch, itemID,
+			evtChan, offSwitch, id,
 		)
 	}
+
+	// new events buffer.
+	// used for triggering synchronization events between the
+	// client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
-	return evtChan, offSwitch, itemID, evts, nil
+
+	return evtChan, offSwitch, id, evts, nil
 }
 
 // start an event handler for a given file.
 // will be a no-op if the handler does not exist.
 func (c *Client) StartListener(path string) error {
-	if handler, exists := c.Listeners[path]; exists {
-		handler()
+	if listener, exists := c.Listeners[path]; exists {
+		listener()
 	}
 	return nil
 }
@@ -98,11 +124,33 @@ func (c *Client) StartListeners() error {
 	return nil
 }
 
+// stop an existening event listener.
+func (c *Client) StopListener(itemPath string) error {
+	if _, ok := c.OffSwitches[itemPath]; ok {
+		c.OffSwitches[itemPath] <- true
+	}
+	if _, ok := c.Listeners[itemPath]; ok {
+		c.Listeners[itemPath] = nil
+	}
+	return nil
+}
+
 // stops all event handler goroutines.
 func (c *Client) StopListeners() {
 	log.Printf("[INFO] shutting down event listeners...")
 	for _, off := range c.OffSwitches {
 		off <- true
+	}
+	for path := range c.Listeners {
+		c.Listeners[path] = nil
+	}
+	c.Wg.Wait()
+}
+
+// remove all listener instances
+func (c *Client) DestroyListeners() {
+	for path := range c.Listeners {
+		c.Listeners[path] = nil
 	}
 }
 
@@ -113,9 +161,10 @@ func (c *Client) StopListeners() {
 //
 // should ideally only be called once during initialization
 func (c *Client) BuildListeners() error {
-	files := c.Drive.GetFiles()
-	if len(files) == 0 {
-		return nil
+	// TODO: we should ideally be using c.Drive.GetFiles()
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
 	}
 	for _, file := range files {
 		if _, exists := c.Listeners[file.Path]; !exists {
@@ -138,12 +187,10 @@ func (c *Client) NewEListener(path string) error {
 		go func() {
 			if err := c.listener(path, offSwitch); err != nil {
 				log.Printf("[ERROR] listener failed: %v", err)
-				// shut down monitoring thread for this event handler.
-				// all monitoring threads must have a dedicated handler.
-				c.Monitor.CloseChan(path)
 			}
 		}()
 	}
+	c.Wg.Add(1)
 	c.Listeners[path] = listener
 	c.OffSwitches[path] = offSwitch
 	return nil
@@ -152,9 +199,7 @@ func (c *Client) NewEListener(path string) error {
 // dedicated listener for item events.
 // items can be either files or directories.
 func (c *Client) listener(itemPath string, stop chan bool) error {
-	// get all necessary params for the handler
-	// TODO: setupHandler needs to differentiate between files and directories.
-	// currently only looks for files.
+	// get all necessary params for the event listener.
 	evtChan, off, itemID, evts, err := c.setupListener(itemPath)
 	if err != nil {
 		return err
@@ -164,6 +209,7 @@ func (c *Client) listener(itemPath string, stop chan bool) error {
 		select {
 		case <-stop:
 			log.Printf("[INFO] stopping event handler for item id=%v ...", itemID)
+			c.Wg.Done()
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
@@ -201,7 +247,7 @@ func (c *Client) listener(itemPath string, stop chan bool) error {
 					break
 				}
 				evts.AddEvent(e)
-			// item size changevedbooboo
+			// item size changed
 			case monitor.Size:
 				if err := c.apply(e.Path, "size"); err != nil {
 					log.Printf("[ERROR] failed to apply action: %v", err)
@@ -278,8 +324,9 @@ func (c *Client) apply(itemPath string, action string) error {
 				return err
 			}
 		case "change":
+			break
 		case "delete":
-			if err := c.RemoveDir(dir.ID); err != nil {
+			if err := c.RemoveDir(dir); err != nil {
 				return err
 			}
 		default:
@@ -312,8 +359,9 @@ func (c *Client) apply(itemPath string, action string) error {
 				return err
 			}
 		case "change":
+			break
 		case "delete":
-			if err := c.RemoveFile(file.DirID, file); err != nil {
+			if err := c.RemoveFile(file); err != nil {
 				return err
 			}
 		default:

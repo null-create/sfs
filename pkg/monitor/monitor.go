@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -29,6 +30,9 @@ type Monitor struct {
 	// path to the users drive root to monitor
 	Path string
 
+	// waitgroup for managing item watchers
+	Wg *sync.WaitGroup
+
 	// map of channels to active listeners.
 	// key is the absolute file path, value is the channel to the watchFile()
 	// or watchDir() goroutine associated with that file or directory
@@ -46,6 +50,7 @@ type Monitor struct {
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
 		Path:        drvRoot,
+		Wg:          new(sync.WaitGroup),
 		Events:      make(map[string]chan Event),
 		OffSwitches: make(map[string]chan bool),
 	}
@@ -102,13 +107,12 @@ func (m *Monitor) WatchItem(path string) error {
 		if err != nil {
 			return err
 		}
-		// add stop channel before starting monitoring
 		stop := make(chan bool)
 		m.OffSwitches[path] = stop
 		if isdir {
-			m.Events[path] = watchDir(path, stop)
+			m.Events[path] = watchDir(path, m.Wg, stop)
 		} else {
-			m.Events[path] = watchFile(path, stop)
+			m.Events[path] = watchFile(path, m.Wg, stop)
 		}
 	}
 	return nil
@@ -168,13 +172,14 @@ func (m *Monitor) ShutDown() {
 	for path := range m.OffSwitches {
 		m.OffSwitches[path] <- true
 	}
+	m.Wg.Wait()
 }
 
 // ----------------------------------------------------------------------------
 
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
-func watchFile(filePath string, stop chan bool) chan Event {
+func watchFile(filePath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
 		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(filePath), err)
@@ -192,12 +197,14 @@ func watchFile(filePath string, stop chan bool) chan Event {
 			case <-stop:
 				log.Printf("[INFO] shutting down monitoring for %s...", filePath)
 				close(evt)
+				wg.Done()
 				return
 			default:
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, baseName)
 					close(evt)
+					wg.Done()
 					return
 				}
 				switch {
@@ -210,6 +217,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 						Path: filePath,
 					}
 					close(evt)
+					wg.Done()
 					return
 				// file size change
 				case stat.Size() != initialStat.Size():
@@ -259,11 +267,12 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		log.Printf("[INFO] monitoring %s...", baseName)
 		watcher()
 	}()
+	wg.Add(1)
 	return evt
 }
 
 // watch for changes in a directory
-func watchDir(dirPath string, stop chan bool) chan Event {
+func watchDir(dirPath string, wg *sync.WaitGroup, stop chan bool) chan Event {
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -286,11 +295,13 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 			select {
 			case <-stop:
 				log.Printf("[INFO] stopping monitor for %s...", filepath.Base(dirPath))
+				wg.Done()
 				return
 			default:
 				currItems, err := os.ReadDir(dirPath)
 				if err != nil {
 					log.Printf("[ERROR] failed to read directory: %v", err)
+					wg.Done()
 					return
 				}
 				switch {
@@ -302,6 +313,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 						Path: dirPath,
 					}
 					close(evt)
+					wg.Done()
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
@@ -334,6 +346,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 		log.Printf("[INFO] monitoring %s...", filepath.Base(dirPath))
 		watcher()
 	}()
+	wg.Add(1)
 
 	return evt
 }

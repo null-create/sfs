@@ -18,18 +18,16 @@ import (
 )
 
 // transfer handles the uploading and downloading of individual files
-// during synchronization events. one-off API calls are handled by
-// other client request implementations.
+// during synchronization events as well as one off file transfer
+// API calls.
 type Transfer struct {
-	Start  time.Time
 	Buffer *bytes.Buffer
 	Tok    *auth.Token
 	Client *http.Client
 }
 
-func NewTransfer(port int) *Transfer {
+func NewTransfer() *Transfer {
 	return &Transfer{
-		Start:  time.Now().UTC(),
 		Buffer: new(bytes.Buffer),
 		Tok:    auth.NewT(),
 		Client: &http.Client{
@@ -91,7 +89,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if _, err = fileWriter.Write(file.Content); err != nil {
 		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
-	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, file.Endpoint)
+	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, destURL)
 	if err != nil {
 		return err
 	}

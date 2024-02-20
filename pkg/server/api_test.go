@@ -111,7 +111,7 @@ func TestNewFileAPI(t *testing.T) {
 
 	// transfer file
 	log.Print("[TEST] uploading file...")
-	transfer := transfer.NewTransfer(8080)
+	transfer := transfer.NewTransfer()
 	if err := transfer.Upload(
 		http.MethodPost,
 		file,

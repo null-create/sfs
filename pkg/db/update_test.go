@@ -70,7 +70,7 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 		Fatal(t, fmt.Errorf("failed to update directory: %v", err))
 	}
 	// pull the dir from the db and make sure the name is accurate
-	d, err := q.GetDirectory(tmpDir.ID)
+	d, err := q.GetDirectoryByID(tmpDir.ID)
 	if err != nil {
 		Fatal(t, err)
 	}

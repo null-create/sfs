@@ -38,7 +38,6 @@ type Directory struct {
 	// size in MB
 	Size int64 `json:"size"`
 
-	// TODO: remove this
 	// absolute path to this directory.
 	// should be something like:
 	// .../sfs/user/root/../this_directory

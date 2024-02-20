@@ -349,7 +349,7 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 // retrieve information about a users directory from the database
 //
 // returns nil if no information is available
-func (q *Query) GetDirectory(dirID string) (*svc.Directory, error) {
+func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -450,9 +450,26 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 	return d, nil
 }
 
+// get a directory's ID from its absolute path.
+func (q *Query) GetDirIDFromPath(dirPath string) (string, error) {
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	var id string
+	if err := q.Conn.QueryRow(FindDirIDByPathQuery, dirPath).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[INFO] no dir ID found from path: %v", dirPath)
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to get dir id: %v", err)
+	}
+	return id, nil
+}
+
 // geta a slice of *all* directories on the server, regardless
 // of owner. only for admin users.
-func (q *Query) GetDirectories() ([]*svc.Directory, error) {
+func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -526,7 +543,6 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-
 	return d, nil
 }
 

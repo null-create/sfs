@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -25,7 +26,7 @@ type Client struct {
 
 	User   *auth.User `json:"user"`           // user object
 	UserID string     `json:"user_id"`        // usersID for this client
-	Root   string     `json:"root"`           // path to root drive for users files and directories
+	Root   string     `json:"root"`           // path to root sfs directory for users files and directories
 	SfDir  string     `json:"state_file_dir"` // path to state file
 
 	DriveID string     `json:"drive_id"` // drive ID for this client
@@ -42,6 +43,9 @@ type Client struct {
 
 	// listener that checks for file or directory events
 	Monitor *monitor.Monitor `json:"-"`
+
+	// wait group for managing event listeners
+	Wg *sync.WaitGroup
 
 	// map of active event listeners for individual files and directories
 	// key == item path, value == event listener function
@@ -89,17 +93,16 @@ func (c *Client) SaveState() error {
 }
 
 // shutdown client side services
-func (c *Client) ShutDown() error {
+func (c *Client) ShutDown() {
 	c.StopMonitoring()
-	c.StopListeners()
-	if err := c.SaveState(); err != nil {
-		return fmt.Errorf("failed to save state: %v", err)
-	}
-	return nil
+	c.DestroyListeners()
 }
 
 // start up client services. creates a blocking process
-// to facilitate monitoring and synchronization services.
+// to facilitate monitoring and synchronization services
+//
+// NOTE: the shutDown parameter is used for programmatic
+// testing purposes
 func (c *Client) start(shutDown chan os.Signal) error {
 	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
 		if err := c.LoadDrive(); err != nil {
@@ -113,7 +116,7 @@ func (c *Client) start(shutDown chan os.Signal) error {
 	}
 
 	// start monitoring services
-	if err := c.Monitor.Start(c.Drive.Root.Path); err != nil {
+	if err := c.Monitor.Start(c.Root); err != nil {
 		return fmt.Errorf("failed to start monitoring: %v", err)
 	}
 
@@ -132,17 +135,17 @@ func (c *Client) start(shutDown chan os.Signal) error {
 	// can actually run.
 	<-shutDown
 
-	// gracefully shutdown when we receive a signal.
-	return c.ShutDown()
+	// "gracefully" shutdown when we receive a signal.
+	c.ShutDown()
+	return nil
 }
 
 // start sfs client service. returns an chan os.Signal which
 // can be used to shut down the client (with ctrl-c, or some other syscall)
-func (c *Client) Start() (chan os.Signal, error) {
-	shutDown := make(chan os.Signal, 1)
+func (c *Client) Start(shutDown chan os.Signal) error {
 	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	if err := c.start(shutDown); err != nil {
 		log.Fatal(err)
 	}
-	return shutDown, nil
+	return nil
 }

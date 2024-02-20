@@ -62,7 +62,7 @@ func findUser(userID string, q *db.Query) (*auth.User, error) {
 
 // get directory data from db. dir will be nil if not found.
 func findDir(dirID string, q *db.Query) (*svc.Directory, error) {
-	d, err := q.GetDirectory(dirID)
+	d, err := q.GetDirectoryByID(dirID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func findDir(dirID string, q *db.Query) (*svc.Directory, error) {
 
 // get a slice of all directories from db. dir will be nil if none are found.
 func findAllTheDirs(q *db.Query) ([]*svc.Directory, error) {
-	dirs, err := q.GetDirectories()
+	dirs, err := q.GetAllDirectories()
 	if err != nil {
 		return nil, err
 	}

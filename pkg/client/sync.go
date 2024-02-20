@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
 	"sync"
@@ -206,47 +205,28 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 
 // ------- single-operation pushes and pulls from the server -------------
 
-// send a new (or updated) file to the server.
+// send a known file to the server. For new files, use PushNewFile() instead.
 func (c *Client) PushFile(file *svc.File) error {
-	// load file into fileWriter
-	var buf bytes.Buffer
-	bodyWriter := multipart.NewWriter(&buf)
-	defer bodyWriter.Close()
-
-	// load file data into fileWriter
-	fileWriter, err := bodyWriter.CreateFormFile("uploadfile", file.Name)
-	if err != nil {
+	if err := c.Transfer.Upload(
+		http.MethodPut,
+		file,
+		file.Endpoint,
+	); err != nil {
 		return err
 	}
-	if len(file.Content) == 0 {
-		file.Load()
-	}
-	if _, err = fileWriter.Write(file.Content); err != nil {
-		return fmt.Errorf("failed to retrieve file data: %v", err)
-	}
+	return nil
+}
 
-	// generate a request with file metadata
-	req, err := http.NewRequest(http.MethodPost, c.Endpoints["new file"], &buf)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %v", err)
-	}
-	reqToken, err := c.encodeFile(file)
-	if err != nil {
-		return fmt.Errorf("failed to create request token: %v", err)
-	}
-	req.Header.Set("Authorization", reqToken) // TODO: fix formatting. should be Bearer <token>
-	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
-	req.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name))
-
-	// send the file
-	resp, err := c.Client.Do(req)
-	if err != nil {
+// send a new file to the server. for updats to existing files,
+// use PushFile() instead.
+func (c *Client) PushNewFile(file *svc.File) error {
+	if err := c.Transfer.Upload(
+		http.MethodPost,
+		file,
+		c.Endpoints["new file"],
+	); err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] received non 200 response: %v", resp.StatusCode)
-	}
-	c.dump(resp, true)
 	return nil
 }
 
@@ -254,29 +234,12 @@ func (c *Client) PushFile(file *svc.File) error {
 // and that the client is intendending to update the local version of this file.
 //
 // not intended for new files discovered on the server -- this will be handled by a
-// separate function TBD
+// separate function PullNewFiles()
 func (c *Client) PullFile(file *svc.File) error {
-	resp, err := c.Client.Get(file.Endpoint)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[WARNING] received non 200 return code from server")
-		c.dump(resp, true)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	// copy file & update the database
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, resp.Body)
-	if err != nil {
-		return err
-	}
-	if err := file.Save(buf.Bytes()); err != nil {
-		return err
-	}
-	if err := c.Db.UpdateFile(file); err != nil {
+	if err := c.Transfer.Download(
+		file.ClientPath,
+		file.Endpoint,
+	); err != nil {
 		return err
 	}
 	return nil

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -74,7 +75,7 @@ func Setup() (*Client, error) {
 	}
 
 	// set up new user
-	newUser, err := newUser(svcDir)
+	newUser, err := newUser()
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +87,7 @@ func Setup() (*Client, error) {
 	}
 	newUser.DriveID = client.Drive.ID
 	newUser.DrvRoot = client.Drive.Root.Path
+	client.User = newUser
 
 	// save user, user's root, and drive to db
 	if err := client.Db.AddUser(newUser); err != nil {
@@ -108,7 +110,7 @@ func Setup() (*Client, error) {
 
 // pulls user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
-func newUser(drvRoot string) (*auth.User, error) {
+func newUser() (*auth.User, error) {
 	envCfg := env.NewE()
 	newUser := auth.NewUser(
 		cfgs.User,
@@ -162,7 +164,7 @@ func loadDrive(client *Client) error {
 	if drive == nil {
 		return fmt.Errorf("no drive found for user (id=%v)", client.UserID)
 	}
-	root, err := client.Db.GetDirectory(drive.RootID)
+	root, err := client.Db.GetDirectoryByID(drive.RootID)
 	if err != nil {
 		return err
 	}
@@ -209,7 +211,7 @@ func LoadClient(persist bool) (*Client, error) {
 		client.User = user
 	}
 
-	// load drive with users directory tree.
+	// load drive with users sfs directory tree populated
 	if err := loadDrive(client); err != nil {
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
@@ -227,25 +229,31 @@ func LoadClient(persist bool) (*Client, error) {
 	client.setEndpoints()
 
 	// add transfer component
-	client.Transfer = transfer.NewTransfer(client.Conf.Port)
+	client.Transfer = transfer.NewTransfer()
 
-	// load persistent services only when necessary.
+	// load and start persistent services only when necessary.
 	// sometimes we just need to load for the the data or
 	// a few one-off interactions with the server.
 	if persist {
-		// add monitoring component
-		client.Monitor = monitor.NewMonitor(client.Drive.Root.Path)
+		client.Wg = new(sync.WaitGroup)
+		client.Listeners = make(map[string]func())
+		client.OffSwitches = make(map[string]chan bool)
 
+		// add monitoring component
+		client.Monitor = monitor.NewMonitor(client.Root)
+		if err := client.Monitor.Start(client.Root); err != nil {
+			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
+		}
 		// initialize handlers map
 		if err := client.BuildListeners(); err != nil {
 			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
 		}
+
+		// TODO: pull sync index from server and compare against local index,
+		// then make changes as necessary. this should be part of the standard
+		// start up process for LoadClient()
+
 	}
-
-	// TODO: pull sync index from server and compare against local index,
-	// then make changes as necessary. this should be part of the standard
-	// start up process for LoadClient()
-
 	client.StartTime = time.Now().UTC()
 	return client, nil
 }
@@ -295,13 +303,14 @@ func NewClient(user *auth.User) (*Client, error) {
 		Root:        filepath.Join(svcRoot, "root"),
 		SfDir:       filepath.Join(svcRoot, "state"),
 		Endpoints:   make(map[string]string),
+		Wg:          new(sync.WaitGroup),
 		Monitor:     monitor.NewMonitor(drv.Root.Path),
 		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		Listeners:   make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
-		Transfer:    transfer.NewTransfer(ccfg.Port),
+		Transfer:    transfer.NewTransfer(),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 		},

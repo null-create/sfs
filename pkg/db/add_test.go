@@ -108,7 +108,7 @@ func TestAddAndFindDirectory(t *testing.T) {
 	}
 
 	// search for temp dir to ensure it was added correctly
-	d, err := q.GetDirectory(tmpDir.ID)
+	d, err := q.GetDirectoryByID(tmpDir.ID)
 	if err != nil {
 		Fatal(t, fmt.Errorf("failed to get directory: %v", err))
 	}

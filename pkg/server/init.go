@@ -130,7 +130,7 @@ func loadDrives(svc *Service) (*Service, error) {
 	}
 	for _, drive := range drives {
 		if _, exists := svc.Drives[drive.ID]; !exists {
-			root, err := svc.Db.GetDirectory(drive.RootID)
+			root, err := svc.Db.GetDirectoryByID(drive.RootID)
 			if err != nil {
 				return svc, fmt.Errorf("failed to get drive root: %v", err)
 			}
@@ -279,7 +279,7 @@ func SvcLoad(svcPath string) (*Service, error) {
 	} else {
 		// load each drive
 		for _, d := range svc.Drives {
-			root, err := svc.Db.GetDirectory(d.RootID)
+			root, err := svc.Db.GetDirectoryByID(d.RootID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get root directory: %v", err)
 			}
