@@ -485,10 +485,11 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 		dir := new(svc.Directory)
 		dir.Files = make(map[string]*svc.File, 0)
 		dir.Dirs = make(map[string]*svc.Directory, 0)
-		if err := q.Conn.QueryRow(FindAllQuery, "Directories").Scan(
+		if err := q.Conn.QueryRow(FindAllDirsQuery, "Directories").Scan(
 			&dir.ID,
 			&dir.Name,
 			&dir.OwnerID,
+			&dir.DriveID,
 			&dir.Size,
 			&dir.Path,
 			&dir.Protected,
