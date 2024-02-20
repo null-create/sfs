@@ -26,6 +26,8 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 // arbitrary wait time between checks
 const WAIT = time.Millisecond * 250
 
+type Watcher func(string, *sync.WaitGroup, chan bool) chan Event
+
 type Monitor struct {
 	// path to the users drive root to monitor
 	Path string
@@ -33,15 +35,19 @@ type Monitor struct {
 	// waitgroup for managing item watchers
 	Wg *sync.WaitGroup
 
-	// map of channels to active listeners.
+	// map of channels to active watchers.
 	// key is the absolute file path, value is the channel to the watchFile()
 	// or watchDir() goroutine associated with that file or directory
 	//
 	// key = file path, val is Event channel
 	Events map[string]chan Event
 
-	// map of channels to active listeners that will shut down the watcher goroutine
-	// when set to true.
+	// active watchers
+	// key is the absolute file path, value is the watcher function instance.
+	Watchers map[string]Watcher
+
+	// map of channels to active watchers that will shut down the watcher
+	// goroutine when set to true.
 	//
 	// key = file path, val is chan bool
 	OffSwitches map[string]chan bool
@@ -52,13 +58,14 @@ func NewMonitor(drvRoot string) *Monitor {
 		Path:        drvRoot,
 		Wg:          new(sync.WaitGroup),
 		Events:      make(map[string]chan Event),
+		Watchers:    make(map[string]Watcher),
 		OffSwitches: make(map[string]chan bool),
 	}
 }
 
 // see if an event channel exists for a given filepath.
 func (m *Monitor) IsMonitored(path string) bool {
-	if _, exists := m.Events[path]; exists {
+	if _, exists := m.Watchers[path]; exists {
 		return true
 	}
 	return false
@@ -94,6 +101,21 @@ func (m *Monitor) IsDir(path string) (bool, error) {
 	return false, nil
 }
 
+// add a new watcher function instance to the monitor.
+func (m *Monitor) AddWatcher(path string, watcher Watcher) {
+	if !m.IsMonitored(path) {
+		m.Watchers[path] = watcher
+	}
+}
+
+// start a watcher goroutine for a given path.
+func (m *Monitor) StartWatcher(path string, wg *sync.WaitGroup, stop chan bool) {
+	if m.IsMonitored(path) {
+		evts := m.Watchers[path](path, wg, stop)
+		m.Events[path] = evts
+	}
+}
+
 // add a file or directory to the events map and create a new monitoring
 // goroutine. will need a corresponding events handler. will be a no-op if the
 // given path is already being monitored.
@@ -110,10 +132,11 @@ func (m *Monitor) WatchItem(path string) error {
 		stop := make(chan bool)
 		m.OffSwitches[path] = stop
 		if isdir {
-			m.Events[path] = watchDir(path, m.Wg, stop)
+			m.AddWatcher(path, watchDir)
 		} else {
-			m.Events[path] = watchFile(path, m.Wg, stop)
+			m.AddWatcher(path, watchFile)
 		}
+		m.StartWatcher(path, m.Wg, stop)
 	}
 	return nil
 }
@@ -153,13 +176,14 @@ func (m *Monitor) GetPaths() []string {
 	return paths
 }
 
-// close a listener channel for a given file.
+// close a watcher function and event channel for a given item.
 // will be a no-op if the file is not registered.
-func (m *Monitor) CloseChan(filePath string) {
+func (m *Monitor) StopWatching(filePath string) {
 	if m.IsMonitored(filePath) {
-		m.OffSwitches[filePath] <- true // shut down monitoring thread before closing
+		m.OffSwitches[filePath] <- true
 		delete(m.OffSwitches, filePath)
 		delete(m.Events, filePath)
+		delete(m.Watchers, filePath)
 	}
 }
 
