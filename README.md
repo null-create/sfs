@@ -43,39 +43,6 @@ cp sfs ~/go/bin              # change to where your go/bin file is located
 sfs --version
 ```
 
-## Docker
-
-`SFS` is very easy to install and deploy in a Docker container.
-
-By default, the Docker will expose port 8080, so change this within the
-Dockerfile if necessary. When ready, simply use the Dockerfile to
-build the image.
-
-```sh
-cd sfs
-docker build -t <youruser>/sfs:${package.json.version} .
-```
-
-This will create the `sfs` image and pull in the necessary dependencies.
-Be sure to swap out `${package.json.version}` with the actual
-version of `Simple File Sync`.
-
-Once done, run the Docker image and map the port to whatever you wish on
-your host. In this example, we simply map port 8000 of the host to
-port 8080 of the Docker (or whatever port was exposed in the Dockerfile):
-
-```sh
-docker run -d -p 8000:8080 --restart=always  --name=sfs <youruser>/sfs:${package.json.version}
-```
-
-
-Verify the deployment by navigating to your server address in
-your preferred browser.
-
-```sh
-127.0.0.1:8000
-```
-
 ## License
 
 MIT
