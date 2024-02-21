@@ -156,29 +156,6 @@ func loadStateFile() ([]byte, error) {
 	return data, nil
 }
 
-// loads and populates the users drive and root directory tree.
-func loadDrive(client *Client) error {
-	drive, err := client.Db.GetDrive(client.Drive.ID)
-	if err != nil {
-		return err
-	}
-	if drive == nil {
-		return fmt.Errorf("no drive found for user (id=%v)", client.UserID)
-	}
-	root, err := client.Db.GetDirectoryByID(drive.RootID)
-	if err != nil {
-		return err
-	}
-	if root == nil {
-		return fmt.Errorf("no root directory for drive (id=%v)", drive.ID)
-	}
-	drive.Root = client.Populate(root)
-	client.Drive = drive
-	client.Drive.IsLoaded = true
-	client.Root = drive.Root.Path
-	return nil
-}
-
 // load client from state file, if possible.
 // does not start client services. use client.Start()
 // to start monitoring and synchronization services.
@@ -212,16 +189,14 @@ func LoadClient(persist bool) (*Client, error) {
 		client.User = user
 	}
 
-	// load drive with users sfs directory tree populated
-	if err := loadDrive(client); err != nil {
+	// load drive with users sfs directory tree populated.
+	// also refreshes (or generates) drive sync index.
+	if err := client.LoadDrive(); err != nil {
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
 
 	// initialize http client
 	client.Client = newHttpClient()
-
-	// create (or refresh) sync index
-	client.Drive.BuildSyncIdx()
 
 	// add token validation and generation component
 	client.Tok = auth.NewT()
@@ -239,9 +214,10 @@ func LoadClient(persist bool) (*Client, error) {
 	// sometimes we just need to load for the the data or
 	// a few one-off interactions with the server.
 	if persist {
+		// initialize event maps
 		client.Handlers = make(map[string]func())
 		client.OffSwitches = make(map[string]chan bool)
-
+		// start monitoring services
 		if err := client.Monitor.Start(client.Root); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}
