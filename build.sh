@@ -2,6 +2,11 @@
 
 set -eu
 
+download_deps(){
+  go install
+  go mod tidy
+}
+
 build() {
 	echo "building SFS binary for $1 $2 ..."
 	GOOS=$1 GOARCH=$2 go build -o $3
@@ -13,6 +18,9 @@ if ! command -v go &> /dev/null; then
     echo "install before running build script"
     exit 1
 fi
+
+# download and install dependencies
+download_deps
 
 OUTFILE=""
 
