@@ -15,7 +15,7 @@ import (
 
 // start monitoring files for changes
 func (c *Client) StartMonitor() error {
-	if err := c.Monitor.Start(c.Drive.DriveRoot); err != nil {
+	if err := c.Monitor.Start(c.Root); err != nil {
 		return err
 	}
 	return nil
@@ -25,6 +25,12 @@ func (c *Client) StartMonitor() error {
 // will be a no-op if there's no active monitoring threads.
 func (c *Client) StopMonitoring() {
 	c.Monitor.ShutDown()
+}
+
+// initialize handlers and monitor off switch maps
+func (c *Client) InitHandlerMaps() {
+	c.Handlers = make(map[string]func())
+	c.OffSwitches = make(map[string]chan bool)
 }
 
 // adds a file to monitor, then creates and starts
@@ -57,7 +63,7 @@ func (c *Client) NewHandler(path string) error {
 }
 
 // get alll the necessary things for the event handler to operate independently
-func (c *Client) setupListener(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
+func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
 	evtChan := c.Monitor.GetEventChan(itemPath)
 	offSwitch := c.Monitor.GetOffSwitch(itemPath)
 
@@ -92,7 +98,7 @@ func (c *Client) setupListener(itemPath string) (chan monitor.Event, chan bool, 
 		)
 	}
 
-	// new events buffer.
+	// events buffer.
 	// used for triggering synchronization events between the
 	// client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
@@ -149,7 +155,7 @@ func (c *Client) StopHandler(itemPath string) error {
 
 // stops all event handler goroutines.
 func (c *Client) StopHandlers() {
-	log.Printf("[INFO] shutting down %d event listeners...", len(c.OffSwitches))
+	log.Printf("[INFO] shutting down %d event handlers...", len(c.OffSwitches))
 	for path := range c.Handlers {
 		c.Handlers[path] = nil
 	}
@@ -199,7 +205,7 @@ func (c *Client) NewEHandler(path string) error {
 // items can be either files or directories.
 func (c *Client) handler(itemPath string, stop chan bool) error {
 	// get all necessary params for the event listener.
-	evtChan, off, itemID, evts, err := c.setupListener(itemPath)
+	evtChan, off, itemID, evts, err := c.setupHandler(itemPath)
 	if err != nil {
 		return err
 	}

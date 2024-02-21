@@ -9,6 +9,22 @@ import (
 
 // ------- user functions --------------------------------
 
+func (c *Client) LoadUser() error {
+	if c.User == nil {
+		if c.UserID == "" {
+			return fmt.Errorf("missing user id")
+		}
+		user, err := c.Db.GetUser(c.UserID)
+		if err != nil {
+			return fmt.Errorf("failed to get user (id=%v): ", err)
+		} else if user == nil {
+			return fmt.Errorf("user (id=%s) not found", c.UserID)
+		}
+		c.User = user
+	}
+	return nil
+}
+
 func (c *Client) AddUser(user *auth.User) error {
 	if c.User == nil {
 		c.User = user

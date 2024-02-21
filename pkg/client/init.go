@@ -175,18 +175,9 @@ func LoadClient(persist bool) (*Client, error) {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
-	// load user if necessary
-	if client.User == nil {
-		if client.UserID == "" {
-			return nil, fmt.Errorf("missing user id")
-		}
-		user, err := client.Db.GetUser(client.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user: %v", err)
-		} else if user == nil {
-			return nil, fmt.Errorf("user %s not found", client.UserID)
-		}
-		client.User = user
+	// load user info
+	if err := client.LoadUser(); err != nil {
+		return nil, fmt.Errorf("failed to load user: %v", err)
 	}
 
 	// load drive with users sfs directory tree populated.
@@ -215,10 +206,9 @@ func LoadClient(persist bool) (*Client, error) {
 	// a few one-off interactions with the server.
 	if persist {
 		// initialize event maps
-		client.Handlers = make(map[string]func())
-		client.OffSwitches = make(map[string]chan bool)
+		client.InitHandlerMaps()
 		// start monitoring services
-		if err := client.Monitor.Start(client.Root); err != nil {
+		if err := client.StartMonitor(); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}
 		// initialize handlers map
