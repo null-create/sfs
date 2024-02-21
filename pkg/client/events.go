@@ -282,11 +282,10 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				log.Printf("[INFO] events buffer capacity reached. initializing sync operations with server...")
 				// build update map and push file changes to server
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-				// temporarily removed while were still testing...
 				if err := c.Push(); err != nil {
 					return err
 				}
-				evts.Reset()             // resets events buffer
+				evts.Reset()             // reset events buffer
 				time.Sleep(monitor.WAIT) // wait before resuming event handler
 			}
 		default:

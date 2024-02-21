@@ -179,7 +179,7 @@ func (c *Client) GetFileByName(name string) (*svc.File, error) {
 	return file, nil
 }
 
-// TODO: add a file to the service using its file path.
+// add a file to the service using its file path.
 // should check for whether the directory it resides in is
 // monitored by SFS -- though not contingent on it!
 //
@@ -484,9 +484,6 @@ func (c *Client) LoadDrive() error {
 	c.Drive.IsLoaded = true
 	if !c.Drive.IsIndexed() {
 		c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
-	}
-	if err := c.SaveState(); err != nil {
-		return fmt.Errorf("failed to save state: %v", err)
 	}
 	return nil
 }
