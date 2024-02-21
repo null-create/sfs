@@ -398,9 +398,7 @@ func TestClientRefreshDrive(t *testing.T) {
 	}
 
 	// run refresh
-	if err := tmpClient.RefreshDrive(); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
+	tmpClient.RefreshDrive()
 
 	// clean up before asserts so nothing gets left behind if there's failures
 	if err := Clean(t, GetTestingDir()); err != nil {

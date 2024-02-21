@@ -12,8 +12,6 @@ import (
 //
 // Setting isSingleton to true will allow Query to automatically
 // switch between different databases.
-//
-// TODO: prepare all queries at instantiation time for singletons.
 type Query struct {
 	DBPath string // database directory path
 	CurDB  string // current database we're connecting to

@@ -232,6 +232,9 @@ func LoadClient(persist bool) (*Client, error) {
 	// add transfer component
 	client.Transfer = transfer.NewTransfer()
 
+	// add monitoring component
+	client.Monitor = monitor.NewMonitor(client.Root)
+
 	// load and start persistent services only when necessary.
 	// sometimes we just need to load for the the data or
 	// a few one-off interactions with the server.
@@ -239,8 +242,6 @@ func LoadClient(persist bool) (*Client, error) {
 		client.Handlers = make(map[string]func())
 		client.OffSwitches = make(map[string]chan bool)
 
-		// add monitoring component
-		client.Monitor = monitor.NewMonitor(client.Root)
 		if err := client.Monitor.Start(client.Root); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}

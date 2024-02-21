@@ -104,9 +104,7 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			showerr(err)
 		}
-		if err := c.RefreshDrive(); err != nil {
-			showerr(err)
-		}
+		c.RefreshDrive()
 	case f.info:
 		c, err := client.LoadClient(false)
 		if err != nil {

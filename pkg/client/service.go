@@ -106,7 +106,7 @@ func (c *Client) ListLocalFilesDB() error {
 		return err
 	}
 	for _, f := range files {
-		fmt.Printf("id: %s\nname: %s\nloc: %s\n", f.ID, f.Name, f.ClientPath)
+		fmt.Printf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 	}
 	return nil
 }
@@ -556,7 +556,7 @@ func (c *Client) Populate(root *svc.Directory) *svc.Directory {
 func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
-		log.Printf("[ERROR]: %v", err)
+		log.Printf("[ERROR] %v", err)
 		return dir
 	}
 	if len(entries) == 0 {
@@ -604,12 +604,8 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 // recursively descends the drive's directory tree and compares what it
 // finds to what is in the database, adding new items as it goes. generates
 // a new root directory object and attaches it to the drive.
-func (c *Client) RefreshDrive() error {
+func (c *Client) RefreshDrive() {
 	c.Drive.Root = c.refreshDrive(c.Drive.Root)
-	if err := c.SaveState(); err != nil {
-		return fmt.Errorf("failed to save state file: %v", err)
-	}
-	return nil
 }
 
 // descends users sfs directory tree and compares what it finds

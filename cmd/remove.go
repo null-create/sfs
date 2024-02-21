@@ -14,7 +14,7 @@ Command for removing files or directories from the SFS filesystem
 */
 
 var (
-	toRemove string
+	id string
 
 	RemoveCmd = &cobra.Command{
 		Use:   "remove",
@@ -24,7 +24,8 @@ var (
 )
 
 func init() {
-	RemoveCmd.PersistentFlags().StringVar(&toRemove, "remove", "", "Remove files or directories from the SFS filesystem")
+	RemoveCmd.PersistentFlags().StringVar(&name, "name", "", "Remove files or directories from the SFS filesystem using their name")
+	RemoveCmd.PersistentFlags().StringVar(&id, "id", "", "Remove file or directory from the SFS filesystem using their ID")
 
 	viper.BindPFlag("remove", RemoveCmd.Flags().Lookup("remove"))
 
@@ -32,15 +33,17 @@ func init() {
 }
 
 func RunRemoveCmd(cmd *cobra.Command, args []string) {
-	remove, _ := cmd.Flags().GetString("remove")
-	if remove == "" {
-		showerr(fmt.Errorf("no path specified"))
+	name, _ := cmd.Flags().GetString("name")
+	id, _ := cmd.Flags().GetString("id")
+	if name == "" || id == "" {
+		showerr(fmt.Errorf("need either name or id to remove. name=%v id=%s", name, id))
+		return
 	}
 	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(err)
 	}
-	if err := c.RemoveItem(remove); err != nil {
+	if err := c.RemoveItem(name); err != nil {
 		showerr(err)
 	}
 }

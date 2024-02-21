@@ -33,7 +33,8 @@ type Client struct {
 	Drive   *svc.Drive `json:"drive"`    // client drive for managing users files and directories
 	Db      *db.Query  `json:"db"`       // local db connection
 
-	Tok *auth.Token `json:"token"` // token creator for requests
+	// token creator for requests
+	Tok *auth.Token `json:"token"`
 
 	// server api endpoints.
 	// file objects have their own API field, this is for storing
@@ -111,9 +112,7 @@ func (c *Client) start(shutDown chan os.Signal) error {
 		}
 		// refresh drive on startup. this will find anything that was
 		// added if SFS wasn't running at the time.
-		if err := c.RefreshDrive(); err != nil {
-			return err
-		}
+		c.RefreshDrive()
 	}
 
 	// start monitoring services

@@ -150,9 +150,6 @@ func (c *Client) StopHandler(itemPath string) error {
 // stops all event handler goroutines.
 func (c *Client) StopHandlers() {
 	log.Printf("[INFO] shutting down %d event listeners...", len(c.OffSwitches))
-	for _, off := range c.OffSwitches {
-		off <- true
-	}
 	for path := range c.Handlers {
 		c.Handlers[path] = nil
 	}
@@ -282,12 +279,13 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			//
 			// NOTE: whatever operations take place here will need to be thread safe!
 			if evts.AtCap {
+				log.Printf("[INFO] events buffer capacity reached. initializing sync operations with server...")
 				// build update map and push file changes to server
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 				// temporarily removed while were still testing...
-				// if err := c.Push(); err != nil {
-				// 	return err
-				// }
+				if err := c.Push(); err != nil {
+					return err
+				}
 				evts.Reset()             // resets events buffer
 				time.Sleep(monitor.WAIT) // wait before resuming event handler
 			}
