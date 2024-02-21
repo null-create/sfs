@@ -186,7 +186,7 @@ func (c *Client) NewEHandler(path string) error {
 	handler := func() {
 		go func() {
 			if err := c.handler(path, offSwitch); err != nil {
-				log.Printf("[ERROR] listener failed: %v", err)
+				log.Printf("[ERROR] handler for %s failed: %v", filepath.Base(path), err)
 			}
 		}()
 	}

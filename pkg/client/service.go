@@ -206,7 +206,7 @@ func (c *Client) AddFile(filePath string) error {
 	dir, err := c.GetDirByPath(nfDir)
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		log.Printf("[WARNING] file's parent directory is not in SFS the filesystem. adding...")
-		// create a new directory record for this directory (don't parse contents,
+		// create a new directory record for this file (don't parse contents,
 		// just create metadata) so we can add the new file. the "parent" for this
 		// directory will be root since we don't want to have to recursively build
 		// an entire system bottom up for one file.

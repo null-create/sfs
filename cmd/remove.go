@@ -14,7 +14,7 @@ Command for removing files or directories from the SFS filesystem
 */
 
 var (
-	id string
+	delete bool // true to delete. false to just stop monitoring the item.
 
 	RemoveCmd = &cobra.Command{
 		Use:   "remove",
@@ -24,26 +24,32 @@ var (
 )
 
 func init() {
-	RemoveCmd.PersistentFlags().StringVar(&name, "name", "", "Remove files or directories from the SFS filesystem using their name")
-	RemoveCmd.PersistentFlags().StringVar(&id, "id", "", "Remove file or directory from the SFS filesystem using their ID")
+	RemoveCmd.PersistentFlags().StringVar(&path, "path", "", "Remove files or directories from the SFS filesystem using their absolute paths")
+	RemoveCmd.PersistentFlags().BoolVar(&delete, "delete", false, "set to true to delete, false to just stop monitoring")
 
-	viper.BindPFlag("remove", RemoveCmd.Flags().Lookup("remove"))
+	viper.BindPFlag("path", RemoveCmd.Flags().Lookup("path"))
+	viper.BindPFlag("delete", RemoveCmd.Flags().Lookup("delete"))
 
 	clientCmd.AddCommand(RemoveCmd)
 }
 
 func RunRemoveCmd(cmd *cobra.Command, args []string) {
-	name, _ := cmd.Flags().GetString("name")
-	id, _ := cmd.Flags().GetString("id")
-	if name == "" || id == "" {
-		showerr(fmt.Errorf("need either name or id to remove. name=%v id=%s", name, id))
+	path, _ := cmd.Flags().GetString("path")
+	delete, _ := cmd.Flags().GetBool("delete")
+	if path == "" {
+		showerr(fmt.Errorf("path was not provided"))
 		return
 	}
 	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(err)
 	}
-	if err := c.RemoveItem(name); err != nil {
-		showerr(err)
+	if delete {
+		if err := c.RemoveItem(path); err != nil {
+			showerr(err)
+		}
+	} else {
+		c.Monitor.StopWatching(path)
+		// TODO: create an "ignore" list.
 	}
 }

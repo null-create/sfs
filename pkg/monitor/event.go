@@ -77,7 +77,6 @@ func (e *Events) Reset() {
 	e.Events = make(EList, 0)
 	e.AtCap = false
 	e.Total = 0
-	log.Print("[INFO] events buffer reset")
 }
 
 func (e *Events) HasEvent(evt Event) bool {
