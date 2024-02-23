@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	cfgFile string
+	cfgfile string
 
 	// root sfs cli command
 	rootCmd = &cobra.Command{
@@ -25,8 +25,8 @@ func init() {
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
+	if cfgfile != "" {
+		viper.SetConfigFile(cfgfile)
 	} else {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)

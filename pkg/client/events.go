@@ -82,7 +82,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, s
 		}
 		id = itemID
 	} else {
-		itemID, err := c.Db.GetFileID(itemPath)
+		itemID, err := c.Db.GetFileIDFromPath(itemPath)
 		if err != nil {
 			return nil, nil, "", nil, err
 		}
@@ -97,10 +97,9 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, s
 			evtChan, offSwitch, id,
 		)
 	}
-
 	// events buffer.
-	// used for triggering synchronization events between the
-	// client and the server.
+	// used for managing and triggering synchronization
+	// events between the client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
 
 	return evtChan, offSwitch, id, evts, nil
@@ -186,7 +185,7 @@ func (c *Client) BuildHandlers() error {
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
-	// listener off-switch
+	// handler off-switch
 	offSwitch := make(chan bool)
 	// handler
 	handler := func() {
@@ -204,7 +203,7 @@ func (c *Client) NewEHandler(path string) error {
 // dedicated handler for item events.
 // items can be either files or directories.
 func (c *Client) handler(itemPath string, stop chan bool) error {
-	// get all necessary params for the event listener.
+	// get all necessary params for the event handler.
 	evtChan, off, itemID, evts, err := c.setupHandler(itemPath)
 	if err != nil {
 		return err
@@ -277,19 +276,17 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", itemID)
 				return nil
 			}
-			// TODO: need to decide how ofter to run sync operations once the
-			// events buffer reaches capacity (i ->n).
-			// should have some configs around whether we build the update map
-			// every time, or if its a single event. BuildToUpdate is mainly intended
-			// for large sync operations with files and directories processsed in batches.
-			//
+			// trigger synchronization operations once the event buffer has reached capacity
 			// NOTE: whatever operations take place here will need to be thread safe!
 			if evts.AtCap {
 				log.Printf("[INFO] events buffer capacity reached. initializing sync operations with server...")
 				// build update map and push file changes to server
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-				if err := c.Push(); err != nil {
-					return err
+				// only push file changes if auto sync is enabled
+				if c.Conf.AutoSync {
+					if err := c.Push(); err != nil {
+						return err
+					}
 				}
 				evts.Reset()             // reset events buffer
 				time.Sleep(monitor.WAIT) // wait before resuming event handler

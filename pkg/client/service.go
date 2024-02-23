@@ -14,21 +14,6 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// ------ user --------------------------------------
-
-func (c *Client) GetUserInfo() string {
-	if c.User == nil {
-		log.Print("[ERROR] no user info available!")
-		return ""
-	}
-	data, err := c.User.ToJSON()
-	if err != nil {
-		log.Printf("error getting user info: %v", err)
-		return ""
-	}
-	return string(data)
-}
-
 // ------ service --------------------------------
 
 // add a file or directory to the local SFS service
@@ -136,7 +121,7 @@ func (c *Client) ListRemoteFiles() error {
 	return nil
 }
 
-// retrieve a local file. returns nil if the file is not found.
+// retrieve a local file using its ID. returns nil if the file is not found.
 func (c *Client) GetFileByID(fileID string) (*svc.File, error) {
 	file := c.Drive.GetFile(fileID)
 	if file == nil {
@@ -156,7 +141,7 @@ func (c *Client) GetFileByID(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
-// check db using a given file path
+// check db using a given file path. returns nil if not found.
 func (c *Client) GetFileByPath(path string) (*svc.File, error) {
 	file, err := c.Db.GetFileByPath(path)
 	if err != nil {
@@ -167,7 +152,8 @@ func (c *Client) GetFileByPath(path string) (*svc.File, error) {
 	return file, nil
 }
 
-// retrieve a file from the database by searching with its name
+// retrieve a file from the database by searching with its name.
+// returns nil if not found.
 func (c *Client) GetFileByName(name string) (*svc.File, error) {
 	file, err := c.Db.GetFileByName(name)
 	if err != nil {
@@ -218,6 +204,7 @@ func (c *Client) AddFile(filePath string) error {
 	} else if err != nil {
 		return err
 	} else {
+		// directory already exists. add file to this directory.
 		newFile.DirID = dir.ID
 	}
 	// add file to sfs system
@@ -231,6 +218,16 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(newFile.ClientPath); err != nil {
 		return err
 	}
+	// push metadata to server
+	req, err := c.NewFileRequest(newFile)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	c.dump(resp, true)
 	return nil
 }
 
@@ -526,6 +523,44 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 		return nil, fmt.Errorf("failed to add root to database: %v", err)
 	}
 	return root, nil
+}
+
+// similar to Discover, but uses a specified directory path
+// and does not return a new directory object.
+func (c *Client) DiscoverWithPath(dirPath string) error {
+	// see if we have this directory already
+	dir, err := c.Db.GetDirectoryByPath(dirPath)
+	if err != nil {
+		return err
+	}
+	if dir != nil {
+		log.Printf("[INFO] directory %s is already known", filepath.Base(dirPath))
+		return nil
+	}
+
+	// create a new directory object under root and traverse
+	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
+	newDir.Parent = c.Drive.Root
+	newDir.Walk()
+
+	// add newly discovered files and directories to the service
+	files := newDir.GetFiles()
+	for _, file := range files {
+		if err := c.Db.AddFile(file); err != nil {
+			return fmt.Errorf("failed to add file to database: %v", err)
+		}
+	}
+	dirs := newDir.GetSubDirs()
+	for _, d := range dirs {
+		if err := c.Db.AddDir(d); err != nil {
+			return fmt.Errorf("failed to add directory to database: %v", err)
+		}
+	}
+	// add new directory itself
+	if err := c.Db.AddDir(newDir); err != nil {
+		return fmt.Errorf("failed to add root to database: %v", err)
+	}
+	return nil
 }
 
 // Populate() populates a drive's root directory with all the users

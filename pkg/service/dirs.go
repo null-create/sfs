@@ -402,11 +402,11 @@ func (d *Directory) GetFileMap() map[string]*File {
 }
 
 // get a slice of all files starting from this directory.
-// returns a nil slice if no files are found.
+// returns an empty slice if no files are found.
 func (d *Directory) GetFiles() []*File {
 	fileMap := d.WalkFs()
 	if len(fileMap) == 0 {
-		return nil
+		return make([]*File, 0)
 	}
 	var i int
 	files := make([]*File, len(fileMap))

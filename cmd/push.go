@@ -14,11 +14,6 @@ Push a file or directory to the SFS server
 */
 
 var (
-	path    string
-	isDir   bool
-	newFile bool
-	newDir  bool
-
 	pushCmd = &cobra.Command{
 		Use:   "push",
 		Short: "Push a file or directory to the SFS server",
@@ -27,10 +22,11 @@ var (
 )
 
 func init() {
-	pushCmd.PersistentFlags().StringVar(&path, "path", "", "path to the file to push to the server")
-	pushCmd.PersistentFlags().BoolVarP(&isDir, "is-dir", "d", false, "flag for whether we're sending a directory.")
-	pushCmd.PersistentFlags().BoolVar(&newFile, "new-file", false, "flag for whether this is a new file to the service")
-	pushCmd.PersistentFlags().BoolVar(&newDir, "new-dir", false, "flag for whether this is a new directory to the service")
+	flags := FlagPole{}
+	pushCmd.PersistentFlags().StringVar(&flags.path, "path", "", "path to the file to push to the server")
+	pushCmd.PersistentFlags().BoolVarP(&flags.isDir, "is-dir", "d", false, "flag for whether we're sending a directory.")
+	pushCmd.PersistentFlags().BoolVar(&flags.newFile, "new-file", false, "flag for whether this is a new file to the service")
+	pushCmd.PersistentFlags().BoolVar(&flags.newDir, "new-dir", false, "flag for whether this is a new directory to the service")
 
 	viper.BindPFlag("path", pushCmd.PersistentFlags().Lookup("path"))
 	viper.BindPFlag("new-file", pushCmd.PersistentFlags().Lookup("new-file"))

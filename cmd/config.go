@@ -14,8 +14,6 @@ Command for setting and getting client configurations
 */
 
 var (
-	get     bool
-	set     bool
 	configs = client.ClientConfig()
 
 	confCmd = &cobra.Command{
@@ -26,8 +24,9 @@ var (
 )
 
 func init() {
-	confCmd.PersistentFlags().BoolVar(&get, "get", false, "get client service configurations")
-	confCmd.PersistentFlags().BoolVar(&set, "set", false, "set client service configurations")
+	flags := FlagPole{}
+	confCmd.PersistentFlags().BoolVar(&flags.get, "get", false, "get client service configurations")
+	confCmd.PersistentFlags().BoolVar(&flags.set, "set", false, "set client service configurations")
 
 	viper.BindPFlag("get", confCmd.PersistentFlags().Lookup("get"))
 	viper.BindPFlag("set", confCmd.PersistentFlags().Lookup("set"))

@@ -235,7 +235,7 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 }
 
 // retrieves a file ID using a given file path
-func (q *Query) GetFileID(filePath string) (string, error) {
+func (q *Query) GetFileIDFromPath(filePath string) (string, error) {
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()

@@ -12,6 +12,7 @@ import (
 type Conf struct {
 	IsAdmin        bool   `env:"ADMIN_MODE"`                   // whether the service should be run in admin mode or not
 	BufferedEvents bool   `env:"BUFFERED_EVENTS",required"`    // whether we add a buffer to the events monitor
+	AutoSync       bool   `env:"CLIENT_AUTO_SYNC",required"`   // whether the client should auto sync with the server
 	User           string `env:"CLIENT,required"`              // users name
 	UserAlias      string `env:"CLIENT_USERNAME,required"`     // users alias (username)
 	UserID         string `env:"CLIENT_ID,required"`           // this is generated at creation time. won't be in the initial .env file

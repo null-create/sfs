@@ -207,6 +207,7 @@ func LoadClient(persist bool) (*Client, error) {
 	if persist {
 		// initialize event maps
 		client.InitHandlerMaps()
+
 		// start monitoring services
 		if err := client.StartMonitor(); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)

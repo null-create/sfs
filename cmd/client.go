@@ -10,15 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-type ClientFlagPole struct {
-	new     bool // create a new client
-	start   bool // start a client
-	local   bool // list all local files managed by SFS
-	remote  bool // list all remote files managed by SFS
-	refresh bool // refresh local drive
-	info    bool // get information about the client
-}
-
 var (
 	clientCmd = &cobra.Command{
 		Use:   "client",
@@ -28,7 +19,7 @@ var (
 )
 
 func init() {
-	flags := ClientFlagPole{}
+	flags := FlagPole{}
 	clientCmd.PersistentFlags().BoolVar(&flags.new, "new", false, "Initialize a new client service instance")
 	clientCmd.PersistentFlags().BoolVar(&flags.start, "start", false, "Start client services")
 	clientCmd.PersistentFlags().BoolVar(&flags.local, "local", false, "List local files managed by SFS service")
@@ -47,7 +38,7 @@ func init() {
 	rootCmd.AddCommand(clientCmd)
 }
 
-func getflags(cmd *cobra.Command) ClientFlagPole {
+func getflags(cmd *cobra.Command) FlagPole {
 	new, _ := cmd.Flags().GetBool("new")
 	start, _ := cmd.Flags().GetBool("start")
 	local, _ := cmd.Flags().GetBool("local")
@@ -55,7 +46,7 @@ func getflags(cmd *cobra.Command) ClientFlagPole {
 	refresh, _ := cmd.Flags().GetBool("refresh")
 	info, _ := cmd.Flags().GetBool("info")
 
-	return ClientFlagPole{
+	return FlagPole{
 		new:     new,
 		start:   start,
 		local:   local,

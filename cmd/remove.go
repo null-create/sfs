@@ -14,8 +14,6 @@ Command for removing files or directories from the SFS filesystem
 */
 
 var (
-	delete bool // true to delete. false to just stop monitoring the item.
-
 	RemoveCmd = &cobra.Command{
 		Use:   "remove",
 		Short: "Remove files or directories from the SFS filesystem",
@@ -24,8 +22,9 @@ var (
 )
 
 func init() {
-	RemoveCmd.PersistentFlags().StringVar(&path, "path", "", "Remove files or directories from the SFS filesystem using their absolute paths")
-	RemoveCmd.PersistentFlags().BoolVar(&delete, "delete", false, "set to true to delete, false to just stop monitoring")
+	flags := FlagPole{}
+	RemoveCmd.PersistentFlags().StringVar(&flags.path, "path", "", "Remove files or directories from the SFS filesystem using their absolute paths")
+	RemoveCmd.PersistentFlags().BoolVar(&flags.delete, "delete", false, "set to true to delete, false to just stop monitoring")
 
 	viper.BindPFlag("path", RemoveCmd.Flags().Lookup("path"))
 	viper.BindPFlag("delete", RemoveCmd.Flags().Lookup("delete"))

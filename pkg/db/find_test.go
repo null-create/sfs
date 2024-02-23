@@ -32,7 +32,7 @@ func TestFindFileIdByPath(t *testing.T) {
 	}
 
 	// search by file ID
-	fileID, err := q.GetFileID(tmpFile.Path)
+	fileID, err := q.GetFileIDFromPath(tmpFile.Path)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}

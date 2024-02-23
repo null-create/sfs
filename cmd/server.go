@@ -8,9 +8,6 @@ import (
 )
 
 var (
-	new   bool // whether we should create a new sfs server
-	start bool // whether we should start the server
-
 	svcCfg = server.ServiceConfig() // server-side service configurations
 
 	// server command
@@ -22,8 +19,9 @@ var (
 )
 
 func init() {
-	serverCmd.PersistentFlags().BoolVarP(&start, "start", "s", false, "start the sfs server. stop with ctrl-c.")
-	serverCmd.PersistentFlags().BoolVarP(&new, "new", "n", false, "create a new sfs server side service instance")
+	flags := FlagPole{}
+	serverCmd.PersistentFlags().BoolVarP(&flags.start, "start", "s", false, "start the sfs server. stop with ctrl-c.")
+	serverCmd.PersistentFlags().BoolVarP(&flags.new, "new", "n", false, "create a new sfs server side service instance")
 
 	viper.BindPFlag("start", serverCmd.PersistentFlags().Lookup("start"))
 	viper.BindPFlag("new", serverCmd.PersistentFlags().Lookup("new"))

@@ -22,7 +22,8 @@ var (
 )
 
 func init() {
-	addCmd.Flags().StringVarP(&path, "path", "p", "", "Path to the new file or directory")
+	flags := FlagPole{}
+	addCmd.Flags().StringVarP(&flags.path, "path", "p", "", "Path to the new file or directory")
 
 	viper.BindPFlag("path", addCmd.Flags().Lookup("path"))
 

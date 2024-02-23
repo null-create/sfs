@@ -9,6 +9,19 @@ import (
 
 // ------- user functions --------------------------------
 
+func (c *Client) GetUserInfo() string {
+	if c.User == nil {
+		log.Print("[ERROR] no user info available!")
+		return ""
+	}
+	data, err := c.User.ToJSON()
+	if err != nil {
+		log.Printf("error getting user info: %v", err)
+		return ""
+	}
+	return string(data)
+}
+
 func (c *Client) LoadUser() error {
 	if c.User == nil {
 		if c.UserID == "" {
