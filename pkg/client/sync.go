@@ -25,9 +25,11 @@ const (
 	SyncWait     = time.Minute
 )
 
-// resets client side sync mechanisms
+// resets client side sync mechanisms with a
+// new baseline for item last sync times.
 func (c *Client) reset() {
 	c.Drive.SyncIndex.Reset()
+	c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
 }
 
 // display server response clearly.

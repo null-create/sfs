@@ -213,7 +213,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] shutting down monitoring for %s...", filePath)
+				log.Printf("[INFO] shutting down monitoring for %s...", baseName)
 				close(evt)
 				return
 			default:
@@ -300,6 +300,9 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 	// if they're not already present! not watchDir's responsibility, though.
 	dirCtx.AddItems(initialItems)
 
+	// direcotry name
+	dirName := filepath.Base(dirPath)
+
 	// event channel used by the event handler goroutine
 	evt := make(chan Event)
 
@@ -308,7 +311,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] stopping monitor for %s...", filepath.Base(dirPath))
+				log.Printf("[INFO] stopping monitor for %s...", dirName)
 				return
 			default:
 				currItems, err := os.ReadDir(dirPath)

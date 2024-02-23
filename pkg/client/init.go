@@ -201,13 +201,13 @@ func LoadClient(persist bool) (*Client, error) {
 	// add monitoring component
 	client.Monitor = monitor.NewMonitor(client.Root)
 
+	// initialize event maps
+	client.InitHandlerMaps()
+
 	// load and start persistent services only when necessary.
 	// sometimes we just need to load for the the data or
 	// a few one-off interactions with the server.
 	if persist {
-		// initialize event maps
-		client.InitHandlerMaps()
-
 		// start monitoring services
 		if err := client.StartMonitor(); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)

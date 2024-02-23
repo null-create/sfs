@@ -279,7 +279,6 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// trigger synchronization operations once the event buffer has reached capacity
 			// NOTE: whatever operations take place here will need to be thread safe!
 			if evts.AtCap {
-				log.Printf("[INFO] events buffer capacity reached. initializing sync operations with server...")
 				// build update map and push file changes to server
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 				// only push file changes if auto sync is enabled
