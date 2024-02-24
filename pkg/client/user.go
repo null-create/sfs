@@ -9,19 +9,6 @@ import (
 
 // ------- user functions --------------------------------
 
-func (c *Client) GetUserInfo() string {
-	if c.User == nil {
-		log.Print("[ERROR] no user info available!")
-		return ""
-	}
-	data, err := c.User.ToJSON()
-	if err != nil {
-		log.Printf("error getting user info: %v", err)
-		return ""
-	}
-	return string(data)
-}
-
 func (c *Client) LoadUser() error {
 	if c.User == nil {
 		if c.UserID == "" {
@@ -36,6 +23,19 @@ func (c *Client) LoadUser() error {
 		c.User = user
 	}
 	return nil
+}
+
+func (c *Client) GetUserInfo() string {
+	if c.User == nil {
+		log.Print("[ERROR] no user info available!")
+		return ""
+	}
+	data, err := c.User.ToJSON()
+	if err != nil {
+		log.Printf("error getting user info: %v", err)
+		return ""
+	}
+	return string(data)
 }
 
 func (c *Client) AddUser(user *auth.User) error {
