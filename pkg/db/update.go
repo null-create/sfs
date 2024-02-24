@@ -58,6 +58,8 @@ func (q *Query) UpdateDir(d *svc.Directory) error {
 		&d.DriveID,
 		&d.Size,
 		&d.Path,
+		&d.ServerPath,
+		&d.ClientPath,
 		&d.Protected,
 		&d.AuthType,
 		&d.Key,

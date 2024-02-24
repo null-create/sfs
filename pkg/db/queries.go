@@ -35,6 +35,8 @@ const (
 			drive_id VARCHAR(50),
 			size DECIMAL(18, 2),
 			path VARCHAR(255),
+			server_path VARCHAR(255),
+			client_path VARCHAR(255),
 			protected BIT,
 			auth_type VARCHAR(50),
 			key VARCHAR(100),
@@ -110,6 +112,8 @@ const (
 			drive_id,
 			size,
 			path,
+			server_path,
+			client_path,
 			protected,
 			auth_type,
 			key,
@@ -118,7 +122,7 @@ const (
 			drive_root, 
 			root_path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
 		INSERT OR IGNORE INTO Drives (
@@ -183,6 +187,8 @@ const (
 				drive_id = ?,
 				size = ?,
 				path = ?,
+				server_path = ?,
+				client_path = ?,
 				protected = ?,
 				auth_type = ?,
 				key = ?,

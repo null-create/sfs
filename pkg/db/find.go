@@ -366,6 +366,8 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 		&d.DriveID,
 		&d.Size,
 		&d.Path,
+		&d.ServerPath,
+		&d.ClientPath,
 		&d.Protected,
 		&d.AuthType,
 		&d.Key,
@@ -400,6 +402,8 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 		&d.DriveID,
 		&d.Size,
 		&d.Path,
+		&d.ServerPath,
+		&d.ClientPath,
 		&d.Protected,
 		&d.AuthType,
 		&d.Key,
@@ -434,6 +438,8 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 		&d.DriveID,
 		&d.Size,
 		&d.Path,
+		&d.ServerPath,
+		&d.ClientPath,
 		&d.Protected,
 		&d.AuthType,
 		&d.Key,
@@ -486,13 +492,64 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 		dir := new(svc.Directory)
 		dir.Files = make(map[string]*svc.File, 0)
 		dir.Dirs = make(map[string]*svc.Directory, 0)
-		if err := q.Conn.QueryRow(FindAllDirsQuery, "Directories").Scan(
+		if err := rows.Scan(
 			&dir.ID,
 			&dir.Name,
 			&dir.OwnerID,
 			&dir.DriveID,
 			&dir.Size,
 			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.Protected,
+			&dir.Endpoint,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Root,
+			&dir.RootPath,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				log.Printf("[DEBUG] no rows returned: %v", err)
+				continue
+			}
+			log.Fatalf("failed to get rows: %v", err)
+		}
+		dirs = append(dirs, dir)
+	}
+	if len(dirs) == 0 {
+		log.Printf("[DEBUG] no directories returned")
+	}
+	return dirs, nil
+}
+
+// get all the directories for this user.
+func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindAllUsersDirectoriesQuery, userID)
+	if err != nil {
+		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	dirs := make([]*svc.Directory, 0)
+	for rows.Next() {
+		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
+		if err := rows.Scan(
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
 			&dir.Protected,
 			&dir.AuthType,
 			&dir.Key,
