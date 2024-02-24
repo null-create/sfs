@@ -140,7 +140,11 @@ func (c *Client) StartHandler(path string) error {
 // start all available listeners
 func (c *Client) StartHandlers() error {
 	// start file handlers
-	files := c.Drive.GetFiles()
+	// files := c.Drive.GetFiles()
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
 	if len(files) == 0 {
 		return nil
 	}
@@ -151,7 +155,11 @@ func (c *Client) StartHandlers() error {
 		}
 	}
 	// start directory handlers
-	dirs := c.Drive.GetDirs()
+	// dirs := c.Drive.GetDirs()
+	dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		return nil
+	}
 	if len(dirs) == 0 {
 		return nil
 	}

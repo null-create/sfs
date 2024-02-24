@@ -129,8 +129,10 @@ func (c *Client) start(shutDown chan os.Signal) error {
 	return nil
 }
 
-// start sfs client service. returns an chan os.Signal which
-// can be used to shut down the client (with ctrl-c, or some other syscall)
+// start sfs client service. creates a blocking process
+// to allow monitoring and synchronization services to run.
+// assumes that LoadClient(true) has already been called prior to being called.
+// sadness will follow if this is not the case.
 func (c *Client) Start() error {
 	shutDown := make(chan os.Signal)
 	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

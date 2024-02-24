@@ -205,8 +205,9 @@ func LoadClient(persist bool) (*Client, error) {
 	client.InitHandlerMaps()
 
 	// load and start persistent services only when necessary.
-	// sometimes we just need to load for the the data or
-	// a few one-off interactions with the server.
+	// persist should only be set to true when followed by a
+	// call to client.Start(), otherwise none of the monitoring
+	// services will be able to actually run.
 	if persist {
 		// start monitoring services in SFS root directory
 		if err := client.StartMonitor(); err != nil {
@@ -224,6 +225,9 @@ func LoadClient(persist bool) (*Client, error) {
 		// TODO: pull sync index from server and compare against local index,
 		// then make changes as necessary. this should be part of the standard
 		// start up process for LoadClient()
+		// if c.autoSync() {
+
+		// }
 
 		client.StartTime = time.Now().UTC()
 	}

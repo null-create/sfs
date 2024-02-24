@@ -25,6 +25,9 @@ const (
 	SyncWait     = time.Minute
 )
 
+// whether auto sync is enabled
+func (c *Client) autoSync() bool { return c.Conf.AutoSync }
+
 // resets client side sync mechanisms with a
 // new baseline for item last sync times.
 func (c *Client) reset() {
@@ -42,8 +45,14 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
-// whether auto sync is enabled
-func (c *Client) autoSync() bool { return c.Conf.AutoSync }
+// TODO: need to decide what this should actually be.
+// push all local changes to server?
+// get latest versions of files and directories from server adn
+// compare against local versions?
+func (c *Client) Sync() error {
+
+	return nil
+}
 
 // TODO: handle the difference between creates and updates.
 // some files may be new, others may be only modified!
@@ -148,42 +157,6 @@ func (c *Client) Diff() error {
 	return nil
 }
 
-// TODO:
-func (c *Client) Sync() error {
-	// get latest local index/Update map
-	if !c.Drive.IsIndexed() {
-		return fmt.Errorf("no files found for indexing")
-	}
-	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-
-	// get latest server update map
-	resp, err := c.Client.Get(c.Endpoints["gen updates"])
-	if err != nil {
-		return fmt.Errorf("failed to contact server: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[ERROR] server returned non-200 status")
-		c.dump(resp, true)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	// retrieve index from response body
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, resp.Body)
-	if err != nil {
-		return err
-	}
-	var svrIdx = new(svc.SyncIndex)
-	if err := json.Unmarshal(buf.Bytes(), &svrIdx); err != nil {
-		return err
-	}
-
-	// compare the two, then push/pull accordingly
-
-	return nil
-}
-
 // retrieve the current sync index for this user from the server
 func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 	resp, err := c.Client.Get(c.Endpoints["get index"])
@@ -213,9 +186,7 @@ func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
 // send a known file to the server. For new files, use PushNewFile() instead.
 func (c *Client) PushFile(file *svc.File) error {
 	if err := c.Transfer.Upload(
-		http.MethodPut,
-		file,
-		file.Endpoint,
+		http.MethodPut, file, file.Endpoint,
 	); err != nil {
 		return err
 	}
@@ -226,9 +197,7 @@ func (c *Client) PushFile(file *svc.File) error {
 // use PushFile() instead.
 func (c *Client) PushNewFile(file *svc.File) error {
 	if err := c.Transfer.Upload(
-		http.MethodPost,
-		file,
-		c.Endpoints["new file"],
+		http.MethodPost, file, c.Endpoints["new file"],
 	); err != nil {
 		return err
 	}
@@ -241,10 +210,7 @@ func (c *Client) PushNewFile(file *svc.File) error {
 // not intended for new files discovered on the server -- this will be handled by a
 // separate function PullNewFiles()
 func (c *Client) PullFile(file *svc.File) error {
-	if err := c.Transfer.Download(
-		file.ClientPath,
-		file.Endpoint,
-	); err != nil {
+	if err := c.Transfer.Download(file.ClientPath, file.Endpoint); err != nil {
 		return err
 	}
 	return nil
