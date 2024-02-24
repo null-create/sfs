@@ -42,6 +42,9 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
+// whether auto sync is enabled
+func (c *Client) autoSync() bool { return c.Conf.AutoSync }
+
 // TODO: handle the difference between creates and updates.
 // some files may be new, others may be only modified!
 //

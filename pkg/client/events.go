@@ -321,7 +321,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			if evts.AtCap {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-				if c.Conf.AutoSync {
+				if c.autoSync() {
 					if err := c.Push(); err != nil {
 						return err
 					}

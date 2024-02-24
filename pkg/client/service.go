@@ -212,7 +212,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	// push metadata to server if autosync is enabled
-	if c.Conf.AutoSync {
+	if c.autoSync() {
 		req, err := c.NewFileRequest(newFile)
 		if err != nil {
 			return err
@@ -239,7 +239,7 @@ func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
 		return err
 	}
 	// push metadata to server if autosync is enabled
-	if c.Conf.AutoSync {
+	if c.autoSync() {
 		req, err := c.NewFileRequest(file)
 		if err != nil {
 			return err
@@ -359,7 +359,7 @@ func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 		return err
 	}
 	// push metadata to server if autosync is enabled
-	if c.Conf.AutoSync {
+	if c.autoSync() {
 		req, err := c.NewDirectoryRequest(dir)
 		if err != nil {
 			return err
@@ -410,7 +410,7 @@ func (c *Client) AddDir(dirPath string) error {
 		return err
 	}
 	// push metadata to server if autosync is enabled
-	if c.Conf.AutoSync {
+	if c.autoSync() {
 		req, err := c.NewDirectoryRequest(newDir)
 		if err != nil {
 			return err
