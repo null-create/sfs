@@ -52,6 +52,7 @@ func Setup() (*Client, error) {
 	envCfg := env.NewE()
 
 	// make client service root directory
+	log.Printf("[INFO] making SFS service directories...")
 	svcDir := filepath.Join(cfgs.Root, cfgs.User)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
@@ -71,17 +72,20 @@ func Setup() (*Client, error) {
 	}
 
 	// make each database
+	log.Printf("[INFO] creating databases...")
 	if err := db.InitDBs(svcPaths[0]); err != nil {
 		return nil, err
 	}
 
 	// set up new user
+	log.Printf("[INFO] creating user...")
 	newUser, err := newUser()
 	if err != nil {
 		return nil, err
 	}
 
 	// initialize a new client for the new user
+	log.Printf("[INFO] creating client...")
 	client, err := NewClient(newUser)
 	if err != nil {
 		return nil, err
@@ -89,6 +93,7 @@ func Setup() (*Client, error) {
 	newUser.DriveID = client.Drive.ID
 	newUser.DrvRoot = client.Drive.Root.Path
 	client.User = newUser
+	client.UserID = newUser.ID
 
 	// save user, user's root, and drive to db
 	if err := client.Db.AddUser(newUser); err != nil {
@@ -106,6 +111,7 @@ func Setup() (*Client, error) {
 		return nil, err
 	}
 
+	log.Printf("[INFO] all set :)")
 	return client, nil
 }
 
@@ -264,7 +270,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	// set up local client services
 	driveID := auth.NewUUID()
 	svcRoot := filepath.Join(ccfg.Root, ccfg.User)
-	root := svc.NewRootDirectory("root", ccfg.User, driveID, filepath.Join(svcRoot, "root"))
+	root := svc.NewRootDirectory("root", ccfg.UserID, driveID, filepath.Join(svcRoot, "root"))
 	drv := svc.NewDrive(driveID, ccfg.User, user.ID, root.Path, root.ID, root)
 	user.DriveID = driveID
 	user.DrvRoot = drv.DriveRoot
@@ -278,6 +284,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		User:        user,
 		Root:        filepath.Join(svcRoot, "root"),
 		SfDir:       filepath.Join(svcRoot, "state"),
+		RecycleBin:  filepath.Join(svcRoot, "recycle"),
 		Endpoints:   make(map[string]string),
 		Monitor:     monitor.NewMonitor(drv.Root.Path),
 		DriveID:     driveID,
