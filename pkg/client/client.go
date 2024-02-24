@@ -114,17 +114,6 @@ func (c *Client) start(shutDown chan os.Signal) error {
 		// added if SFS wasn't running at the time.
 		c.RefreshDrive()
 	}
-
-	// start monitoring services
-	if err := c.Monitor.Start(c.Root); err != nil {
-		return fmt.Errorf("failed to start monitoring: %v", err)
-	}
-
-	// start monitoring event handlers
-	if err := c.StartHandlers(); err != nil {
-		return fmt.Errorf("failed to start event handlers: %v", err)
-	}
-
 	// save initial state
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save initial state: %v", err)
@@ -142,7 +131,8 @@ func (c *Client) start(shutDown chan os.Signal) error {
 
 // start sfs client service. returns an chan os.Signal which
 // can be used to shut down the client (with ctrl-c, or some other syscall)
-func (c *Client) Start(shutDown chan os.Signal) error {
+func (c *Client) Start() error {
+	shutDown := make(chan os.Signal)
 	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	if err := c.start(shutDown); err != nil {
 		log.Fatal(err)
