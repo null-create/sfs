@@ -161,13 +161,13 @@ func TestLoadAndStartClient(t *testing.T) {
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
-	tmpDir, err := e.Get("CLIENT_ROOT")
+	tmpDir, err := e.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// initialize and load client
-	tmpClient, err := Init(false)
+	tmpClient, err := LoadClient(true)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -190,13 +190,9 @@ func TestLoadAndStartClient(t *testing.T) {
 	}()
 
 	// start client
-	shutOffClient := make(chan os.Signal)
 	go func() {
-		tmpClient.Start(shutOffClient)
+		tmpClient.Start()
 	}()
-
-	// shut down client
-	shutOffClient <- os.Interrupt
 
 	// shutdown test server
 	shutDown <- true
