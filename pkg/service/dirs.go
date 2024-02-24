@@ -110,21 +110,23 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 	cfg := NewSvcCfg()
 	uuid := auth.NewUUID()
 	return &Directory{
-		ID:        uuid,
-		NMap:      newNameMap(dirName, uuid),
-		Name:      dirName,
-		OwnerID:   ownerID,
-		DriveID:   driveID,
-		Protected: false,
-		Key:       "default",
-		Overwrite: false,
-		LastSync:  time.Now().UTC(),
-		Dirs:      make(map[string]*Directory, 0),
-		Files:     make(map[string]*File, 0),
-		Endpoint:  fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
-		Parent:    nil,
-		Root:      false,
-		Path:      path,
+		ID:         uuid,
+		NMap:       newNameMap(dirName, uuid),
+		Name:       dirName,
+		OwnerID:    ownerID,
+		DriveID:    driveID,
+		Protected:  false,
+		Key:        "default",
+		Overwrite:  false,
+		LastSync:   time.Now().UTC(),
+		Dirs:       make(map[string]*Directory, 0),
+		Files:      make(map[string]*File, 0),
+		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
+		Parent:     nil,
+		Root:       false,
+		Path:       path,
+		ClientPath: path,
+		ServerPath: path,
 	}
 }
 
