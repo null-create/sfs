@@ -143,10 +143,9 @@ func (c *Client) Diff() error {
 	// retrieve the servers index for this client
 	resp, err := c.Client.Get(c.Endpoints["gen updates"])
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to retrieve server index: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[ERROR] server returned status code: %v", resp.StatusCode)
 		c.dump(resp, true)
 		return nil
 	}
