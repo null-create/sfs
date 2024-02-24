@@ -225,8 +225,8 @@ func LoadClient(persist bool) (*Client, error) {
 		// then make changes as necessary. this should be part of the standard
 		// start up process for LoadClient()
 
+		client.StartTime = time.Now().UTC()
 	}
-	client.StartTime = time.Now().UTC()
 	return client, nil
 }
 
@@ -312,19 +312,6 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// add token component
 	c.Tok = auth.NewT()
-
-	// start monitoring services
-	if err := c.Monitor.Start(root.Path); err != nil {
-		return nil, fmt.Errorf("failed to start monitor: %v", err)
-	}
-
-	// build and start monitoring event handlers
-	if err := c.BuildHandlers(); err != nil {
-		return nil, fmt.Errorf("failed to build event handlers: %v", err)
-	}
-	if err := c.StartHandlers(); err != nil {
-		return nil, fmt.Errorf("failed to start event handlers: %v", err)
-	}
 
 	// save initial state
 	if err := c.SaveState(); err != nil {

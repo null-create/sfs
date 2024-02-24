@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/sfs/pkg/client"
 
@@ -69,8 +68,7 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			showerr(err)
 		}
-		var shutdown = make(chan os.Signal)
-		err = c.Start(shutdown)
+		err = c.Start()
 		if err != nil {
 			showerr(err)
 		}
