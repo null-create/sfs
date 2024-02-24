@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -136,6 +137,14 @@ func newUser() (*auth.User, error) {
 func newHttpClient() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				Timeout:   1 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout: 10 * time.Second,
+		},
 	}
 }
 
@@ -293,9 +302,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
 		Transfer:    transfer.NewTransfer(),
-		Client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		Client:      newHttpClient(),
 	}
 
 	// run discover to populate the database and internal data structures
