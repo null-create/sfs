@@ -191,16 +191,9 @@ func (c *Client) AddFile(filePath string) error {
 	nfDir := filepath.Dir(filePath)
 	dir, err := c.GetDirByPath(nfDir)
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
-		log.Printf("[WARNING] file's parent directory is not in SFS the filesystem. adding...")
-		// create a new directory record for this file (don't parse contents,
-		// just create metadata) so we can add the new file. the "parent" for this
-		// directory will be root since we don't want to have to recursively build
-		// an entire system bottom up for one file.
-		newDir := svc.NewDirectory(filepath.Base(nfDir), c.UserID, c.DriveID, nfDir)
-		if err := c.AddDirWithID(c.Drive.RootID, newDir); err != nil {
-			return err
-		}
-		newFile.DirID = newDir.ID
+		// if the parent directory to this file doesn't exist in the file system,
+		// then add it to the SFS root.
+		newFile.DirID = c.Drive.RootID
 	} else if err != nil {
 		return err
 	} else {
@@ -218,16 +211,18 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(newFile.ClientPath); err != nil {
 		return err
 	}
-	// push metadata to server
-	req, err := c.NewFileRequest(newFile)
-	if err != nil {
-		return err
+	// push metadata to server if autosync is enabled
+	if c.Conf.AutoSync {
+		req, err := c.NewFileRequest(newFile)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		c.dump(resp, true)
 	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	c.dump(resp, true)
 	return nil
 }
 
@@ -242,6 +237,18 @@ func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
 	}
 	if err := c.WatchItem(file.ClientPath); err != nil {
 		return err
+	}
+	// push metadata to server if autosync is enabled
+	if c.Conf.AutoSync {
+		req, err := c.NewFileRequest(file)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		c.dump(resp, true)
 	}
 	return nil
 }
@@ -351,6 +358,18 @@ func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 		}
 		return err
 	}
+	// push metadata to server if autosync is enabled
+	if c.Conf.AutoSync {
+		req, err := c.NewDirectoryRequest(dir)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		c.dump(resp, true)
+	}
 	return nil
 }
 
@@ -389,6 +408,18 @@ func (c *Client) AddDir(dirPath string) error {
 	}
 	if err := c.Db.AddDir(newDir); err != nil {
 		return err
+	}
+	// push metadata to server if autosync is enabled
+	if c.Conf.AutoSync {
+		req, err := c.NewDirectoryRequest(newDir)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		c.dump(resp, true)
 	}
 	return nil
 }

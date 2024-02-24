@@ -208,7 +208,7 @@ func LoadClient(persist bool) (*Client, error) {
 	// sometimes we just need to load for the the data or
 	// a few one-off interactions with the server.
 	if persist {
-		// start monitoring services
+		// start monitoring services in SFS root directory
 		if err := client.StartMonitor(); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}

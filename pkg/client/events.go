@@ -15,8 +15,31 @@ import (
 
 // start monitoring files for changes
 func (c *Client) StartMonitor() error {
+	// monitor files under sfs root
 	if err := c.Monitor.Start(c.Root); err != nil {
 		return err
+	}
+	// monitor all other registered items distributed
+	// in the users system
+	// files := c.Drive.GetFiles()
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		if err := c.WatchItem(f.ClientPath); err != nil {
+			return err
+		}
+	}
+	// dirs := c.Drive.GetDirs()
+	dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		return err
+	}
+	for _, d := range dirs {
+		if err := c.WatchItem(d.Path); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -160,12 +183,13 @@ func (c *Client) StopHandlers() {
 	}
 }
 
-// build a map of event handlers for client files.
-// each handler will listen for events from files and will
-// call synchronization operations accordingly. if no files
-// are present during the build call then this will be a no-op.
+// build a map of event handlers for client files and directories.
+// each handler will listen for events from the users items and will
+// call synchronization operations accordingly, assuming auto sync is enabled.
+// if no files or directories are present during the build call then
+// this will be a no-op.
 //
-// should ideally only be called once during initialization
+// should ideally only be called once during initialization.
 func (c *Client) BuildHandlers() error {
 	// TODO: we should ideally be using c.Drive.GetFiles()
 	files, err := c.Db.GetUsersFiles(c.UserID)
@@ -175,6 +199,18 @@ func (c *Client) BuildHandlers() error {
 	for _, file := range files {
 		if _, exists := c.Handlers[file.Path]; !exists {
 			if err := c.NewEHandler(file.Path); err != nil {
+				return err
+			}
+		}
+	}
+	// TODO: we should ideally be using c.Drive.GetDirectories()
+	dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		return err
+	}
+	for _, dir := range dirs {
+		if _, exists := c.Handlers[dir.Path]; !exists {
+			if err := c.NewEHandler(dir.Path); err != nil {
 				return err
 			}
 		}
@@ -235,6 +271,10 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 						}
 					}
 				}
+				// NOTE: these new items may not be pushed to the server
+				// since they will be added with their initial last sync times.
+				// they will be added to the server after some modifications are detected,
+				// and if auto sync is enabled.
 				evts.AddEvent(e)
 			// item name change
 			case monitor.Name:
@@ -279,9 +319,8 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// trigger synchronization operations once the event buffer has reached capacity
 			// NOTE: whatever operations take place here will need to be thread safe!
 			if evts.AtCap {
-				// build update map and push file changes to server
+				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-				// only push file changes if auto sync is enabled
 				if c.Conf.AutoSync {
 					if err := c.Push(); err != nil {
 						return err

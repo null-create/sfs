@@ -43,8 +43,7 @@ type Directory struct {
 	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
 
-	// TODO: client path and server path. add to DB schema
-	// and update DB functions
+	// directory client and server side paths
 	ClientPath string `json:"client_path"`
 	ServerPath string `json:"server_path"`
 
