@@ -138,7 +138,7 @@ func newHttpClient() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy: http.ProxyFromEnvironment, // TODO add a proxy configuration?
 			Dial: (&net.Dialer{
 				Timeout:   1 * time.Second,
 				KeepAlive: 30 * time.Second,

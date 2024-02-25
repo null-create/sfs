@@ -145,9 +145,6 @@ func (c *Client) StartHandlers() error {
 	if err != nil {
 		return err
 	}
-	if len(files) == 0 {
-		return nil
-	}
 	log.Printf("[INFO] starting %d file handler(s)...", len(files))
 	for _, f := range files {
 		if err := c.StartHandler(f.Path); err != nil {
@@ -158,9 +155,6 @@ func (c *Client) StartHandlers() error {
 	// dirs := c.Drive.GetDirs()
 	dirs, err := c.Db.GetUsersDirectories(c.UserID)
 	if err != nil {
-		return nil
-	}
-	if len(dirs) == 0 {
 		return nil
 	}
 	log.Printf("[INFO] starting %d directory handler(s)...", len(dirs))

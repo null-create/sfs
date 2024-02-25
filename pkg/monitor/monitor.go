@@ -137,11 +137,11 @@ func (m *Monitor) WatchItem(path string) error {
 }
 
 // get an event listener channel for a given file
-func (m *Monitor) GetEventChan(filePath string) chan Event {
-	if evtChan, exists := m.Events[filePath]; exists {
+func (m *Monitor) GetEventChan(itemPath string) chan Event {
+	if evtChan, exists := m.Events[itemPath]; exists {
 		return evtChan
 	}
-	log.Print("[ERROR] event channel not found")
+	log.Print("[ERROR] event channel not found!")
 	return nil
 }
 

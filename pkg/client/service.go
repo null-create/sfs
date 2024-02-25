@@ -79,7 +79,7 @@ func (c *Client) Exists(path string) bool {
 func (c *Client) ListLocalFiles() {
 	files := c.Drive.GetFiles()
 	for _, f := range files {
-		output := fmt.Sprintf("id: %s\nname: %s\nloc: %s\n", f.ID, f.Name, f.ClientPath)
+		output := fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 		fmt.Print(output)
 	}
 }
@@ -208,7 +208,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	// add file to monitoring system
-	if err := c.WatchItem(newFile.ClientPath); err != nil {
+	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
 	// push metadata to server if autosync is enabled
@@ -358,6 +358,9 @@ func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 		}
 		return err
 	}
+	if err := c.WatchItem(dir.Path); err != nil {
+		return err
+	}
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
 		req, err := c.NewDirectoryRequest(dir)
@@ -407,6 +410,9 @@ func (c *Client) AddDir(dirPath string) error {
 		return err
 	}
 	if err := c.Db.AddDir(newDir); err != nil {
+		return err
+	}
+	if err := c.WatchItem(dirPath); err != nil {
 		return err
 	}
 	// push metadata to server if autosync is enabled

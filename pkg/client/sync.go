@@ -22,7 +22,7 @@ import (
 const (
 	EndpointRoot = "http://localhost"
 	CheckWait    = time.Millisecond * 500
-	SyncWait     = time.Minute
+	SyncWait     = time.Second * 30
 )
 
 // whether auto sync is enabled
@@ -45,11 +45,85 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
-// TODO: need to decide what this should actually be.
-// push all local changes to server?
-// get latest versions of files and directories from server adn
-// compare against local versions?
-func (c *Client) Sync() error {
+/*
+TODO: need to decide what this should actually be.
+
+push all local changes to server? probably not. this could
+override newer versions of the local files that are backed up
+on the server.
+
+get latest versions of files and directories from server and
+compare against local versions?
+
+Sync(serverIndex, localIndex)
+
+	itemsToPush, itemsToPull = []
+
+	for item in serverIndex {
+		if item in localIndex.LastSync and item.LastSync.After(local.Index.LastSync) {
+			itemsToPull.Add(item)
+		} else {
+			itemsToPush.Add(item)
+		}
+	}
+*/
+
+type SyncItems struct {
+	pull []*svc.File
+	push []*svc.File
+}
+
+func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
+	var syncItems = new(SyncItems)
+	var localIndex = c.Drive.SyncIndex
+
+	// figure out which items to push and pull
+	for id, svrLastSync := range svrIdx.LastSync {
+		if localIndex.HasItem(id) {
+			if svrLastSync.After(localIndex.LastSync[id]) {
+				file, err := c.GetFileByID(id)
+				if err != nil {
+					return err
+				}
+				syncItems.pull = append(syncItems.pull, file)
+			} else if localIndex.LastSync[id].After(svrIdx.LastSync[id]) {
+				file, err := c.GetFileByID(id)
+				if err != nil {
+					return err
+				}
+				syncItems.push = append(syncItems.push, file)
+			}
+		}
+	}
+	if len(syncItems.pull) == 0 && len(syncItems.push) == 0 {
+		log.Printf("[INFO] no sync operation necessary. exiting...")
+		return nil
+	}
+
+	// pull items
+	var wg sync.WaitGroup
+	for _, file := range syncItems.pull {
+		go func() {
+			defer wg.Done()
+			if err := c.PullFile(file); err != nil {
+				log.Printf("[ERROR] failed to pull file: %v", err)
+			}
+		}()
+		wg.Add(1)
+	}
+	wg.Wait()
+
+	// push items
+	for _, file := range syncItems.push {
+		go func() {
+			defer wg.Done()
+			if err := c.PushFile(file); err != nil {
+				log.Printf("[ERROR] failed to push file: %v", err)
+			}
+		}()
+		wg.Add(1)
+	}
+	wg.Wait()
 
 	return nil
 }

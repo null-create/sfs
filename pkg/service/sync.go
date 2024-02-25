@@ -58,10 +58,10 @@ func (s *SyncIndex) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
-// checks last sync for file.
-// won't be in toupdate if it's not in lastsync first
-func (s *SyncIndex) HasFile(fileID string) bool {
-	if _, exists := s.LastSync[fileID]; exists {
+// checks last sync for file or directory.
+// won't be in toupdate if it's not in lastsync first.
+func (s *SyncIndex) HasItem(itemId string) bool {
+	if _, exists := s.LastSync[itemId]; exists {
 		return true
 	}
 	return false

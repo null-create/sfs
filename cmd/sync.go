@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"github.com/sfs/pkg/client"
-
 	"github.com/spf13/cobra"
 )
 
@@ -23,11 +21,11 @@ func init() {
 }
 
 func SyncCmd(cmd *cobra.Command, args []string) {
-	c, err := client.LoadClient(true)
-	if err != nil {
-		showerr(err)
-	}
-	if err := c.Sync(); err != nil {
-		showerr(err)
-	}
+	// c, err := client.LoadClient(true)
+	// if err != nil {
+	// 	showerr(err)
+	// }
+	// if err := c.Sync(); err != nil {
+	// 	showerr(err)
+	// }
 }
