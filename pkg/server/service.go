@@ -940,7 +940,8 @@ func (s *Service) MoveDir(driveID string, dirID string, destDirID string) error 
 
 // --------- sync --------------------------------
 
-// generate (or refresh) a drives sync index
+// generate (or refresh) a drives sync index. returns nil if the
+// drive, or the drive's root is not initialized or found.
 func (s *Service) GenSyncIndex(driveID string) (*svc.SyncIndex, error) {
 	drive := s.GetDrive(driveID)
 	if drive == nil {

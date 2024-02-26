@@ -126,7 +126,7 @@ func (c *Client) GetFileByID(fileID string) (*svc.File, error) {
 	file := c.Drive.GetFile(fileID)
 	if file == nil {
 		// try database before giving up.
-		file, err := c.Db.GetFile(fileID)
+		file, err := c.Db.GetFileByID(fileID)
 		if err != nil {
 			return nil, err
 		}

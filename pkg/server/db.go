@@ -17,7 +17,7 @@ func getDBConn(dbName string) *db.Query {
 
 // get file info from db. file will be nil if not found.
 func findFile(fileID string, q *db.Query) (*svc.File, error) {
-	f, err := q.GetFile(fileID)
+	f, err := q.GetFileByID(fileID)
 	if err != nil {
 		return nil, err
 	}

@@ -361,8 +361,8 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 
 	// build ToUpdate map
 	tmpClient.Drive.SyncIndex = svc.BuildToUpdate(tmpClient.Drive.Root, tmpClient.Drive.SyncIndex)
-	assert.NotEqual(t, nil, tmpClient.Drive.SyncIndex.ToUpdate)
-	assert.NotEqual(t, 0, len(tmpClient.Drive.SyncIndex.ToUpdate))
+	assert.NotEqual(t, nil, tmpClient.Drive.SyncIndex.FilesToUpdate)
+	assert.NotEqual(t, 0, len(tmpClient.Drive.SyncIndex.FilesToUpdate))
 
 	// clean up
 	if err := Clean(t, tmpDir); err != nil {

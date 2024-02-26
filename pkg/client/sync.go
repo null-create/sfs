@@ -45,34 +45,12 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
-/*
-TODO: need to decide what this should actually be.
-
-push all local changes to server? probably not. this could
-override newer versions of the local files that are backed up
-on the server.
-
-get latest versions of files and directories from server and
-compare against local versions?
-
-Sync(serverIndex, localIndex)
-
-	itemsToPush, itemsToPull = []
-
-	for item in serverIndex {
-		if item in localIndex.LastSync and item.LastSync.After(local.Index.LastSync) {
-			itemsToPull.Add(item)
-		} else {
-			itemsToPush.Add(item)
-		}
-	}
-*/
-
 type SyncItems struct {
 	pull []*svc.File
 	push []*svc.File
 }
 
+// sync items between the client and the server.
 func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 	var syncItems = new(SyncItems)
 	var localIndex = c.Drive.SyncIndex
@@ -125,6 +103,9 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 	}
 	wg.Wait()
 
+	// reset local sync index
+	c.reset()
+
 	return nil
 }
 
@@ -134,7 +115,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 // take a given synch index, build a queue of files to be pushed to the
 // server, then upload each in their own goroutines
 func (c *Client) Push() error {
-	if len(c.Drive.SyncIndex.ToUpdate) == 0 {
+	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
 	}
 	queue := svc.BuildQ(c.Drive.SyncIndex)
@@ -170,7 +151,7 @@ func (c *Client) Push() error {
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
 func (c *Client) Pull(idx *svc.SyncIndex) error {
-	if len(idx.ToUpdate) == 0 {
+	if len(idx.FilesToUpdate) == 0 {
 		log.Print("[INFO] no sync index returned from the server. nothing to pull")
 		return nil
 	}
@@ -206,9 +187,11 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 	return nil
 }
 
-// TODO:
+// Compare the last sync times between local and remote files,
+// then display their last sync times. More recent times will be
+// displayed in red, same ones will be normal.
 func (c *Client) Diff() error {
-	// refresh ToUpdate
+	// refresh local index.ToUpdate
 	if !c.Drive.IsIndexed() {
 		return fmt.Errorf("no files found for indexing")
 	}
@@ -225,7 +208,7 @@ func (c *Client) Diff() error {
 	}
 
 	// TODO: compare the two indicies, and generate a third index
-	// with the most recent LastSync times for each file and directory,
+	// with the most recent LastSync and ToUpdates times for each file and directory,
 	// then display the differences.
 	return nil
 }

@@ -22,31 +22,38 @@ type SyncIndex struct {
 	// We will use the file path for each file to retrieve the pointer for the
 	// file object if it is to be queued for uploading or downloading
 	//
-	// key = file UUID, value = last modified date
+	// key = file or directory UUID, value = last modified date
 	LastSync map[string]time.Time `json:"last_sync"`
 
 	// map of files to be queued for uploading or downloading
 	//
 	// key = file UUID, value = file pointer
-	ToUpdate map[string]*File `json:"to_update"`
+	// TODO: modify this to be either pointers to files or directories?
+	FilesToUpdate map[string]*File `json:"to_update"`
+
+	// map of directories to be queued for uploading or downloading
+	DirsToUpdate map[string]*Directory `json:"dirs_to_update"`
 }
 
 // create a new sync-index object
 func NewSyncIndex(userID string) *SyncIndex {
 	return &SyncIndex{
-		UserID:   userID,
-		Sync:     false,
-		LastSync: make(map[string]time.Time, 0),
-		ToUpdate: make(map[string]*File, 0),
+		UserID:        userID,
+		Sync:          false,
+		LastSync:      make(map[string]time.Time, 0),
+		FilesToUpdate: make(map[string]*File, 0),
+		DirsToUpdate:  make(map[string]*Directory, 0),
 	}
 }
 
 // resets both LastSync and ToUpdate maps
 func (s *SyncIndex) Reset() {
 	s.LastSync = nil
-	s.LastSync = make(map[string]time.Time)
-	s.ToUpdate = nil
-	s.ToUpdate = make(map[string]*File)
+	s.FilesToUpdate = nil
+	s.DirsToUpdate = nil
+	s.LastSync = make(map[string]time.Time, 0)
+	s.FilesToUpdate = make(map[string]*File, 0)
+	s.DirsToUpdate = make(map[string]*Directory, 0)
 }
 
 // converts to json format for transfer
@@ -78,12 +85,12 @@ func (s *SyncIndex) ToString() string {
 
 // get a slice of files to sync from the index.ToUpdate map
 func (s *SyncIndex) GetFiles() []*File {
-	if len(s.ToUpdate) == 0 {
+	if len(s.FilesToUpdate) == 0 {
 		log.Print("no files matched for syncing")
 		return nil
 	}
-	syncFiles := make([]*File, 0, len(s.ToUpdate))
-	for _, f := range s.ToUpdate {
+	syncFiles := make([]*File, 0, len(s.FilesToUpdate))
+	for _, f := range s.FilesToUpdate {
 		syncFiles = append(syncFiles, f)
 	}
 	return syncFiles
@@ -134,10 +141,10 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 			}
 		}
 	}
-	for fileID, newFile := range new.ToUpdate {
-		if origFile, exists := orig.ToUpdate[fileID]; exists {
+	for fileID, newFile := range new.FilesToUpdate {
+		if origFile, exists := orig.FilesToUpdate[fileID]; exists {
 			if origFile.LastSync.After(newFile.LastSync) {
-				diff.ToUpdate[fileID] = newFile
+				diff.FilesToUpdate[fileID] = newFile
 			}
 		}
 	}

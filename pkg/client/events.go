@@ -57,7 +57,7 @@ func (c *Client) InitHandlerMaps() {
 }
 
 // adds a file to monitor, then creates and starts
-// a dedicated event listener and handler for this file.
+// a dedicated event handler for the new file monitoring goroutine.
 func (c *Client) WatchItem(path string) error {
 	if err := c.Monitor.WatchItem(path); err != nil {
 		return err
@@ -319,7 +319,6 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				return nil
 			}
 			// trigger synchronization operations once the event buffer has reached capacity
-			// NOTE: whatever operations take place here will need to be thread safe!
 			if evts.AtCap {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)

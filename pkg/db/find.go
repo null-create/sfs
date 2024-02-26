@@ -133,7 +133,7 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 // retrieve file metadata from the database
 //
 // file returns nil if no result is available
-func (q *Query) GetFile(fileID string) (*svc.File, error) {
+func (q *Query) GetFileByID(fileID string) (*svc.File, error) {
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()

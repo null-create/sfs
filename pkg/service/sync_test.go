@@ -28,10 +28,10 @@ func TestToUpdate(t *testing.T) {
 	// check new index, make sure some of the times are different
 	toUpdate := BuildToUpdate(d, idx)
 	assert.NotEqual(t, nil, toUpdate)
-	assert.NotEqual(t, 0, len(toUpdate.ToUpdate))
+	assert.NotEqual(t, 0, len(toUpdate.FilesToUpdate))
 
 	// make sure all new sync times are valid
-	for _, f := range toUpdate.ToUpdate {
+	for _, f := range toUpdate.FilesToUpdate {
 		assert.NotEqual(t, 0, f.LastSync.Second())
 	}
 

@@ -31,7 +31,7 @@ func TestAddAndFindFile(t *testing.T) {
 	log.Printf("added file: %s", tmpFile.ID)
 
 	// search for temp file & verify ID
-	f, err := q.GetFile(tmpFile.ID)
+	f, err := q.GetFileByID(tmpFile.ID)
 	if err != nil {
 		Fatal(t, fmt.Errorf("failed to get file: %v", err))
 	}

@@ -695,9 +695,13 @@ func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory 
 
 func buildSync(dir *Directory, idx *SyncIndex) *SyncIndex {
 	for _, file := range dir.Files {
-		if _, exists := idx.LastSync[file.ID]; !exists {
+		if !idx.HasItem(file.ID) {
 			idx.LastSync[file.ID] = file.LastSync
 		}
+	}
+	// add directory's last sync time too
+	if !idx.HasItem(dir.ID) {
+		idx.LastSync[dir.ID] = dir.LastSync
 	}
 	return idx
 }
@@ -724,14 +728,17 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
-func buildUpdate(d *Directory, idx *SyncIndex) *SyncIndex {
-	for _, file := range d.Files {
-		if _, exists := idx.LastSync[file.ID]; exists {
+func buildUpdate(dir *Directory, idx *SyncIndex) *SyncIndex {
+	for _, file := range dir.Files {
+		if idx.HasItem(file.ID) {
 			if file.LastSync.After(idx.LastSync[file.ID]) {
-				idx.ToUpdate[file.ID] = file
+				idx.FilesToUpdate[file.ID] = file
 			}
-		} else {
-			continue // this wasn't found previously, ignore
+		}
+	}
+	if idx.HasItem(dir.ID) {
+		if dir.LastSync.After(idx.LastSync[dir.ID]) {
+			idx.DirsToUpdate[dir.ID] = dir
 		}
 	}
 	return idx

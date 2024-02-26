@@ -33,7 +33,7 @@ func TestCreateAndUpdateAFile(t *testing.T) {
 	if err := q.UpdateFile(tmpFile); err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := q.GetFile(tmpFile.ID)
+	tmp, err := q.GetFileByID(tmpFile.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

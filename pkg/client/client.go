@@ -102,8 +102,10 @@ func (c *Client) ShutDown() {
 // to facilitate monitoring and synchronization services
 //
 // NOTE: the shutDown parameter is used for programmatic
-// testing purposes
+// testing purposes. clients are normally shut down using ctrl-c.
 func (c *Client) start(shutDown chan os.Signal) error {
+	// NOTE: this check may be redundant since start is always called
+	// after LoadClient().
 	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
 		if err := c.LoadDrive(); err != nil {
 			return err
