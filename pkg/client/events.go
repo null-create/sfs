@@ -86,36 +86,36 @@ func (c *Client) NewHandler(path string) error {
 }
 
 // get alll the necessary things for the event handler to operate independently
-func (c *Client) setupHandler(itemPath string) (chan monitor.Event, string, *monitor.Events, error) {
+func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Events, string, error) {
 	evtChan := c.Monitor.GetEventChan(itemPath)
 
 	thing, err := os.Stat(itemPath)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, "", err
 	}
 	var id string
 	if thing.IsDir() {
 		itemID, err := c.Db.GetDirIDFromPath(itemPath)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, "", err
 		}
 		if itemID == "" {
-			return nil, "", nil, fmt.Errorf("no id found for directory %s", itemPath)
+			return nil, nil, "", fmt.Errorf("no id found for directory %s", itemPath)
 		}
 		id = itemID
 	} else {
 		itemID, err := c.Db.GetFileIDFromPath(itemPath)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, "", err
 		}
 		if itemID == "" {
-			return nil, "", nil, fmt.Errorf("no id found for file %s", itemPath)
+			return nil, nil, "", fmt.Errorf("no id found for file %s", itemPath)
 		}
 		id = itemID
 	}
 	if evtChan == nil || id == "" {
-		return nil, "", nil, fmt.Errorf(
-			"failed to get param: evt=%v off=%v id=%s",
+		return nil, nil, "", fmt.Errorf(
+			"failed to get param: evt=%v id=%s",
 			evtChan, id,
 		)
 	}
@@ -124,7 +124,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, string, *mon
 	// events between the client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
 
-	return evtChan, id, evts, nil
+	return evtChan, evts, id, nil
 }
 
 // start an event handler for a given file.
@@ -241,7 +241,7 @@ func (c *Client) NewEHandler(path string) error {
 // items can be either files or directories.
 func (c *Client) handler(itemPath string, stop chan bool) error {
 	// get all necessary params for the event handler.
-	evtChan, itemID, evts, err := c.setupHandler(itemPath)
+	evtChan, evtBuf, itemID, err := c.setupHandler(itemPath)
 	if err != nil {
 		return err
 	}
@@ -276,48 +276,48 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				// since they will be added with their initial last sync times.
 				// they will be added to the server after some modifications are detected,
 				// and if auto sync is enabled.
-				evts.AddEvent(e)
+				evtBuf.AddEvent(e)
 			// item name change
 			case monitor.Name:
 				if err := c.apply(e.Path, "name"); err != nil {
 					log.Printf("[ERROR] failed to apply action: %v", err)
 					break
 				}
-				evts.AddEvent(e)
+				evtBuf.AddEvent(e)
 			// item mode change
 			case monitor.Mode:
 				if err := c.apply(e.Path, "mode"); err != nil {
 					log.Printf("[ERROR] failed to apply action: %v", err)
 					break
 				}
-				evts.AddEvent(e)
+				evtBuf.AddEvent(e)
 			// item size changed
 			case monitor.Size:
 				if err := c.apply(e.Path, "size"); err != nil {
 					log.Printf("[ERROR] failed to apply action: %v", err)
 					break
 				}
-				evts.AddEvent(e)
+				evtBuf.AddEvent(e)
 			// item mod time change
 			case monitor.ModTime:
 				if err := c.apply(e.Path, "modtime"); err != nil {
 					log.Printf("[ERROR] failed to apply action: %v", err)
 					break
 				}
-				evts.AddEvent(e)
+				evtBuf.AddEvent(e)
 			// items content change
 			case monitor.Change:
 				if err := c.apply(e.Path, "change"); err != nil {
 					log.Printf("[ERROR] failed to apply action: %v", err)
 					break
 				}
-				evts.AddEvent(e)
+				evtBuf.AddEvent(e)
 			case monitor.Delete:
 				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", itemID)
 				return nil
 			}
 			// trigger synchronization operations once the event buffer has reached capacity
-			if evts.AtCap {
+			if evtBuf.AtCap {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 				if c.autoSync() {
@@ -325,7 +325,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 						return err
 					}
 				}
-				evts.Reset()             // reset events buffer
+				evtBuf.Reset()           // reset events buffer
 				time.Sleep(monitor.WAIT) // wait before resuming event handler
 			}
 		default:
