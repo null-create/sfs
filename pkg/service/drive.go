@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/sfs/pkg/auth"
 )
@@ -188,24 +187,6 @@ func (d *Drive) ToJSON() ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-// save drive state to JSON format in current directory.
-func (d *Drive) SaveState() error {
-	data, err := d.ToJSON()
-	if err != nil {
-		return err
-	}
-	fn := fmt.Sprintf("user-%s-.json", time.Now().UTC().Format("2006-01-02T15-04-05"))
-	fp := filepath.Join(d.DriveRoot, "state", fn)
-	return os.WriteFile(fp, data, PERMS)
-}
-
-func (d *Drive) GetOwnerID() (string, error) {
-	if d.OwnerID == "" {
-		return "", fmt.Errorf("drives should have an associated owner ID")
-	}
-	return d.OwnerID, nil
 }
 
 // ------- security --------------------------------
