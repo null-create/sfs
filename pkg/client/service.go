@@ -542,6 +542,7 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 	// traverse users SFS file system and populate internal structures
 	root = root.Walk()
+
 	// send everything to the database
 	files := root.WalkFs()
 	for _, file := range files {
