@@ -86,38 +86,37 @@ func (c *Client) NewHandler(path string) error {
 }
 
 // get alll the necessary things for the event handler to operate independently
-func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, string, *monitor.Events, error) {
+func (c *Client) setupHandler(itemPath string) (chan monitor.Event, string, *monitor.Events, error) {
 	evtChan := c.Monitor.GetEventChan(itemPath)
-	offSwitch := c.Monitor.GetOffSwitch(itemPath)
 
 	thing, err := os.Stat(itemPath)
 	if err != nil {
-		return nil, nil, "", nil, err
+		return nil, "", nil, err
 	}
 	var id string
 	if thing.IsDir() {
 		itemID, err := c.Db.GetDirIDFromPath(itemPath)
 		if err != nil {
-			return nil, nil, "", nil, err
+			return nil, "", nil, err
 		}
 		if itemID == "" {
-			return nil, nil, "", nil, fmt.Errorf("no id found for directory %s", itemPath)
+			return nil, "", nil, fmt.Errorf("no id found for directory %s", itemPath)
 		}
 		id = itemID
 	} else {
 		itemID, err := c.Db.GetFileIDFromPath(itemPath)
 		if err != nil {
-			return nil, nil, "", nil, err
+			return nil, "", nil, err
 		}
 		if itemID == "" {
-			return nil, nil, "", nil, fmt.Errorf("no id found for file %s", itemPath)
+			return nil, "", nil, fmt.Errorf("no id found for file %s", itemPath)
 		}
 		id = itemID
 	}
-	if evtChan == nil || offSwitch == nil || id == "" {
-		return nil, nil, "", nil, fmt.Errorf(
+	if evtChan == nil || id == "" {
+		return nil, "", nil, fmt.Errorf(
 			"failed to get param: evt=%v off=%v id=%s",
-			evtChan, offSwitch, id,
+			evtChan, id,
 		)
 	}
 	// events buffer.
@@ -125,7 +124,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, chan bool, s
 	// events between the client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
 
-	return evtChan, offSwitch, id, evts, nil
+	return evtChan, id, evts, nil
 }
 
 // start an event handler for a given file.
@@ -242,7 +241,7 @@ func (c *Client) NewEHandler(path string) error {
 // items can be either files or directories.
 func (c *Client) handler(itemPath string, stop chan bool) error {
 	// get all necessary params for the event handler.
-	evtChan, off, itemID, evts, err := c.setupHandler(itemPath)
+	evtChan, itemID, evts, err := c.setupHandler(itemPath)
 	if err != nil {
 		return err
 	}
@@ -250,7 +249,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			log.Printf("[INFO] stopping event handler for item id=%v ...", itemID)
+			log.Printf("[INFO] stopping event handler for %s...", filepath.Base(itemPath))
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
@@ -263,7 +262,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 					}
 					if item.IsDir() {
 						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
-						if err := c.AddDirWithID(newDir.ID, newDir); err != nil {
+						if err := c.AddDirWithID(itemID, newDir); err != nil {
 							log.Printf("[ERROR] failed to add new directory: %v", err)
 						}
 					} else {
@@ -314,7 +313,6 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				}
 				evts.AddEvent(e)
 			case monitor.Delete:
-				off <- true // shutdown monitoring thread, remove from index, and shut down handler
 				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", itemID)
 				return nil
 			}
