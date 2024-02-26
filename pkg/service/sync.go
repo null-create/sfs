@@ -25,13 +25,12 @@ type SyncIndex struct {
 	// key = file or directory UUID, value = last modified date
 	LastSync map[string]time.Time `json:"last_sync"`
 
-	// map of files to be queued for uploading or downloading
-	//
+	// map of files to be queued for uploading or downloading.
 	// key = file UUID, value = file pointer
-	// TODO: modify this to be either pointers to files or directories?
 	FilesToUpdate map[string]*File `json:"to_update"`
 
 	// map of directories to be queued for uploading or downloading
+	// key = dir UUID, value = dir pointer
 	DirsToUpdate map[string]*Directory `json:"dirs_to_update"`
 }
 
@@ -133,18 +132,29 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 // the map this returns will only contain the itemps that were matched and found to have a
 // more recent time -- items that weren't matched will be ignored.
 func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
+	// index containing most recent items
 	diff := NewSyncIndex(orig.UserID)
-	for fileID, lastSync := range new.LastSync {
-		if origTime, exists := orig.LastSync[fileID]; exists {
+	// compare last sync times
+	for itemId, lastSync := range new.LastSync {
+		if origTime, exists := orig.LastSync[itemId]; exists {
 			if lastSync.After(origTime) {
-				diff.LastSync[fileID] = lastSync
+				diff.LastSync[itemId] = lastSync
 			}
 		}
 	}
+	// compare files marked for updating
 	for fileID, newFile := range new.FilesToUpdate {
 		if origFile, exists := orig.FilesToUpdate[fileID]; exists {
-			if origFile.LastSync.After(newFile.LastSync) {
+			if newFile.LastSync.After(origFile.LastSync) {
 				diff.FilesToUpdate[fileID] = newFile
+			}
+		}
+	}
+	// compare directories marked for updating
+	for dirID, newDir := range new.DirsToUpdate {
+		if origDir, exists := orig.DirsToUpdate[dirID]; exists {
+			if newDir.LastSync.After(origDir.LastSync) {
+				diff.DirsToUpdate[dirID] = newDir
 			}
 		}
 	}
