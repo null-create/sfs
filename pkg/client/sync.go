@@ -266,7 +266,9 @@ func (c *Client) PushNewFile(file *svc.File) error {
 // not intended for new files discovered on the server -- this will be handled by a
 // separate function PullNewFiles()
 func (c *Client) PullFile(file *svc.File) error {
-	if err := c.Transfer.Download(file.ClientPath, file.Endpoint); err != nil {
+	if err := c.Transfer.Download(
+		file.ClientPath, file.Endpoint,
+	); err != nil {
 		return err
 	}
 	return nil
