@@ -549,16 +549,25 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 		if err := c.Db.AddFile(file); err != nil {
 			return nil, fmt.Errorf("failed to add file to database: %v", err)
 		}
+		if err := c.WatchItem(file.Path); err != nil {
+			return nil, err
+		}
 	}
 	dirs := root.WalkDs()
-	for _, d := range dirs {
-		if err := c.Db.AddDir(d); err != nil {
+	for _, subDir := range dirs {
+		if err := c.Db.AddDir(subDir); err != nil {
 			return nil, fmt.Errorf("failed to add directory to database: %v", err)
+		}
+		if err := c.WatchItem(subDir.Path); err != nil {
+			return nil, err
 		}
 	}
 	// add root directory itself
 	if err := c.Db.AddDir(root); err != nil {
 		return nil, fmt.Errorf("failed to add root to database: %v", err)
+	}
+	if err := c.WatchItem(root.Path); err != nil {
+		return nil, err
 	}
 	return root, nil
 }
@@ -587,16 +596,25 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		if err := c.Db.AddFile(file); err != nil {
 			return fmt.Errorf("failed to add file to database: %v", err)
 		}
+		if err := c.WatchItem(file.Path); err != nil {
+			return err
+		}
 	}
 	dirs := newDir.GetSubDirs()
-	for _, d := range dirs {
-		if err := c.Db.AddDir(d); err != nil {
+	for _, subDir := range dirs {
+		if err := c.Db.AddDir(subDir); err != nil {
 			return fmt.Errorf("failed to add directory to database: %v", err)
+		}
+		if err := c.WatchItem(subDir.Path); err != nil {
+			return err
 		}
 	}
 	// add new directory itself
 	if err := c.Db.AddDir(newDir); err != nil {
 		return fmt.Errorf("failed to add root to database: %v", err)
+	}
+	if err := c.WatchItem(newDir.Path); err != nil {
+		return err
 	}
 	return nil
 }
@@ -714,6 +732,10 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 					log.Printf("[ERROR] could not add directory (%s) to db: %v", item.Name(), err)
 					continue
 				}
+				if err := c.WatchItem(entryPath); err != nil {
+					log.Printf("[ERROR] could not monitor directory (%s): %v", item.Name(), err)
+					continue
+				}
 				subDir = c.refreshDrive(subDir)
 				if err := dir.AddSubDir(subDir); err != nil {
 					log.Print(err)
@@ -735,6 +757,10 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 				}
 				if err := dir.AddFile(newFile); err != nil {
 					log.Printf("[ERROR] could not add file (%s) service: %v", item.Name(), err)
+				}
+				if err := c.WatchItem(entryPath); err != nil {
+					log.Printf("[ERROR] failed to watch file (%s): %v", item.Name(), err)
+					continue
 				}
 			}
 		}
