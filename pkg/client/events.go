@@ -329,6 +329,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				time.Sleep(monitor.WAIT) // wait before resuming event handler
 			}
 		default:
+			time.Sleep(monitor.WAIT)
 			continue
 		}
 	}
