@@ -292,4 +292,17 @@ const (
 	// ---------- SELECT statements for confirming existance -------------------
 
 	ExistsQuery string = `SELECT EXISTS (SELECT 1 FROM ? WHERE id = '?');`
+
+	// ----------- SELECT statements for cross examing tables -------------------
+	DirOrFileQuery string = `
+		SELECT
+			id,
+			CASE
+					WHEN id IN (SELECT id FROM Files) THEN 'File'
+					WHEN id IN (SELECT id FROM Directories) THEN 'Directory'
+					ELSE 'Unknown'
+			END AS Type
+		FROM
+			(SELECT id FROM Files UNION SELECT id FROM Directories) AS AllIds;
+	`
 )

@@ -572,6 +572,53 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 	return dirs, nil
 }
 
+// ------- misc --------------------------------
+
+// determine whether this ID belongs to a file or a directory.
+// if successful and still unknown, then it will return 'Unknown,'
+// otherwise it will return the type, or an empty string and error.
+func (q *Query) FileOrDirID(id string) (string, error) {
+	/*
+		TODO:
+			This seems kinda stupid, but whatever.
+			There's gotta be a better way to query multiple tables
+			across multiple files, but I'm not sure.
+
+			Maybe there's connection pooling options available?
+	*/
+	q.WhichDB("files")
+	db1, err := sql.Open("sqlite3", q.CurDB)
+	if err != nil {
+		return "", fmt.Errorf("failed to open db: %v", err)
+	}
+	defer db1.Close()
+
+	q.WhichDB("directories")
+	db2, err := sql.Open("sqlite3", q.CurDB)
+	if err != nil {
+		return "", fmt.Errorf("failed to open db: %v", err)
+	}
+	defer db2.Close()
+
+	var fileOrDirID string
+	rows, err := db1.Query(DirOrFileQuery, id)
+	if err != nil {
+		return "", err
+	}
+	for rows.Next() {
+		if err := rows.Scan(&fileOrDirID); err != nil {
+			return "", err
+		}
+		switch fileOrDirID {
+		case "File":
+			return "File", nil
+		case "Directory":
+			return "Directory", nil
+		}
+	}
+	return "Unknown", nil
+}
+
 // ------ drives --------------------------------
 
 // get information about a user drive from the database
