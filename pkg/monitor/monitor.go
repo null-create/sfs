@@ -32,20 +32,20 @@ type Monitor struct {
 	Path string
 
 	// map of channels to active watchers.
-	// key is the absolute file path, value is the channel to the watchFile()
+	// key is the absolute path, value is the channel to the watchFile()
 	// or watchDir() goroutine associated with that file or directory
 	//
-	// key = file path, val is Event channel
+	// key = item path, val is Event channel
 	Events map[string]chan Event
 
 	// active watchers
-	// key is the absolute file path, value is the watcher function instance.
+	// key is the items absolute path, value is the watcher function instance.
 	Watchers map[string]Watcher
 
 	// map of channels to active watchers that will shut down the watcher
 	// goroutine when set to true.
 	//
-	// key = file path, val is chan bool
+	// key = item path, val is chan bool
 	OffSwitches map[string]chan bool
 }
 
@@ -137,8 +137,8 @@ func (m *Monitor) WatchItem(path string) error {
 }
 
 // get an event listener channel for a given file
-func (m *Monitor) GetEventChan(itemPath string) chan Event {
-	if evtChan, exists := m.Events[itemPath]; exists {
+func (m *Monitor) GetEventChan(path string) chan Event {
+	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
 	log.Print("[ERROR] event channel not found!")
@@ -147,13 +147,13 @@ func (m *Monitor) GetEventChan(itemPath string) chan Event {
 
 // get an off switch for a given monitoring goroutine.
 // off switches, when set to true, will shut down the monitoring process.
-func (m *Monitor) GetOffSwitch(filePath string) chan bool {
-	if offSwitch, exists := m.OffSwitches[filePath]; exists {
+func (m *Monitor) GetOffSwitch(path string) chan bool {
+	if offSwitch, exists := m.OffSwitches[path]; exists {
 		return offSwitch
 	}
 	log.Printf(
 		"[ERROR] off switch not found for %s monitoring goroutine",
-		filepath.Base(filePath),
+		filepath.Base(path),
 	)
 	return nil
 }
@@ -173,12 +173,12 @@ func (m *Monitor) GetPaths() []string {
 
 // close a watcher function and event channel for a given item.
 // will be a no-op if the file is not registered.
-func (m *Monitor) StopWatching(filePath string) {
-	if m.IsMonitored(filePath) {
-		m.OffSwitches[filePath] <- true
-		delete(m.OffSwitches, filePath)
-		delete(m.Events, filePath)
-		delete(m.Watchers, filePath)
+func (m *Monitor) StopWatching(path string) {
+	if m.IsMonitored(path) {
+		m.OffSwitches[path] <- true
+		delete(m.OffSwitches, path)
+		delete(m.Events, path)
+		delete(m.Watchers, path)
 	}
 }
 
