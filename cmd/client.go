@@ -21,42 +21,29 @@ func init() {
 	flags := FlagPole{}
 	clientCmd.PersistentFlags().BoolVar(&flags.new, "new", false, "Initialize a new client service instance")
 	clientCmd.PersistentFlags().BoolVar(&flags.start, "start", false, "Start client services")
-	clientCmd.PersistentFlags().BoolVar(&flags.local, "local", false, "List local files managed by SFS service")
-	clientCmd.PersistentFlags().BoolVar(&flags.remote, "remote", false, "List remote files managed by SFSService")
-	clientCmd.PersistentFlags().BoolVar(&flags.refresh, "refresh", false, "Refresh drive. will search and add newly discovered files and directories")
 	clientCmd.PersistentFlags().BoolVar(&flags.info, "info", false, "Get info about the local SFS client")
 
 	viper.BindPFlag("start", clientCmd.PersistentFlags().Lookup("start"))
-	viper.BindPFlag("stop", clientCmd.PersistentFlags().Lookup("stop"))
 	viper.BindPFlag("new", clientCmd.PersistentFlags().Lookup("new"))
-	viper.BindPFlag("local", clientCmd.PersistentFlags().Lookup("local"))
-	viper.BindPFlag("remote", clientCmd.PersistentFlags().Lookup("remote"))
-	viper.BindPFlag("refresh", clientCmd.PersistentFlags().Lookup("refresh"))
 	viper.BindPFlag("info", clientCmd.PersistentFlags().Lookup("info"))
 
 	rootCmd.AddCommand(clientCmd)
 }
 
-func getflags(cmd *cobra.Command) FlagPole {
+func getClientFlags(cmd *cobra.Command) FlagPole {
 	new, _ := cmd.Flags().GetBool("new")
 	start, _ := cmd.Flags().GetBool("start")
-	local, _ := cmd.Flags().GetBool("local")
-	remote, _ := cmd.Flags().GetBool("remote")
-	refresh, _ := cmd.Flags().GetBool("refresh")
 	info, _ := cmd.Flags().GetBool("info")
 
 	return FlagPole{
-		new:     new,
-		start:   start,
-		local:   local,
-		remote:  remote,
-		refresh: refresh,
-		info:    info,
+		new:   new,
+		start: start,
+		info:  info,
 	}
 }
 
 func ClientCmd(cmd *cobra.Command, args []string) error {
-	f := getflags(cmd)
+	f := getClientFlags(cmd)
 	switch {
 	case f.new:
 		_, err := client.Init(configs.NewService)
@@ -72,28 +59,6 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			showerr(err)
 		}
-	case f.local:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(err)
-		}
-		if err := c.ListLocalFilesDB(); err != nil {
-			showerr(err)
-		}
-	case f.remote:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(err)
-		}
-		if err := c.ListRemoteFiles(); err != nil {
-			showerr(err)
-		}
-	case f.refresh:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(err)
-		}
-		c.RefreshDrive()
 	case f.info:
 		c, err := client.LoadClient(false)
 		if err != nil {

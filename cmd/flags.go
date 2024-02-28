@@ -11,6 +11,11 @@ type FlagPole struct {
 	refresh bool // refresh local drive
 	info    bool // get information about the client
 
+	// drive command flags
+	register   bool // register a new drive with the sfs server
+	list_files bool // list all files
+	list_dirs  bool // list all directories
+
 	// configs
 	get bool
 	set bool
