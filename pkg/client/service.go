@@ -533,6 +533,35 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 	return nil
 }
 
+// register a new drive with the server. if drive is already known to the server,
+// then the server response should reflect this.
+func (c *Client) RegisterDrive() error {
+	if c.Drive == nil {
+		return fmt.Errorf("no drive available")
+	}
+	req, err := c.NewDriveRequest(c.Drive)
+	if err != nil {
+		return fmt.Errorf("failed to create new drive request: %v", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusOK {
+		c.Drive.Registered = true
+	} else {
+		var msg = fmt.Sprintf(
+			"[WARNING] failed to register drive with server: %d\n", resp.StatusCode,
+		) + "may need to use the register command or check if the server is up"
+		log.Print(msg)
+	}
+	c.dump(resp, true)
+	if err := c.SaveState(); err != nil {
+		return fmt.Errorf("failed to save state: %v", err)
+	}
+	return nil
+}
+
 // discover populates the given root directory with the users file and
 // sub directories, updates the database as it does so, and returns
 // the the directory object when finished, or if there was an error.

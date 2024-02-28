@@ -111,9 +111,10 @@ type Drive struct {
 	IsLoaded bool `json:"is_loaded"`
 
 	// User's root directory & sync index
-	RootID    string     `json:"root_id"`
-	Root      *Directory `json:"-"` // ignored to avoid json cycle errors
-	SyncIndex *SyncIndex `json:"sync_index"`
+	RootID     string     `json:"root_id"`
+	Root       *Directory `json:"-"` // ignored to avoid json cycle errors
+	SyncIndex  *SyncIndex `json:"sync_index"`
+	Registered bool       `json:"registered"` // flag for whether this drive is registered with the SFS server
 
 	// folder for placing "deleted" files and directories
 	RecycleBin string `json:"recycle_bin"`
@@ -161,14 +162,16 @@ func NewDrive(
 	}
 }
 
+// check whether this drive is registered with the server.
+func (d *Drive) IsRegistered() bool { return d.Registered }
+
+// remaining drive space.
 func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }
 
 // check whether this drive has an instantiated root directory.
-func (d *Drive) HasRoot() bool {
-	return d.Root != nil
-}
+func (d *Drive) HasRoot() bool { return d.Root != nil }
 
 // check whether the root directory has files and subdirectories
 func (d *Drive) EmptyRoot() bool {

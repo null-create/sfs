@@ -106,7 +106,12 @@ func Setup() (*Client, error) {
 	if err := client.Db.AddDrive(client.Drive); err != nil {
 		return nil, err
 	}
-
+	// attempt to register drive with server.
+	if client.autoSync() {
+		if err := client.RegisterDrive(); err != nil {
+			return nil, err
+		}
+	}
 	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
 	if err := envCfg.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
 		return nil, err
@@ -224,6 +229,12 @@ func LoadClient(persist bool) (*Client, error) {
 	// call to client.Start(), otherwise none of the monitoring
 	// services will be able to actually run.
 	if persist {
+		// make sure the drive was registered before starting
+		if !client.Drive.IsRegistered() {
+			if err := client.RegisterDrive(); err != nil {
+				return nil, err
+			}
+		}
 		// start monitoring services in SFS root directory
 		if err := client.StartMonitor(); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
@@ -323,6 +334,12 @@ func NewClient(user *auth.User) (*Client, error) {
 		return nil, fmt.Errorf("failed to add root directory to database: %v", err)
 	}
 	c.Drive = drv
+	// register drive with the server if autosync is enabled
+	if c.autoSync() {
+		if err := c.RegisterDrive(); err != nil {
+			return nil, fmt.Errorf("failed to register drive: %v", err)
+		}
+	}
 
 	// build services endpoints map (files and directories have endpoints defined
 	// within their respective data structures)

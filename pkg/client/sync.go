@@ -103,7 +103,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 	}
 	wg.Wait()
 
-	// reset local sync index
+	// reset local sync mechanisms
 	c.reset()
 
 	return nil

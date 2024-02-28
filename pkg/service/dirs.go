@@ -304,7 +304,12 @@ func (d *Directory) Unlock(password string) bool {
 func (d *Directory) addFile(file *File) {
 	file.DirID = d.ID
 	file.DriveID = d.DriveID
-	file.Path = filepath.Join(d.Path, file.Name)
+	// TODO: maybe only change filepath listing if we actually physically copy a file?
+	// leaving this unchanged might give files accurate location info, but not
+	// actually be under a directory, at least according to the sfs system.
+	// this causes os.stat to fail since it redefines the internal
+	// path for a physical file, which won't match its actuall location.
+	// file.Path = filepath.Join(d.Path, file.Name)
 	file.LastSync = time.Now().UTC()
 	d.Files[file.ID] = file
 }
