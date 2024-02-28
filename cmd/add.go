@@ -27,7 +27,7 @@ func init() {
 
 	viper.BindPFlag("path", addCmd.Flags().Lookup("path"))
 
-	clientCmd.AddCommand(addCmd)
+	drvCmd.AddCommand(addCmd)
 }
 
 func RunAddCmd(cmd *cobra.Command, args []string) {
@@ -43,6 +43,5 @@ func RunAddCmd(cmd *cobra.Command, args []string) {
 	}
 	if err := c.AddItem(path); err != nil {
 		showerr(err)
-		return
 	}
 }

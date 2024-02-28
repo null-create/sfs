@@ -29,7 +29,7 @@ func init() {
 	viper.BindPFlag("path", RemoveCmd.Flags().Lookup("path"))
 	viper.BindPFlag("delete", RemoveCmd.Flags().Lookup("delete"))
 
-	clientCmd.AddCommand(RemoveCmd)
+	drvCmd.AddCommand(RemoveCmd)
 }
 
 func RunRemoveCmd(cmd *cobra.Command, args []string) {
