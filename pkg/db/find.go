@@ -640,7 +640,7 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 		&d.Protected,
 		&d.Key,
 		&d.AuthType,
-		&d.DriveRoot,
+		&d.RootPath,
 		&d.RootID,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -679,7 +679,7 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) {
 			&drive.Protected,
 			&drive.Key,
 			&drive.AuthType,
-			&drive.DriveRoot,
+			&drive.RootPath,
 			&drive.RootID,
 		); err != nil {
 			return nil, fmt.Errorf("[ERROR] unable to query for drive: %v", err)
@@ -710,7 +710,7 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 		&d.Protected,
 		&d.Key,
 		&d.AuthType,
-		&d.DriveRoot,
+		&d.RootPath,
 		&d.RootID,
 	); err != nil {
 		if err == sql.ErrNoRows {

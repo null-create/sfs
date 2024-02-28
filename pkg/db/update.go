@@ -94,7 +94,7 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 		&drv.Protected,
 		&drv.Key,
 		&drv.AuthType,
-		&drv.DriveRoot,
+		&drv.RootPath,
 		&drv.RootID,
 		&drv.ID,
 	); err != nil {

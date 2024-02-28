@@ -348,7 +348,7 @@ func TestAllocateDrive(t *testing.T) {
 	assert.NotEqual(t, nil, d)
 
 	// make sure all the basic user files are present
-	entries, err := os.ReadDir(d.DriveRoot)
+	entries, err := os.ReadDir(d.RootPath)
 	if err != nil {
 		Fatal(t, err)
 	}

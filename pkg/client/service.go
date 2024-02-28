@@ -346,6 +346,26 @@ func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error
 
 // ----- directories --------------------------------
 
+// list all directories managed by the SFS client
+func (c *Client) ListLocalDirsDB() error {
+	dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		return err
+	}
+	if len(dirs) == 0 {
+		fmt.Print("no directories found")
+		return nil
+	}
+	for _, dir := range dirs {
+		var output = fmt.Sprintf(
+			"name: %s\n id: %v\n loc: %s\n\n",
+			dir.Name, dir.ID, dir.ClientPath,
+		)
+		fmt.Print(output)
+	}
+	return nil
+}
+
 // add dir to client service instance
 func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
@@ -535,11 +555,22 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 
 // register a new drive with the server. if drive is already known to the server,
 // then the server response should reflect this.
+//
+// TODO:
+//
+//	server is refusing this because it cant find the root for this drive,
+//	which is not present in the transferred data because we dont encode it,
+//	because doing so would potentially cause recursion issues that we'd like to
+//	avoid. because of this, we need to send the root to the server as a separate
+//	new directory request before we can register the drive itself. then we need
+//	to modify NewDriveCtx middleware to search for the root using the its path,
+//	which is provided by the drive.DriveRoot property, which is encoded in the new
+//	drive request and recieved by the server.
 func (c *Client) RegisterDrive() error {
 	if c.Drive == nil {
 		return fmt.Errorf("no drive available")
 	}
-	req, err := c.NewDriveRequest(c.Drive)
+	req, err := c.GetDriveReq(c.Drive, "new")
 	if err != nil {
 		return fmt.Errorf("failed to create new drive request: %v", err)
 	}
@@ -552,7 +583,7 @@ func (c *Client) RegisterDrive() error {
 	} else {
 		var msg = fmt.Sprintf(
 			"[WARNING] failed to register drive with server: %d\n", resp.StatusCode,
-		) + "may need to use the register command or check if the server is up"
+		) + "may need to use the register command or check if the server is up\n\n"
 		log.Print(msg)
 	}
 	c.dump(resp, true)

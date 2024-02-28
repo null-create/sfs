@@ -100,10 +100,6 @@ type Drive struct {
 	Key       string `json:"key"`
 	AuthType  string `json:"auth_type"`
 
-	// location of the drive on physical server filesystem
-	// i.e., ...sfs/root/users/this-drive
-	DriveRoot string `json:"drive_root"`
-
 	// Flag for whether Populate() has been called
 	// with the drive's root directory. If so then the
 	// drive's root directory will have its internal data structures
@@ -111,6 +107,7 @@ type Drive struct {
 	IsLoaded bool `json:"is_loaded"`
 
 	// User's root directory & sync index
+	RootPath   string     `json:"drive_root"` // location of the drive on physical server filesystem
 	RootID     string     `json:"root_id"`
 	Root       *Directory `json:"-"` // ignored to avoid json cycle errors
 	SyncIndex  *SyncIndex `json:"sync_index"`
@@ -155,12 +152,15 @@ func NewDrive(
 		FreeSpace:  MAX_SIZE,
 		Protected:  false,
 		Key:        "default",
-		DriveRoot:  rootPath,
+		RootPath:   rootPath,
 		RootID:     rootID,
 		Root:       root,
 		RecycleBin: filepath.Join(root.Path, "recycle"),
 	}
 }
+
+// check whether this drive has an instantiated root directory.
+func (d *Drive) HasRoot() bool { return d.Root != nil }
 
 // check whether this drive is registered with the server.
 func (d *Drive) IsRegistered() bool { return d.Registered }
@@ -169,9 +169,6 @@ func (d *Drive) IsRegistered() bool { return d.Registered }
 func (d *Drive) RemainingSize() float64 {
 	return d.TotalSize - d.UsedSpace
 }
-
-// check whether this drive has an instantiated root directory.
-func (d *Drive) HasRoot() bool { return d.Root != nil }
 
 // check whether the root directory has files and subdirectories
 func (d *Drive) EmptyRoot() bool {

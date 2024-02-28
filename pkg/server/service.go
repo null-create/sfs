@@ -388,7 +388,20 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 func (s *Service) AddDrive(drv *svc.Drive) error {
 	// check that the root dir is valid
 	if !drv.HasRoot() {
-		return fmt.Errorf("drive does not have root directory")
+		root, err := s.Db.GetDirectoryByID(drv.RootID)
+		if err != nil {
+			return err
+		}
+		if root != nil {
+			return fmt.Errorf("[ERROR] drive root is already registered. ")
+		}
+		// create root from existing drive info so we can register this new drive
+		root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)
+		root, err = s.Discover(root)
+		if err != nil {
+			return err
+		}
+		drv.Root = root
 	}
 
 	// add drive and root dir to db

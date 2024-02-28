@@ -293,7 +293,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	root := svc.NewRootDirectory("root", ccfg.UserID, driveID, filepath.Join(svcRoot, "root"))
 	drv := svc.NewDrive(driveID, ccfg.User, user.ID, root.Path, root.ID, root)
 	user.DriveID = driveID
-	user.DrvRoot = drv.DriveRoot
+	user.DrvRoot = drv.RootPath
 	user.SvcRoot = root.Path
 
 	// intialize client

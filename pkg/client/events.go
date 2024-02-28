@@ -216,6 +216,10 @@ func (c *Client) BuildHandlers() error {
 			}
 		}
 	}
+	// handler for root
+	if err := c.NewEHandler(c.Drive.Root.Path); err != nil {
+		return err
+	}
 	return nil
 }
 

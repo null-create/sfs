@@ -64,7 +64,7 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file token: %v", err)
 	}
-	req.Header.Set("Authorization", fileToken)
+	req.Header.Set("Authorization", "Bearer "+fileToken)
 
 	return req, nil
 }

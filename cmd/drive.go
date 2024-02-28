@@ -79,17 +79,17 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			showerr(err)
 		}
-		if err := c.ListLocalFilesDB(); err != nil {
+		if err := c.ListLocalDirsDB(); err != nil {
 			showerr(err)
 		}
-	case f.remote:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(err)
-		}
-		if err := c.ListRemoteFiles(); err != nil {
-			showerr(err)
-		}
+	// case f.remote:
+	// 	c, err := client.LoadClient(false)
+	// 	if err != nil {
+	// 		showerr(err)
+	// 	}
+	// 	if err := c.ListRemoteFiles(); err != nil {
+	// 		showerr(err)
+	// 	}
 	case f.refresh:
 		c, err := client.LoadClient(false)
 		if err != nil {
