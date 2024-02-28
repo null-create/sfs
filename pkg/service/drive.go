@@ -192,6 +192,14 @@ func (d *Drive) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
+func UnmarshalDriveString(data string) (*Drive, error) {
+	drv := new(Drive)
+	if err := json.Unmarshal([]byte(data), &drv); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal dir data: %v", err)
+	}
+	return drv, nil
+}
+
 // ------- security --------------------------------
 
 func (d *Drive) Lock(password string) {

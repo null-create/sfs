@@ -213,6 +213,40 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 	})
 }
 
+func NewDriveCtx(h http.Handler) http.Handler {
+	tokenValidator := auth.NewT()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// validate token
+		drvToken := r.Header.Get("Authorization")
+		if drvToken == "" {
+			http.Error(w, "missing drive token", http.StatusBadRequest)
+			return
+		}
+		drvInfo, err := tokenValidator.Verify(drvToken)
+		if err != nil {
+			msg := fmt.Sprintf("failed to verify new drive token: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		newDrive, err := svc.UnmarshalDriveString(drvInfo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// see if this drive is already in the DB first
+		drv, err := findDrive(newDrive.ID, getDBConn("Drives"))
+		if err != nil {
+			http.Error(w, "failed to query drive database", http.StatusInternalServerError)
+			return
+		} else if drv != nil {
+			http.Error(w, fmt.Sprintf("drive (id=%s) already exists", newDrive.ID), http.StatusBadRequest)
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Drive, newDrive)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
 // ------- authentication --------------------------------
 
 // retrieve jwt token from request & verify

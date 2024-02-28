@@ -366,6 +366,16 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+// add a new drive to the server. used as part of a separate registration process.
+func (a *API) NewDrive(w http.ResponseWriter, r *http.Request) {
+	drive := r.Context().Value(Drive).(*svc.Drive)
+	if err := a.Svc.AddDrive(drive); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("drive (id=%s) added successfully", drive.ID)))
+}
+
 // -------- sync ----------------------------------
 
 // generate (or refresh) a sync index for a given drive

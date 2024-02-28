@@ -383,34 +383,14 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	return drive, nil
 }
 
-// add a new drive and all files and subdirectories (if any) to the service instance.
-// the new drive should have the root directory instantiated but empty. AddDrive
-// calls s.Discover() and populates the drive and databases with what it discoveres.
-// s.AddDrive() should only be used for first-time set up.
+// add a new drive to the service instance.
+// saves the drives root directory and the drive itself to the server's databases.
 func (s *Service) AddDrive(drv *svc.Drive) error {
 	// check that the root dir is valid
 	if !drv.HasRoot() {
 		return fmt.Errorf("drive does not have root directory")
 	}
-	// discover users files and directories, then add them to the service instance
-	populatedRoot, err := s.Discover(drv.Root)
-	if err != nil {
-		return fmt.Errorf("failed to discover drive files and directories: %v", err)
-	}
-	drv.Root = populatedRoot
-	// add all files and subdirectories to the database
-	files := drv.GetFiles()
-	for _, f := range files {
-		if err := s.Db.AddFile(f); err != nil {
-			return err
-		}
-	}
-	subDirs := drv.GetDirs()
-	for _, d := range subDirs {
-		if err := s.Db.AddDir(d); err != nil {
-			return err
-		}
-	}
+
 	// add drive and root dir to db
 	if err := s.Db.AddDir(drv.Root); err != nil {
 		return err
@@ -418,6 +398,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	if err := s.Db.AddDrive(drv); err != nil {
 		return err
 	}
+
 	// generate sync index and save to service instance
 	drv.SyncIndex = svc.BuildSyncIndex(drv.Root)
 	s.Drives[drv.ID] = drv
