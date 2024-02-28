@@ -217,9 +217,14 @@ func NewDriveCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate token
-		drvToken := r.Header.Get("Authorization")
-		if drvToken == "" {
+		drvTokenRaw := r.Header.Get("Authorization")
+		if drvTokenRaw == "" {
 			http.Error(w, "missing drive token", http.StatusBadRequest)
+			return
+		}
+		drvToken, err := tokenValidator.Extract(drvTokenRaw)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		drvInfo, err := tokenValidator.Verify(drvToken)
@@ -228,6 +233,7 @@ func NewDriveCtx(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
+		// unmarshal into new drive object, and check whether its already registered
 		newDrive, err := svc.UnmarshalDriveString(drvInfo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -242,6 +248,7 @@ func NewDriveCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("drive (id=%s) already exists", newDrive.ID), http.StatusBadRequest)
 			return
 		}
+		// serve
 		newCtx := context.WithValue(r.Context(), Drive, newDrive)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})

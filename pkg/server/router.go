@@ -162,7 +162,7 @@ func NewRouter() *chi.Mux {
 		// add a new drive
 		r.Route("/drive/new", func(r chi.Router) {
 			r.Use(NewDriveCtx)
-			r.Get("/", api.NewDrive)
+			r.Post("/", api.NewDrive)
 		})
 
 		// sync operations
