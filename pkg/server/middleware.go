@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -243,9 +242,6 @@ func NewDriveCtx(h http.Handler) http.Handler {
 
 		// unmarshal into new drive object, and check whether its already registered
 		newDrive, err := svc.UnmarshalDriveString(drvInfo)
-		b, _ := newDrive.ToJSON()
-		log.Printf("[INFO] recieved new drive object: %s", string(b))
-
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
