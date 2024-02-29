@@ -23,7 +23,7 @@ type Service struct {
 	SvcRoot string `json:"service_root"`
 
 	// path to state file
-	StateFile string `json:"sf_file"`
+	StateFile string `json:"state_file"`
 
 	// path to users directory
 	UserDir string `json:"user_dir"`
@@ -150,7 +150,8 @@ func (s *Service) DriveExists(driveID string) bool {
 // This should ideally be used for starting a new sfs service in a
 // users root directly that already has files and/or subdirectories.
 func (s *Service) Discover(root *svc.Directory) (*svc.Directory, error) {
-	root = root.Walk()       // traverse users SFS file system
+	root = root.Walk()
+
 	files := root.GetFiles() // send everything to the database
 	for _, file := range files {
 		if err := s.Db.AddFile(file); err != nil {
@@ -397,10 +398,6 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 		}
 		// create root from existing drive info so we can register this new drive
 		root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)
-		root, err = s.Discover(root)
-		if err != nil {
-			return err
-		}
 		drv.Root = root
 	}
 

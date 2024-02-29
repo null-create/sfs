@@ -167,7 +167,7 @@ func TestLoadAndStartClient(t *testing.T) {
 	}
 
 	// initialize and load client
-	tmpClient, err := LoadClient(true)
+	tmpClient, err := Init(true)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
