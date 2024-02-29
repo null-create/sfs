@@ -229,12 +229,12 @@ func LoadClient(persist bool) (*Client, error) {
 	// call to client.Start(), otherwise none of the monitoring
 	// services will be able to actually run.
 	if persist {
-		// // make sure the drive was registered before starting
-		// if !client.Drive.IsRegistered() {
-		// 	if err := client.RegisterDrive(); err != nil {
-		// 		return nil, err
-		// 	}
-		// }
+		// make sure the drive was registered before starting
+		if !client.Drive.IsRegistered() {
+			if err := client.RegisterDrive(); err != nil {
+				return nil, err
+			}
+		}
 		// start monitoring services in SFS root directory
 		if err := client.StartMonitor(); err != nil {
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)

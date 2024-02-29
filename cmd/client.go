@@ -54,6 +54,7 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 		c, err := client.LoadClient(true)
 		if err != nil {
 			showerr(err)
+			return nil
 		}
 		err = c.Start()
 		if err != nil {

@@ -6,8 +6,8 @@ type FlagPole struct {
 	// client cmd
 	new     bool // create a new client
 	start   bool // start a client
-	local   bool // list all local files managed by SFS
-	remote  bool // list all remote files managed by SFS
+	local   bool // list all local files and directories managed by SFS
+	remote  bool // list all remote files and directories managed by SFS
 	refresh bool // refresh local drive
 	info    bool // get information about the client
 

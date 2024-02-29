@@ -35,10 +35,12 @@ func init() {
 	drvCmd.Flags().BoolVar(&flags.register, "register", false, "register a new drive with the sfs server")
 	drvCmd.Flags().BoolVar(&flags.list_files, "list-files", false, "list all local files managed by the sfs client service")
 	drvCmd.Flags().BoolVar(&flags.list_dirs, "list-dirs", false, "list all local directories managed by the sfs client service")
+	drvCmd.Flags().BoolVar(&flags.remote, "remote", false, "list all files stored on the sfs server")
 
 	viper.BindPFlag("register", drvCmd.PersistentFlags().Lookup("register"))
 	viper.BindPFlag("list-files", drvCmd.PersistentFlags().Lookup("list-files"))
 	viper.BindPFlag("list-dirs", drvCmd.PersistentFlags().Lookup("list-dirs"))
+	viper.BindPFlag("remote", drvCmd.Flags().Lookup("remote"))
 
 	rootCmd.AddCommand(drvCmd)
 }
@@ -47,11 +49,13 @@ func getDrvflags(cmd *cobra.Command) FlagPole {
 	register, _ := cmd.Flags().GetBool("register")
 	list_files, _ := cmd.Flags().GetBool("list-files")
 	list_dirs, _ := cmd.Flags().GetBool("list-dirs")
+	remote, _ := cmd.Flags().GetBool("remote")
 
 	return FlagPole{
 		register:   register,
 		list_files: list_files,
 		list_dirs:  list_dirs,
+		remote:     remote,
 	}
 }
 
@@ -82,14 +86,14 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 		if err := c.ListLocalDirsDB(); err != nil {
 			showerr(err)
 		}
-	// case f.remote:
-	// 	c, err := client.LoadClient(false)
-	// 	if err != nil {
-	// 		showerr(err)
-	// 	}
-	// 	if err := c.ListRemoteFiles(); err != nil {
-	// 		showerr(err)
-	// 	}
+	case f.remote:
+		c, err := client.LoadClient(false)
+		if err != nil {
+			showerr(err)
+		}
+		if err := c.ListRemoteFiles(); err != nil {
+			showerr(err)
+		}
 	case f.refresh:
 		c, err := client.LoadClient(false)
 		if err != nil {
