@@ -555,17 +555,6 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 
 // register a new drive with the server. if drive is already known to the server,
 // then the server response should reflect this.
-//
-// TODO:
-//
-//	server is refusing this because it cant find the root for this drive,
-//	which is not present in the transferred data because we dont encode it,
-//	because doing so would potentially cause recursion issues that we'd like to
-//	avoid. because of this, we need to send the root to the server as a separate
-//	new directory request before we can register the drive itself. then we need
-//	to modify NewDriveCtx middleware to search for the root using the its path,
-//	which is provided by the drive.DriveRoot property, which is encoded in the new
-//	drive request and recieved by the server.
 func (c *Client) RegisterDrive() error {
 	if c.Drive == nil {
 		return fmt.Errorf("no drive available")
