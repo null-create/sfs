@@ -138,6 +138,7 @@ func (q *Query) AddDir(d *svc.Directory) error {
 		&d.Key,
 		&d.Overwrite,
 		&d.LastSync,
+		&d.Endpoint,
 		&d.Root,
 		&d.RootPath,
 	); err != nil {
@@ -169,6 +170,7 @@ func (q *Query) AddDirs(dirs []*svc.Directory) error {
 			&d.Key,
 			&d.Overwrite,
 			&d.LastSync,
+			&d.Endpoint,
 			&d.Root,
 			&d.RootPath,
 		); err != nil {

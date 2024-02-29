@@ -65,6 +65,7 @@ func (q *Query) UpdateDir(d *svc.Directory) error {
 		&d.Key,
 		&d.Overwrite,
 		&d.LastSync,
+		&d.Endpoint,
 		&d.Root,
 		&d.RootPath,
 		&d.ID,

@@ -355,26 +355,27 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(svc.Directory)
-	d.Files = make(map[string]*svc.File, 0)
-	d.Dirs = make(map[string]*svc.Directory, 0)
+	dir := new(svc.Directory)
+	dir.Files = make(map[string]*svc.File, 0)
+	dir.Dirs = make(map[string]*svc.Directory, 0)
 
 	if err := q.Conn.QueryRow(FindDirQuery, dirID).Scan(
-		&d.ID,
-		&d.Name,
-		&d.OwnerID,
-		&d.DriveID,
-		&d.Size,
-		&d.Path,
-		&d.ServerPath,
-		&d.ClientPath,
-		&d.Protected,
-		&d.AuthType,
-		&d.Key,
-		&d.Overwrite,
-		&d.LastSync,
-		&d.Root,
-		&d.RootPath,
+		&dir.ID,
+		&dir.Name,
+		&dir.OwnerID,
+		&dir.DriveID,
+		&dir.Size,
+		&dir.Path,
+		&dir.ServerPath,
+		&dir.ClientPath,
+		&dir.Protected,
+		&dir.AuthType,
+		&dir.Key,
+		&dir.Overwrite,
+		&dir.LastSync,
+		&dir.Endpoint,
+		&dir.Root,
+		&dir.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows found with dir id: %s", dirID)
@@ -382,7 +383,7 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-	return d, nil
+	return dir, nil
 }
 
 // find a directory by name. returns nil if no directory is found.
@@ -391,26 +392,27 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(svc.Directory)
-	d.Files = make(map[string]*svc.File, 0)
-	d.Dirs = make(map[string]*svc.Directory, 0)
+	dir := new(svc.Directory)
+	dir.Files = make(map[string]*svc.File, 0)
+	dir.Dirs = make(map[string]*svc.Directory, 0)
 
 	if err := q.Conn.QueryRow(FindDirByNameQuery, dirName).Scan(
-		&d.ID,
-		&d.Name,
-		&d.OwnerID,
-		&d.DriveID,
-		&d.Size,
-		&d.Path,
-		&d.ServerPath,
-		&d.ClientPath,
-		&d.Protected,
-		&d.AuthType,
-		&d.Key,
-		&d.Overwrite,
-		&d.LastSync,
-		&d.Root,
-		&d.RootPath,
+		&dir.ID,
+		&dir.Name,
+		&dir.OwnerID,
+		&dir.DriveID,
+		&dir.Size,
+		&dir.Path,
+		&dir.ServerPath,
+		&dir.ClientPath,
+		&dir.Protected,
+		&dir.AuthType,
+		&dir.Key,
+		&dir.Overwrite,
+		&dir.LastSync,
+		&dir.Endpoint,
+		&dir.Root,
+		&dir.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows found for dir: %s", dirName)
@@ -418,7 +420,7 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-	return d, nil
+	return dir, nil
 }
 
 // find a directory by name. returns nil if no directory is found.
@@ -427,26 +429,27 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(svc.Directory)
-	d.Files = make(map[string]*svc.File, 0)
-	d.Dirs = make(map[string]*svc.Directory, 0)
+	dir := new(svc.Directory)
+	dir.Files = make(map[string]*svc.File, 0)
+	dir.Dirs = make(map[string]*svc.Directory, 0)
 
 	if err := q.Conn.QueryRow(FindDirByPathQuery, dirPath).Scan(
-		&d.ID,
-		&d.Name,
-		&d.OwnerID,
-		&d.DriveID,
-		&d.Size,
-		&d.Path,
-		&d.ServerPath,
-		&d.ClientPath,
-		&d.Protected,
-		&d.AuthType,
-		&d.Key,
-		&d.Overwrite,
-		&d.LastSync,
-		&d.Root,
-		&d.RootPath,
+		&dir.ID,
+		&dir.Name,
+		&dir.OwnerID,
+		&dir.DriveID,
+		&dir.Size,
+		&dir.Path,
+		&dir.ServerPath,
+		&dir.ClientPath,
+		&dir.Protected,
+		&dir.AuthType,
+		&dir.Key,
+		&dir.Overwrite,
+		&dir.LastSync,
+		&dir.Endpoint,
+		&dir.Root,
+		&dir.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows found for dir: %s", filepath.Base(dirPath))
@@ -454,7 +457,7 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-	return d, nil
+	return dir, nil
 }
 
 // get a directory's ID from its absolute path.
@@ -507,6 +510,7 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 			&dir.Key,
 			&dir.Overwrite,
 			&dir.LastSync,
+			&dir.Endpoint,
 			&dir.Root,
 			&dir.RootPath,
 		); err != nil {
@@ -555,6 +559,7 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 			&dir.Key,
 			&dir.Overwrite,
 			&dir.LastSync,
+			&dir.Endpoint,
 			&dir.Root,
 			&dir.RootPath,
 		); err != nil {
@@ -629,19 +634,19 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(svc.Drive)
+	drv := new(svc.Drive)
 	if err := q.Conn.QueryRow(FindDriveQuery, driveID).Scan(
-		&d.ID,
-		&d.OwnerName,
-		&d.OwnerID,
-		&d.TotalSize,
-		&d.UsedSpace,
-		&d.FreeSpace,
-		&d.Protected,
-		&d.Key,
-		&d.AuthType,
-		&d.RootPath,
-		&d.RootID,
+		&drv.ID,
+		&drv.OwnerName,
+		&drv.OwnerID,
+		&drv.TotalSize,
+		&drv.UsedSpace,
+		&drv.FreeSpace,
+		&drv.Protected,
+		&drv.Key,
+		&drv.AuthType,
+		&drv.RootPath,
+		&drv.RootID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows returned: %v", err)
@@ -649,7 +654,7 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-	return d, nil
+	return drv, nil
 }
 
 // return all drives from the database
@@ -666,25 +671,25 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) {
 
 	drives := make([]*svc.Drive, 0)
 	for rows.Next() {
-		drive := new(svc.Drive)
-		drive.Root = new(svc.Directory)
-		drive.SyncIndex = new(svc.SyncIndex)
+		drv := new(svc.Drive)
+		drv.Root = new(svc.Directory)
+		drv.SyncIndex = new(svc.SyncIndex)
 		if err := rows.Scan(
-			&drive.ID,
-			&drive.OwnerName,
-			&drive.OwnerID,
-			&drive.TotalSize,
-			&drive.UsedSpace,
-			&drive.FreeSpace,
-			&drive.Protected,
-			&drive.Key,
-			&drive.AuthType,
-			&drive.RootPath,
-			&drive.RootID,
+			&drv.ID,
+			&drv.OwnerName,
+			&drv.OwnerID,
+			&drv.TotalSize,
+			&drv.UsedSpace,
+			&drv.FreeSpace,
+			&drv.Protected,
+			&drv.Key,
+			&drv.AuthType,
+			&drv.RootPath,
+			&drv.RootID,
 		); err != nil {
 			return nil, fmt.Errorf("[ERROR] unable to query for drive: %v", err)
 		}
-		drives = append(drives, drive)
+		drives = append(drives, drv)
 	}
 	if len(drives) == 0 {
 		log.Print("[INFO] no drives found")
@@ -699,19 +704,19 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 	q.Connect()
 	defer q.Close()
 
-	d := new(svc.Drive)
+	drv := new(svc.Drive)
 	if err := q.Conn.QueryRow(FindDriveByUserID, userID).Scan(
-		&d.ID,
-		&d.OwnerName,
-		&d.OwnerID,
-		&d.TotalSize,
-		&d.UsedSpace,
-		&d.FreeSpace,
-		&d.Protected,
-		&d.Key,
-		&d.AuthType,
-		&d.RootPath,
-		&d.RootID,
+		&drv.ID,
+		&drv.OwnerName,
+		&drv.OwnerID,
+		&drv.TotalSize,
+		&drv.UsedSpace,
+		&drv.FreeSpace,
+		&drv.Protected,
+		&drv.Key,
+		&drv.AuthType,
+		&drv.RootPath,
+		&drv.RootID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("[DEBUG] no rows returned: %v", err)
@@ -719,7 +724,7 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
 	}
-	return d, nil
+	return drv, nil
 }
 
 // get the drive ID for a given userID
