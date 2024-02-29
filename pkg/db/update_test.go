@@ -83,6 +83,8 @@ func TestCreateAndUpdateADirectory(t *testing.T) {
 }
 
 func TestCreateAndUpdateADrive(t *testing.T) {
+	env.SetEnv(false)
+
 	testDir := GetTestingDir()
 
 	NewTable(filepath.Join(testDir, "Drives"), CreateDriveTable)

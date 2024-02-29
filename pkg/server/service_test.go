@@ -380,11 +380,12 @@ func TestAddDrive(t *testing.T) {
 	// test service
 	testSvc, err := Init(false, false)
 	if err != nil {
-		t.Fail()
+		Fail(t, GetTestingDir(), err)
 	}
 
 	// test drive
 	testDrv := MakeEmptyTmpDrive(t)
+	testDrv.Root = nil
 
 	if err := testSvc.AddDrive(testDrv); err != nil {
 		Fail(t, GetTestingDir(), err)

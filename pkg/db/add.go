@@ -203,8 +203,11 @@ func (q *Query) AddDrive(drv *svc.Drive) error {
 		&drv.Protected,
 		&drv.Key,
 		&drv.AuthType,
+		&drv.IsLoaded,
 		&drv.RootPath,
 		&drv.RootID,
+		&drv.Registered,
+		&drv.RecycleBin,
 	); err != nil {
 		return fmt.Errorf("failed to execute query: %v", err)
 	}

@@ -95,8 +95,11 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 		&drv.Protected,
 		&drv.Key,
 		&drv.AuthType,
+		&drv.IsLoaded,
 		&drv.RootPath,
 		&drv.RootID,
+		&drv.Registered,
+		&drv.RecycleBin,
 		&drv.ID,
 	); err != nil {
 		return fmt.Errorf("failed to execute query: %v", err)
