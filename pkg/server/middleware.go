@@ -252,7 +252,9 @@ func NewDriveCtx(h http.Handler) http.Handler {
 			http.Error(w, "failed to query drive database", http.StatusInternalServerError)
 			return
 		} else if drv != nil {
-			http.Error(w, fmt.Sprintf("drive (id=%s) already exists", newDrive.ID), http.StatusBadRequest)
+			// we return 200 becaues if a drive already exists then it is registered,
+			// and the client typically checks if its been registered on start up
+			w.Write([]byte(fmt.Sprintf("drive (id=%s) already exists", newDrive.ID)))
 			return
 		}
 

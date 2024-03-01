@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -394,7 +395,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 			return err
 		}
 		if root != nil {
-			return fmt.Errorf("[ERROR] drive root is already registered. ")
+			return errors.New("drive is already registered")
 		}
 		// create root from existing drive info so we can register this new drive
 		root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)

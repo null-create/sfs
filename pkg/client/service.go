@@ -570,12 +570,8 @@ func (c *Client) RegisterDrive() error {
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
 	} else {
-		var msg = fmt.Sprintf(
-			"[WARNING] failed to register drive with server: %d\n", resp.StatusCode,
-		) + "may need to use the register command or check if the server is up\n\n"
-		log.Print(msg)
+		c.dump(resp, true)
 	}
-	c.dump(resp, true)
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
 	}
