@@ -139,12 +139,13 @@ func NewRouter() *chi.Mux {
 			})
 			// get info about a directory
 			r.Route("/i/{dirID}", func(r chi.Router) {
-				r.Use(DirCtx) // TODO: need a new context for all dirs for a specific user
+				r.Use(DirCtx)
 				r.Get("/", api.GetDirInfo)
 			})
+			// get info about all directories
 			r.Route("/i/all/{userID}", func(r chi.Router) {
-				// r.Use(AllDirsCtx) // TODO: need a new context
-				r.Get("/", api.GetManyDirsInfo)
+				r.Use(AllUsersDirsCtx)
+				r.Get("/", api.GetAllDirsInfo)
 			})
 			// temp for testing
 			r.Route("/all", func(r chi.Router) {

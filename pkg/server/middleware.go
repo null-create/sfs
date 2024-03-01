@@ -97,6 +97,27 @@ func AllDirsCtx(h http.Handler) http.Handler {
 	})
 }
 
+func AllUsersDirsCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "userID")
+		if userID == "" {
+			http.Error(w, "no user ID provided", http.StatusBadRequest)
+			return
+		}
+		dirs, err := findAllUsersDirs(getDBConn("Directories"), userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(dirs) == 0 {
+			w.Write([]byte("no directories found"))
+			return
+		}
+		newCtx := context.WithValue(r.Context(), Directories, dirs)
+		h.ServeHTTP(w, r.WithContext(newCtx))
+	})
+}
+
 // -------- new item/user context --------------------------------
 
 // attempts to get filename, owner, and path from a requets

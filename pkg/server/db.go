@@ -69,6 +69,15 @@ func findDir(dirID string, q *db.Query) (*svc.Directory, error) {
 	return d, nil
 }
 
+// get all users directories from the db. will return nil if none are found.
+func findAllUsersDirs(q *db.Query, userID string) ([]*svc.Directory, error) {
+	d, err := q.GetUsersDirectories(userID)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
 // get a slice of all directories from db. dir will be nil if none are found.
 func findAllTheDirs(q *db.Query) ([]*svc.Directory, error) {
 	dirs, err := q.GetAllDirectories()
