@@ -399,6 +399,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 		// create root from existing drive info so we can register this new drive
 		root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)
 		drv.Root = root
+		drv.RootID = root.ID
 	}
 
 	// add drive and root dir to db
