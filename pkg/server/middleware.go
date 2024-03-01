@@ -171,7 +171,7 @@ func NewUserCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("failed to query database for user: %v", err), http.StatusInternalServerError)
 			return
 		} else if user != nil {
-			http.Error(w, fmt.Sprintf("%s (id=%s) already exists", newUser.Name, newUser.ID), http.StatusBadRequest)
+			w.Write([]byte(fmt.Sprintf("%s (id=%s) already exists", newUser.Name, newUser.ID)))
 			return
 		}
 		newCtx := context.WithValue(r.Context(), User, newUser)
