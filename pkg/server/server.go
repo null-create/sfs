@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,11 +22,16 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		Svr: &http.Server{
-			Handler:      NewRouter(), // router contains (and intializes) the server-side SNS service instance.
+			// NewRouter() instantiates the server-side SNS service instance
+			// and handles client requests.
+			Handler:      NewRouter(),
 			Addr:         svrCfg.Addr,
 			ReadTimeout:  svrCfg.TimeoutRead,
 			WriteTimeout: svrCfg.TimeoutWrite,
 			IdleTimeout:  svrCfg.TimeoutIdle,
+			ConnState: func(n net.Conn, h http.ConnState) {
+				// TODO: handle when a client state is idle or hijacked.
+			},
 		},
 	}
 }

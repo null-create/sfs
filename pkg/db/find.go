@@ -737,7 +737,7 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 }
 
 // get the drive ID for a given userID
-func (q *Query) GetDriveID(userID string) (string, error) {
+func (q *Query) GetDriveIDFromUserID(userID string) (string, error) {
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()

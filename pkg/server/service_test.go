@@ -341,14 +341,13 @@ func TestAllocateDrive(t *testing.T) {
 	}
 
 	// allocate a new tmp drive
-	d, err := svc.AllocateDrive("test", "me", testSvc.SvcRoot)
+	err := svc.AllocateDrive("test", testSvc.SvcRoot)
 	if err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
-	assert.NotEqual(t, nil, d)
 
 	// make sure all the basic user files are present
-	entries, err := os.ReadDir(d.RootPath)
+	entries, err := os.ReadDir(GetTestingDir())
 	if err != nil {
 		Fatal(t, err)
 	}

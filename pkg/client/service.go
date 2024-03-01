@@ -559,7 +559,11 @@ func (c *Client) RegisterDrive() error {
 	if c.Drive == nil {
 		return fmt.Errorf("no drive available")
 	}
-	req, err := c.GetDriveReq(c.Drive, "new")
+	// we register a new drive with the server
+	// by creating a new user. this process registers the user,
+	// allocates a new physical drive on the server, and adds the
+	// new drive to the server-side SFS service instance.
+	req, err := c.NewUserRequest(c.User)
 	if err != nil {
 		return fmt.Errorf("failed to create new drive request: %v", err)
 	}

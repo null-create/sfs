@@ -388,20 +388,22 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 // add a new drive to the service instance.
 // saves the drives root directory and the drive itself to the server's databases.
 func (s *Service) AddDrive(drv *svc.Drive) error {
-	// check that the root dir is valid
-	if !drv.HasRoot() {
-		root, err := s.Db.GetDirectoryByID(drv.RootID)
-		if err != nil {
-			return err
-		}
-		if root != nil {
-			return errors.New("drive is already registered")
-		}
-		// create root from existing drive info so we can register this new drive
-		root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)
-		drv.Root = root
-		drv.RootID = root.ID
+	// create a server-side user root directory for this drive.
+	// check if this drive is already registered first.
+	root, err := s.Db.GetDirectoryByID(drv.RootID)
+	if err != nil {
+		return err
 	}
+	if root != nil {
+		return errors.New("drive is already registered")
+	}
+	// create root from existing client-side drive
+	// info so we can register this new drive
+	root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)
+	root.ServerPath = filepath.Join(s.SvcRoot, "users", drv.OwnerName)
+	drv.Root = root
+	drv.RootID = root.ID
+	drv.RootPath = root.ServerPath
 
 	// add drive and root dir to db
 	if err := s.Db.AddDir(drv.Root); err != nil {
@@ -409,6 +411,16 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	}
 	if err := s.Db.AddDrive(drv); err != nil {
 		return err
+	}
+
+	// allocate new physical drive directories and
+	// base server-side service files
+	err = svc.AllocateDrive(drv.OwnerName, s.SvcRoot)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to allocate new drive for %s (id=%s): %v",
+			drv.OwnerName, drv.OwnerID, err,
+		)
 	}
 
 	// generate sync index and save to service instance
@@ -510,23 +522,10 @@ func (s *Service) UserExists(userID string) bool {
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
 	// check to see if this user already has a drive
-	if dID, err := s.Db.GetDriveID(user.ID); err != nil {
+	if dID, err := s.Db.GetDriveIDFromUserID(user.ID); err != nil {
 		return fmt.Errorf("failed to get drive ID: %v", err)
 	} else if dID != "" {
 		return fmt.Errorf("user (id=%s) already has a drive (id=%s): ", user.ID, dID)
-	}
-
-	// allocate new drive and base service files
-	newDrive, err := svc.AllocateDrive(user.Name, user.Name, s.SvcRoot)
-	if err != nil {
-		return fmt.Errorf("failed to allocate new drive for %s (id=%s) \n%v", user.Name, user.ID, err)
-	}
-	user.DriveID = newDrive.ID
-	user.DrvRoot = newDrive.Root.Path
-
-	// add drive to service instance, then add new user to service
-	if err := s.AddDrive(newDrive); err != nil {
-		return fmt.Errorf("failed to create new drive for %s (id=%s): %v", user.Name, user.ID, err)
 	}
 	if err := s.Db.AddUser(user); err != nil {
 		return fmt.Errorf("failed to add %s (id=%s) to the user database: %v", user.Name, user.ID, err)
@@ -674,7 +673,18 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
-	if err := drive.AddFile(dirID, file); err != nil {
+	// make sure the directory exists
+	dir, err := s.Db.GetDirectoryByID(dirID)
+	if err != nil {
+		return err
+	}
+	if dir == nil {
+		// we're going to assign this file to root if the client side
+		// parent directory isn't registered server-side yet.
+		file.DirID = drive.RootID
+	}
+	// add file to drive service
+	if err := drive.AddFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to add file to drive: %v", err)
 	}
 	// add file to the database

@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/sfs/pkg/auth"
 )
 
 // max size of a single drive (root directory) per user (1GB)
@@ -45,26 +43,22 @@ TODO:
 	repository of back ups. would make search time linear instead of whatever the walk()
 	implementations in dirs.go are at currently.
 */
-func AllocateDrive(name string, ownerID string, svcRoot string) (*Drive, error) {
+func AllocateDrive(name string, svcRoot string) error {
 	// new user service file paths
 	userRoot := filepath.Join(svcRoot, "users", name)
-	contentsRoot := filepath.Join(userRoot, "root")
-	stateFileDir := filepath.Join(userRoot, "state")
-	removedDir := filepath.Join(userRoot, "recycled")
-
 	// make each directory
-	dirs := []string{userRoot, contentsRoot, stateFileDir, removedDir}
-	for _, d := range dirs {
+	serviceDirs := []string{
+		userRoot,
+		filepath.Join(userRoot, "root"),
+		filepath.Join(userRoot, "state"),
+		filepath.Join(userRoot, "recycled"),
+	}
+	for _, d := range serviceDirs {
 		if err := os.Mkdir(d, PERMS); err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	// gen root and drive objects
-	driveID := auth.NewUUID()
-	rt := NewRootDirectory(name, ownerID, driveID, contentsRoot)
-	drv := NewDrive(driveID, name, ownerID, userRoot, rt.ID, rt)
-	return drv, nil
+	return nil
 }
 
 /*
