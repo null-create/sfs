@@ -263,7 +263,7 @@ func (c *Client) setEndpoints() {
 	// files and directories have their endpoints defined in their respective structures.
 	c.Endpoints["all files"] = EndpointRootWithPort + "/v1/files/i/all/" + c.UserID
 	c.Endpoints["new file"] = EndpointRootWithPort + "/v1/files/new"
-	c.Endpoints["all dirs"] = EndpointRootWithPort + "/v1/i/dirs/all/" + c.UserID
+	c.Endpoints["all dirs"] = EndpointRootWithPort + "/v1/dirs/i/all/" + c.UserID
 	c.Endpoints["new dir"] = EndpointRootWithPort + "/v1/dirs/new"
 	c.Endpoints["drive"] = EndpointRootWithPort + "/v1/drive/" + c.DriveID
 	c.Endpoints["new drive"] = EndpointRootWithPort + "/v1/drive/new"
