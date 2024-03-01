@@ -521,18 +521,20 @@ func (s *Service) UserExists(userID string) bool {
 
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
-	// check to see if this user already has a drive
-	if dID, err := s.Db.GetDriveIDFromUserID(user.ID); err != nil {
-		return fmt.Errorf("failed to get drive ID: %v", err)
-	} else if dID != "" {
-		return fmt.Errorf("user (id=%s) already has a drive (id=%s): ", user.ID, dID)
+	// check to see if this user is already registered
+	u, err := s.Db.GetUser(user.ID)
+	if err != nil {
+		return err
+	}
+	if u != nil {
+		return fmt.Errorf("user (id=%s) is already registered", user.ID)
 	}
 	if err := s.Db.AddUser(user); err != nil {
 		return fmt.Errorf("failed to add %s (id=%s) to the user database: %v", user.Name, user.ID, err)
 	}
 	s.Users[user.ID] = user
 	if err := s.SaveState(); err != nil {
-		log.Printf("[WARNING] failed to save state file: %v", err)
+		return err
 	}
 	return nil
 }
@@ -549,10 +551,6 @@ func (s *Service) AddUser(newUser *auth.User) error {
 			return err
 		}
 		log.Printf("[INFO] added user (name=%s id=%s)", newUser.Name, newUser.ID)
-		if err := s.SaveState(); err != nil {
-			log.Printf("[WARNING] failed to save service state: %s", err)
-			return nil
-		}
 	} else {
 		return fmt.Errorf("user (id=%s) already exists", newUser.ID)
 	}

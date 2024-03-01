@@ -225,7 +225,7 @@ func LoadClient(persist bool) (*Client, error) {
 	if persist {
 		// make sure the drive was registered before starting
 		if !client.Drive.IsRegistered() {
-			if err := client.RegisterDrive(); err != nil {
+			if err := client.RegisterClient(); err != nil {
 				return nil, err
 			}
 		}
@@ -339,7 +339,7 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// register drive with the server if autosync is enabled
 	if c.autoSync() {
-		if err := c.RegisterDrive(); err != nil {
+		if err := c.RegisterClient(); err != nil {
 			return nil, fmt.Errorf("failed to register drive: %v", err)
 		}
 	}

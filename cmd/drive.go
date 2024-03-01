@@ -67,7 +67,7 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			showerr(err)
 		}
-		if err := c.RegisterDrive(); err != nil {
+		if err := c.RegisterClient(); err != nil {
 			showerr(err)
 		}
 	case f.list_files:

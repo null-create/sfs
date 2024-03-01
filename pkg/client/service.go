@@ -555,14 +555,11 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 
 // register a new drive with the server. if drive is already known to the server,
 // then the server response should reflect this.
-func (c *Client) RegisterDrive() error {
+func (c *Client) RegisterClient() error {
 	if c.Drive == nil {
 		return fmt.Errorf("no drive available")
 	}
-	// we register a new drive with the server
-	// by creating a new user. this process registers the user,
-	// allocates a new physical drive on the server, and adds the
-	// new drive to the server-side SFS service instance.
+	// register the user
 	req, err := c.NewUserRequest(c.User)
 	if err != nil {
 		return fmt.Errorf("failed to create new drive request: %v", err)
@@ -571,10 +568,26 @@ func (c *Client) RegisterDrive() error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != http.StatusOK {
+		c.dump(resp, true)
+		return fmt.Errorf("failed to register new user. server status: %v", resp.Status)
+	}
+	// register the drive. this will create a
+	// serer-side root and allocate the server-side physical
+	// drive directories and service files.
+	req, err = c.NewDriveRequest(c.Drive)
+	if err != nil {
+		return err
+	}
+	resp, err = c.Client.Do(req)
+	if err != nil {
+		return err
+	}
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
 	} else {
 		c.dump(resp, true)
+		return fmt.Errorf("failed to register new drive. server status: %v", resp.Status)
 	}
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
