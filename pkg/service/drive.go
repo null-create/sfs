@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 )
 
-// max size of a single drive (root directory) per user (1GB)
-const MAX_SIZE float64 = 1e+9
+// max size of a single drive (root directory) per user (10GB)
+const MAX_SIZE int64 = 10e+9
 
 /*
 build a new privilaged drive directory for a client on the sfs server
@@ -85,9 +85,9 @@ type Drive struct {
 	OwnerID   string `json:"owner_id:"`
 
 	// all three measured in Kb or Mb
-	TotalSize float64 `json:"total_size"`
-	UsedSpace float64 `json:"used_space"`
-	FreeSpace float64 `json:"free_space"`
+	TotalSize int64 `json:"total_size"`
+	UsedSpace int64 `json:"used_space"`
+	FreeSpace int64 `json:"free_space"`
 
 	// Security stuff
 	Protected bool   `json:"protected"`
@@ -160,7 +160,7 @@ func (d *Drive) HasRoot() bool { return d.Root != nil }
 func (d *Drive) IsRegistered() bool { return d.Registered }
 
 // remaining drive space.
-func (d *Drive) RemainingSize() float64 {
+func (d *Drive) RemainingSize() int64 {
 	return d.TotalSize - d.UsedSpace
 }
 
@@ -248,7 +248,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 				return err
 			}
 		}
-		d.UsedSpace += float64(file.GetSize())
+		d.UsedSpace += file.GetSize()
 	} else {
 		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
@@ -314,7 +314,7 @@ func (d *Drive) ModifyFile(dirID string, file *File, data []byte) error {
 func (d *Drive) UpdateFile(dirID string, file *File) error {
 	if !d.Protected {
 		if d.Root.ID == dirID {
-			if err := d.Root.UpdateFile(file); err != nil {
+			if err := d.Root.PutFile(file); err != nil {
 				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
 			}
 		} else {
@@ -322,11 +322,12 @@ func (d *Drive) UpdateFile(dirID string, file *File) error {
 			if dir == nil {
 				return fmt.Errorf("dir (id=%s) not found", dirID)
 			}
-			if err := dir.UpdateFile(file); err != nil {
+			var origSize = file.GetSize()
+			if err := dir.PutFile(file); err != nil {
 				return err
 			}
-			// TODO: get the difference between old and new file sizes
-			// and adjust the drives used space value accordingly.
+			var newSize = file.GetSize()
+			d.UsedSpace += origSize - newSize
 		}
 	} else {
 		log.Printf("[INFO] drive is protected")
@@ -352,10 +353,10 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 			if dir == nil {
 				return fmt.Errorf("dir (id=%s) not found", dirID)
 			}
+			d.UsedSpace -= file.GetSize()
 			if err := dir.RemoveFile(file.ID); err != nil {
 				return err
 			}
-			d.UsedSpace -= float64(file.GetSize())
 			return nil
 		}
 	} else {
