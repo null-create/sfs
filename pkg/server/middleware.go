@@ -123,9 +123,8 @@ func AllUsersDirsCtx(h http.Handler) http.Handler {
 // attempts to get filename, owner, and path from a requets
 // context, then create a new file object to use for downloading
 func NewFileCtx(h http.Handler) http.Handler {
-	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate token
+		tokenValidator := auth.NewT()
 		fileInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to verify token: %v", err), http.StatusInternalServerError)
@@ -151,9 +150,8 @@ func NewFileCtx(h http.Handler) http.Handler {
 }
 
 func NewUserCtx(h http.Handler) http.Handler {
-	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate request token
+		tokenValidator := auth.NewT()
 		userInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify user token: %v", err)
@@ -181,9 +179,8 @@ func NewUserCtx(h http.Handler) http.Handler {
 }
 
 func NewDirectoryCtx(h http.Handler) http.Handler {
-	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate token
+		tokenValidator := auth.NewT()
 		dirInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify directory token: %v", err)
@@ -211,9 +208,8 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 }
 
 func NewDriveCtx(h http.Handler) http.Handler {
-	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate token
+		tokenValidator := auth.NewT()
 		drvInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify new drive token: %v", err)
