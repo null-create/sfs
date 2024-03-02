@@ -44,7 +44,7 @@ func (t *Transfer) dump(resp *http.Response, body bool) {
 	if err != nil {
 		log.Printf("[WARNING] failed to parse http response: %v", err)
 	} else {
-		log.Printf("[INFO] \n%v\n", string(b))
+		log.Printf("[INFO] %v\n", string(b))
 	}
 }
 
