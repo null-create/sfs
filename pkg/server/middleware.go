@@ -126,17 +126,7 @@ func NewFileCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate token
-		rawToken := r.Header.Get("Authorization")
-		if rawToken == "" {
-			http.Error(w, "no authorization token provided", http.StatusBadRequest)
-			return
-		}
-		fileToken, err := tokenValidator.Extract(rawToken)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("authorization failed: %v", err), http.StatusBadRequest)
-			return
-		}
-		fileInfo, err := tokenValidator.Verify(fileToken)
+		fileInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to verify token: %v", err), http.StatusInternalServerError)
 			return
@@ -164,17 +154,7 @@ func NewUserCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate request token
-		rawToken := r.Header.Get("Authorization")
-		if rawToken == "" {
-			http.Error(w, "no authorization token provided", http.StatusBadRequest)
-			return
-		}
-		userToken, err := tokenValidator.Extract(rawToken)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to extract token: %v", err), http.StatusBadRequest)
-			return
-		}
-		userInfo, err := tokenValidator.Verify(userToken)
+		userInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify user token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
@@ -204,17 +184,7 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate token
-		rawToken := r.Header.Get("Authorization")
-		if rawToken == "" {
-			http.Error(w, "missing directory token", http.StatusBadRequest)
-			return
-		}
-		dirToken, err := tokenValidator.Extract(rawToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		dirInfo, err := tokenValidator.Verify(dirToken)
+		dirInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify directory token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
@@ -244,23 +214,12 @@ func NewDriveCtx(h http.Handler) http.Handler {
 	tokenValidator := auth.NewT()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate token
-		rawToken := r.Header.Get("Authorization")
-		if rawToken == "" {
-			http.Error(w, "missing drive token", http.StatusBadRequest)
-			return
-		}
-		drvToken, err := tokenValidator.Extract(rawToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		drvInfo, err := tokenValidator.Verify(drvToken)
+		drvInfo, err := tokenValidator.Validate(r)
 		if err != nil {
 			msg := fmt.Sprintf("failed to verify new drive token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-
 		// unmarshal into new drive object, and check whether its already registered
 		newDrive, err := svc.UnmarshalDriveString(drvInfo)
 		if err != nil {
@@ -278,8 +237,6 @@ func NewDriveCtx(h http.Handler) http.Handler {
 			w.Write([]byte(fmt.Sprintf("drive (id=%s) already exists", newDrive.ID)))
 			return
 		}
-
-		// serve
 		newCtx := context.WithValue(r.Context(), Drive, newDrive)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})

@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -71,6 +72,23 @@ func (t *Token) Verify(tokenString string) (string, error) {
 		return "", fmt.Errorf("no payload found in token claims")
 	}
 	return data, nil
+}
+
+// validate a request token from a given http request
+func (t *Token) Validate(r *http.Request) (string, error) {
+	var rawToken = r.Header.Get("Authorization")
+	if rawToken == "" {
+		return "", fmt.Errorf("no token provided")
+	}
+	token, err := t.Extract(rawToken)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract token: %v", err)
+	}
+	itemInfo, err := t.Verify(token)
+	if err != nil {
+		return "", err
+	}
+	return itemInfo, nil
 }
 
 // create a new token using a given payload/string
