@@ -80,8 +80,7 @@ func (m *Monitor) Exists(path string) bool {
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
 		return false
 	} else if err != nil {
-		log.Printf("[ERROR] failed to retrieve stat for: %s\n %v", path, err)
-		return false
+		log.Fatalf("[ERROR] failed to retrieve stat for: %s\n %v", path, err)
 	}
 	return true
 }
@@ -112,9 +111,9 @@ func (m *Monitor) StartWatcher(path string, stop chan bool) {
 }
 
 // add a file or directory to the events map and create a new monitoring
-// goroutine. will need a corresponding events handler. will be a no-op if the
-// given path is already being monitored.
-func (m *Monitor) WatchItem(path string) error {
+// goroutine. will need a corresponding events handler on the client end.
+// will be a no-op if the given path is already being monitored.
+func (m *Monitor) Watch(path string) error {
 	// make sure this item actually exists
 	if !m.Exists(path) {
 		return fmt.Errorf("%s does not exist", filepath.Base(path))
@@ -372,7 +371,7 @@ func watchAll(path string, m *Monitor) error {
 		if err != nil {
 			return err
 		}
-		if err := m.WatchItem(itemPath); err != nil {
+		if err := m.Watch(itemPath); err != nil {
 			return err
 		}
 		return nil
