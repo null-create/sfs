@@ -313,6 +313,13 @@ func (d *Directory) addFile(file *File) {
 	d.Files[file.ID] = file
 }
 
+// used when updating metadata for a file that's already in the directory.
+// we don't need to modify file's directory info if this is the case.
+func (d *Directory) putFile(file *File) {
+	file.LastSync = time.Now().UTC()
+	d.Files[file.ID] = file
+}
+
 // add a file to this directory if not already present.
 func (d *Directory) AddFile(file *File) error {
 	if !d.Protected {
@@ -351,7 +358,7 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 			if err := file.Save(data); err != nil {
 				return err
 			}
-			d.Size += origSize - file.GetSize()
+			d.Size += file.GetSize() - origSize
 		} else {
 			log.Printf("[ERROR] file (id=%s) does not belong to this directory", file.ID)
 			return nil
@@ -362,11 +369,11 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 	return nil
 }
 
-// update files metadata in the directory
-func (d *Directory) UpdateFile(file *File) error {
+// update metadata for a file that's already in the directory.
+func (d *Directory) PutFile(file *File) error {
 	if !d.Protected {
 		if d.HasFile(file.ID) {
-			d.addFile(file)
+			d.putFile(file)
 		}
 	} else {
 		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
