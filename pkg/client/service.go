@@ -562,22 +562,23 @@ func (c *Client) RegisterClient() error {
 	// register the user
 	req, err := c.NewUserRequest(c.User)
 	if err != nil {
-		return fmt.Errorf("failed to create new drive request: %v", err)
+		return fmt.Errorf("failed to create new user request: %v", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("failed to register new user. server status: %v", resp.Status)
 		c.dump(resp, true)
-		return fmt.Errorf("failed to register new user. server status: %v", resp.Status)
+		return nil
 	}
 	// register the drive. this will create a
 	// serer-side root and allocate the server-side physical
 	// drive directories and service files.
 	req, err = c.NewDriveRequest(c.Drive)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create new drive request: %v", err)
 	}
 	resp, err = c.Client.Do(req)
 	if err != nil {
@@ -586,8 +587,9 @@ func (c *Client) RegisterClient() error {
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
 	} else {
+		log.Printf("failed to register new drive. server status: %v", resp.Status)
 		c.dump(resp, true)
-		return fmt.Errorf("failed to register new drive. server status: %v", resp.Status)
+		return nil
 	}
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
