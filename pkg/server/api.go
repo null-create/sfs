@@ -370,6 +370,7 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 func (a *API) NewDrive(w http.ResponseWriter, r *http.Request) {
 	drive := r.Context().Value(Drive).(*svc.Drive)
 	if err := a.Svc.AddDrive(drive); err != nil {
+		// this shouldn't happen but just in case
 		if strings.Contains(err.Error(), "already registered") {
 			w.Write([]byte(fmt.Sprintf("drive (id=%s) is already registered", drive.ID)))
 			return
