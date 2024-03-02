@@ -224,7 +224,7 @@ func LoadClient(persist bool) (*Client, error) {
 	// services will be able to actually run.
 	if persist {
 		// make sure the drive was registered before starting
-		if !client.Drive.IsRegistered() {
+		if client.autoSync() && !client.Drive.IsRegistered() {
 			if err := client.RegisterClient(); err != nil {
 				return nil, err
 			}
