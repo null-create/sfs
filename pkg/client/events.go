@@ -59,7 +59,7 @@ func (c *Client) InitHandlerMaps() {
 // adds a file to monitor, then creates and starts
 // a dedicated event handler for the new file monitoring goroutine.
 func (c *Client) WatchItem(path string) error {
-	if err := c.Monitor.WatchItem(path); err != nil {
+	if err := c.Monitor.Watch(path); err != nil {
 		return err
 	}
 	if err := c.NewHandler(path); err != nil {

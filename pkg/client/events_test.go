@@ -49,7 +49,7 @@ func TestStartHandler(t *testing.T) {
 	}
 
 	// monitor this new file for changes
-	if err := client.Monitor.WatchItem(file.Path); err != nil {
+	if err := client.Monitor.Watch(file.Path); err != nil {
 		if err2 := Clean(t, GetTestingDir()); err2 != nil {
 			t.Fatal(err2)
 		}

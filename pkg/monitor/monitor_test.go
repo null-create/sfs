@@ -263,7 +263,7 @@ func TestMonitorDirectory(t *testing.T) {
 		stopListener <- true
 		Fatal(t, err)
 	}
-	if err := monitor.WatchItem(file.Path); err != nil {
+	if err := monitor.Watch(file.Path); err != nil {
 		monitor.ShutDown()
 		stopListener <- true
 		Fail(t, GetTestingDir(), err)
