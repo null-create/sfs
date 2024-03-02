@@ -38,13 +38,12 @@ type Event struct {
 
 func (e *Event) ToString() string {
 	return fmt.Sprintf(
-		"file event \n(id=%s) -> type: %s | path: %s",
+		"item event \n(id=%s) -> type: %s | path: %s",
 		e.ID, e.Type, e.Path,
 	)
 }
 
-// Elist is a buffer for file events in order to maximize
-// synchronization operations between client and server
+// Elist is a buffer for monitoring events.
 type EList []Event
 
 type Events struct {

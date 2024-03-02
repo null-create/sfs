@@ -238,8 +238,10 @@ func (d *Directory) HasDir(dirID string) bool {
 	return false
 }
 
-// returns the size of a directory with all its contents, including subdirectories
-func (d *Directory) DirSize() (int64, error) {
+// returns the size of a directory with all its contents, including files in
+// subdirectories. doesn't tally the size of subdirectories themselves, only counts
+// file sizes.
+func (d *Directory) GetSize() (int64, error) {
 	var size int64
 	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -265,7 +267,7 @@ since they will have a valid *drive pointer to
 point to the parent drive
 */
 func (d *Directory) GetParent() *Directory {
-	if !d.HasParent() {
+	if !d.HasParent() && !d.IsRoot() {
 		log.Fatal("no parent for non-root directory!")
 	}
 	return d.Parent
@@ -306,13 +308,8 @@ func (d *Directory) Unlock(password string) bool {
 func (d *Directory) addFile(file *File) {
 	file.DirID = d.ID
 	file.DriveID = d.DriveID
-	// TODO: maybe only change filepath listing if we actually physically copy a file?
-	// leaving this unchanged might give files accurate location info, but not
-	// actually be under a directory, at least according to the sfs system.
-	// this causes os.stat to fail since it redefines the internal
-	// path for a physical file, which won't match its actuall location.
-	// file.Path = filepath.Join(d.Path, file.Name)
 	file.LastSync = time.Now().UTC()
+	d.Size += file.GetSize()
 	d.Files[file.ID] = file
 }
 
@@ -331,9 +328,6 @@ func (d *Directory) AddFile(file *File) error {
 }
 
 func (d *Directory) AddFiles(files []*File) {
-	if len(files) == 0 {
-		return
-	}
 	if !d.Protected {
 		for _, f := range files {
 			if !d.HasFile(f.ID) {
@@ -350,14 +344,16 @@ func (d *Directory) AddFiles(files []*File) {
 // save new data to a file. file will be created or truncated,
 // depending on its state at time of writing. does not check
 // subdirectories for the existence of this file.
-func (d *Directory) ModifyFile(f *File, data []byte) error {
+func (d *Directory) ModifyFile(file *File, data []byte) error {
 	if !d.Protected {
-		if d.HasFile(f.ID) {
-			if err := f.Save(data); err != nil {
+		if d.HasFile(file.ID) {
+			var origSize = file.GetSize()
+			if err := file.Save(data); err != nil {
 				return err
 			}
+			d.Size += origSize - file.GetSize()
 		} else {
-			log.Printf("[ERROR] file (id=%s) does not belong to this directory", f.ID)
+			log.Printf("[ERROR] file (id=%s) does not belong to this directory", file.ID)
 			return nil
 		}
 	} else {
@@ -384,6 +380,7 @@ func (d *Directory) removeFile(fileID string) error {
 			return err
 		}
 		delete(d.Files, file.ID)
+		d.Size -= file.GetSize()
 		d.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("file (id=%s) not found", file.ID)
@@ -392,7 +389,7 @@ func (d *Directory) removeFile(fileID string) error {
 }
 
 // removes file from internal file map and deletes physical file.
-// use with caution.
+// use with caution!
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {

@@ -185,7 +185,7 @@ func TestGetDirSize(t *testing.T) {
 	}
 	testDir.AddFile(tf[0])
 
-	tdSize, err := testDir.DirSize()
+	tdSize, err := testDir.GetSize()
 	if err != nil {
 		t.Errorf("[ERROR] unable to to get directory size %v", err)
 	}

@@ -194,6 +194,7 @@ func (f *File) Save(data []byte) error {
 		if err := f.UpdateChecksum(); err != nil {
 			return fmt.Errorf("failed to update checksum: %v", err)
 		}
+		f.Size = f.GetSize()
 		f.LastSync = time.Now().UTC()
 	} else {
 		log.Printf("[INFO] %s is protected", f.Name)
@@ -201,7 +202,8 @@ func (f *File) Save(data []byte) error {
 	return nil
 }
 
-// clears *f.Content* not the actual external file contents!
+// clears *f.Content*, the in-memory file contents, not the
+// actual external file contents.
 func (f *File) Clear() error {
 	if !f.Protected {
 		f.Content = nil

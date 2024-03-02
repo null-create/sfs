@@ -12,5 +12,7 @@ type Logger struct {
 }
 
 func NewLogger() *Logger {
-	return &Logger{}
+	return &Logger{
+		log: &slog.Logger{},
+	}
 }

@@ -19,12 +19,16 @@ type Server struct {
 
 // instantiate a new HTTP server with an sfs service instance
 // contained within the router
+// TODO: more germaine configurations so the server can handle
+// a large amount of active connections and requests.
 func NewServer() *Server {
 	return &Server{
+		StartTime: time.Now().UTC(),
 		Svr: &http.Server{
-			// NewRouter() instantiates the server-side SNS service instance
+			// NewRouter() instantiates the server-side SFS service instance
 			// and handles client requests.
-			Handler:      NewRouter(),
+			Handler: NewRouter(),
+			// server configs
 			Addr:         svrCfg.Addr,
 			ReadTimeout:  svrCfg.TimeoutRead,
 			WriteTimeout: svrCfg.TimeoutWrite,
@@ -32,6 +36,7 @@ func NewServer() *Server {
 			ConnState: func(n net.Conn, h http.ConnState) {
 				// TODO: handle when a client state is idle or hijacked.
 			},
+			// TLS configs?
 		},
 	}
 }
@@ -77,6 +82,7 @@ func (s *Server) Run() {
 		if err := s.Svr.Shutdown(shutdownCtx); err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("[INFO] server run time: %v", s.RunTime())
 		serverStopCtx()
 	}()
 

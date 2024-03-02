@@ -151,9 +151,10 @@ func (s *Service) DriveExists(driveID string) bool {
 // This should ideally be used for starting a new sfs service in a
 // users root directly that already has files and/or subdirectories.
 func (s *Service) Discover(root *svc.Directory) (*svc.Directory, error) {
-	root = root.Walk()
+	root.Walk()
 
-	files := root.GetFiles() // send everything to the database
+	// send everything to the database
+	files := root.GetFiles()
 	for _, file := range files {
 		if err := s.Db.AddFile(file); err != nil {
 			return nil, fmt.Errorf("failed to add file to database: %v", err)
@@ -718,8 +719,9 @@ func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 	return nil
 }
 
-// delete a file in the service. uses the users drive to delete the file.
-// removes physical file and updates database.
+// soft-deletes a file in the service. uses the users drive to
+// delete the original copy of the file, moves the copy to the recycle bin,
+// and updates database.
 func (s *Service) DeleteFile(file *svc.File) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
