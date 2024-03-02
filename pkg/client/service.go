@@ -566,7 +566,8 @@ func (c *Client) RegisterClient() error {
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return err
+		log.Printf("[WARNING] client failed to make request: %v", err)
+		return nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("failed to register new user. server status: %v", resp.Status)
@@ -582,7 +583,8 @@ func (c *Client) RegisterClient() error {
 	}
 	resp, err = c.Client.Do(req)
 	if err != nil {
-		return err
+		log.Printf("[WARNING] client failed to make request: %v", err)
+		return nil
 	}
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
