@@ -27,7 +27,7 @@ type SyncIndex struct {
 
 	// map of files to be queued for uploading or downloading.
 	// key = file UUID, value = file pointer
-	FilesToUpdate map[string]*File `json:"to_update"`
+	FilesToUpdate map[string]*File `json:"files_to_update"`
 
 	// map of directories to be queued for uploading or downloading
 	// key = dir UUID, value = dir pointer
