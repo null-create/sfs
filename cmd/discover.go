@@ -33,6 +33,10 @@ func init() {
 
 func RunDiscoverCmd(cmd *cobra.Command, args []string) {
 	path, _ := cmd.Flags().GetString("path")
+	if path == "" {
+		showerr(fmt.Errorf("no path specified"))
+		return
+	}
 	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(err)
