@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/sfs/pkg/logger"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -13,9 +15,10 @@ import (
 // Setting isSingleton to true will allow Query to automatically
 // switch between different databases.
 type Query struct {
-	DBPath string // database directory path
-	CurDB  string // current database we're connecting to
-	Debug  bool   // debug flag
+	DBPath string         // database directory path
+	CurDB  string         // current database we're connecting to
+	Debug  bool           // debug flag
+	log    *logger.Logger // database logger
 
 	Singleton bool // flag for whether this is being use as a singleton
 
@@ -30,6 +33,7 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 		DBPath:    dbPath,
 		CurDB:     "",
 		Debug:     false,
+		log:       logger.NewLogger("Database"),
 		Singleton: isSingleton,
 		DBs:       []string{"users", "drives", "directories", "files"},
 	}
@@ -77,6 +81,7 @@ func (q *Query) Connect() error {
 	}
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
+		q.log.Error(fmt.Sprintf("failed to connect to database: %v", err))
 		return fmt.Errorf("failed to open database: %v", err)
 	}
 	q.Conn = db
@@ -85,6 +90,7 @@ func (q *Query) Connect() error {
 
 func (q *Query) Close() error {
 	if err := q.Conn.Close(); err != nil {
+		q.log.Error(fmt.Sprintf("unable to close databse connnection: %v", err))
 		return fmt.Errorf("unable to close database connection: %v", err)
 	}
 	return nil
