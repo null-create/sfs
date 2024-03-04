@@ -180,7 +180,6 @@ func loadStateFile() ([]byte, error) {
 // otherwise set to false if the client should be used for
 // one-off operations.
 func LoadClient(persist bool) (*Client, error) {
-
 	// load client state
 	data, err := loadStateFile()
 	if err != nil {
