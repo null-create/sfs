@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	logs "github.com/sfs/pkg/logger"
 )
 
 /*
@@ -31,6 +32,9 @@ type Monitor struct {
 	// path to the users drive root to monitor
 	Path string
 
+	// logger for monitor
+	log *logs.Logger
+
 	// map of channels to active watchers.
 	// key is the absolute path, value is the channel to the watchFile()
 	// or watchDir() goroutine associated with that file or directory
@@ -52,6 +56,7 @@ type Monitor struct {
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
 		Path:        drvRoot,
+		log:         logs.NewLogger("Monitor"),
 		Events:      make(map[string]chan Event),
 		Watchers:    make(map[string]Watcher),
 		OffSwitches: make(map[string]chan bool),
@@ -140,7 +145,7 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
-	log.Print("[ERROR] event channel not found!")
+	m.log.Error("event channel not found")
 	return nil
 }
 
@@ -150,10 +155,10 @@ func (m *Monitor) GetOffSwitch(path string) chan bool {
 	if offSwitch, exists := m.OffSwitches[path]; exists {
 		return offSwitch
 	}
-	log.Printf(
-		"[ERROR] off switch not found for %s monitoring goroutine",
-		filepath.Base(path),
-	)
+	m.log.Error(
+		fmt.Sprintf("off switch not found for %s monitoring goroutine",
+			filepath.Base(path),
+		))
 	return nil
 }
 
@@ -186,7 +191,9 @@ func (m *Monitor) ShutDown() {
 	if len(m.OffSwitches) == 0 {
 		return
 	}
-	log.Printf("[INFO] shutting down %d active monitoring threads...", len(m.OffSwitches))
+	m.log.Info(
+		fmt.Sprintf("shutting down %d active monitoring threads...", len(m.OffSwitches)),
+	)
 	for path := range m.OffSwitches {
 		m.OffSwitches[path] <- true
 	}
@@ -197,9 +204,15 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
+	var log = logs.NewLogger(filepath.Base(filePath) + " Watcher")
+
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
-		log.Printf("[ERROR] failed to get initial info for %s: %v\nunable to monitor", filepath.Base(filePath), err)
+		log.Error(
+			fmt.Sprintf("failed to get initial info for %s: %v\nunable to monitor",
+				filepath.Base(filePath), err,
+			),
+		)
 		return nil
 	}
 	baseName := filepath.Base(filePath)
@@ -212,13 +225,13 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] shutting down monitoring for %s...", baseName)
+				log.Info(fmt.Sprintf("shutting down monitoring for %s...", baseName))
 				close(evt)
 				return
 			default:
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
-					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, baseName)
+					log.Error(fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
 					evt <- Event{
 						Type: Error,
 						ID:   auth.NewUUID(),
@@ -230,7 +243,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Printf("[INFO] %s deleted. stopping monitoring...", baseName)
+					log.Info(fmt.Sprintf("%s was deleted. stopping monitoring.", baseName))
 					evt <- Event{
 						Type: Delete,
 						ID:   auth.NewUUID(),
@@ -240,7 +253,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					return
 				// file size change
 				case stat.Size() != initialStat.Size():
-					log.Printf("[INFO] size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000))
+					log.Info(fmt.Sprintf("size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000)))
 					evt <- Event{
 						Type: Size,
 						ID:   auth.NewUUID(),
@@ -249,7 +262,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				// file modification time change
 				case stat.ModTime() != initialStat.ModTime():
-					log.Printf("[INFO] mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime())
+					log.Info(fmt.Sprintf("mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime()))
 					evt <- Event{
 						Type: ModTime,
 						ID:   auth.NewUUID(),
@@ -258,7 +271,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				// file mode change
 				case stat.Mode() != initialStat.Mode():
-					log.Printf("[INFO] mode change detected: %v -> %v", initialStat.Mode(), stat.Mode())
+					log.Info(fmt.Sprintf("mode change detected: %v -> %v", initialStat.Mode(), stat.Mode()))
 					evt <- Event{
 						Type: Mode,
 						ID:   auth.NewUUID(),
@@ -267,7 +280,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				// file name change
 				case stat.Name() != initialStat.Name():
-					log.Printf("[INFO] file name change detected: %v -> %v", initialStat.Name(), stat.Name())
+					log.Info(fmt.Sprintf("file name change detected: %v -> %v", initialStat.Name(), stat.Name()))
 					evt <- Event{
 						Type: Name,
 						ID:   auth.NewUUID(),
@@ -283,7 +296,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	}
 	// start watcher
 	go func() {
-		log.Printf("[INFO] monitoring %s...", baseName)
+		log.Info(fmt.Sprintf("monitoring %s...", baseName))
 		watcher()
 	}()
 	return evt
@@ -291,10 +304,12 @@ func watchFile(filePath string, stop chan bool) chan Event {
 
 // watch for changes in a directory
 func watchDir(dirPath string, stop chan bool) chan Event {
+	var log = logs.NewLogger(filepath.Base(dirPath) + " Watcher")
+
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)
 	if err != nil {
-		log.Printf("[ERROR] failed to ready directory contents: %v", err)
+		log.Error(fmt.Sprintf("failed to ready directory contents: %v", err))
 		return nil
 	}
 
@@ -315,12 +330,12 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Printf("[INFO] stopping monitor for %s...", dirName)
+				log.Info(fmt.Sprintf("stopping monitor for %s...", dirName))
 				return
 			default:
 				currItems, err := os.ReadDir(dirPath)
 				if err != nil {
-					log.Printf("[ERROR] failed to read directory: %v", err)
+					log.Error(fmt.Sprintf("failed to read directory: %v", err))
 					return
 				}
 				switch {
@@ -361,7 +376,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 
 	// start watcher
 	go func() {
-		log.Printf("[INFO] monitoring %s...", filepath.Base(dirPath))
+		log.Info(fmt.Sprintf("monitoring %s...", filepath.Base(dirPath)))
 		watcher()
 	}()
 
@@ -371,7 +386,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 // add all files and directories under the given path
 // (assumed to be a root directory) to the monitoring instance
 func watchAll(path string, m *Monitor) error {
-	log.Printf("[INFO] adding watchers for all files and directories under %s ...", path)
+	m.log.Info(fmt.Sprintf("adding watchers for all files and directories under %s ...", path))
 	err := filepath.Walk(path, func(itemPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -384,6 +399,6 @@ func watchAll(path string, m *Monitor) error {
 	if err != nil {
 		return fmt.Errorf("failed to walk directory: %v", err)
 	}
-	log.Printf("[INFO] monitor is running. watching %d items", len(m.Events))
+	m.log.Info(fmt.Sprintf("monitor is running. watching %d items", len(m.Events)))
 	return nil
 }
