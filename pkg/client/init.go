@@ -13,6 +13,7 @@ import (
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
 	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 	"github.com/sfs/pkg/transfer"
@@ -218,6 +219,9 @@ func LoadClient(persist bool) (*Client, error) {
 	// initialize event maps
 	client.InitHandlerMaps()
 
+	// initialize logger
+	client.log = logger.NewLogger("Client")
+
 	// load and start persistent services only when necessary.
 	// persist should only be set to true when followed by a
 	// call to client.Start(), otherwise none of the monitoring
@@ -304,6 +308,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		log:         logger.NewLogger("Client"),
 		Tok:         auth.NewT(),
 		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),
