@@ -222,6 +222,7 @@ func (c *Client) AddFile(filePath string) error {
 		}
 		c.dump(resp, true)
 	}
+	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
 	return nil
 }
 
@@ -249,6 +250,7 @@ func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
 		}
 		c.dump(resp, true)
 	}
+	c.log.Info(fmt.Sprintf("added %s to client", file.Name))
 	return nil
 }
 
@@ -267,6 +269,7 @@ func (c *Client) ModifyFile(dirID string, fileID string, data []byte) error {
 	if err := c.Db.UpdateFile(file); err != nil {
 		return err
 	}
+	c.log.Info(fmt.Sprintf("%s was modified", file.Name))
 	return nil
 }
 
@@ -302,6 +305,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if err := c.Db.RemoveFile(file.ID); err != nil {
 		return err
 	}
+	c.log.Info(fmt.Sprintf("%s was removed", file.Name))
 	return nil
 }
 
@@ -340,6 +344,7 @@ func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error
 	if err := c.Db.UpdateFile(file); err != nil {
 		return err
 	}
+	c.log.Info(fmt.Sprintf("%s moved from %s to %s", file.Name, origDir.Path, destDir.Path))
 	return nil
 }
 
@@ -392,6 +397,7 @@ func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 		}
 		c.dump(resp, true)
 	}
+	c.log.Info(fmt.Sprintf("directory (%s) added to client", dir.Name))
 	return nil
 }
 
@@ -446,6 +452,7 @@ func (c *Client) AddDir(dirPath string) error {
 		}
 		c.dump(resp, true)
 	}
+	c.log.Info(fmt.Sprintf("directory (%s) added to client", newDir.Name))
 	return nil
 }
 
@@ -479,6 +486,7 @@ func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	if err := c.Db.UpdateDir(updatedDir); err != nil {
 		return fmt.Errorf("failed to update directory in database: %v", err)
 	}
+	c.log.Info(fmt.Sprintf("directory (%s) updated", updatedDir.Name))
 	return nil
 }
 
@@ -538,6 +546,7 @@ func (c *Client) LoadDrive() error {
 	if !c.Drive.IsIndexed() {
 		c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
 	}
+	c.log.Info("drive loaded")
 	return nil
 }
 
@@ -549,6 +558,7 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
 	}
+	c.log.Info("drive saved")
 	return nil
 }
 
@@ -592,6 +602,7 @@ func (c *Client) RegisterClient() error {
 		c.dump(resp, true)
 		return nil
 	}
+	c.log.Info("client registered with the server")
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
 	}
