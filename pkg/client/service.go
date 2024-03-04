@@ -652,14 +652,14 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	}
 
 	// create a new directory object under root and traverse
-	log.Printf("[TEST] traversing %s...", dirPath)
+	c.log.Info(fmt.Sprintf("traversing %s...", dirPath))
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 	newDir.Parent = c.Drive.Root
 	newDir.Walk()
 
 	// add newly discovered files and directories to the service
 	files := newDir.GetFiles()
-	log.Printf("[TEST] adding %d files to the database...", len(files))
+	c.log.Info(fmt.Sprintf("adding %d files to the database...", len(files)))
 
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
@@ -671,7 +671,7 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	}
 
 	dirs := newDir.GetSubDirs()
-	log.Printf("[TEST] adding %d directories...", len(dirs))
+	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
 
 	for _, subDir := range dirs {
 		if err := c.Db.AddDir(subDir); err != nil {
@@ -683,7 +683,7 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	}
 
 	// add new directory itself
-	log.Printf("[TEST] adding %s...", filepath.Base(dirPath))
+	c.log.Info(fmt.Sprintf("adding %s...", filepath.Base(dirPath)))
 	if err := c.Db.AddDir(newDir); err != nil {
 		return fmt.Errorf("failed to add root to database: %v", err)
 	}
