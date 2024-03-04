@@ -270,7 +270,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 							log.Printf("[ERROR] failed to add new directory: %v", err)
 						}
 					} else {
-						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, e.Path)
+						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
 						if err := c.AddFileWithID(itemID, newFile); err != nil {
 							log.Printf("[ERROR] failed to add new file: %v", err)
 						}
@@ -318,6 +318,9 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				evtBuf.AddEvent(e)
 			case monitor.Delete:
 				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", itemID)
+				return nil
+			case monitor.Error:
+				log.Printf("[INFO] monitor for item (id=%s) experienced an error. stopping handler.", itemID)
 				return nil
 			}
 			// trigger synchronization operations once the event buffer has reached capacity
