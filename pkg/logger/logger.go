@@ -27,8 +27,8 @@ component, level, time, message
 */
 type Logger struct {
 	mu        sync.Mutex   // lock so loggers don't over write each other
-	component string       // name of the component this logger is attached to
-	logfile   string       // absolute path to the csv log file
+	component string       `json:"component"` // name of the component this logger is attached to
+	logfile   string       `json:"log_file"`  // absolute path to the csv log file
 	log       *slog.Logger // slog instance
 	csvWriter *csv.Writer  // csv writer instance
 }
@@ -36,12 +36,20 @@ type Logger struct {
 // instantiate a new logger
 func NewLogger(component string) *Logger {
 	// create the log file if it doesn't already exist
-	// log files have the name format: sfs-log-dd:mm:yyyy.csv, so
+	// log files have the name format: sfs-log-dd-mm-yyyy.csv, so
 	// one new log file should be created per day.
 	logFile := filepath.Join(logCfg.LogDir, fmt.Sprintf("sfs-log-%s.csv", getCurrentDate()))
+
+	// make sure the log directory exists. if not, create it.
+	if err := createLogDir(logCfg.LogDir); err != nil {
+		log.Fatalf(fmt.Sprintf("failed to create log directory: %v", err))
+	}
+
+	// create the log file if it doesn't already exist
 	if err := createLogFile(logFile); err != nil {
 		log.Fatalf(fmt.Sprintf("failed to create log file: %v", err))
 	}
+
 	// open for use by the CSV writer.
 	csvFile, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -55,7 +63,7 @@ func NewLogger(component string) *Logger {
 	}
 }
 
-// return todays date as dd:mm:yyyy
+// return todays date as dd-mm-yyyy
 func getCurrentDate() string {
 	now := time.Now()
 	return fmt.Sprintf("%02d-%02d-%d", now.Day(), now.Month(), now.Year())
@@ -75,10 +83,6 @@ func createLogDir(logDirPath string) error {
 
 // create a log file if it doesn't exist
 func createLogFile(lfpath string) error {
-	// make sure the log directory exists. if not, create it.
-	if err := createLogDir(filepath.Dir(lfpath)); err != nil {
-		return err
-	}
 	// create the log file if it doesn't exist.
 	if _, err := os.Stat(lfpath); errors.Is(err, os.ErrNotExist) {
 		csvFile, err := os.Create(lfpath)
@@ -129,10 +133,10 @@ func (l *Logger) writeCSV(level string, msg string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	var timestamp = time.Now().UTC()
+	timestamp := time.Now().UTC()
 	l.csvWriter.Write([]string{l.component, level, timestamp.Format(time.RFC3339), msg})
 	l.csvWriter.Flush()
 	if err := l.csvWriter.Error(); err != nil {
-		log.Printf("[WARN] Error writing to log file: %v", err)
+		log.Fatalf("error writing to log file: %v", err)
 	}
 }
