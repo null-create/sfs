@@ -219,6 +219,11 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Printf("[ERROR] %v\nstopping monitoring for %s...", err, baseName)
+					evt <- Event{
+						Type: Error,
+						ID:   auth.NewUUID(),
+						Path: filePath,
+					}
 					close(evt)
 					return
 				}

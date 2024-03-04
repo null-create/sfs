@@ -18,6 +18,7 @@ const (
 	Mode    EventType = "mode"
 	Path    EventType = "path"
 	Name    EventType = "name"
+	Error   EventType = "error"
 )
 
 // an associated item (file or directory) for a given event
