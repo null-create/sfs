@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
-	logs "github.com/sfs/pkg/logger"
+	"github.com/sfs/pkg/logger"
 )
 
 /*
@@ -33,7 +33,7 @@ type Monitor struct {
 	Path string
 
 	// logger for monitor
-	log *logs.Logger
+	log *logger.Logger
 
 	// map of channels to active watchers.
 	// key is the absolute path, value is the channel to the watchFile()
@@ -56,7 +56,7 @@ type Monitor struct {
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
 		Path:        drvRoot,
-		log:         logs.NewLogger("Monitor"),
+		log:         logger.NewLogger("Monitor"),
 		Events:      make(map[string]chan Event),
 		Watchers:    make(map[string]Watcher),
 		OffSwitches: make(map[string]chan bool),
@@ -204,7 +204,7 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
-	var log = logs.NewLogger("Watcher")
+	var log = logger.NewLogger("Watcher")
 
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
@@ -304,7 +304,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 
 // watch for changes in a directory
 func watchDir(dirPath string, stop chan bool) chan Event {
-	var log = logs.NewLogger("Watcher")
+	var log = logger.NewLogger("Watcher")
 
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)
