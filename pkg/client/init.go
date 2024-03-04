@@ -157,7 +157,6 @@ func loadStateFile() ([]byte, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no state file found for client")
 	} else if len(entries) > 1 {
-		log.Printf("[WARNING] more than one state file found for client! will default to most recent entry")
 		for i, entry := range entries {
 			log.Printf("	%d: %s", i+1, entry.Name())
 		}
