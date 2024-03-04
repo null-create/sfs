@@ -171,7 +171,7 @@ root/
 // initialize a new service and corresponding databases
 func SvcInit(svcRoot string) (*Service, error) {
 	// create a logger for initialization steps
-	initLogger := logger.NewLogger("SERVER_INIT")
+	initLogger := logger.NewLogger("SERVICE_INIT")
 
 	// make root service directory (wherever it should located)
 	initLogger.Info("creating root service directory...")
@@ -259,11 +259,15 @@ func svcLoad(sfPath string) (*Service, error) {
 	return svc, nil
 }
 
+// logger used during an established service initialization
+var loadLogger = logger.NewLogger("SERVICE_LOAD")
+
 // reads in an external service state file and instantiates an SFS service instance.
 func SvcLoad(svcPath string) (*Service, error) {
 	// ensure (at least) the necessary dbs and state files are present
 	sfPath, err := preChecks(svcPath)
 	if err != nil {
+		loadLogger.Error(err.Error())
 		return nil, err
 	}
 	// unmarshal json state file to a service instance
@@ -280,12 +284,14 @@ func SvcLoad(svcPath string) (*Service, error) {
 	if len(svc.Users) == 0 {
 		_, err := loadUsers(svc)
 		if err != nil {
+			loadLogger.Error(fmt.Sprintf("failed to retrieve user data: %v", err))
 			return nil, fmt.Errorf("failed to retrieve user data: %v", err)
 		}
 	}
 	if len(svc.Drives) == 0 {
 		_, err := loadDrives(svc)
 		if err != nil {
+			loadLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
 			return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
 		}
 	} else {
@@ -293,9 +299,11 @@ func SvcLoad(svcPath string) (*Service, error) {
 		for _, d := range svc.Drives {
 			root, err := svc.Db.GetDirectoryByID(d.RootID)
 			if err != nil {
+				loadLogger.Error(fmt.Sprintf("failed to get root directory: %v", err))
 				return nil, fmt.Errorf("failed to get root directory: %v", err)
 			}
 			if root == nil {
+				loadLogger.Error(fmt.Sprintf("no root directory found for drive: %s", d.ID))
 				return nil, fmt.Errorf("no root directory found for drive: %s", d.ID)
 			}
 			d.Root = svc.Populate(root)
