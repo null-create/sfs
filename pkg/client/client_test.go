@@ -22,7 +22,7 @@ func TestNewClient(t *testing.T) {
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
-	tmpDir, err := e.Get("CLIENT_ROOT")
+	tmpDir, err := e.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -395,6 +395,31 @@ func TestClientRefreshDrive(t *testing.T) {
 
 	// run refresh
 	tmpClient.RefreshDrive()
+
+	// clean up before asserts so nothing gets left behind if there's failures
+	if err := Clean(t, GetTestingDir()); err != nil {
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+}
+
+func TestClientDiscoverWithPath(t *testing.T) {
+	env.SetEnv(false)
+	e := env.NewE()
+
+	// make a test client
+	tmpClient, err := Init(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testDir := "C:\\Users\\Jay\\Documents\\School-Work"
+	err = tmpClient.DiscoverWithPath(testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// clean up before asserts so nothing gets left behind if there's failures
 	if err := Clean(t, GetTestingDir()); err != nil {
