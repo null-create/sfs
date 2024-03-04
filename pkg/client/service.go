@@ -68,7 +68,7 @@ func (c *Client) Exists(path string) bool {
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
 		return false
 	} else if err != nil {
-		log.Printf("[ERROR] failed to retrieve stat for: %s\n %v", path, err)
+		c.log.Error(fmt.Sprintf("failed to retrieve stat for: %s - %v", path, err))
 		return false
 	}
 	return true
@@ -374,7 +374,7 @@ func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
 	if err := c.Db.AddDir(dir); err != nil {
 		// remove dir. we only want directories we have a record for.
 		if remErr := os.Remove(dir.Path); remErr != nil {
-			log.Printf("[WARNING] failed to remove directory: %v", remErr)
+			c.log.Warn(fmt.Sprintf("failed to remove directory: %v", remErr))
 		}
 		return err
 	}
@@ -566,11 +566,11 @@ func (c *Client) RegisterClient() error {
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		log.Printf("[WARNING] client failed to make request: %v", err)
+		c.log.Warn(fmt.Sprintf("client failed to make request: %v", err))
 		return nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("failed to register new user. server status: %v", resp.Status)
+		c.log.Warn(fmt.Sprintf("failed to register new user. server status: %v", resp.Status))
 		c.dump(resp, true)
 		return nil
 	}
@@ -583,13 +583,13 @@ func (c *Client) RegisterClient() error {
 	}
 	resp, err = c.Client.Do(req)
 	if err != nil {
-		log.Printf("[WARNING] client failed to make request: %v", err)
+		c.log.Warn(fmt.Sprintf("client failed to make request: %v", err))
 		return nil
 	}
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
 	} else {
-		log.Printf("failed to register new drive. server status: %v", resp.Status)
+		c.log.Warn(fmt.Sprintf("failed to register new drive. server status: %v", resp.Status))
 		c.dump(resp, true)
 		return nil
 	}
@@ -607,7 +607,7 @@ func (c *Client) RegisterClient() error {
 // users root directly that already has files and/or subdirectories.
 func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 	// traverse users SFS file system and populate internal structures
-	root = root.Walk()
+	root.Walk()
 
 	// send everything to the database
 	files := root.WalkFs()
@@ -647,17 +647,20 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		return err
 	}
 	if dir != nil {
-		log.Printf("[INFO] directory %s is already known", filepath.Base(dirPath))
+		c.log.Info(fmt.Sprintf("directory %s is already known", filepath.Base(dirPath)))
 		return nil
 	}
 
 	// create a new directory object under root and traverse
+	log.Printf("[TEST] traversing %s...", dirPath)
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 	newDir.Parent = c.Drive.Root
 	newDir.Walk()
 
 	// add newly discovered files and directories to the service
 	files := newDir.GetFiles()
+	log.Printf("[TEST] adding %d files to the database...", len(files))
+
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
 			return fmt.Errorf("failed to add file to database: %v", err)
@@ -666,7 +669,10 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 			return err
 		}
 	}
+
 	dirs := newDir.GetSubDirs()
+	log.Printf("[TEST] adding %d directories...", len(dirs))
+
 	for _, subDir := range dirs {
 		if err := c.Db.AddDir(subDir); err != nil {
 			return fmt.Errorf("failed to add directory to database: %v", err)
@@ -675,7 +681,9 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 			return err
 		}
 	}
+
 	// add new directory itself
+	log.Printf("[TEST] adding %s...", filepath.Base(dirPath))
 	if err := c.Db.AddDir(newDir); err != nil {
 		return fmt.Errorf("failed to add root to database: %v", err)
 	}
@@ -694,15 +702,8 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 // database as its traversing the file system. This may or may not be a good thing.
 func (c *Client) Populate(root *svc.Directory) *svc.Directory {
 	if root.Path == "" {
-		log.Print("[WARNING] can't traverse directory without a path")
-		return nil
-	}
-	if root.IsNil() {
-		log.Printf(
-			"[WARNING] can't traverse directory with emptyr or nil maps: \nfiles=%v dirs=%v",
-			root.Files, root.Dirs,
-		)
-		return nil
+		c.log.Warn("can't traverse directory without a path")
+		return root
 	}
 	return c.populate(root)
 }
@@ -710,7 +711,7 @@ func (c *Client) Populate(root *svc.Directory) *svc.Directory {
 func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
-		log.Printf("[ERROR] %v", err)
+		c.log.Error(err.Error())
 		return dir
 	}
 	if len(entries) == 0 {
@@ -720,14 +721,14 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 		entryPath := filepath.Join(dir.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
-			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			c.log.Error(fmt.Sprintf("could not get stat for entry %s - %v", entryPath, err))
 			return dir
 		}
 		// add directory then recurse
 		if item.IsDir() {
 			subDir, err := c.Db.GetDirectoryByName(item.Name())
 			if err != nil {
-				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				c.log.Error(fmt.Sprintf("could not get directory (%s) from db:  %v", item.Name(), err))
 				continue
 			}
 			if subDir == nil {
@@ -735,20 +736,20 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 			}
 			subDir = c.populate(subDir)
 			if err := dir.AddSubDir(subDir); err != nil {
-				log.Printf("[ERROR] could not add directory: %v", err)
+				c.log.Error(fmt.Sprintf("could not add directory: %v", err))
 				continue
 			}
 		} else { // add file
 			file, err := c.Db.GetFileByName(item.Name())
 			if err != nil {
-				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				c.log.Error(fmt.Sprintf("could not get file (%s) from db: %v", item.Name(), err))
 				continue
 			}
 			if file == nil {
 				continue
 			}
 			if err := dir.AddFile(file); err != nil {
-				log.Printf("[ERROR] could not add file (%s) to service: %v", item.Name(), err)
+				c.log.Error(fmt.Sprintf("could not add file (%s) to service: %v", item.Name(), err))
 			}
 		}
 	}
@@ -771,7 +772,7 @@ func (c *Client) RefreshDrive() {
 func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
-		log.Printf("[ERROR]: %v", err)
+		c.log.Error(fmt.Sprintf("refresh drive failed to read directory %s: %v", dir.Path, err))
 		return dir
 	}
 	if len(entries) == 0 {
@@ -781,25 +782,25 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 		entryPath := filepath.Join(dir.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
-			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			c.log.Error(fmt.Sprintf("could not get stat for entry %s - %v", entryPath, err))
 			return dir
 		}
 		// add directory then recurse
 		if item.IsDir() {
 			subDir, err := c.Db.GetDirectoryByPath(entryPath)
 			if err != nil {
-				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				c.log.Error(fmt.Sprintf("could not get directory (%s) from db: %v", item.Name(), err))
 				continue
 			}
 			// new directory
 			if subDir == nil {
 				subDir = svc.NewDirectory(item.Name(), dir.OwnerID, dir.DriveID, entryPath)
 				if err := c.Db.AddDir(subDir); err != nil {
-					log.Printf("[ERROR] could not add directory (%s) to db: %v", item.Name(), err)
+					c.log.Error(fmt.Sprintf("could not add directory (%s) to db: %v", item.Name(), err))
 					continue
 				}
 				if err := c.WatchItem(entryPath); err != nil {
-					log.Printf("[ERROR] could not monitor directory (%s): %v", item.Name(), err)
+					c.log.Error(fmt.Sprintf("could not monitor directory (%s): %v", item.Name(), err))
 					continue
 				}
 				subDir = c.refreshDrive(subDir)
@@ -810,7 +811,7 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 		} else {
 			file, err := c.Db.GetFileByPath(entryPath)
 			if err != nil {
-				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				c.log.Error(fmt.Sprintf("could not get file (%s) from db: %v", item.Name(), err))
 				continue
 			}
 			// new file
@@ -818,14 +819,14 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, entryPath)
 				newFile.DirID = dir.ID
 				if err := c.Db.AddFile(newFile); err != nil {
-					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
+					c.log.Error(fmt.Sprintf("could not add file (%s) to db: %v", item.Name(), err))
 					continue // TEMP until there's a better way to handle this error
 				}
 				if err := dir.AddFile(newFile); err != nil {
-					log.Printf("[ERROR] could not add file (%s) service: %v", item.Name(), err)
+					c.log.Error(fmt.Sprintf("could not add file (%s) service: %v", item.Name(), err))
 				}
 				if err := c.WatchItem(entryPath); err != nil {
-					log.Printf("[ERROR] failed to watch file (%s): %v", item.Name(), err)
+					c.log.Error(fmt.Sprintf("failed to watch file (%s): %v", item.Name(), err))
 					continue
 				}
 			}
