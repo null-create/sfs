@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -34,7 +33,7 @@ type Service struct {
 	DbDir string `json:"db_dir"`
 
 	// db singleton connection
-	Db *db.Query
+	Db *db.Query `json:"db"`
 
 	// logger
 	log *logs.Logger `json:"log"`
@@ -134,7 +133,7 @@ func (s *Service) cleanSfDir(sfDir string) error {
 			}
 		}
 	} else {
-		log.Printf("[WARNING] failed to remove previous state file(s): %v", err)
+		s.log.Error(fmt.Sprintf("failed to remove previous state file(s): %v", err))
 	}
 	return nil
 }
@@ -186,15 +185,8 @@ func (s *Service) Discover(root *svc.Directory) (*svc.Directory, error) {
 // database as its traversing the file system.
 func (s *Service) Populate(root *svc.Directory) *svc.Directory {
 	if root.Path == "" {
-		log.Print("[WARNING] can't traverse directory without a path")
-		return nil
-	}
-	if root.IsNil() {
-		log.Printf(
-			"[WARNING] can't traverse directory with empty or nil maps: \nfiles=%v dirs=%v",
-			root.Files, root.Dirs,
-		)
-		return nil
+		s.log.Error("can't traverse directory without a path")
+		return root
 	}
 	return s.populate(root)
 }
@@ -202,25 +194,24 @@ func (s *Service) Populate(root *svc.Directory) *svc.Directory {
 func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
-		log.Printf("[ERROR]: %v", err)
+		s.log.Error(fmt.Sprintf("can't read directory: %s", dir.Path))
 		return dir
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
 		return dir
 	}
 	for _, entry := range entries {
 		entryPath := filepath.Join(dir.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
-			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			s.log.Error(fmt.Sprintf("could not get stat for entry %s: %v", entryPath, err))
 			return dir
 		}
 		// add directory then recurse
 		if item.IsDir() {
 			subDir, err := s.Db.GetDirectoryByPath(entryPath)
 			if err != nil {
-				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				s.log.Error(fmt.Sprintf("could not get directory (%s) from db: %s", item.Name(), err))
 				continue
 			}
 			if subDir == nil {
@@ -231,14 +222,14 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 		} else { // add file
 			file, err := s.Db.GetFileByPath(entryPath)
 			if err != nil {
-				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				s.log.Error(fmt.Sprintf("could not get file (%s) from db: %v", item.Name(), err))
 				continue
 			}
 			if file == nil {
 				continue // not found
 			}
 			if err := dir.AddFile(file); err != nil {
-				log.Printf("[ERROR] could not add file %s (id=%s): %v", file.Name, file.ID, err)
+				s.log.Error(fmt.Sprintf("could not add file (%s) to db: %v", file.Name, err))
 			}
 		}
 	}
@@ -276,32 +267,32 @@ func (s *Service) RefreshDrive(driveID string) error {
 func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 	entries, err := os.ReadDir(dir.Path)
 	if err != nil {
-		log.Printf("[ERROR]: %v", err)
+		s.log.Error(fmt.Sprintf("failed to read directory: %v", err))
 		return dir
 	}
 	if len(entries) == 0 {
-		log.Printf("[INFO] dir (id=%s) has no entries: ", dir.ID)
+		s.log.Info(fmt.Sprintf("dir (id=%s) has no entries", dir.ID))
 		return dir
 	}
 	for _, entry := range entries {
 		entryPath := filepath.Join(dir.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
-			log.Printf("[ERROR] could not get stat for entry %s \nerr: %v", entryPath, err)
+			s.log.Error(fmt.Sprintf("failed to get stat for entry %s: %v", entryPath, err))
 			return dir
 		}
 		// add directory then recurse
 		if item.IsDir() {
 			subDir, err := s.Db.GetDirectoryByName(item.Name())
 			if err != nil {
-				log.Printf("[ERROR] could not get directory from db: %v \nerr: %v", item.Name(), err)
+				s.log.Error(fmt.Sprintf("failed to get directory (%s) from db: %v", item.Name(), err))
 				continue
 			}
 			// new directory
 			if subDir == nil {
 				subDir = svc.NewDirectory(item.Name(), dir.OwnerID, dir.DriveID, entryPath)
 				if err := s.Db.AddDir(subDir); err != nil {
-					log.Printf("[ERROR] could not add directory (%s) to db: %v", item.Name(), err)
+					s.log.Error(fmt.Sprintf("failed to add directory (%s) to db: %v", item.Name(), err))
 					continue
 				}
 				subDir = s.refreshDrive(subDir)
@@ -310,7 +301,7 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 		} else {
 			file, err := s.Db.GetFileByName(item.Name())
 			if err != nil {
-				log.Printf("[ERROR] could not get file (%s) from db: %v", item.Name(), err)
+				s.log.Error(fmt.Sprintf("failed to get file (%s) from db: %v", item.Name(), err))
 				continue
 			}
 			// new file
@@ -318,11 +309,11 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, entryPath)
 				newFile.DirID = dir.ID
 				if err := s.Db.AddFile(newFile); err != nil {
-					log.Printf("[ERROR] could not add file (%s) to db: %v", item.Name(), err)
+					s.log.Error(fmt.Sprintf("failed to add file (%s) to db: %v", item.Name(), err))
 					continue // TEMP until there's a better way to handle this error
 				}
 				if err := dir.AddFile(newFile); err != nil {
-					log.Printf("[ERROR] could not add file (%s) to service: %v", item.Name(), err)
+					s.log.Error(fmt.Sprintf("failed to add file (%s) to service: %v", item.Name(), err))
 				}
 			}
 		}
@@ -401,7 +392,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 		return err
 	}
 	if root != nil {
-		return errors.New("drive is already registered")
+		return fmt.Errorf("drive is already registered")
 	}
 	// create root from existing client-side drive
 	// info so we can register this new drive
@@ -462,7 +453,7 @@ func (s *Service) UpdateDrive(drv *svc.Drive) error {
 func (s *Service) RemoveDrive(driveID string) error {
 	drv := s.GetDrive(driveID)
 	if drv == nil {
-		log.Printf("[INFO] drive %s not found", driveID)
+		s.log.Info(fmt.Sprintf("drive %s not found", driveID))
 		return nil
 	}
 	if drv.Root.IsNil() {
@@ -502,7 +493,7 @@ func (s *Service) RemoveDrive(driveID string) error {
 	if err := s.SaveState(); err != nil {
 		return err
 	}
-	log.Printf("[INFO] drive (id=%s) removed", driveID)
+	s.log.Info(fmt.Sprintf("drive (id=%s) removed", driveID))
 	return nil
 }
 
@@ -556,7 +547,7 @@ func (s *Service) AddUser(newUser *auth.User) error {
 		if err := s.addUser(newUser); err != nil {
 			return err
 		}
-		log.Printf("[INFO] added user (name=%s id=%s)", newUser.Name, newUser.ID)
+		s.log.Info(fmt.Sprintf("added user (name=%s id=%s)", newUser.Name, newUser.ID))
 	} else {
 		return fmt.Errorf("user (id=%s) already exists", newUser.ID)
 	}
@@ -576,12 +567,12 @@ func (s *Service) RemoveUser(userID string) error {
 		}
 		// delete from service instance
 		delete(s.Users, usr.ID)
-		log.Printf("[INFO] user (id=%s) removed", userID)
+		s.log.Info(fmt.Sprintf("user (id=%s) removed", userID))
 		if err := s.SaveState(); err != nil {
 			return err
 		}
 	} else {
-		log.Printf("[WARNING] user (id=%s) not found", userID)
+		s.log.Warn(fmt.Sprintf("user (id=%s) not found", userID))
 	}
 	return nil
 }
@@ -596,7 +587,7 @@ func (s *Service) FindUser(userId string) (*auth.User, error) {
 			return nil, err
 		}
 		if u == nil {
-			log.Printf("[INFO] user (id=%s) not found", userId)
+			s.log.Info(fmt.Sprintf("user (id=%s) not found", userId))
 			return nil, nil
 		}
 		s.Users[u.ID] = u // add to the map since we didn't find it initially
@@ -611,7 +602,7 @@ func (s *Service) updateUser(user *auth.User) error {
 		return fmt.Errorf("failed to update user in database: %v", err)
 	}
 	s.Users[user.ID] = user
-	log.Printf("[INFO] user %s (id=%s) updated", user.Name, user.ID)
+	s.log.Info(fmt.Sprintf("user %s (id=%s) updated", user.Name, user.ID))
 	return nil
 }
 
@@ -665,7 +656,7 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	}
 	files := drive.GetFiles()
 	if len(files) == 0 {
-		log.Printf("[INFO] no files in drive (id=%s)", driveID)
+		s.log.Info(fmt.Sprintf("no files in drive (id=%s)", driveID))
 	}
 	return files, nil
 }
@@ -822,7 +813,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if err := drive.AddSubDir(destDirID, newDir); err != nil {
 		// remove the directory if adding fails
 		if err2 := os.Remove(newDir.Path); err2 != nil {
-			log.Printf("[ERROR] failed to remove dir: %v", err2)
+			s.log.Error(fmt.Sprintf("failed to remove dir: %v", err2))
 		}
 		return err
 	}
@@ -910,7 +901,7 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 	}
 	subDirs := drive.GetDirs()
 	if len(subDirs) == 0 {
-		log.Printf("[INFO] no directories found for user (id=%s)", drive.OwnerID)
+		s.log.Info(fmt.Sprintf("no directories found for user (id=%s)", drive.OwnerID))
 		return nil, nil
 	}
 	dirs := make([]*svc.Directory, 0, len(subDirs))
