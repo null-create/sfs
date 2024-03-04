@@ -68,7 +68,7 @@ func NewService(svcRoot string) *Service {
 		UserDir:   filepath.Join(svcRoot, "users"),
 		DbDir:     filepath.Join(svcRoot, "dbs"),
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		log:       logs.NewLogger("Server"),
+		log:       logs.NewLogger("Service"),
 
 		// admin mode is optional.
 		// these are standard default values
