@@ -12,6 +12,7 @@ import (
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
 	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -169,14 +170,17 @@ root/
 
 // initialize a new service and corresponding databases
 func SvcInit(svcRoot string) (*Service, error) {
+	// create a logger for initialization steps
+	initLogger := logger.NewLogger("SERVER_INIT")
+
 	// make root service directory (wherever it should located)
-	log.Print("[INFO] creating root service directory...")
+	initLogger.Info("creating root service directory...")
 	if err := os.Mkdir(svcRoot, 0644); err != nil {
 		return nil, fmt.Errorf("failed to make service root directory: %v", err)
 	}
 
 	//create top-level service directories
-	log.Print("[INFO] creating service subdirectories...")
+	initLogger.Info("creating root service directory...")
 	svcPaths := []string{
 		filepath.Join(svcRoot, "users"),
 		filepath.Join(svcRoot, "state"),
@@ -189,13 +193,13 @@ func SvcInit(svcRoot string) (*Service, error) {
 	}
 
 	// create new service databases
-	log.Print("[INFO] creating service databases...")
+	initLogger.Info("creating service databases...")
 	if err := db.InitDBs(svcPaths[2]); err != nil {
 		return nil, fmt.Errorf("failed to initialize service databases: %v", err)
 	}
 
 	// create new service instance and save initial state
-	log.Print("[INFO] initializng new service instance...")
+	initLogger.Info("initializing new service instance...")
 	svc := NewService(svcRoot)
 	if err := svc.SaveState(); err != nil {
 		return nil, fmt.Errorf("failed to save service state: %v", err)
@@ -208,7 +212,7 @@ func SvcInit(svcRoot string) (*Service, error) {
 		return nil, fmt.Errorf("failed to update service .env file: %v", err)
 	}
 
-	log.Print("[INFO] all set :)")
+	initLogger.Info("all set :)")
 	return svc, nil
 }
 
@@ -263,6 +267,10 @@ func SvcLoad(svcPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
+
+	// load logger
+	svc.log = logger.NewLogger("Server")
+
 	// attempt to populate from users and drive databases if state file had no user
 	// or drive data.
 	if len(svc.Users) == 0 {
