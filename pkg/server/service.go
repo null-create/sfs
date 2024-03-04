@@ -11,6 +11,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
+	logs "github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -34,6 +35,9 @@ type Service struct {
 
 	// db singleton connection
 	Db *db.Query
+
+	// logger
+	log *logs.Logger `json:"log"`
 
 	// admin mode. allows for expanded permissions when working with
 	// the internal sfs file systems.
@@ -65,6 +69,7 @@ func NewService(svcRoot string) *Service {
 		UserDir:   filepath.Join(svcRoot, "users"),
 		DbDir:     filepath.Join(svcRoot, "dbs"),
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		log:       logs.NewLogger("Server"),
 
 		// admin mode is optional.
 		// these are standard default values
