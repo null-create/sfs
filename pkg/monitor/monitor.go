@@ -209,7 +209,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
 		log.Error(
-			fmt.Sprintf("failed to get initial info for %s: %v\nunable to monitor",
+			fmt.Sprintf("failed to get initial info for %s: %v - unable to monitor",
 				filepath.Base(filePath), err,
 			),
 		)

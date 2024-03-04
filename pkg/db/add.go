@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/sfs/pkg/auth"
 
@@ -91,9 +90,6 @@ func (q *Query) AddUser(u *auth.User) error {
 	}
 	defer q.Stmt.Close()
 
-	if q.Debug {
-		log.Printf("[DEBUG] querying user: %s ", u.ID)
-	}
 	if _, err := q.Stmt.Exec(
 		&u.ID,
 		&u.Name,

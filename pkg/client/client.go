@@ -13,7 +13,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
-	logs "github.com/sfs/pkg/logger"
+	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 	"github.com/sfs/pkg/transfer"
@@ -21,17 +21,17 @@ import (
 
 // Client-side SFS service instance.
 type Client struct {
-	StartTime  time.Time    `json:"start_time"`      // start time for this client
-	Conf       *Conf        `json:"client_settings"` // client service settings
-	User       *auth.User   `json:"user"`            // user object
-	UserID     string       `json:"user_id"`         // usersID for this client
-	DriveID    string       `json:"drive_id"`        // drive ID for this client
-	Root       string       `json:"root"`            // path to root sfs directory for users files and directories
-	SfDir      string       `json:"state_file_dir"`  // path to state file
-	RecycleBin string       `json:"recycle_bin"`     // path to recycle bin. "deleted" items live here.
-	Drive      *svc.Drive   `json:"drive"`           // client drive for managing users files and directories
-	Db         *db.Query    `json:"db"`              // local db connection
-	log        *logs.Logger `json:"logger"`          // logger
+	StartTime  time.Time      `json:"start_time"`      // start time for this client
+	Conf       *Conf          `json:"client_settings"` // client service settings
+	User       *auth.User     `json:"user"`            // user object
+	UserID     string         `json:"user_id"`         // usersID for this client
+	DriveID    string         `json:"drive_id"`        // drive ID for this client
+	Root       string         `json:"root"`            // path to root sfs directory for users files and directories
+	SfDir      string         `json:"state_file_dir"`  // path to state file
+	RecycleBin string         `json:"recycle_bin"`     // path to recycle bin. "deleted" items live here.
+	Drive      *svc.Drive     `json:"drive"`           // client drive for managing users files and directories
+	Db         *db.Query      `json:"db"`              // local db connection
+	log        *logger.Logger `json:"logger"`          // logger
 
 	// token creator for requests
 	Tok *auth.Token `json:"token"`
@@ -92,6 +92,7 @@ func (c *Client) SaveState() error {
 
 // shutdown client side services
 func (c *Client) ShutDown() {
+	c.log.Info("shutting down client...")
 	c.StopMonitoring()
 	c.StopHandlers()
 
