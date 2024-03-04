@@ -204,7 +204,7 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
-	var log = logs.NewLogger(filepath.Base(filePath) + " Watcher")
+	var log = logs.NewLogger("Watcher")
 
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
@@ -304,7 +304,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 
 // watch for changes in a directory
 func watchDir(dirPath string, stop chan bool) chan Event {
-	var log = logs.NewLogger(filepath.Base(dirPath) + " Watcher")
+	var log = logs.NewLogger("Watcher")
 
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)
