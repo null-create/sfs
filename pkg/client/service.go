@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -805,7 +804,7 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 				}
 				subDir = c.refreshDrive(subDir)
 				if err := dir.AddSubDir(subDir); err != nil {
-					log.Print(err)
+					c.log.Error(fmt.Sprintf("failed to add directory (%s): %v", subDir.ID, err))
 				}
 			}
 		} else {
