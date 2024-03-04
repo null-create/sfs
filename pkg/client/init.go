@@ -190,6 +190,9 @@ func LoadClient(persist bool) (*Client, error) {
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
+	// initialize logger
+	client.log = logger.NewLogger("Client")
+
 	// load user info
 	if err := client.LoadUser(); err != nil {
 		return nil, fmt.Errorf("failed to load user: %v", err)
@@ -218,9 +221,6 @@ func LoadClient(persist bool) (*Client, error) {
 
 	// initialize event maps
 	client.InitHandlerMaps()
-
-	// initialize logger
-	client.log = logger.NewLogger("Client")
 
 	// load and start persistent services only when necessary.
 	// persist should only be set to true when followed by a
