@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"path/filepath"
 
 	"github.com/sfs/pkg/auth"
@@ -34,7 +33,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 	defer q.Close()
 
 	if q.Debug {
-		log.Printf("[DEBUG] querying user %s", userID)
+		q.log.Info(fmt.Sprintf("querying user %s", userID))
 	}
 
 	user := new(auth.User)
@@ -53,7 +52,7 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 		&user.DrvRoot,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned: %v", err)
+			q.log.Info(fmt.Sprintf("no rows returned: %v", err))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("[ERROR] unable to execute query: %v", err)
@@ -69,13 +68,13 @@ func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
 	defer q.Close()
 
 	if q.Debug {
-		log.Printf("[DEBUG] querying for userID using driveID %s", driveID)
+		q.log.Info(fmt.Sprintf("querying for userID using driveID %s", driveID))
 	}
 
 	var userID string
 	if err := q.Conn.QueryRow(FindUsersIDWithDriveIDQuery, driveID).Scan(&userID); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[INFO] no user associated with driveID %s", driveID)
+			q.log.Info(fmt.Sprintf("no user associated with driveID %s", driveID))
 			return "", nil
 		} else {
 			return "", fmt.Errorf("failed to query for userID: %v", err)
@@ -92,7 +91,7 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 
 	rows, err := q.Conn.Query(FindAllUsersQuery)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+		return nil, fmt.Errorf("unable to query: %v", err)
 	}
 	defer rows.Close()
 
@@ -114,15 +113,12 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 			&user.DrvRoot,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				log.Printf("[DEBUG] no rows returned: %v", err)
+				q.log.Info("no rows returned")
 				return nil, nil
 			}
-			return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+			return nil, fmt.Errorf("query failed: %v", err)
 		}
 		users = append(users, user)
-	}
-	if len(users) == 0 {
-		log.Print("[DEBUG] no users found")
 	}
 
 	return users, nil
@@ -158,7 +154,7 @@ func (q *Query) GetFileByID(fileID string) (*svc.File, error) {
 		&file.Algorithm,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned (id=%s): %v", fileID, err)
+			q.log.Info(fmt.Sprintf("no rows returned (id=%s): %v", fileID, err))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get file metadata: %v", err)
@@ -192,7 +188,7 @@ func (q *Query) GetFileByPath(filePath string) (*svc.File, error) {
 		&file.Algorithm,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned (path=%s): %v", filePath, err)
+			q.log.Info(fmt.Sprintf("no rows returned (path=%s): %v", filePath, err))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get file metadata: %v", err)
@@ -226,7 +222,7 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 		&file.Algorithm,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned (file name=%s): %v", fileName, err)
+			q.log.Info(fmt.Sprintf("no rows returned (file name=%s): %v", fileName, err))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get file metadata: %v", err)
@@ -243,7 +239,7 @@ func (q *Query) GetFileIDFromPath(filePath string) (string, error) {
 	var fileID string
 	if err := q.Conn.QueryRow(FindFileIDWithPathQuery, filePath).Scan(&fileID); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned (path=%s): %v", filePath, err)
+			q.log.Info(fmt.Sprintf("no rows returned (path=%s): %v", filePath, err))
 			return "", nil
 		}
 		return "", fmt.Errorf("failed to get file ID: %v", err)
@@ -260,7 +256,7 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 
 	rows, err := q.Conn.Query(FindAllFilesQuery)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+		return nil, fmt.Errorf("unable to query: %v", err)
 	}
 	defer rows.Close()
 
@@ -286,15 +282,12 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 			&file.Algorithm,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				log.Printf("[DEBUG] no rows returned: %v", err)
+				q.log.Info("no rows returned")
 				continue
 			}
-			return nil, fmt.Errorf("[ERROR] unable to scan rows: %v", err)
+			return nil, fmt.Errorf("unable to scan rows: %v", err)
 		}
 		fs = append(fs, file)
-	}
-	if len(fs) == 0 {
-		log.Print("[DEBUG] no files returned")
 	}
 	return fs, nil
 }
@@ -309,7 +302,7 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 
 	rows, err := q.Conn.Query(FindAllUsersFilesQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+		return nil, fmt.Errorf("unable to query: %v", err)
 	}
 	defer rows.Close()
 
@@ -335,7 +328,7 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 			&file.Algorithm,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				log.Printf("[DEBUG] no rows returned: %v", err)
+				q.log.Info("no rows returned")
 				continue
 			}
 			return nil, fmt.Errorf("[ERROR] unable to scan rows: %v", err)
@@ -378,7 +371,7 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 		&dir.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows found with dir id: %s", dirID)
+			q.log.Info(fmt.Sprintf("no rows found with dir id: %s", dirID))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
@@ -415,10 +408,10 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 		&dir.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows found for dir: %s", dirName)
+			q.log.Info(fmt.Sprintf("no rows found with dir name: %s", dirName))
 			return nil, nil
 		}
-		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+		return nil, fmt.Errorf("query failed: %v", err)
 	}
 	return dir, nil
 }
@@ -452,10 +445,10 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 		&dir.RootPath,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows found for dir: %s", filepath.Base(dirPath))
+			q.log.Info(fmt.Sprintf("no rows found for dir: %s", filepath.Base(dirPath)))
 			return nil, nil
 		}
-		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+		return nil, fmt.Errorf("query failed: %v", err)
 	}
 	return dir, nil
 }
@@ -469,7 +462,7 @@ func (q *Query) GetDirIDFromPath(dirPath string) (string, error) {
 	var id string
 	if err := q.Conn.QueryRow(FindDirIDByPathQuery, dirPath).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[INFO] no dir ID found from path: %v", dirPath)
+			q.log.Info(fmt.Sprintf("no dir ID found from path: %v", dirPath))
 			return "", nil
 		}
 		return "", fmt.Errorf("failed to get dir id: %v", err)
@@ -486,7 +479,7 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 
 	rows, err := q.Conn.Query(FindAllDirsQuery)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+		return nil, fmt.Errorf("unable to query: %v", err)
 	}
 	defer rows.Close()
 
@@ -515,15 +508,11 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 			&dir.RootPath,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				log.Printf("[DEBUG] no rows returned: %v", err)
+				q.log.Info("no rows returned")
 				continue
 			}
-			log.Fatalf("failed to get rows: %v", err)
 		}
 		dirs = append(dirs, dir)
-	}
-	if len(dirs) == 0 {
-		log.Printf("[DEBUG] no directories returned")
 	}
 	return dirs, nil
 }
@@ -536,7 +525,7 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 
 	rows, err := q.Conn.Query(FindAllUsersDirectoriesQuery, userID)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+		return nil, fmt.Errorf("unable to query: %v", err)
 	}
 	defer rows.Close()
 
@@ -564,15 +553,11 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 			&dir.RootPath,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				log.Printf("[DEBUG] no rows returned: %v", err)
+				q.log.Info("no rows returned")
 				continue
 			}
-			log.Fatalf("failed to get rows: %v", err)
 		}
 		dirs = append(dirs, dir)
-	}
-	if len(dirs) == 0 {
-		log.Printf("[DEBUG] no directories returned")
 	}
 	return dirs, nil
 }
@@ -652,10 +637,10 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 		&drv.RecycleBin,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned: %v", err)
+			q.log.Info("no rows returned")
 			return nil, nil
 		}
-		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+		return nil, fmt.Errorf("query failed: %v", err)
 	}
 	return drv, nil
 }
@@ -668,7 +653,7 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) {
 
 	rows, err := q.Conn.Query(FindAllDrivesQuery)
 	if err != nil {
-		return nil, fmt.Errorf("[ERROR] unable to query: %v", err)
+		return nil, fmt.Errorf("unable to query: %v", err)
 	}
 	defer rows.Close()
 
@@ -693,12 +678,13 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) {
 			&drv.Registered,
 			&drv.RecycleBin,
 		); err != nil {
-			return nil, fmt.Errorf("[ERROR] unable to query for drive: %v", err)
+			if err == sql.ErrNoRows {
+				q.log.Info("no rows returned")
+				return nil, nil
+			}
+			return nil, fmt.Errorf("unable to query for drive: %v", err)
 		}
 		drives = append(drives, drv)
-	}
-	if len(drives) == 0 {
-		log.Print("[INFO] no drives found")
 	}
 	return drives, nil
 }
@@ -728,10 +714,10 @@ func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
 		&drv.RecycleBin,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[DEBUG] no rows returned: %v", err)
+			q.log.Info("no rows returned")
 			return nil, nil
 		}
-		return nil, fmt.Errorf("[ERROR] query failed: %v", err)
+		return nil, fmt.Errorf("query failed: %v", err)
 	}
 	return drv, nil
 }
@@ -747,7 +733,7 @@ func (q *Query) GetDriveIDFromUserID(userID string) (string, error) {
 	if err != nil && err != sql.ErrNoRows {
 		return "", fmt.Errorf("failed to query: %v", err)
 	} else if err == sql.ErrNoRows {
-		log.Printf("no drive associated with user %v", userID)
+		q.log.Info(fmt.Sprintf("no drive associated with user %v", userID))
 		return "", nil
 	}
 	return id, nil
