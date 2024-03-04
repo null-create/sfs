@@ -233,7 +233,7 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 func (d *Drive) AddFile(dirID string, file *File) error {
 	if !d.Protected {
 		if !d.HasRoot() {
-			return fmt.Errorf("no root directory")
+			return fmt.Errorf("drive has no root directory")
 		}
 		if dirID == d.Root.ID {
 			if err := d.Root.AddFile(file); err != nil {
