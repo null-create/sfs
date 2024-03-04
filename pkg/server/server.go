@@ -10,11 +10,14 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sfs/pkg/logger"
 )
 
 type Server struct {
 	StartTime time.Time
 	Svr       *http.Server
+	log       *logger.Logger
 }
 
 // instantiate a new HTTP server with an sfs service instance
@@ -24,6 +27,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		StartTime: time.Now().UTC(),
+		log:       logger.NewLogger("Server"),
 		Svr: &http.Server{
 			// NewRouter() instantiates the server-side SFS service instance
 			// and handles client requests.
@@ -71,22 +75,22 @@ func (s *Server) Run() {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Print("[WARNING] shutdown timed out. forcing exit.")
+				s.log.Warn("hutdown timed out. forcing exit.")
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
 			}
 		}()
 
-		log.Printf("[INFO] shutting down server...")
+		s.log.Info("shutting down server...")
 		if err := s.Svr.Shutdown(shutdownCtx); err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("[INFO] server run time: %v", s.RunTime())
+		s.log.Info(fmt.Sprintf("server run time: %v", s.RunTime()))
 		serverStopCtx()
 	}()
 
-	log.Printf("[INFO] starting server...")
+	s.log.Info("starting server...")
 	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
@@ -109,14 +113,14 @@ func (s *Server) Start(shutDown chan bool) {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Print("[WARNING] shutdown timed out. forcing exit.")
+				s.log.Error("shutdown timed out. forcing exit.")
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
 			}
 		}()
 
-		log.Printf("[INFO] shutting down server...")
+		s.log.Info("shutting down server...")
 		err := s.Svr.Shutdown(shutdownCtx)
 		if err != nil {
 			log.Fatal(err)
@@ -124,7 +128,7 @@ func (s *Server) Start(shutDown chan bool) {
 		serverStopCtx()
 	}()
 
-	log.Printf("[INFO] starting server...")
+	s.log.Info("starting server...")
 	if err := s.Svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
