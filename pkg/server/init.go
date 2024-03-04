@@ -252,6 +252,10 @@ func svcLoad(sfPath string) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	// explicity initialize the db connection since its logger
+	// doesnt get initialized when we load the service from the
+	// state file
+	svc.Db = db.NewQuery(svc.DbDir, true)
 	return svc, nil
 }
 
@@ -269,7 +273,7 @@ func SvcLoad(svcPath string) (*Service, error) {
 	}
 
 	// load logger
-	svc.log = logger.NewLogger("Server")
+	svc.log = logger.NewLogger("Service")
 
 	// attempt to populate from users and drive databases if state file had no user
 	// or drive data.
