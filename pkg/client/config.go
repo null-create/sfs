@@ -22,6 +22,7 @@ type Conf struct {
 	Port           int    `env:"CLIENT_PORT,required"`         // port for http client
 	Addr           string `env:"CLIENT_ADDRESS,required"`      // address for http client
 	NewService     bool   `env:"CLIENT_NEW_SERVICE, required"` // whether we need to initialize a new client service instance.
+	LogDir         string `env:"CLIENT_LOG_DIR,required"`      // location of log directory
 }
 
 func ClientConfig() *Conf {
