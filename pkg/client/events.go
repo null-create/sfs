@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -144,7 +143,7 @@ func (c *Client) StartHandlers() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("[INFO] starting %d file handler(s)...", len(files))
+	c.log.Info(fmt.Sprintf("starting %d file handler(s)...", len(files)))
 	for _, f := range files {
 		if err := c.StartHandler(f.Path); err != nil {
 			return err
@@ -156,7 +155,7 @@ func (c *Client) StartHandlers() error {
 	if err != nil {
 		return nil
 	}
-	log.Printf("[INFO] starting %d directory handler(s)...", len(dirs))
+	c.log.Info(fmt.Sprintf("starting %d directory handler(s)...", len(dirs)))
 	for _, d := range dirs {
 		if err := c.StartHandler(d.Path); err != nil {
 			return err
@@ -178,7 +177,7 @@ func (c *Client) StopHandler(itemPath string) error {
 
 // stops all event handler goroutines.
 func (c *Client) StopHandlers() {
-	log.Printf("[INFO] shutting down %d event handlers...", len(c.OffSwitches))
+	c.log.Info(fmt.Sprintf("shutting down %d event handlers...", len(c.OffSwitches)))
 	for path := range c.Handlers {
 		c.Handlers[path] = nil
 	}
@@ -232,7 +231,7 @@ func (c *Client) NewEHandler(path string) error {
 	handler := func() {
 		go func() {
 			if err := c.handler(path, offSwitch); err != nil {
-				log.Printf("[ERROR] handler for %s failed: %v", filepath.Base(path), err)
+				c.log.Error(fmt.Sprintf("handler for %s failed: %v", filepath.Base(path), err))
 			}
 		}()
 	}
@@ -253,7 +252,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			log.Printf("[INFO] stopping event handler for %s...", filepath.Base(itemPath))
+			c.log.Info(fmt.Sprintf("stopping handler for %s...", filepath.Base(itemPath)))
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
@@ -262,17 +261,17 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				for _, eitem := range e.Items {
 					item, err := os.Stat(eitem.Path())
 					if err != nil {
-						log.Printf("[ERROR] failed to get item information: %v", err)
+						c.log.Error(fmt.Sprintf("failed to get item information: %v", err))
 					}
 					if item.IsDir() {
 						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
 						if err := c.AddDirWithID(itemID, newDir); err != nil {
-							log.Printf("[ERROR] failed to add new directory: %v", err)
+							c.log.Error(fmt.Sprintf("failed to add new directory: %v", err))
 						}
 					} else {
 						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
 						if err := c.AddFileWithID(itemID, newFile); err != nil {
-							log.Printf("[ERROR] failed to add new file: %v", err)
+							c.log.Error(fmt.Sprintf("failed to add new file: %v", err))
 						}
 					}
 				}
@@ -284,43 +283,43 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// item name change
 			case monitor.Name:
 				if err := c.apply(e.Path, "name"); err != nil {
-					log.Printf("[ERROR] failed to apply action: %v", err)
+					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
 				evtBuf.AddEvent(e)
 			// item mode change
 			case monitor.Mode:
 				if err := c.apply(e.Path, "mode"); err != nil {
-					log.Printf("[ERROR] failed to apply action: %v", err)
+					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
 				evtBuf.AddEvent(e)
 			// item size changed
 			case monitor.Size:
 				if err := c.apply(e.Path, "size"); err != nil {
-					log.Printf("[ERROR] failed to apply action: %v", err)
+					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
 				evtBuf.AddEvent(e)
 			// item mod time change
 			case monitor.ModTime:
 				if err := c.apply(e.Path, "modtime"); err != nil {
-					log.Printf("[ERROR] failed to apply action: %v", err)
+					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
 				evtBuf.AddEvent(e)
 			// items content change
 			case monitor.Change:
 				if err := c.apply(e.Path, "change"); err != nil {
-					log.Printf("[ERROR] failed to apply action: %v", err)
+					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
 				evtBuf.AddEvent(e)
 			case monitor.Delete:
-				log.Printf("[INFO] handler for item (id=%s) stopping. item was deleted.", itemID)
+				c.log.Info(fmt.Sprintf("handler for item (id=%s) stopping. item was deleted", itemID))
 				return nil
 			case monitor.Error:
-				log.Printf("[INFO] monitor for item (id=%s) experienced an error. stopping handler.", itemID)
+				c.log.Info(fmt.Sprintf("monitor for item (id=%s) encountered an error. stopping handler", itemID))
 				return nil
 			}
 			// trigger synchronization operations once the event buffer has reached capacity
