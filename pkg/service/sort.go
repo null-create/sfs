@@ -18,24 +18,24 @@ func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
 	return m
 }
 
-type Pair struct {
+type Item struct {
 	File *File // file object
 	Size int64 // size of file
 }
 
 // A slice of Pairs that implements sort.Interface to sort by Value.
-type PairList []Pair
+type ItemList []Item
 
-func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p PairList) Len() int           { return len(p) }
-func (p PairList) Less(i, j int) bool { return p[i].Size < p[j].Size }
+func (p ItemList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p ItemList) Len() int           { return len(p) }
+func (p ItemList) Less(i, j int) bool { return p[i].Size < p[j].Size }
 
 // sort a map of files by file size and return as a PairList
-func (b *Batch) SortMapByValue(m map[*File]int64) PairList {
+func (b *Batch) SortMapByValue(m map[*File]int64) ItemList {
 	i := 0
-	p := make(PairList, len(m))
+	p := make(ItemList, len(m))
 	for k, v := range m {
-		p[i] = Pair{k, v}
+		p[i] = Item{k, v}
 		i++
 	}
 	sort.Sort(p)
