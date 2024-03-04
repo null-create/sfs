@@ -39,13 +39,13 @@ func RunPullCmd(cmd *cobra.Command, args []string) {
 
 	c, err := client.LoadClient(false)
 	if err != nil {
-		showerr(err)
+		showerr(fmt.Errorf("failed to initialize service: %v", err))
 		return
 	}
 
 	file, err := c.GetFileByName(name)
 	if err != nil {
-		showerr(err)
+		showerr(fmt.Errorf("failed to get file: %v", err))
 		return
 	}
 	if file == nil {
@@ -54,7 +54,7 @@ func RunPullCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if err := c.PullFile(file); err != nil {
-		showerr(err)
+		showerr(fmt.Errorf("failed to pull file: %v", err))
 		return
 	}
 }

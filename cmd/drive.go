@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/sfs/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -65,7 +67,7 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 	case f.register:
 		c, err := client.LoadClient(false)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 		if err := c.RegisterClient(); err != nil {
 			showerr(err)
@@ -73,7 +75,7 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 	case f.list_files:
 		c, err := client.LoadClient(false)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 		if err := c.ListLocalFilesDB(); err != nil {
 			showerr(err)
@@ -81,7 +83,7 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 	case f.list_dirs:
 		c, err := client.LoadClient(false)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 		if err := c.ListLocalDirsDB(); err != nil {
 			showerr(err)
@@ -89,7 +91,7 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 	case f.remote:
 		c, err := client.LoadClient(false)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 		if err := c.ListRemoteFiles(); err != nil {
 			showerr(err)
@@ -97,7 +99,7 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 	case f.refresh:
 		c, err := client.LoadClient(false)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 		c.RefreshDrive()
 	}

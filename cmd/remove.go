@@ -41,11 +41,11 @@ func RunRemoveCmd(cmd *cobra.Command, args []string) {
 	}
 	c, err := client.LoadClient(false)
 	if err != nil {
-		showerr(err)
+		showerr(fmt.Errorf("failed to initialize service: %v", err))
 	}
 	if delete {
 		if err := c.RemoveItem(path); err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to remove item: %v", err))
 		}
 	} else {
 		c.Monitor.StopWatching(path)

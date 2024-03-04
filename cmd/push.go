@@ -37,28 +37,28 @@ func init() {
 }
 
 func PushCmd(cmd *cobra.Command, args []string) {
-	c, err := client.LoadClient(false)
-	if err != nil {
-		showerr(err)
-	}
 	filePath, _ := cmd.Flags().GetString("path")
 	if filePath == "" {
-		showerr(fmt.Errorf("please provide a path"))
+		showerr(fmt.Errorf("no file path specified"))
 		return
+	}
+	c, err := client.LoadClient(false)
+	if err != nil {
+		showerr(fmt.Errorf("failed to initialize service: %v", err))
 	}
 	file, err := c.GetFileByPath(filePath)
 	if err != nil {
-		showerr(err)
+		showerr(fmt.Errorf("failed to get file: %v", err))
 		return
 	}
 	newFile, _ := cmd.Flags().GetBool("new-file")
 	if newFile {
 		if err := c.PushNewFile(file); err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to push new file: %v", err))
 		}
 	} else {
 		if err := c.PushFile(file); err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to push file: %v", err))
 		}
 	}
 }

@@ -38,10 +38,10 @@ func RunAddCmd(cmd *cobra.Command, args []string) {
 	}
 	c, err := client.LoadClient(false)
 	if err != nil {
-		showerr(err)
+		showerr(fmt.Errorf(fmt.Sprintf("failed to load client: %v", err)))
 		return
 	}
 	if err := c.AddItem(path); err != nil {
-		showerr(err)
+		showerr(fmt.Errorf(fmt.Sprintf("failed to add item: %v", err)))
 	}
 }

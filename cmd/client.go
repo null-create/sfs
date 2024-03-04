@@ -48,22 +48,22 @@ func ClientCmd(cmd *cobra.Command, args []string) error {
 	case f.new:
 		_, err := client.Init(configs.NewService)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 	case f.start:
 		c, err := client.LoadClient(true)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 			return nil
 		}
 		err = c.Start()
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to start client: %v", err))
 		}
 	case f.info:
 		c, err := client.LoadClient(false)
 		if err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}
 		fmt.Print(c.GetUserInfo())
 	}

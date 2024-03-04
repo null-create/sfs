@@ -39,12 +39,13 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		cmdLogger.Info(fmt.Sprintf("Using config file: %v", viper.ConfigFileUsed()))
 	}
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		cmdLogger.Error(fmt.Sprintf("failed to execute root command: %v", err))
 		log.Fatal(err)
 	}
 }

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/sfs/pkg/server"
 
 	"github.com/spf13/cobra"
@@ -35,7 +37,7 @@ func RunServerCmd(cmd *cobra.Command, args []string) {
 	switch {
 	case new:
 		if err := newService(); err != nil {
-			showerr(err)
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
 			return
 		}
 	case start:
