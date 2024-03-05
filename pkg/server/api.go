@@ -85,7 +85,7 @@ func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
 	if err := a.Svc.AddUser(user); err != nil {
 		if strings.Contains(err.Error(), "user") {
-			a.clientError(w, fmt.Sprintf("%s add new user err: %v", r.Method, err)) // user already exists
+			a.clientError(w, err.Error()) // user already exists
 			return
 		} else {
 			a.serverError(w, err.Error())
