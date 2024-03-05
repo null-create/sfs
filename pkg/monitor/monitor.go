@@ -137,7 +137,7 @@ func (m *Monitor) Watch(path string) error {
 		}
 		m.StartWatcher(path, stop)
 	}
-	m.log.Info(fmt.Sprintf("monitoring %s", path))
+	m.log.Info(fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 	return nil
 }
 
@@ -299,7 +299,6 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	}
 	// start watcher
 	go func() {
-		log.Info(fmt.Sprintf("monitoring %s...", baseName))
 		watcher()
 	}()
 	return evt
@@ -382,7 +381,6 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 
 	// start watcher
 	go func() {
-		log.Info(fmt.Sprintf("monitoring %s...", filepath.Base(dirPath)))
 		watcher()
 	}()
 
