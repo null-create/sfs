@@ -100,7 +100,7 @@ func NewRouter() *chi.Mux {
 		r.Route("/files", func(r chi.Router) {
 			r.Route("/{fileID}", func(r chi.Router) {
 				r.Use(FileCtx)
-				r.Get("/", api.GetFile)       // get a file from the server
+				r.Get("/", api.ServeFile)     // get a file from the server
 				r.Put("/", api.PutFile)       // update a file on the server
 				r.Delete("/", api.DeleteFile) // delete a file on the server
 			})

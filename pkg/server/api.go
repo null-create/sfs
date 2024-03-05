@@ -31,8 +31,9 @@ type API struct {
 	log       *logger.Logger // API logging
 }
 
+// initialize sfs service
 func NewAPI(newService bool, isAdmin bool) *API {
-	svc, err := Init(newService, isAdmin) // initialize sfs service
+	svc, err := Init(newService, isAdmin)
 	if err != nil {
 		log.Fatalf("failed to initialize new service instance: %v", err)
 	}
@@ -153,7 +154,7 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 // retrieve a file from the server
-func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) ServeFile(w http.ResponseWriter, r *http.Request) {
 	// file existance was confirmed by the middleware at this point
 	file := r.Context().Value(File).(*svc.File)
 
