@@ -205,7 +205,7 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 		item, err := os.Stat(entryPath)
 		if err != nil {
 			s.log.Error(fmt.Sprintf("could not get stat for entry %s: %v", entryPath, err))
-			return dir
+			continue
 		}
 		// add directory then recurse
 		if item.IsDir() {
