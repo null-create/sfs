@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 	"github.com/sfs/pkg/transfer"
 )
@@ -26,17 +27,19 @@ prior to most of these functions being called directly.
 
 type API struct {
 	StartTime time.Time
-	Svc       *Service // SFS service instance
+	Svc       *Service       // SFS service instance
+	log       *logger.Logger // API logging
 }
 
 func NewAPI(newService bool, isAdmin bool) *API {
 	svc, err := Init(newService, isAdmin) // initialize sfs service
 	if err != nil {
-		log.Fatalf("[ERROR] failed to initialize new service instance: %v", err)
+		log.Fatalf("failed to initialize new service instance: %v", err)
 	}
 	return &API{
 		StartTime: time.Now().UTC(),
 		Svc:       svc,
+		log:       logger.NewLogger("API"),
 	}
 }
 
@@ -44,7 +47,33 @@ func NewAPI(newService bool, isAdmin bool) *API {
 
 // placeholder handler for testing purposes
 func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("\nnot implemented yet :(\n"))
+	w.Write([]byte("not implemented yet :("))
+}
+
+// --------- general ----------------------------------------------------
+
+// generic response. sends msg with 200 and logs message.
+func (a *API) write(w http.ResponseWriter, msg string) {
+	a.log.Info(msg)
+	w.Write([]byte(msg))
+}
+
+// not found response. sends a 404 and logs message.
+func (a *API) notFoundError(w http.ResponseWriter, msg string) {
+	a.log.Warn(msg)
+	http.Error(w, msg, http.StatusNotFound)
+}
+
+// sends a bad request (400) with error message, and logs message
+func (a *API) clientError(w http.ResponseWriter, err string) {
+	a.log.Warn(err)
+	http.Error(w, err, http.StatusBadRequest)
+}
+
+// sends an internal server error (500) with an error message, and logs the message
+func (a *API) serverError(w http.ResponseWriter, err string) {
+	a.log.Error(err)
+	http.Error(w, err, http.StatusInternalServerError)
 }
 
 // -------- users (admin only) -----------------------------------------
@@ -55,15 +84,14 @@ func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
 	if err := a.Svc.AddUser(user); err != nil {
 		if strings.Contains(err.Error(), "user") {
-			http.Error(w, err.Error(), http.StatusBadRequest) // user already exists
+			a.clientError(w, fmt.Sprintf("%s add new user err: %v", r.Method, err)) // user already exists
 			return
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			a.serverError(w, err.Error())
 			return
 		}
 	} else {
-		msg := fmt.Sprintf("\nuser (name=%s id=%s) added\n", user.Name, user.ID)
-		w.Write([]byte(msg))
+		a.write(w, fmt.Sprintf("\nuser (name=%s id=%s) added\n", user.Name, user.ID))
 	}
 }
 
@@ -72,7 +100,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
 	userData, err := user.ToJSON()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 	// TODO: more secure way to send user data.
@@ -86,7 +114,7 @@ func (a *API) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	for _, u := range users {
 		data, err := u.ToJSON()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			a.serverError(w, err.Error())
 			return
 		}
 		w.Write(data)
@@ -97,7 +125,7 @@ func (a *API) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
 	if err := a.Svc.UpdateUser(user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 }
@@ -106,7 +134,7 @@ func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(User).(*auth.User)
 	if err := a.Svc.RemoveUser(user.ID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 }
@@ -118,8 +146,7 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	file := r.Context().Value(File).(*svc.File)
 	data, err := file.ToJSON()
 	if err != nil {
-		msg := fmt.Sprintf("failed to convert to JSON: %s", err.Error())
-		http.Error(w, msg, http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to convert to JSON: %s", err.Error()))
 		return
 	}
 	w.Write(data)
@@ -136,6 +163,7 @@ func (a *API) GetFile(w http.ResponseWriter, r *http.Request) {
 
 	// send the file
 	http.ServeFile(w, r, file.ServerPath)
+	a.log.Info(fmt.Sprintf("served file %s: %s", file.Name, file.ServerPath))
 }
 
 // get json blobs of all files available on the server for a user.
@@ -145,8 +173,7 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	for _, file := range files {
 		data, err := file.ToJSON()
 		if err != nil {
-			msg := fmt.Sprintf("\nfailed to convert %s (id=%s) to JSON: %v\n", file.Name, file.ID, err)
-			http.Error(w, msg, http.StatusInternalServerError)
+			a.serverError(w, fmt.Sprintf("failed to convert %s (id=%s) to JSON: %v", file.Name, file.ID, err))
 			return
 		}
 		w.Write(data)
@@ -158,30 +185,26 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
-		msg := fmt.Sprintf("\nfailed to copy file data into buffer: %v\n", err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to copy file data into buffer: %v", err))
 		return
 	}
 	defer r.Body.Close()
 	// save file to server
 	if err := newFile.Save(buf.Bytes()); err != nil {
-		msg := fmt.Sprintf("\nfailed to save file to server: %v\n", err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to save file to server: %v", err))
 		return
 	}
 	// update service
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to add file to service: %v\n", err), http.StatusInternalServerError)
+		a.log.Error(fmt.Sprintf("failed to add file to service: %v", err))
 		// remove file from server.
 		// don't want a file we don't have a record for.
 		if err2 := os.Remove(newFile.ServerPath); err2 != nil {
-			log.Printf("[ERROR] failed to remove %s from server: %v\n", newFile.Name, err2)
+			a.log.Error(fmt.Sprintf("failed to remove %s from server: %v\n", newFile.Name, err2))
 		}
 		return
 	}
-	msg := fmt.Sprintf("%s has been added to the server", newFile.Name)
-	log.Printf("[INFO] %s", msg)
-	w.Write([]byte(msg))
+	a.write(w, fmt.Sprintf("%s has been added to the server", newFile.Name))
 }
 
 // update the file
@@ -190,18 +213,15 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
-		msg := fmt.Sprintf("failed to download form file data: %v", err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to download form file data: %v", err))
 		return
 	}
 	// update file
 	if err := a.Svc.UpdateFile(file, buf.Bytes()); err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to update %s (id=%s)\n", file.Name, file.ID), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to update %s (id=%s)", file.Name, file.ID))
 		return
 	}
-	msg := fmt.Sprintf("\n%s updated (owner id=%s)\n", file.Name, file.OwnerID)
-	log.Printf("[INFO] %s", msg)
-	w.Write([]byte(msg))
+	a.write(w, fmt.Sprintf("%s updated (owner id=%s)", file.Name, file.OwnerID))
 }
 
 // upload or update a file on/to the server
@@ -218,12 +238,10 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	file := r.Context().Value(File).(*svc.File)
 	if err := a.Svc.DeleteFile(file); err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to delete file: %v\n", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("\nfailed to delete file: %v\n", err))
 		return
 	}
-	msg := fmt.Sprintf("\n%s (id=%s) deleted from server\n", file.Name, file.ID)
-	log.Printf("[INFO] %s ", msg)
-	w.Write([]byte(msg))
+	a.write(w, fmt.Sprintf("%s (id=%s) deleted from server", file.Name, file.ID))
 }
 
 // ------- directories --------------------------------
@@ -234,7 +252,7 @@ func (a *API) GetAllDirsInfo(w http.ResponseWriter, r *http.Request) {
 	for _, dir := range dirs {
 		data, err := dir.ToJSON()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			a.serverError(w, err.Error())
 			return
 		}
 		w.Write(data)
@@ -246,7 +264,7 @@ func (a *API) GetDirInfo(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	data, err := dir.ToJSON()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 	w.Write(data)
@@ -274,7 +292,7 @@ func (a *API) walkDir(w http.ResponseWriter, dir *svc.Directory) error {
 	}
 	for _, subDir := range dir.Dirs {
 		if err := a.walkDir(w, subDir); err != nil {
-			log.Printf("[WARNING] %v", err)
+			a.log.Error(err.Error())
 		}
 	}
 	return nil
@@ -298,14 +316,15 @@ func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
 	// create a tmp .zip file so we can transfer the directory and its contents
 	archive := filepath.Join(dir.Path, dir.Name+".zip")
 	if err := transfer.Zip(dir.Path, archive); err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to compress directory: %v\n", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to compress directory: %v", err))
 		return
 	}
 	// send archive file
 	http.ServeFile(w, r, archive)
+	a.log.Info(fmt.Sprintf("served file: %v", archive))
 	// remove tmp archive file
 	if err := os.Remove(archive); err != nil {
-		log.Printf("[WARNING] failed to remove temp archive %s: %v", archive, err)
+		a.log.Error(fmt.Sprintf("failed to remove temp archive %s: %v", archive, err))
 	}
 }
 
@@ -313,10 +332,10 @@ func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
 func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	if err := a.Svc.UpdateDir(dir.DriveID, dir); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("directory (id=%s) has been updated", dir.ID)))
+	a.write(w, fmt.Sprintf("directory (id=%s) has been updated", dir.ID))
 }
 
 // TODO:
@@ -333,20 +352,20 @@ func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 	newDir := r.Context().Value(Directory).(*svc.Directory)
 	if err := a.Svc.NewDir(newDir.DriveID, newDir.Parent.ID, newDir); err != nil {
-		http.Error(w, fmt.Sprintf("failed to create directory: %v", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to create directory: %v", err))
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("\ndirectory %s (id=%s) created successfully\n", newDir.Name, newDir.ID)))
+	a.write(w, fmt.Sprintf("directory %s (id=%s) created successfully", newDir.Name, newDir.ID))
 }
 
 // delete a physical file on the server for the user
 func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	if err := a.Svc.RemoveDir(dir.DriveID, dir.ID); err != nil {
-		http.Error(w, fmt.Sprintf("failed to remove directory: %v", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to remove directory: %v", err))
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("\ndirectory %s (id=%s) deleted\n", dir.Name, dir.ID)))
+	a.write(w, fmt.Sprintf("directory %s (id=%s) deleted", dir.Name, dir.ID))
 }
 
 // -------- drives --------------------------------
@@ -360,7 +379,7 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 	drive := r.Context().Value(Drive).(*svc.Drive)
 	data, err := drive.ToJSON()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to codify drive info to JSON: %v\n", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to codify drive info to JSON: %v", err))
 		return
 	}
 	w.Write(data)
@@ -372,13 +391,13 @@ func (a *API) NewDrive(w http.ResponseWriter, r *http.Request) {
 	if err := a.Svc.AddDrive(drive); err != nil {
 		// this shouldn't happen but just in case
 		if strings.Contains(err.Error(), "already registered") {
-			w.Write([]byte(fmt.Sprintf("drive (id=%s) is already registered", drive.ID)))
+			a.write(w, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("drive (id=%s) added successfully", drive.ID)))
+	a.write(w, fmt.Sprintf("drive (id=%s) added successfully", drive.ID))
 }
 
 // -------- sync ----------------------------------
@@ -388,12 +407,12 @@ func (a *API) GenIndex(w http.ResponseWriter, r *http.Request) {
 	driveID := r.Context().Value(Drive).(string)
 	idx, err := a.Svc.GenSyncIndex(driveID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 	data, err := idx.ToJSON()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to encode sync index: %v\n", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to encode sync index: %v", err))
 		return
 	}
 	w.Write(data)
@@ -406,16 +425,16 @@ func (a *API) GetIdx(w http.ResponseWriter, r *http.Request) {
 	driveID := r.Context().Value(Drive).(string)
 	idx, err := a.Svc.GetSyncIdx(driveID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to retrieve sync index: %v\n", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to retrieve sync index: %v", err))
 		return
 	}
 	if idx == nil { // no drive found
-		http.Error(w, fmt.Sprintf("\ndrive %s not found\n", driveID), http.StatusNotFound)
+		a.notFoundError(w, fmt.Sprintf("drive %s not found", driveID))
 		return
 	}
 	data, err := idx.ToJSON()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("\nfailed to encode sync index: %v\n", err), http.StatusInternalServerError)
+		a.serverError(w, fmt.Sprintf("failed to encode sync index: %v", err))
 		return
 	}
 	w.Write(data)
@@ -427,12 +446,12 @@ func (a *API) GetUpdates(w http.ResponseWriter, r *http.Request) {
 	driveID := r.Context().Value(Drive).(string)
 	newIdx, err := a.Svc.RefreshUpdates(driveID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 	data, err := newIdx.ToJSON()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.serverError(w, err.Error())
 		return
 	}
 	w.Write(data)
