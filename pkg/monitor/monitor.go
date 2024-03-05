@@ -3,7 +3,6 @@ package monitor
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -85,7 +84,8 @@ func (m *Monitor) Exists(path string) bool {
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
 		return false
 	} else if err != nil {
-		log.Fatalf("[ERROR] failed to retrieve stat for: %s\n %v", path, err)
+		m.log.Error(fmt.Sprintf("failed to get stats for path %s: %v", path, err))
+		return false
 	}
 	return true
 }
@@ -137,6 +137,7 @@ func (m *Monitor) Watch(path string) error {
 		}
 		m.StartWatcher(path, stop)
 	}
+	m.log.Info(fmt.Sprintf("monitoring %s", path))
 	return nil
 }
 
@@ -145,7 +146,7 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
-	m.log.Error("event channel not found")
+	m.log.Error(fmt.Sprintf("event channel fpr (%s) not found", path))
 	return nil
 }
 
@@ -158,7 +159,8 @@ func (m *Monitor) GetOffSwitch(path string) chan bool {
 	m.log.Error(
 		fmt.Sprintf("off switch not found for %s monitoring goroutine",
 			filepath.Base(path),
-		))
+		),
+	)
 	return nil
 }
 
@@ -183,6 +185,7 @@ func (m *Monitor) StopWatching(path string) {
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
+		m.log.Info(fmt.Sprintf("%s is no longer monitored", filepath.Base(path)))
 	}
 }
 
@@ -204,7 +207,7 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("Watcher")
+	var log = logger.NewLogger("Watcher") // TODO: succinct IDs for each watcher
 
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
@@ -341,6 +344,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				switch {
 				// directory was deleted
 				case err == os.ErrExist:
+					log.Info(fmt.Sprintf("%s was deleted", dirName))
 					evt <- Event{
 						ID:   auth.NewUUID(),
 						Type: Delete,
@@ -350,6 +354,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
+					log.Info(fmt.Sprintf("%d items were deleted in %s", len(currItems)-len(initialItems), dirName))
 					diffs := dirCtx.RemoveItems(currItems) // get list of deleted items
 					evt <- Event{
 						ID:    auth.NewUUID(),
@@ -360,6 +365,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					initialItems = currItems
 				// item(s) were added
 				case len(currItems) > len(initialItems):
+					log.Info(fmt.Sprintf("%d items were added in %s", len(currItems)-len(initialItems), dirName))
 					diffs := dirCtx.AddItems(currItems) // get list of removed items
 					evt <- Event{
 						ID:    auth.NewUUID(),
