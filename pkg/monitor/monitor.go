@@ -146,7 +146,7 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
-	m.log.Error(fmt.Sprintf("event channel fpr (%s) not found", path))
+	m.log.Error(fmt.Sprintf("event channel for (%s) not found", path))
 	return nil
 }
 
