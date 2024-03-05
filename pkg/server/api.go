@@ -59,9 +59,9 @@ func (a *API) write(w http.ResponseWriter, msg string) {
 }
 
 // not found response. sends a 404 and logs message.
-func (a *API) notFoundError(w http.ResponseWriter, msg string) {
-	a.log.Warn(msg)
-	http.Error(w, msg, http.StatusNotFound)
+func (a *API) notFoundError(w http.ResponseWriter, err string) {
+	a.log.Warn(err)
+	http.Error(w, err, http.StatusNotFound)
 }
 
 // sends a bad request (400) with error message, and logs message
