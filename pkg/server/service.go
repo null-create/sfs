@@ -148,35 +148,6 @@ func (s *Service) DriveExists(driveID string) bool {
 	return false
 }
 
-// Discover populates the given root directory with the users file and
-// sub directories, updates the database as it does so, and returns
-// the the directory object when finished.
-//
-// This should ideally be used for starting a new sfs service in a
-// users root directly that already has files and/or subdirectories.
-func (s *Service) Discover(root *svc.Directory) (*svc.Directory, error) {
-	root.Walk()
-
-	// send everything to the database
-	files := root.GetFiles()
-	for _, file := range files {
-		if err := s.Db.AddFile(file); err != nil {
-			return nil, fmt.Errorf("failed to add file to database: %v", err)
-		}
-	}
-	subDirs := root.GetSubDirs()
-	for _, d := range subDirs {
-		if err := s.Db.AddDir(d); err != nil {
-			return nil, fmt.Errorf("failed to add directory to database: %v", err)
-		}
-	}
-	// add root directory itself
-	if err := s.Db.AddDir(root); err != nil {
-		return nil, fmt.Errorf("failed to add root directory to database: %v", err)
-	}
-	return root, nil
-}
-
 // Populate() populates a drive's root directory with all the users
 // files and subdirectories by recursively traersing the users file system
 // and searching the DB with the name of each file or directory Populate() discoveres
