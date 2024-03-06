@@ -128,8 +128,8 @@ func (s *Service) cleanSfDir(sfDir string) error {
 	if entries, err := os.ReadDir(sfDir); err == nil {
 		for _, entry := range entries {
 			sf := filepath.Join(sfDir, entry.Name())
-			if err := os.Remove(sf); err != nil {
-				return err
+			if err2 := os.Remove(sf); err2 != nil {
+				return err2
 			}
 		}
 	} else {
@@ -242,7 +242,6 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 		return dir
 	}
 	if len(entries) == 0 {
-		s.log.Info(fmt.Sprintf("dir (id=%s) has no entries", dir.ID))
 		return dir
 	}
 	for _, entry := range entries {
