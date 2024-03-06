@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -59,6 +60,91 @@ func (c *Client) RemoveItem(itemPath string) error {
 		}
 	}
 	return nil
+}
+
+// is this file or directory already registered?
+func (c *Client) KnownItem(itemName string) bool {
+	f, err := c.GetFileByName(itemName)
+	if err != nil {
+		c.log.Error(err.Error())
+		return false
+	}
+	if f != nil {
+		return true
+	}
+	d, err := c.GetDirByName(itemName)
+	if err != nil {
+		c.log.Error(err.Error())
+		return false
+	}
+	if d != nil {
+		return true
+	}
+	return false
+}
+
+// find a file or directory by name.
+//
+// NOTE: this could cause collisions because files are
+// stored in the db with unique *ids,* not names
+func (c *Client) GetItemByName(itemName string) Item {
+	thing, err := os.Stat(itemName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var item Item
+	if thing.IsDir() {
+		dir, err := c.GetDirByName(itemName)
+		if err != nil {
+			c.log.Error(err.Error())
+		}
+		if dir == nil {
+			c.log.Error(fmt.Sprintf("%s not found", itemName))
+		}
+		item.Directory = dir
+	} else {
+		file, err := c.GetFileByName(itemName)
+		if err != nil {
+			c.log.Error(err.Error())
+		}
+		if file == nil {
+			c.log.Error(fmt.Sprintf("%s not found found", itemName))
+		}
+		item.File = file
+	}
+	return item
+}
+
+func (c *Client) GetItemByPath(path string) (*Item, error) {
+	thing, err := os.Stat(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var item = new(Item)
+	if thing.IsDir() {
+		dir, err := c.GetDirByPath(path)
+		if err != nil {
+			c.log.Error(err.Error())
+			return nil, err
+		}
+		if dir == nil {
+			c.log.Info(fmt.Sprintf("%s not found", filepath.Base(path)))
+			return nil, nil
+		}
+		item.Directory = dir
+	} else {
+		file, err := c.GetFileByPath(path)
+		if err != nil {
+			c.log.Error(err.Error())
+			return nil, err
+		}
+		if file == nil {
+			c.log.Info(fmt.Sprintf("%s not found found", filepath.Base(path)))
+			return nil, nil
+		}
+		item.File = file
+	}
+	return item, nil
 }
 
 // ----- files --------------------------------------
@@ -510,7 +596,8 @@ func (c *Client) GetDirByPath(path string) (*svc.Directory, error) {
 	return dir, nil
 }
 
-// get a directory id from the DB using its file path
+// get a directory id from the DB using its file path.
+// returns an error if the directory is not found.
 func (c *Client) GetDirIDFromPath(path string) (string, error) {
 	dir, err := c.Db.GetDirectoryByPath(path)
 	if err != nil {
@@ -519,6 +606,22 @@ func (c *Client) GetDirIDFromPath(path string) (string, error) {
 		return "", fmt.Errorf("directory does not exist: %s", path)
 	}
 	return dir.ID, nil
+}
+
+// search for a directory by name.
+// returns an error if the directory does not exist
+func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
+	if name == "" {
+		return nil, fmt.Errorf("no path specified")
+	}
+	dir, err := c.Db.GetDirectoryByName(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get directory: %v", err)
+	}
+	if dir == nil {
+		return nil, fmt.Errorf(fmt.Sprintf("directory does not exist: %s", name))
+	}
+	return dir, nil
 }
 
 // ----- drive --------------------------------
