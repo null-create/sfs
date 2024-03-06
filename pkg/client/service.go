@@ -724,6 +724,8 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 
 	// send everything to the database
 	files := root.WalkFs()
+	c.log.Info(fmt.Sprintf("adding %d files...", len(files)))
+
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
 			return nil, fmt.Errorf("failed to add file to database: %v", err)
@@ -732,7 +734,10 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 			return nil, err
 		}
 	}
+
 	dirs := root.WalkDs()
+	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
+
 	for _, subDir := range dirs {
 		if err := c.Db.AddDir(subDir); err != nil {
 			return nil, fmt.Errorf("failed to add directory to database: %v", err)
@@ -741,7 +746,9 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 			return nil, err
 		}
 	}
+
 	// add root directory itself
+	c.log.Info("adding root...")
 	if err := c.Db.AddDir(root); err != nil {
 		return nil, fmt.Errorf("failed to add root to database: %v", err)
 	}
