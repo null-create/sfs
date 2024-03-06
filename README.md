@@ -26,7 +26,7 @@ Automatically back up your project files and sync file states across multiple de
 
 ## Installation
 
-Simple File Sync requires [Go](https://go.dev/) v1.19+ to run.
+Simple File Sync requires [Go](https://go.dev/) v1.21+ to run.
 
 Install the dependencies and initialize the project.
 
