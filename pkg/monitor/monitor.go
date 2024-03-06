@@ -136,8 +136,8 @@ func (m *Monitor) Watch(path string) error {
 			m.AddWatcher(path, watchFile)
 		}
 		m.StartWatcher(path, stop)
+		m.log.Info(fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 	}
-	m.log.Info(fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 	return nil
 }
 
