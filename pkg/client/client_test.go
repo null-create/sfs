@@ -415,8 +415,8 @@ func TestClientDiscoverWithPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testDir := "C:\\Users\\Jay\\Documents\\School-Work"
-	err = tmpClient.DiscoverWithPath(testDir)
+	testDrive := MakeTmpDrive(t)
+	err = tmpClient.DiscoverWithPath(testDrive.Root.Path)
 	if err != nil {
 		t.Fatal(err)
 	}
