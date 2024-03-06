@@ -12,6 +12,7 @@ const (
 	Add     EventType = "add"
 	Create  EventType = "create"
 	Delete  EventType = "delete"
+	Remove  EventType = "remove"
 	Change  EventType = "change"
 	ModTime EventType = "modtime"
 	Size    EventType = "size"

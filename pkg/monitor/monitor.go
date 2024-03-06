@@ -357,7 +357,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					diffs := dirCtx.RemoveItems(currItems) // get list of deleted items
 					evt <- Event{
 						ID:    auth.NewUUID(),
-						Type:  Delete,
+						Type:  Remove,
 						Path:  dirPath,
 						Items: diffs,
 					}
