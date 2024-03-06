@@ -87,12 +87,12 @@ func (c *Client) KnownItem(itemName string) bool {
 //
 // NOTE: this could cause collisions because files are
 // stored in the db with unique *ids,* not names
-func (c *Client) GetItemByName(itemName string) Item {
+func (c *Client) GetItemByName(itemName string) *Item {
 	thing, err := os.Stat(itemName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var item Item
+	var item = new(Item)
 	if thing.IsDir() {
 		dir, err := c.GetDirByName(itemName)
 		if err != nil {
