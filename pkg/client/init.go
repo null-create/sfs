@@ -203,6 +203,9 @@ func LoadClient(persist bool) (*Client, error) {
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
 
+	// initialize DB connection
+	client.Db = db.NewQuery(client.Db.DBPath, true)
+
 	// initialize http client
 	client.Client = newHttpClient()
 
