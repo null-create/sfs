@@ -104,9 +104,7 @@ func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err.Error())
 		return
 	}
-	// TODO: more secure way to send user data.
-	// this just sends the raw JSON response.
-	w.Write(userData)
+	a.write(w, string(userData))
 }
 
 // return a list of all active users. used for admin and testing purposes.
@@ -150,7 +148,7 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, fmt.Sprintf("failed to convert to JSON: %s", err.Error()))
 		return
 	}
-	w.Write(data)
+	a.write(w, string(data))
 }
 
 // retrieve a file from the server
