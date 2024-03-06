@@ -74,20 +74,20 @@ func Setup() (*Client, error) {
 	}
 
 	// make each database
-	log.Printf("[INFO] creating databases...")
+	log.Printf("creating databases...")
 	if err := db.InitDBs(svcPaths[0]); err != nil {
 		return nil, err
 	}
 
 	// set up new user
-	log.Printf("[INFO] creating user...")
+	log.Printf("creating user...")
 	newUser, err := newUser()
 	if err != nil {
 		return nil, err
 	}
 
 	// initialize a new client for the new user
-	log.Printf("[INFO] creating client...")
+	log.Printf("creating client...")
 	client, err := NewClient(newUser)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func Setup() (*Client, error) {
 		return nil, err
 	}
 
-	log.Printf("[INFO] all set :)")
+	log.Printf("all set :)")
 	return client, nil
 }
 
@@ -138,7 +138,6 @@ func newHttpClient() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment, // TODO add a proxy configuration?
 			Dial: (&net.Dialer{
 				Timeout:   1 * time.Second,
 				KeepAlive: 30 * time.Second,
