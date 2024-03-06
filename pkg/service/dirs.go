@@ -219,7 +219,7 @@ func (d *Directory) Clean(dirPath string) error {
 		d.clear()
 		return nil
 	} else {
-		log.Printf("[INFO] drive is protected.")
+		log.Printf("drive is protected.")
 	}
 	return nil
 }
@@ -278,10 +278,10 @@ func (d *Directory) GetParent() *Directory {
 func (d *Directory) SetPassword(password string, newPassword string) error {
 	if password == d.Key {
 		d.Key = newPassword
-		log.Printf("[INFO] password updated")
+		log.Printf("password updated")
 		return nil
 	}
-	return fmt.Errorf("[ERROR] wrong password")
+	return fmt.Errorf("wrong password")
 }
 
 func (d *Directory) Lock(password string) bool {
@@ -289,7 +289,7 @@ func (d *Directory) Lock(password string) bool {
 		d.Protected = true
 		return true
 	}
-	log.Printf("[INFO] wrong password")
+	log.Printf("wrong password")
 	return false
 }
 
@@ -298,7 +298,7 @@ func (d *Directory) Unlock(password string) bool {
 		d.Protected = false
 		return true
 	}
-	log.Printf("[INFO] wrong password")
+	log.Printf("wrong password")
 	return false
 }
 
@@ -329,7 +329,7 @@ func (d *Directory) AddFile(file *File) error {
 			return fmt.Errorf("file %s (id=%s) already present in directory", file.Name, file.ID)
 		}
 	} else {
-		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
+		log.Printf("directory %s (id=%s) locked", d.Name, d.ID)
 	}
 	return nil
 }
@@ -340,11 +340,11 @@ func (d *Directory) AddFiles(files []*File) {
 			if !d.HasFile(f.ID) {
 				d.addFile(f)
 			} else {
-				log.Printf("[INFO] file (id=%s) already exists)", f.ID)
+				log.Printf("file (id=%s) already exists)", f.ID)
 			}
 		}
 	} else {
-		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
+		log.Printf("directory %s (id=%s) locked", d.Name, d.ID)
 	}
 }
 
@@ -360,11 +360,11 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 			}
 			d.Size += file.GetSize() - origSize
 		} else {
-			log.Printf("[ERROR] file (id=%s) does not belong to this directory", file.ID)
+			log.Printf("file (id=%s) does not belong to this directory", file.ID)
 			return nil
 		}
 	} else {
-		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
+		log.Printf("directory %s (id=%s) locked", d.Name, d.ID)
 	}
 	return nil
 }
@@ -376,7 +376,7 @@ func (d *Directory) PutFile(file *File) error {
 			d.putFile(file)
 		}
 	} else {
-		log.Printf("[INFO] directory %s (id=%s) locked", d.Name, d.ID)
+		log.Printf("directory %s (id=%s) locked", d.Name, d.ID)
 	}
 	return nil
 }
@@ -403,7 +403,7 @@ func (d *Directory) RemoveFile(fileID string) error {
 			return fmt.Errorf("failed to remove file: %s", err)
 		}
 	} else {
-		log.Printf("[INFO] directory protected. unlock before removing files")
+		log.Printf("directory protected. unlock before removing files")
 	}
 	return nil
 }
@@ -479,7 +479,7 @@ func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		d.addSubDir(dir)
 	} else {
-		log.Printf("[INFO] dir %s is protected", d.Name)
+		log.Printf("dir %s is protected", d.Name)
 	}
 	return nil
 }
@@ -494,7 +494,7 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 			d.addSubDir(dir)
 		}
 	} else {
-		log.Printf("[INFO] %s (id=%s) is protected", d.Name, d.ID)
+		log.Printf("%s (id=%s) is protected", d.Name, d.ID)
 	}
 	return nil
 }
@@ -505,9 +505,9 @@ func (d *Directory) removeDir(dirID string) error {
 			return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
 		}
 		delete(d.Dirs, dirID)
-		log.Printf("[INFO] directory (id=%s) removed", dirID)
+		log.Printf("directory (id=%s) removed", dirID)
 	} else {
-		log.Printf("[INFO] directory (id=%s) is not found", dirID)
+		log.Printf("directory (id=%s) is not found", dirID)
 	}
 	return nil
 }
@@ -524,9 +524,9 @@ func (d *Directory) RemoveSubDir(dirID string) error {
 		// remove from subdir map & update sync time
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("[INFO] directory (id=%s) deleted", dirID)
+		log.Printf("directory (id=%s) deleted", dirID)
 	} else {
-		log.Printf("[INFO] directory (id=%s) is protected", dirID)
+		log.Printf("directory (id=%s) is protected", dirID)
 	}
 	return nil
 }
@@ -539,9 +539,9 @@ func (d *Directory) RemoveSubDirs() error {
 		if err := d.Clean(d.Path); err != nil {
 			return err
 		}
-		log.Printf("[INFO] dir (id=%s) all sub directories deleted", d.ID)
+		log.Printf("dir (id=%s) all sub directories deleted", d.ID)
 	} else {
-		log.Printf("[INFO] dir (id=%s) is protected. no sub directories deleted", d.ID)
+		log.Printf("dir (id=%s) is protected. no sub directories deleted", d.ID)
 	}
 	return nil
 }
@@ -570,11 +570,7 @@ ephemeral ones.
 */
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
-		log.Print("[WARNING] can't traverse directory without a path")
-		return d
-	}
-	if d.IsNil() {
-		log.Printf("[WARNING] dir is not instantiated")
+		log.Print("can't traverse directory without a path")
 		return d
 	}
 	return walk(d)
@@ -585,7 +581,7 @@ func (d *Directory) Walk() *Directory {
 func walk(d *Directory) *Directory {
 	entries, err := os.ReadDir(d.Path)
 	if err != nil {
-		log.Printf("[ERROR] could not read directory: %v", err)
+		log.Printf("could not read directory: %v", err)
 		return d
 	}
 	if len(entries) == 0 {
@@ -595,7 +591,7 @@ func walk(d *Directory) *Directory {
 		entryPath := filepath.Join(d.Path, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
-			log.Printf("[ERROR] could not get stat for %s\n%v", entryPath, err)
+			log.Printf("could not get stat for %s - %v", entryPath, err)
 			return d
 		}
 		if item.IsDir() {
@@ -794,7 +790,7 @@ func walkO(dir *Directory, op func(f *File) error) error {
 		if err := op(file); err != nil {
 			// we don't exit right away because this exception may only apply
 			// to a single file.
-			log.Printf("[INFO] unable to run operation on %s \n%v\n continuing...", dir.Name, err)
+			log.Printf("unable to run operation on %s \n%v\n continuing...", dir.Name, err)
 			continue
 		}
 	}
