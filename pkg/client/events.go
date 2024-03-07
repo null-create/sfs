@@ -252,7 +252,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			c.log.Info(fmt.Sprintf("stopping handler for %s...", filepath.Base(itemPath)))
+			c.log.Log("INFO", fmt.Sprintf("stopping handler for %s...", filepath.Base(itemPath)))
 			return nil
 		case e := <-evtChan:
 			switch e.Type {
