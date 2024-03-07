@@ -263,6 +263,12 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 					if err != nil {
 						c.log.Error(fmt.Sprintf("failed to get item information: %v", err))
 					}
+					// if this is a known item and it has just changed locations,
+					// then we just need to update the metadata, otherwise
+					// create a new object and register.s
+					if c.KnownItem(eitem.Name()) {
+
+					}
 					if item.IsDir() {
 						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
 						if err := c.AddDirWithID(itemID, newDir); err != nil {
@@ -280,6 +286,10 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				// they will be added to the server after some modifications are detected,
 				// and if auto sync is enabled.
 				evtBuf.AddEvent(e)
+			case monitor.Remove:
+				// TODO: handle for cases when items are removed from a directory
+				// and possibly moved to another location.
+
 			// item name change
 			case monitor.Name:
 				if err := c.apply(e.Path, "name"); err != nil {
@@ -316,10 +326,10 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				}
 				evtBuf.AddEvent(e)
 			case monitor.Delete:
-				c.log.Info(fmt.Sprintf("handler for item (id=%s) stopping. item was deleted", itemID))
+				c.log.Log("INFO", fmt.Sprintf("handler for item (id=%s) stopping. item was deleted", itemID))
 				return nil
 			case monitor.Error:
-				c.log.Info(fmt.Sprintf("monitor for item (id=%s) encountered an error. stopping handler", itemID))
+				c.log.Warn(fmt.Sprintf("monitor for item (id=%s) encountered an error. stopping handler", itemID))
 				return nil
 			}
 			// trigger synchronization operations once the event buffer has reached capacity
@@ -327,6 +337,8 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 				if c.autoSync() {
+					// TODO: push pushes NEW items only! Need a way to differentiate between
+					// updated items and new items.
 					if err := c.Push(); err != nil {
 						return err
 					}

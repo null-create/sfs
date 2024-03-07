@@ -552,9 +552,23 @@ func (d *Directory) GetSubDir(dirID string) *Directory {
 	return d.WalkD(dirID)
 }
 
+// get a slice of all sub directories starting from the given directory.
+// returns an empty slice if none are found.
+func (d *Directory) GetSubDirs() []*Directory {
+	dirMap := d.WalkDs()
+	// convert to slice
+	var i int
+	dirs := make([]*Directory, len(dirMap))
+	for _, d := range dirMap {
+		dirs[i] = d
+		i++
+	}
+	return dirs
+}
+
 // returns a map of all subdirectories starting from the current directory.
 // returns an empty map if nothing is not found
-func (d *Directory) GetSubDirs() map[string]*Directory {
+func (d *Directory) GetDirMap() map[string]*Directory {
 	return d.WalkDs()
 }
 

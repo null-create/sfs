@@ -93,9 +93,17 @@ func (c *Client) SaveState() error {
 // shutdown client side services
 func (c *Client) ShutDown() {
 	c.log.Info("shutting down client...")
+
+	// shutdown client side services
 	c.StopMonitoring()
 	c.StopHandlers()
 
+	// close DB
+	if err := c.Db.Close(); err != nil {
+		c.log.Error(err.Error())
+	}
+
+	// save state
 	if err := c.SaveState(); err != nil {
 		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}

@@ -815,7 +815,7 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 		return fmt.Errorf("dir (id=%s) not found", dirID)
 	}
 	// remove all subdirs of this directory from the db
-	subDirs := dir.GetSubDirs()
+	subDirs := dir.GetDirMap()
 	for _, subDir := range subDirs {
 		if err := drive.RemoveDir(subDir.ID); err != nil {
 			return err

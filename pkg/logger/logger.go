@@ -101,35 +101,35 @@ func createLogFile(lfpath string) error {
 	return nil
 }
 
-// Info logs at LevelInfo
+// Info logs at LevelInfo and displays the message.
 func (l *Logger) Info(msg string) {
 	l.log.Info(msg)
-	l.writeCSV("INFO", msg)
+	l.Log("INFO", msg)
 }
 
-// Debug logs at LevelDebug.
+// Debug logs at LevelDebug and displays the message.
 func (l *Logger) Debug(msg string) {
 	l.log.Debug(msg)
-	l.writeCSV("DEBUG", msg)
+	l.Log("DEBUG", msg)
 }
 
-// Warn logs at LevelWarn.
+// Warn logs at LevelWarn and displays the message.
 func (l *Logger) Warn(msg string) {
 	l.log.Warn(msg)
-	l.writeCSV("WARN", msg)
+	l.Log("WARN", msg)
 }
 
-// Error logs at LevelError.
+// Error logs at LevelError and displays the error message
 func (l *Logger) Error(msg string) {
 	l.log.Error(msg)
-	l.writeCSV("ERROR", msg)
+	l.Log("ERROR", msg)
 }
 
-// writeCSV writes a log entry to the CSV file.
+// Log writes a log entry to the CSV file. Does not display the message.
 // All logging csv files use the columns: component, level, timestamp, message.
-// The component and timestamp are provided by writeCSV(), assuming
+// The component and timestamp are provided by Log(), assuming
 // Logger was instantiated correctly.
-func (l *Logger) writeCSV(level string, msg string) {
+func (l *Logger) Log(level string, msg string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 

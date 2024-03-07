@@ -210,7 +210,7 @@ func TestWalk(t *testing.T) {
 	if len(files) == 0 || files == nil {
 		Fail(t, GetTestingDir(), fmt.Errorf("no test files found"))
 	}
-	dirs := items.GetSubDirs()
+	dirs := items.GetDirMap()
 	if len(dirs) == 0 || dirs == nil {
 		Fail(t, GetTestingDir(), fmt.Errorf("no test directories found"))
 	}

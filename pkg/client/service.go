@@ -649,7 +649,7 @@ func (c *Client) LoadDrive() error {
 	if !c.Drive.IsIndexed() {
 		c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
 	}
-	c.log.Info("drive loaded")
+	c.log.Log("INFO", "drive loaded")
 	return nil
 }
 
@@ -779,12 +779,12 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 
 	// add newly discovered files and directories to the service
 	files := newDir.GetFiles()
-	c.log.Info(fmt.Sprintf("adding %d files to the database...", len(files)))
+	c.log.Info(fmt.Sprintf("adding %d files...", len(files)))
 
+	if err := c.Db.AddFiles(files); err != nil {
+		return fmt.Errorf("failed to add files to database: %v", err)
+	}
 	for _, file := range files {
-		if err := c.Db.AddFile(file); err != nil {
-			return fmt.Errorf("failed to add file to database: %v", err)
-		}
 		if err := c.WatchItem(file.Path); err != nil {
 			return err
 		}
@@ -793,10 +793,10 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	dirs := newDir.GetSubDirs()
 	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
 
+	if err := c.Db.AddDirs(dirs); err != nil {
+		return err
+	}
 	for _, subDir := range dirs {
-		if err := c.Db.AddDir(subDir); err != nil {
-			return fmt.Errorf("failed to add directory to database: %v", err)
-		}
 		if err := c.WatchItem(subDir.Path); err != nil {
 			return err
 		}

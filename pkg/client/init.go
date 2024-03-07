@@ -178,6 +178,8 @@ func loadStateFile() ([]byte, error) {
 // otherwise set to false if the client should be used for
 // one-off operations.
 func LoadClient(persist bool) (*Client, error) {
+	var initLog = logger.NewLogger("CLIENT_INIT")
+
 	// load client state
 	data, err := loadStateFile()
 	if err != nil {
@@ -185,6 +187,7 @@ func LoadClient(persist bool) (*Client, error) {
 	}
 	client := new(Client)
 	if err := json.Unmarshal(data, &client); err != nil {
+		initLog.Log("ERROR", fmt.Sprintf("failed to unmarshal state file: %v", err))
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
@@ -193,12 +196,14 @@ func LoadClient(persist bool) (*Client, error) {
 
 	// load user info
 	if err := client.LoadUser(); err != nil {
+		initLog.Log("ERROR", fmt.Sprintf("failed to load user: %v", err))
 		return nil, fmt.Errorf("failed to load user: %v", err)
 	}
 
 	// load drive with users sfs directory tree populated.
 	// also refreshes (or generates) drive sync index.
 	if err := client.LoadDrive(); err != nil {
+		initLog.Log("ERROR", fmt.Sprintf("failed to load drive: %v", err))
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
 
@@ -231,19 +236,23 @@ func LoadClient(persist bool) (*Client, error) {
 		// make sure the drive was registered before starting
 		if client.autoSync() && !client.Drive.IsRegistered() {
 			if err := client.RegisterClient(); err != nil {
+				initLog.Log("ERROR", fmt.Sprintf("failed to register client: %v", err))
 				return nil, err
 			}
 		}
 		// start monitoring services in SFS root directory
 		if err := client.StartMonitor(); err != nil {
+			initLog.Log("ERROR", fmt.Sprintf("failed to start monitoring services: %v", err))
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}
 		// initialize handlers map
 		if err := client.BuildHandlers(); err != nil {
+			initLog.Log("ERROR", fmt.Sprintf("failed to initialize handlers: %v", err))
 			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
 		}
 		// start event handlers
 		if err := client.StartHandlers(); err != nil {
+			initLog.Log("ERROR", fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
 
@@ -256,6 +265,7 @@ func LoadClient(persist bool) (*Client, error) {
 
 		client.StartTime = time.Now().UTC()
 	}
+	initLog.Log("INFO", fmt.Sprintf("client started at: %v", time.Now().UTC()))
 	return client, nil
 }
 

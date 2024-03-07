@@ -376,7 +376,7 @@ func (d *Drive) addSubDir(dirID string, dir *Directory) error {
 	} else {
 		// otherwise attempt to retrive the directory we want to
 		// add the subdirectory to
-		dirs := d.Root.GetSubDirs()
+		dirs := d.Root.GetDirMap()
 		if d, exists := dirs[dirID]; exists {
 			return d.AddSubDir(dir)
 		} else {
