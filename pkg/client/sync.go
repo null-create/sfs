@@ -39,9 +39,10 @@ func (c *Client) reset() {
 func (c *Client) dump(resp *http.Response, body bool) {
 	b, err := httputil.DumpResponse(resp, body)
 	if err != nil {
-		log.Printf("[WARNING] failed to dump http response:\n%v", err)
+		c.log.Warn(fmt.Sprintf("failed to dump http response:\n%v", err))
 	} else {
 		log.Printf("\n%s\n", string(b))
+		c.log.Log("INFO", "server response: "+string(b))
 	}
 }
 
@@ -74,7 +75,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 		}
 	}
 	if len(syncItems.pull) == 0 && len(syncItems.push) == 0 {
-		log.Printf("[INFO] no sync operation necessary. exiting...")
+		c.log.Info("no sync operation necessary. exiting...")
 		return nil
 	}
 
@@ -84,7 +85,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 		go func() {
 			defer wg.Done()
 			if err := c.PullFile(file); err != nil {
-				log.Printf("[ERROR] failed to pull file: %v", err)
+				c.log.Error(fmt.Sprintf("failed to pull file: %v", err))
 			}
 		}()
 		wg.Add(1)
@@ -96,7 +97,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 		go func() {
 			defer wg.Done()
 			if err := c.PushFile(file); err != nil {
-				log.Printf("[ERROR] failed to push file: %v", err)
+				c.log.Error(fmt.Sprintf("failed to push file: %v", err))
 			}
 		}()
 		wg.Add(1)
@@ -131,13 +132,13 @@ func (c *Client) Push() error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				log.Printf("[INFO] uploading %s to %s...", file.Name, file.Endpoint)
+				c.log.Info(fmt.Sprintf("Uploading %s...", file.Name))
 				if err := c.Transfer.Upload(
 					http.MethodPost,
 					file,
 					file.Endpoint,
 				); err != nil {
-					log.Printf("[WARNING] failed to upload file: %s\nerr: %v", file.ID, err)
+					c.log.Warn(fmt.Sprintf("failed to upload file (name=%s id=%s): %v", file.Name, file.ID, err))
 				}
 			}()
 		}
@@ -152,7 +153,7 @@ func (c *Client) Push() error {
 // create goroutines for each download and 'fans-in' once all are complete.
 func (c *Client) Pull(idx *svc.SyncIndex) error {
 	if len(idx.FilesToUpdate) == 0 {
-		log.Print("[INFO] no sync index returned from the server. nothing to pull")
+		c.log.Info(fmt.Sprintf("no sync index returned from the server. nothing to pull"))
 		return nil
 	}
 	queue := svc.BuildQ(idx)
@@ -170,14 +171,14 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 					file.ClientPath,
 					file.Endpoint,
 				); err != nil {
-					log.Printf("[WARNING] failed to download %s:  %v", file.Name, err)
+					c.log.Warn(fmt.Sprintf("failed to download %s: %v", file.Name, err))
 					return
 				}
 				if err := file.ValidateChecksum(); err != nil {
-					log.Printf("[WARNING] failed to validate checksum for %s: %v", file.Name, err)
+					c.log.Warn(fmt.Sprintf("failed to validate checksum for %s: %v", file.Name, err))
 				}
 				if err := c.Db.UpdateFile(file); err != nil {
-					log.Printf("[ERROR] failed to update files database: %v", err)
+					c.log.Warn(fmt.Sprintf("failed to update files database: %v", err))
 				}
 			}()
 		}
