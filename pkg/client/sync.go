@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"sync"
@@ -41,8 +40,7 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	if err != nil {
 		c.log.Warn(fmt.Sprintf("failed to dump http response:\n%v", err))
 	} else {
-		log.Printf("\n%s\n", string(b))
-		c.log.Log("INFO", "server response: "+string(b))
+		c.log.Info("server response: " + string(b))
 	}
 }
 
@@ -82,25 +80,25 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 	// pull items
 	var wg sync.WaitGroup
 	for _, file := range syncItems.pull {
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := c.PullFile(file); err != nil {
 				c.log.Error(fmt.Sprintf("failed to pull file: %v", err))
 			}
 		}()
-		wg.Add(1)
 	}
 	wg.Wait()
 
 	// push items
 	for _, file := range syncItems.push {
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := c.PushFile(file); err != nil {
 				c.log.Error(fmt.Sprintf("failed to push file: %v", err))
 			}
 		}()
-		wg.Add(1)
 	}
 	wg.Wait()
 
