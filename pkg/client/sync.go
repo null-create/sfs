@@ -50,6 +50,13 @@ type SyncItems struct {
 }
 
 // sync items between the client and the server.
+//
+// NOTE: this assumes that both the client and the server have
+// a record of the files. if the server has a file the client doesn't
+// know about, then this doesn't handle it, and vice-versa
+//
+// TODO: handle when a server has a file/directory the client doesn't have,
+// and handle when the client has a file/directory the server doesn't have.
 func (c *Client) Sync() error {
 	// get latest server sync index
 	svrIdx, err := c.GetServerIdx(true)
@@ -250,9 +257,7 @@ func (c *Client) PushNewFile(file *svc.File) error {
 // not intended for new files discovered on the server -- this will be handled by a
 // separate function PullNewFiles()
 func (c *Client) PullFile(file *svc.File) error {
-	if err := c.Transfer.Download(
-		file.ClientPath, file.Endpoint,
-	); err != nil {
+	if err := c.Transfer.Download(file.ClientPath, file.Endpoint); err != nil {
 		return err
 	}
 	return nil
