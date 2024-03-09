@@ -358,7 +358,7 @@ func (c *Client) AddFile(filePath string) error {
 	}
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
-		req, err := c.NewFileRequest(newFile)
+		req, err := c.GetFileReq(file, "NEW")
 		if err != nil {
 			return err
 		}
