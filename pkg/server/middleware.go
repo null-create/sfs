@@ -60,14 +60,10 @@ func AllFilesCtx(h http.Handler) http.Handler {
 	})
 }
 
+// temp for testing purposes
 func AllUsersCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := chi.URLParam(r, "userID")
-		if userID == "" {
-			http.Error(w, "no user ID provided", http.StatusBadRequest)
-			return
-		}
-		users, err := getAllUsers(userID, getDBConn("Users"))
+		users, err := getAllUsers("temp", getDBConn("Users"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
