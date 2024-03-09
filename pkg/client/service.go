@@ -62,25 +62,85 @@ func (c *Client) RemoveItem(itemPath string) error {
 	return nil
 }
 
-// is this file or directory already registered?
-func (c *Client) KnownItem(itemName string) bool {
-	f, err := c.GetFileByName(itemName)
+// is this file or directory already registered with client *and* the server?
+func (c *Client) KnownItem(itemPath string) bool {
+	item, err := os.Stat(itemPath)
 	if err != nil {
-		c.log.Error(err.Error())
+		c.log.Error(fmt.Sprintf("failed to stat %s: %v", itemPath, err))
 		return false
 	}
-	if f != nil {
-		return true
+	if item.IsDir() {
+		// make sure this is registered with the client first
+		d, err := c.GetDirByName(itemPath)
+		if err != nil {
+			c.log.Error(err.Error())
+			return false
+		}
+		if d == nil {
+			c.log.Error(fmt.Sprintf("%s is not registered with the client", filepath.Base(itemPath)))
+			return false
+		}
+		// check with server
+		registered, err := c.IsDirRegistered(d)
+		if err != nil {
+			c.log.Error(err.Error())
+			return false
+		}
+		return registered
+	} else {
+		// make sure this is registered with the client first
+		f, err := c.GetFileByName(itemPath)
+		if err != nil {
+			c.log.Error(err.Error())
+			return false
+		}
+		if f == nil {
+			c.log.Error(fmt.Sprintf("%s is not registered with the client", filepath.Base(itemPath)))
+			return false
+		}
+		// check with server
+		registered, err := c.IsFileRegistered(f)
+		if err != nil {
+			c.log.Error(err.Error())
+			return false
+		}
+		return registered
 	}
-	d, err := c.GetDirByName(itemName)
-	if err != nil {
-		c.log.Error(err.Error())
-		return false
+}
+
+// send file or directory metadata to the server to register.
+func (c *Client) RegisterItem(itemPath string) error {
+	if !c.KnownItem(itemPath) {
+		item, err := os.Stat(itemPath)
+		if err != nil {
+			return err
+		}
+		if item.IsDir() {
+			d, err := c.GetDirByPath(itemPath)
+			if err != nil {
+				return err
+			}
+			if d == nil {
+				c.log.Error(fmt.Sprintf("%s is not registered with client", filepath.Base(itemPath)))
+			}
+			if err := c.RegisterDirectory(d); err != nil {
+				return err
+			}
+		} else {
+			f, err := c.GetFileByPath(itemPath)
+			if err != nil {
+				return err
+			}
+			if f == nil {
+				c.log.Error(fmt.Sprintf("%s is not registered with client", filepath.Base(itemPath)))
+				return nil
+			}
+			if err := c.RegisterFile(f); err != nil {
+				return err
+			}
+		}
 	}
-	if d != nil {
-		return true
-	}
-	return false
+	return nil
 }
 
 // find a file or directory by name.
@@ -450,6 +510,25 @@ func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
 	return false, nil
 }
 
+// register new file with the server and push.
+func (c *Client) RegisterFile(file *svc.File) error {
+	req, err := c.GetFileReq(file, "NEW")
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.log.Warn(fmt.Sprintf("registration server response: %d", resp.StatusCode))
+	} else {
+		c.log.Log("INFO", fmt.Sprintf("registration server response: %d", resp.StatusCode))
+	}
+	c.dump(resp, true)
+	return nil
+}
+
 // ----- directories --------------------------------
 
 // list all directories managed by the SFS client
@@ -656,6 +735,24 @@ func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
 	return false, nil
 }
 
+// send directory metadata to the server
+func (c *Client) RegisterDirectory(dir *svc.Directory) error {
+	req, err := c.GetDirReq(dir, "NEW")
+	if err != nil {
+		return err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.log.Warn(fmt.Sprintf("server dir registration response: %d", resp.StatusCode))
+	} else {
+		c.log.Log("INFO", fmt.Sprintf("directory %s registered with server", dir.Name))
+	}
+	return nil
+}
+
 // ----- drive --------------------------------
 
 // Loads drive from the database, populates root directory,
@@ -760,10 +857,13 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 
 	for _, file := range files {
 		if err := c.Db.AddFile(file); err != nil {
-			return nil, fmt.Errorf("failed to add file to database: %v", err)
+			return root, fmt.Errorf("failed to add file to database: %v", err)
 		}
 		if err := c.WatchItem(file.Path); err != nil {
-			return nil, err
+			return root, err
+		}
+		if err := c.RegisterFile(file); err != nil {
+			return root, err
 		}
 	}
 
@@ -772,10 +872,13 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 
 	for _, subDir := range dirs {
 		if err := c.Db.AddDir(subDir); err != nil {
-			return nil, fmt.Errorf("failed to add directory to database: %v", err)
+			return root, fmt.Errorf("failed to add directory to database: %v", err)
 		}
 		if err := c.WatchItem(subDir.Path); err != nil {
-			return nil, err
+			return root, err
+		}
+		if err := c.RegisterDirectory(subDir); err != nil {
+			return root, err
 		}
 	}
 
@@ -820,6 +923,9 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		if err := c.WatchItem(file.Path); err != nil {
 			return err
 		}
+		if err := c.RegisterFile(file); err != nil {
+			return err
+		}
 	}
 
 	dirs := newDir.GetSubDirs()
@@ -832,6 +938,9 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		if err := c.WatchItem(subDir.Path); err != nil {
 			return err
 		}
+		if err := c.RegisterDirectory(subDir); err != nil {
+			return err
+		}
 	}
 
 	// add new directory itself
@@ -840,6 +949,9 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		return fmt.Errorf("failed to add root to database: %v", err)
 	}
 	if err := c.WatchItem(newDir.Path); err != nil {
+		return err
+	}
+	if err := c.RegisterDirectory(newDir); err != nil {
 		return err
 	}
 	return nil
