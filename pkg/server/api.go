@@ -197,12 +197,6 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 	}
 	// update service
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
-		a.log.Error(fmt.Sprintf("failed to add file to service: %v", err))
-		// remove file from server.
-		// don't want a file we don't have a record for.
-		if err2 := os.Remove(newFile.ServerPath); err2 != nil {
-			a.log.Error(fmt.Sprintf("failed to remove %s from server: %v\n", newFile.Name, err2))
-		}
 		a.serverError(w, fmt.Sprintf("failed to add file to service: %v", err))
 		return
 	}
