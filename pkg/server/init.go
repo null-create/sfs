@@ -294,20 +294,6 @@ func SvcLoad(svcPath string) (*Service, error) {
 			loadLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
 			return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
 		}
-	} else {
-		// load each drive
-		for _, d := range svc.Drives {
-			root, err := svc.Db.GetDirectoryByID(d.RootID)
-			if err != nil {
-				loadLogger.Error(fmt.Sprintf("failed to get root directory: %v", err))
-				return nil, fmt.Errorf("failed to get root directory: %v", err)
-			}
-			if root == nil {
-				loadLogger.Error(fmt.Sprintf("no root directory found for drive: %s", d.ID))
-				return nil, fmt.Errorf("no root directory found for drive: %s", d.ID)
-			}
-			d.Root = svc.Populate(root)
-		}
 	}
 	return svc, nil
 }
