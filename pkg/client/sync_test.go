@@ -50,7 +50,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 	}()
 
 	// retrieve index from server API and confirm non-empty fields
-	idx, err := client.GetServerIdx()
+	idx, err := client.GetServerIdx(false)
 	if err != nil || idx == nil {
 		shutDown <- true
 		if err := Clean(t, client.Root); err != nil {

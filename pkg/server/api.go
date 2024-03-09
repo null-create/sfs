@@ -55,7 +55,7 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 
 // generic response. sends msg with 200 and logs message.
 func (a *API) write(w http.ResponseWriter, msg string) {
-	a.log.Info(msg)
+	a.log.Log("INFO", msg)
 	w.Write([]byte(msg))
 }
 
@@ -127,6 +127,7 @@ func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err.Error())
 		return
 	}
+	a.write(w, "user updated")
 }
 
 // remove a user from the server
@@ -136,6 +137,7 @@ func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err.Error())
 		return
 	}
+	a.write(w, fmt.Sprintf("user (name=%s id=%s) removed from server", user.Name, user.ID))
 }
 
 // -------- files -----------------------------------------

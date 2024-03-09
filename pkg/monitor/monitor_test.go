@@ -202,7 +202,7 @@ func TestMonitorWatchAll(t *testing.T) {
 	// listeners, we just want to see if they all independently
 	// detect file changes.
 	monitor := NewMonitor(tmp.Path)
-	if err := monitor.Start(monitor.Path); err != nil {
+	if err := monitor.Start(tmp.Path); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 
