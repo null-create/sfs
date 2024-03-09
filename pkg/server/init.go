@@ -259,15 +259,15 @@ func svcLoad(sfPath string) (*Service, error) {
 	return svc, nil
 }
 
-// logger used during an established service initialization
-var loadLogger = logger.NewLogger("SERVICE_LOAD")
-
 // reads in an external service state file and instantiates an SFS service instance.
 func SvcLoad(svcPath string) (*Service, error) {
+	// logger used during an established service initialization
+	var initLogger = logger.NewLogger("SERVICE_INIT")
+
 	// ensure (at least) the necessary dbs and state files are present
 	sfPath, err := preChecks(svcPath)
 	if err != nil {
-		loadLogger.Error(err.Error())
+		initLogger.Error(err.Error())
 		return nil, err
 	}
 	// unmarshal json state file to a service instance
@@ -284,14 +284,14 @@ func SvcLoad(svcPath string) (*Service, error) {
 	if len(svc.Users) == 0 {
 		_, err := loadUsers(svc)
 		if err != nil {
-			loadLogger.Error(fmt.Sprintf("failed to retrieve user data: %v", err))
+			initLogger.Error(fmt.Sprintf("failed to retrieve user data: %v", err))
 			return nil, fmt.Errorf("failed to retrieve user data: %v", err)
 		}
 	}
 	if len(svc.Drives) == 0 {
 		_, err := loadDrives(svc)
 		if err != nil {
-			loadLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
+			initLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
 			return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
 		}
 	}
