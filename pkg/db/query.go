@@ -15,16 +15,14 @@ import (
 // Setting isSingleton to true will allow Query to automatically
 // switch between different databases.
 type Query struct {
-	DBPath string         // database directory path
-	CurDB  string         // current database we're connecting to
-	Debug  bool           // debug flag
-	log    *logger.Logger // database logger
-
-	Singleton bool // flag for whether this is being use as a singleton
-
-	Conn *sql.DB   // db connection
-	Stmt *sql.Stmt // SQL statement
-	DBs  []string  // list of available databases to both client and server
+	DBPath    string         // database directory path
+	CurDB     string         // current database we're connecting to
+	Debug     bool           // debug flag
+	Singleton bool           // flag for whether this is being use as a singleton
+	log       *logger.Logger // database logger
+	Conn      *sql.DB        // db connection
+	Stmt      *sql.Stmt      // SQL statement
+	DBs       []string       // list of available databases to both client and server
 }
 
 // returns a new query object.
