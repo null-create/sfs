@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -65,7 +66,7 @@ func (c *Client) encodeDrive(drv *svc.Drive) (string, error) {
 
 // valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetFileReq(file *svc.File, reqType string) (*http.Request, error) {
-	switch reqType {
+	switch strings.ToLower(reqType) {
 	case "new":
 		return c.NewFileRequest(file)
 	case "get":
@@ -81,7 +82,7 @@ func (c *Client) GetFileReq(file *svc.File, reqType string) (*http.Request, erro
 
 // valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetDirReq(dir *svc.Directory, reqType string) (*http.Request, error) {
-	switch reqType {
+	switch strings.ToLower(reqType) {
 	case "new":
 		return c.NewDirectoryRequest(dir)
 	case "get":
@@ -97,7 +98,7 @@ func (c *Client) GetDirReq(dir *svc.Directory, reqType string) (*http.Request, e
 
 // valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetDriveReq(drv *svc.Drive, reqType string) (*http.Request, error) {
-	switch reqType {
+	switch strings.ToLower(reqType) {
 	case "new":
 		return c.NewDriveRequest(drv)
 	case "get":
@@ -113,7 +114,7 @@ func (c *Client) GetDriveReq(drv *svc.Drive, reqType string) (*http.Request, err
 
 // valid reqTypes: "new", "get", "update", "delete"
 func (c *Client) GetUserReq(user *auth.User, reqType string) (*http.Request, error) {
-	switch reqType {
+	switch strings.ToLower(reqType) {
 	case "new":
 		return c.NewUserRequest(user)
 	case "get":
