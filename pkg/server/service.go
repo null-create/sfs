@@ -295,14 +295,12 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 // populates the drive if found.
 func (s *Service) GetDrive(driveID string) *svc.Drive {
 	if drive, exists := s.Drives[driveID]; exists {
-		if !drive.IsLoaded {
-			root, err := s.loadRoot(drive.RootID)
-			if err != nil {
-				s.log.Error(fmt.Sprintf("failed to load drive root %s: %v", drive.RootID, err))
-			}
-			drive.Root = root
-			drive.IsLoaded = true
+		root, err := s.loadRoot(drive.RootID)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("failed to load drive root %s: %v", drive.RootID, err))
 		}
+		drive.Root = root
+		drive.IsLoaded = true
 		return drive
 	}
 	return nil
