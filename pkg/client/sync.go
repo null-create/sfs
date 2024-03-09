@@ -50,7 +50,13 @@ type SyncItems struct {
 }
 
 // sync items between the client and the server.
-func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
+func (c *Client) Sync() error {
+	// get latest server sync index
+	svrIdx, err := c.GetServerIdx(true)
+	if err != nil {
+		return err
+	}
+
 	var syncItems = new(SyncItems)
 	var localIndex = c.Drive.SyncIndex
 
@@ -79,6 +85,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 
 	// pull items
 	var wg sync.WaitGroup
+	c.log.Info(fmt.Sprintf("pulling %d files from the server...", len(syncItems.pull)))
 	for _, file := range syncItems.pull {
 		wg.Add(1)
 		go func() {
@@ -91,6 +98,7 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 	wg.Wait()
 
 	// push items
+	c.log.Info(fmt.Sprintf("pushing %d files to the server...", len(syncItems.push)))
 	for _, file := range syncItems.push {
 		wg.Add(1)
 		go func() {
@@ -108,11 +116,10 @@ func (c *Client) Sync(svrIdx *svc.SyncIndex) error {
 	return nil
 }
 
-// TODO: handle the difference between creates and updates.
-// some files may be new, others may be only modified!
-//
-// take a given synch index, build a queue of files to be pushed to the
-// server, then upload each in their own goroutines
+// take a given sync index, build a queue of files to be pushed to the
+// server, then upload each in their own goroutines. Each file is assumed to be
+// already registered with the server, otherwise this will receive a 404 response
+// and the upload will fail.
 func (c *Client) Push() error {
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
@@ -125,8 +132,6 @@ func (c *Client) Push() error {
 	for len(queue.Queue) > 0 {
 		batch := queue.Dequeue()
 		for _, file := range batch.Files {
-			// TODO: some apis are contingent on http method: file post/put is new vs update
-			// need a way to handle these cases on the fly.
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -186,35 +191,15 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 	return nil
 }
 
-// Compare the last sync times between local and remote files,
-// then display their last sync times. More recent times will be
-// displayed in red, same ones will be normal.
-func (c *Client) Diff() error {
-	// refresh local index.ToUpdate
-	if !c.Drive.IsIndexed() {
-		return fmt.Errorf("no files found for indexing")
-	}
-	c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
-
-	// retrieve the servers index for this client
-	resp, err := c.Client.Get(c.Endpoints["gen updates"])
-	if err != nil {
-		return fmt.Errorf("failed to retrieve server index: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		c.dump(resp, true)
-		return nil
-	}
-
-	// TODO: compare the two indicies, and generate a third index
-	// with the most recent LastSync and ToUpdates times for each file and directory,
-	// then display the differences.
-	return nil
-}
-
 // retrieve the current sync index for this user from the server
-func (c *Client) GetServerIdx() (*svc.SyncIndex, error) {
-	resp, err := c.Client.Get(c.Endpoints["get index"])
+func (c *Client) GetServerIdx(gen bool) (*svc.SyncIndex, error) {
+	var endpoint string
+	if gen {
+		endpoint = c.Endpoints["gen index"]
+	} else {
+		endpoint = c.Endpoints["get index"]
+	}
+	resp, err := c.Client.Get(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to contact server: %v", err)
 	}
