@@ -203,6 +203,7 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 		if err2 := os.Remove(newFile.ServerPath); err2 != nil {
 			a.log.Error(fmt.Sprintf("failed to remove %s from server: %v\n", newFile.Name, err2))
 		}
+		a.serverError(w, fmt.Sprintf("failed to add file to service: %v", err))
 		return
 	}
 	a.write(w, fmt.Sprintf("%s has been added to the server", newFile.Name))
