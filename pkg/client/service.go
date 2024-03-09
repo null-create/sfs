@@ -434,6 +434,22 @@ func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error
 	return nil
 }
 
+// see if this file is registered with the server (exists on servers DB)
+func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
+	req, err := c.GetFileReq(file, "GET")
+	if err != nil {
+		return false, fmt.Errorf("failed to create file request: %v", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute request: %v", err)
+	}
+	if resp.StatusCode == http.StatusOK {
+		return true, nil
+	}
+	return false, nil
+}
+
 // ----- directories --------------------------------
 
 // list all directories managed by the SFS client
@@ -622,6 +638,22 @@ func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
 		return nil, fmt.Errorf(fmt.Sprintf("directory does not exist: %s", name))
 	}
 	return dir, nil
+}
+
+// see if this directory is registered with the server (exists on servers DB)
+func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
+	req, err := c.GetDirReq(dir, "GET")
+	if err != nil {
+		return false, fmt.Errorf("failed to create directory request: %v", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute request: %v", err)
+	}
+	if resp.StatusCode == http.StatusOK {
+		return true, nil
+	}
+	return false, nil
 }
 
 // ----- drive --------------------------------
