@@ -64,11 +64,11 @@ type Directory struct {
 
 	// map of files in this directory.
 	// key is file uuid, value is file pointer
-	Files map[string]*File `json:"files"`
+	Files map[string]*File `json:"-"`
 
 	// map of subdirectories.
 	// key is the directory uuid, value is the directory pointer
-	Dirs map[string]*Directory `json:"directories"`
+	Dirs map[string]*Directory `json:"-"`
 
 	// pointer to parent directory (if not root).
 	Parent *Directory
