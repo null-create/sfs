@@ -432,7 +432,6 @@ func TestClientDiscoverWithPath(t *testing.T) {
 
 func TestClientSendsANewFileToTheServer(t *testing.T) {
 	env.SetEnv(false)
-	e := env.NewE()
 
 	// test server
 	shutDown := make(chan bool)
@@ -468,11 +467,8 @@ func TestClientSendsANewFileToTheServer(t *testing.T) {
 	// shut down test server
 	shutDown <- true
 
-	// clean up before asserts so nothing gets left behind if there's failures
+	// clean up
 	if err := Clean(t, GetTestingDir()); err != nil {
-		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
-			log.Fatal(err2)
-		}
 		log.Fatal(err)
 	}
 }
