@@ -309,15 +309,17 @@ func (a *API) GetManyDirsInfo(w http.ResponseWriter, r *http.Request) {
 // retrieve a zipfile of the directory (and all its children)
 func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
+
 	// create a tmp .zip file so we can transfer the directory and its contents
 	archive := filepath.Join(dir.Path, dir.Name+".zip")
 	if err := transfer.Zip(dir.Path, archive); err != nil {
 		a.serverError(w, fmt.Sprintf("failed to compress directory: %v", err))
 		return
 	}
+
 	// send archive file
 	http.ServeFile(w, r, archive)
-	a.log.Info(fmt.Sprintf("served file: %v", archive))
+
 	// remove tmp archive file
 	if err := os.Remove(archive); err != nil {
 		a.log.Error(fmt.Sprintf("failed to remove temp archive %s: %v", archive, err))

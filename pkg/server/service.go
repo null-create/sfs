@@ -785,12 +785,21 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", driveID)
 	}
+	// check if the parent directory exists on the server. if not, add to root.
+	var id string
+	dir, err := s.Db.GetDirectoryByID(destDirID)
+	if err != nil {
+		return err
+	}
+	if dir != nil {
+		id = dir.ID
+		newDir.Parent = dir
+	} else {
+		id = drive.RootID
+		newDir.Parent = drive.Root
+	}
 	// add directory to service. creates physical directory.
-	if err := drive.AddSubDir(destDirID, newDir); err != nil {
-		// remove the directory if adding fails
-		if err2 := os.Remove(newDir.Path); err2 != nil {
-			s.log.Error(fmt.Sprintf("failed to remove dir: %v", err2))
-		}
+	if err := drive.AddSubDir(id, newDir); err != nil {
 		return err
 	}
 	if err := s.Db.AddDir(newDir); err != nil {
@@ -808,7 +817,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 func (s *Service) RemoveDir(driveID string, dirID string) error {
 	drive := s.GetDrive(driveID)
 	if drive == nil {
-		return fmt.Errorf("drive %s not found", driveID)
+		return fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	// just to be sure
 	if dirID == drive.Root.ID {

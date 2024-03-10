@@ -358,7 +358,7 @@ func (c *Client) AddFile(filePath string) error {
 	}
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
-		req, err := c.GetFileReq(file, "NEW")
+		req, err := c.NewFileRequest(newFile)
 		if err != nil {
 			return err
 		}
@@ -852,13 +852,13 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 	root.Walk()
 
 	// send everything to the database
-	files := root.WalkFs()
+	files := root.GetFiles()
 	c.log.Info(fmt.Sprintf("adding %d files...", len(files)))
 
+	if err := c.Db.AddFiles(files); err != nil {
+		return root, fmt.Errorf("failed to add file to database: %v", err)
+	}
 	for _, file := range files {
-		if err := c.Db.AddFile(file); err != nil {
-			return root, fmt.Errorf("failed to add file to database: %v", err)
-		}
 		if err := c.WatchItem(file.Path); err != nil {
 			return root, err
 		}
@@ -867,13 +867,13 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 		}
 	}
 
-	dirs := root.WalkDs()
+	dirs := root.GetSubDirs()
 	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
 
+	if err := c.Db.AddDirs(dirs); err != nil {
+		return root, fmt.Errorf("failed to add directory to database: %v", err)
+	}
 	for _, subDir := range dirs {
-		if err := c.Db.AddDir(subDir); err != nil {
-			return root, fmt.Errorf("failed to add directory to database: %v", err)
-		}
 		if err := c.WatchItem(subDir.Path); err != nil {
 			return root, err
 		}
@@ -902,7 +902,7 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		return err
 	}
 	if dir != nil {
-		c.log.Info(fmt.Sprintf("directory %s is already known", filepath.Base(dirPath)))
+		c.log.Info(fmt.Sprintf("%s is already known", filepath.Base(dirPath)))
 		return nil
 	}
 

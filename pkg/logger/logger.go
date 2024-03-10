@@ -101,7 +101,7 @@ func createLogFile(lfpath string) error {
 	return nil
 }
 
-// display the log to the terminal without writing to the log file
+// display the log message to the terminal without writing to the log file
 func (l *Logger) Show(msg string) {
 	l.log.Info(msg)
 }

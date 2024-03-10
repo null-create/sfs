@@ -132,6 +132,10 @@ func NewFileCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("failed to unmarshal file data: %v", err), http.StatusInternalServerError)
 			return
 		}
+		if newFile == nil {
+			http.Error(w, "new file object was nil", http.StatusInternalServerError)
+			return
+		}
 		file, err := findFile(newFile.ID, getDBConn("Files"))
 		if err != nil {
 			http.Error(w, "failed to query file database", http.StatusInternalServerError)

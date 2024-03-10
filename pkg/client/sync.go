@@ -40,7 +40,8 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	if err != nil {
 		c.log.Warn(fmt.Sprintf("failed to dump http response:\n%v", err))
 	} else {
-		c.log.Info("server response: " + string(b))
+		c.log.Show(fmt.Sprintf("server response: %v", resp.Status))
+		c.log.Log("INFO", fmt.Sprintf("server response: %s", string(b)))
 	}
 }
 
