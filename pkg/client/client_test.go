@@ -72,7 +72,7 @@ func TestLoadClient(t *testing.T) {
 	env.SetEnv(false)
 
 	e := env.NewE()
-	tmpDir, err := e.Get("CLIENT_ROOT")
+	tmpDir, err := e.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,6 +420,53 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// clean up before asserts so nothing gets left behind if there's failures
+	if err := Clean(t, GetTestingDir()); err != nil {
+		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+			log.Fatal(err2)
+		}
+		log.Fatal(err)
+	}
+}
+
+func TestClientSendsANewFileToTheServer(t *testing.T) {
+	env.SetEnv(false)
+	e := env.NewE()
+
+	// test server
+	shutDown := make(chan bool)
+	testServer := server.NewServer()
+	go func() {
+		testServer.Start(shutDown)
+	}()
+
+	// make a test client
+	tmpClient, err := Init(false)
+	if err != nil {
+		shutDown <- true
+		t.Fatal(err)
+	}
+
+	// test file
+	file, err := MakeTmpTxtFile(
+		filepath.Join(GetTestingDir(),
+			fmt.Sprintf("%s.txt", randString(21))), RandInt(1000),
+	)
+	if err != nil {
+		shutDown <- true
+		Fatal(t, err)
+	}
+
+	// attempt to add a file via the top level API.
+	// this adds the file to the db, and attempts to register it with the server.
+	if err := tmpClient.AddFile(file.Path); err != nil {
+		shutDown <- true
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// shut down test server
+	shutDown <- true
 
 	// clean up before asserts so nothing gets left behind if there's failures
 	if err := Clean(t, GetTestingDir()); err != nil {
