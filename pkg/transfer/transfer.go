@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -23,6 +23,7 @@ import (
 type Transfer struct {
 	Buffer *bytes.Buffer
 	Tok    *auth.Token
+	log    *logger.Logger
 	Client *http.Client
 }
 
@@ -30,6 +31,7 @@ func NewTransfer() *Transfer {
 	return &Transfer{
 		Buffer: new(bytes.Buffer),
 		Tok:    auth.NewT(),
+		log:    logger.NewLogger("Transfer"),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
@@ -42,9 +44,14 @@ func NewTransfer() *Transfer {
 func (t *Transfer) dump(resp *http.Response, body bool) {
 	b, err := httputil.DumpResponse(resp, body)
 	if err != nil {
-		log.Printf("[WARNING] failed to parse http response: %v", err)
+		t.log.Warn(fmt.Sprintf("failed to parse http response: %v", err))
 	} else {
-		log.Printf("[INFO] %v\n", string(b))
+		// log.Printf("[INFO] %v\n", string(b))
+		if resp.StatusCode == http.StatusOK {
+			t.log.Log("INFO", "server response: "+string(b))
+		} else {
+			t.log.Error(string(b))
+		}
 	}
 }
 
@@ -99,9 +106,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		t.dump(resp, true)
-	}
+	t.dump(resp, true)
 	return nil
 }
 
@@ -140,6 +145,6 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 		return fmt.Errorf("failed to write out file data: %v", err)
 	}
 
-	log.Printf("[INFO] %s downloaded to %s", file.Name(), destPath)
+	t.log.Info(fmt.Sprintf("%s downloaded to %s", file.Name(), destPath))
 	return nil
 }
