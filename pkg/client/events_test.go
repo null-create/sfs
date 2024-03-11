@@ -13,7 +13,7 @@ func TestStartHandler(t *testing.T) {
 
 	// make sure we clean the right testing directory
 	e := env.NewE()
-	tmpDir, err := e.Get("CLIENT_ROOT")
+	tmpDir, err := e.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}

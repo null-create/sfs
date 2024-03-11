@@ -32,6 +32,7 @@ type EItem struct {
 func (e *EItem) Name() string { return e.name }
 func (e *EItem) Path() string { return e.path }
 func (e *EItem) Kind() string { return e.itype }
+func (e *EItem) IsDir() bool  { return e.itype == "directory" }
 
 type Event struct {
 	ID    string    // UUID of the event

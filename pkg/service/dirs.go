@@ -243,12 +243,12 @@ func (d *Directory) HasDir(dirID string) bool {
 // file sizes.
 func (d *Directory) GetSize() (int64, error) {
 	var size int64
-	err := filepath.Walk(d.Path, func(filePath string, info os.FileInfo, err error) error {
+	err := filepath.Walk(d.Path, func(filePath string, item os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
-			size += info.Size()
+		if !item.IsDir() {
+			size += item.Size()
 		}
 		return nil
 	})

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -62,16 +63,52 @@ func (c *Client) RemoveItem(itemPath string) error {
 	return nil
 }
 
+// send item metadata to the server. used with
+// event handler loop.
+func (c *Client) UpdateItem(item monitor.EItem) error {
+	if item.IsDir() {
+		dir, err := c.GetDirByPath(item.Path())
+		if err != nil {
+			return err
+		}
+		req, err := c.UpdateDirectoryRequest(dir)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			c.log.Error(fmt.Sprintf("failed to execute request: %v", err))
+			return err
+		}
+		c.dump(resp, true)
+	} else {
+		file, err := c.GetFileByPath(item.Path())
+		if err != nil {
+			return err
+		}
+		req, err := c.UpdateFileRequest(file)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			c.log.Error(fmt.Sprintf("failed to execute request: %v", err))
+			return err
+		}
+		c.dump(resp, true)
+	}
+	return nil
+}
+
 // is this file or directory already registered with client *and* the server?
 func (c *Client) KnownItem(itemPath string) bool {
 	item, err := os.Stat(itemPath)
 	if err != nil {
-		c.log.Error(fmt.Sprintf("failed to stat %s: %v", itemPath, err))
-		return false
+		log.Fatal(err)
 	}
 	if item.IsDir() {
 		// make sure this is registered with the client first
-		d, err := c.GetDirByName(itemPath)
+		d, err := c.GetDirByPath(itemPath)
 		if err != nil {
 			c.log.Error(err.Error())
 			return false
@@ -89,7 +126,7 @@ func (c *Client) KnownItem(itemPath string) bool {
 		return registered
 	} else {
 		// make sure this is registered with the client first
-		f, err := c.GetFileByName(itemPath)
+		f, err := c.GetFileByPath(itemPath)
 		if err != nil {
 			c.log.Error(err.Error())
 			return false
@@ -209,6 +246,7 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 
 // ----- files --------------------------------------
 
+// does this file or directory exist?
 func (c *Client) Exists(path string) bool {
 	if _, err := os.Stat(path); err != nil && errors.Is(err, os.ErrNotExist) {
 		return false

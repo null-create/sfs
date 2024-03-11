@@ -191,6 +191,11 @@ func UnmarshalDriveString(data string) (*Drive, error) {
 	return drv, nil
 }
 
+func (d *Drive) UpdateDriveSize(size int64) {
+	d.UsedSpace += size
+	d.FreeSpace -= size
+}
+
 // ------- security --------------------------------
 
 func (d *Drive) Lock(password string) {
@@ -248,7 +253,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 				return err
 			}
 		}
-		d.UsedSpace += file.GetSize()
+		d.UpdateDriveSize(file.GetSize())
 	} else {
 		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
@@ -327,7 +332,7 @@ func (d *Drive) UpdateFile(dirID string, file *File) error {
 				return err
 			}
 			var newSize = file.GetSize()
-			d.UsedSpace += origSize - newSize
+			d.UpdateDriveSize(origSize - newSize)
 		}
 	} else {
 		log.Printf("[INFO] drive is protected")
@@ -353,7 +358,7 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 			if dir == nil {
 				return fmt.Errorf("dir (id=%s) not found", dirID)
 			}
-			d.UsedSpace -= file.GetSize()
+			d.UpdateDriveSize(-file.GetSize())
 			if err := dir.RemoveFile(file.ID); err != nil {
 				return err
 			}
@@ -397,6 +402,11 @@ func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 		if err := d.addSubDir(dirID, dir); err != nil {
 			return err
 		}
+		size, err := dir.GetSize()
+		if err != nil {
+			return err
+		}
+		d.UpdateDriveSize(size)
 	} else {
 		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}
@@ -412,6 +422,15 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 		if err := d.Root.AddSubDirs(dirs); err != nil {
 			return err
 		}
+		var total int64
+		for _, dir := range dirs {
+			size, err := dir.GetSize()
+			if err != nil {
+				return err
+			}
+			total += size
+		}
+		d.UpdateDriveSize(total)
 	} else {
 		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
 	}

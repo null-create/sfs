@@ -259,17 +259,16 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// new files or directories were added to a monitored directory
 			case monitor.Add:
 				for _, eitem := range e.Items {
-					item, err := os.Stat(eitem.Path())
-					if err != nil {
-						c.log.Error(fmt.Sprintf("failed to get item information: %v", err))
-					}
 					// if this is a known item and it has just changed locations,
 					// then we just need to update the metadata, otherwise
 					// create a new object and register.s
-					if c.KnownItem(eitem.Name()) {
-
+					if c.KnownItem(eitem.Path()) {
+						if err := c.UpdateItem(eitem); err != nil {
+							c.log.Error(fmt.Sprintf("failed to update item %s: %v", eitem.Path(), err))
+						}
 					}
-					if item.IsDir() {
+					// otherwise create new object and register
+					if eitem.IsDir() {
 						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
 						if err := c.AddDirWithID(itemID, newDir); err != nil {
 							c.log.Error(fmt.Sprintf("failed to add new directory: %v", err))
