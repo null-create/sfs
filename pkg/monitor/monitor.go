@@ -236,6 +236,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				if err != nil && err != os.ErrNotExist {
 					log.Log("INFO", fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
 					evt <- Event{
+						Kind: "File",
 						Type: Error,
 						ID:   auth.NewUUID(),
 						Path: filePath,
@@ -248,6 +249,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				case err == os.ErrNotExist:
 					log.Log("INFO", fmt.Sprintf("%s was deleted. stopping monitoring.", baseName))
 					evt <- Event{
+						Kind: "File",
 						Type: Delete,
 						ID:   auth.NewUUID(),
 						Path: filePath,
@@ -258,6 +260,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				case stat.Size() != initialStat.Size():
 					log.Log("INFO", fmt.Sprintf("size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000)))
 					evt <- Event{
+						Kind: "File",
 						Type: Size,
 						ID:   auth.NewUUID(),
 						Path: filePath,
@@ -267,6 +270,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				case stat.ModTime() != initialStat.ModTime():
 					log.Log("INFO", fmt.Sprintf("mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime()))
 					evt <- Event{
+						Kind: "File",
 						Type: ModTime,
 						ID:   auth.NewUUID(),
 						Path: filePath,
@@ -276,6 +280,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				case stat.Mode() != initialStat.Mode():
 					log.Log("INFO", (fmt.Sprintf("mode change detected: %v -> %v", initialStat.Mode(), stat.Mode())))
 					evt <- Event{
+						Kind: "File",
 						Type: Mode,
 						ID:   auth.NewUUID(),
 						Path: filePath,
@@ -285,6 +290,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				case stat.Name() != initialStat.Name():
 					log.Log("INFO", fmt.Sprintf("file name change detected: %v -> %v", initialStat.Name(), stat.Name()))
 					evt <- Event{
+						Kind: "File",
 						Type: Name,
 						ID:   auth.NewUUID(),
 						Path: filePath,
@@ -345,6 +351,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				case err == os.ErrExist:
 					log.Log("INFO", fmt.Sprintf("%s was deleted", dirName))
 					evt <- Event{
+						Kind: "Directory",
 						ID:   auth.NewUUID(),
 						Type: Delete,
 						Path: dirPath,
@@ -356,6 +363,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					log.Log("INFO", fmt.Sprintf("%d items were deleted in %s", len(currItems)-len(initialItems), dirName))
 					diffs := dirCtx.RemoveItems(currItems) // get list of deleted items
 					evt <- Event{
+						Kind:  "Directory",
 						ID:    auth.NewUUID(),
 						Type:  Remove,
 						Path:  dirPath,
@@ -367,6 +375,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					log.Log("INFO", fmt.Sprintf("%d items were added in %s", len(currItems)-len(initialItems), dirName))
 					diffs := dirCtx.AddItems(currItems) // get list of removed items
 					evt <- Event{
+						Kind:  "Directory",
 						ID:    auth.NewUUID(),
 						Type:  Add,
 						Path:  dirPath,

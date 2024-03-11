@@ -35,6 +35,7 @@ func (e *EItem) Kind() string { return e.itype }
 
 type Event struct {
 	ID    string    // UUID of the event
+	Kind  string    // Kind of the event (file or directory)
 	Type  EventType // type of file event, i.e. create, edit, or delete
 	Path  string    // location of the file event (path to the file itself)
 	Items []EItem   // list of files or subdirectories in the directory that were added, created, or deleted
