@@ -258,7 +258,10 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					return
 				// file size change
 				case stat.Size() != initialStat.Size():
-					log.Log("INFO", fmt.Sprintf("size change detected: %f kb -> %f kb", float64(initialStat.Size()/1000), float64(stat.Size()/1000)))
+					log.Log("INFO", fmt.Sprintf(
+						"size change detected: %f kb -> %f kb | path: %s",
+						float64(initialStat.Size()/1000), float64(stat.Size()/1000), filePath),
+					)
 					evt <- Event{
 						Kind: "File",
 						Type: Size,
