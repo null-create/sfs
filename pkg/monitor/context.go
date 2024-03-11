@@ -43,9 +43,9 @@ func getItemType(item fs.DirEntry) string {
 
 // adds all new fs.DirEntry objects to the current context and returns
 // a slice of the newly added entries.
-func (ctx *DirCtx) AddItems(new []fs.DirEntry) []EItem {
+func (ctx *DirCtx) AddItems(newItems []fs.DirEntry) []EItem {
 	diffs := make([]EItem, 0)
-	for _, item := range new {
+	for _, item := range newItems {
 		if !ctx.HaveItem(item.Name()) {
 			eitem := EItem{
 				itype: getItemType(item),
