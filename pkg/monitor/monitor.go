@@ -327,7 +327,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 	// if they're not already present! not watchDir's responsibility, though.
 	dirCtx.AddItems(initialItems)
 
-	// direcotry name
+	// directory name
 	dirName := filepath.Base(dirPath)
 
 	// event channel used by the event handler goroutine
