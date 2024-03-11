@@ -42,10 +42,13 @@ type Event struct {
 	Items []EItem   // list of files or subdirectories in the directory that were added, created, or deleted
 }
 
+// whether this event is a directory event
+func (e *Event) IsDir() bool { return e.Kind == "Directory" }
+
 func (e *Event) ToString() string {
 	return fmt.Sprintf(
-		"item event \n(id=%s) -> type: %s | path: %s",
-		e.ID, e.Type, e.Path,
+		"%s event \n(id=%s) -> type: %s | path: %s",
+		e.Kind, e.ID, e.Type, e.Path,
 	)
 }
 
