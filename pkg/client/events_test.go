@@ -21,7 +21,7 @@ func TestStartHandler(t *testing.T) {
 	// create a temp client with test files and subdirectories,
 	// and build a sync index since the event handler will need
 	// to interact with it
-	client, err := Init(true)
+	client, err := Init(false)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
