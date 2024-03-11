@@ -191,7 +191,6 @@ func (c *Client) StopHandlers() {
 //
 // should ideally only be called once during initialization.
 func (c *Client) BuildHandlers() error {
-	// TODO: we should ideally be using c.Drive.GetFiles()
 	files, err := c.Db.GetUsersFiles(c.UserID)
 	if err != nil {
 		return err
@@ -203,7 +202,6 @@ func (c *Client) BuildHandlers() error {
 			}
 		}
 	}
-	// TODO: we should ideally be using c.Drive.GetDirectories()
 	dirs, err := c.Db.GetUsersDirectories(c.UserID)
 	if err != nil {
 		return err
@@ -254,11 +252,11 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 		case <-stop:
 			c.log.Log("INFO", fmt.Sprintf("stopping handler for %s...", filepath.Base(itemPath)))
 			return nil
-		case e := <-evtChan:
-			switch e.Type {
+		case evt := <-evtChan:
+			switch evt.Type {
 			// new files or directories were added to a monitored directory
 			case monitor.Add:
-				for _, eitem := range e.Items {
+				for _, eitem := range evt.Items {
 					// if this is a known item and it has just changed locations,
 					// then we just need to update the metadata, otherwise
 					// create a new object and register.s
@@ -284,46 +282,46 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				// since they will be added with their initial last sync times.
 				// they will be added to the server after some modifications are detected,
 				// and if auto sync is enabled.
-				evtBuf.AddEvent(e)
+				evtBuf.AddEvent(evt)
 			case monitor.Remove:
 				// TODO: handle for cases when items are removed from a directory
 				// and possibly moved to another location.
 
 			// item name change
 			case monitor.Name:
-				if err := c.apply(e.Path, "name"); err != nil {
+				if err := c.apply(evt.Path, "name"); err != nil {
 					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
-				evtBuf.AddEvent(e)
+				evtBuf.AddEvent(evt)
 			// item mode change
 			case monitor.Mode:
-				if err := c.apply(e.Path, "mode"); err != nil {
+				if err := c.apply(evt.Path, "mode"); err != nil {
 					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
-				evtBuf.AddEvent(e)
+				evtBuf.AddEvent(evt)
 			// item size changed
 			case monitor.Size:
-				if err := c.apply(e.Path, "size"); err != nil {
+				if err := c.apply(evt.Path, "size"); err != nil {
 					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
-				evtBuf.AddEvent(e)
+				evtBuf.AddEvent(evt)
 			// item mod time change
 			case monitor.ModTime:
-				if err := c.apply(e.Path, "modtime"); err != nil {
+				if err := c.apply(evt.Path, "modtime"); err != nil {
 					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
-				evtBuf.AddEvent(e)
+				evtBuf.AddEvent(evt)
 			// items content change
 			case monitor.Change:
-				if err := c.apply(e.Path, "change"); err != nil {
+				if err := c.apply(evt.Path, "change"); err != nil {
 					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}
-				evtBuf.AddEvent(e)
+				evtBuf.AddEvent(evt)
 			case monitor.Delete:
 				c.log.Log("INFO", fmt.Sprintf("handler for item (id=%s) stopping. item was deleted", itemID))
 				return nil
