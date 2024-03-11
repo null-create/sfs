@@ -799,7 +799,25 @@ func (c *Client) LoadDrive() error {
 		return fmt.Errorf("no root directory associated with drive")
 	}
 	c.Drive = drive
+
+	// populate with the contents of the designated root directory
 	c.Drive.Root = c.Populate(root)
+
+	// add all other distributed files and subdirectories monitored by sfs
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
+	c.Drive.Root.AddFiles(files)
+
+	dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		return err
+	}
+	if err := c.Drive.Root.AddSubDirs(dirs); err != nil {
+		return err
+	}
+
 	c.Drive.IsLoaded = true
 	if !c.Drive.IsIndexed() {
 		c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
