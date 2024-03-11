@@ -31,6 +31,16 @@ func (ctx *DirCtx) HaveItem(itemName string) bool {
 	return false
 }
 
+func getItemType(item fs.DirEntry) string {
+	var itype string
+	if item.IsDir() {
+		itype = "directory"
+	} else {
+		itype = "file"
+	}
+	return itype
+}
+
 // adds all new fs.DirEntry objects to the current context and returns
 // a slice of the newly added entries.
 func (ctx *DirCtx) AddItems(new []fs.DirEntry) []EItem {
@@ -38,8 +48,9 @@ func (ctx *DirCtx) AddItems(new []fs.DirEntry) []EItem {
 	for _, item := range new {
 		if !ctx.HaveItem(item.Name()) {
 			eitem := EItem{
-				name: item.Name(),
-				path: filepath.Join(ctx.dirpath, item.Name()),
+				itype: getItemType(item),
+				name:  item.Name(),
+				path:  filepath.Join(ctx.dirpath, item.Name()),
 			}
 			diffs = append(diffs, eitem)
 			ctx.currItems[eitem.Name()] = eitem
@@ -53,8 +64,9 @@ func (ctx *DirCtx) RemoveItems(remove []fs.DirEntry) []EItem {
 	diffs := make([]EItem, 0)
 	for _, item := range remove {
 		removed := EItem{
-			name: item.Name(),
-			path: filepath.Join(item.Name(), ctx.dirpath),
+			itype: getItemType(item),
+			name:  item.Name(),
+			path:  filepath.Join(item.Name(), ctx.dirpath),
 		}
 		delete(ctx.currItems, item.Name())
 		diffs = append(diffs, removed)
