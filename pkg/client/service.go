@@ -117,13 +117,7 @@ func (c *Client) KnownItem(itemPath string) bool {
 			c.log.Error(fmt.Sprintf("%s is not registered with the client", filepath.Base(itemPath)))
 			return false
 		}
-		// check with server
-		registered, err := c.IsDirRegistered(d)
-		if err != nil {
-			c.log.Error(err.Error())
-			return false
-		}
-		return registered
+		return true
 	} else {
 		// make sure this is registered with the client first
 		f, err := c.GetFileByPath(itemPath)
@@ -135,13 +129,7 @@ func (c *Client) KnownItem(itemPath string) bool {
 			c.log.Error(fmt.Sprintf("%s is not registered with the client", filepath.Base(itemPath)))
 			return false
 		}
-		// check with server
-		registered, err := c.IsFileRegistered(f)
-		if err != nil {
-			c.log.Error(err.Error())
-			return false
-		}
-		return registered
+		return true
 	}
 }
 
