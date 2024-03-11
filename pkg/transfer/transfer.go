@@ -102,6 +102,7 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	}
 
 	// send request
+	t.log.Log("INFO", fmt.Sprintf("uploading %s to %s...", file.Name, file.Endpoint))
 	resp, err := t.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %v", err)
@@ -145,6 +146,6 @@ func (t *Transfer) Download(destPath string, srcURL string) error {
 		return fmt.Errorf("failed to write out file data: %v", err)
 	}
 
-	t.log.Info(fmt.Sprintf("%s downloaded to %s", file.Name(), destPath))
+	t.log.Log("INFO", fmt.Sprintf("%s downloaded to %s", file.Name(), destPath))
 	return nil
 }
