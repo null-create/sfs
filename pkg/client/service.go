@@ -413,7 +413,7 @@ func (c *Client) AddFile(filePath string) error {
 // retrieve the updated server path for the file after a successful
 // registration with the server.
 func (c *Client) getFileServerPath(file *svc.File) (string, error) {
-	req, err := c.GetFileRequest(file)
+	req, err := c.GetFileInfoRequest(file)
 	if err != nil {
 		return "", err
 	}

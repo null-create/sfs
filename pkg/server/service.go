@@ -662,7 +662,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	if dir == nil {
 		// we're going to assign this file to root if the client side
 		// parent directory isn't registered server-side yet.
-		file.DirID = drive.RootID
+		file.DirID = drive.Root.ID
 	}
 	// modify file.ServerPath to point to the server
 	// side users root directory (or subdirectory if managed by the

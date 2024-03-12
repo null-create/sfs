@@ -279,6 +279,9 @@ func SvcLoad(svcPath string) (*Service, error) {
 	// load logger
 	svc.log = logger.NewLogger("Service")
 
+	// add configs to service instance
+	svc.svcCfgs = svcCfg
+
 	// attempt to populate from users and drive databases if state file had no user
 	// or drive data.
 	if len(svc.Users) == 0 {

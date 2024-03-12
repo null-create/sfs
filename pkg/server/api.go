@@ -214,7 +214,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 	}
 	// update file
 	if err := a.Svc.UpdateFile(file, buf.Bytes()); err != nil {
-		a.serverError(w, fmt.Sprintf("failed to update %s (id=%s)", file.Name, file.ID))
+		a.serverError(w, fmt.Sprintf("failed to update %s (id=%s): %v", file.Name, file.ID, err))
 		return
 	}
 	a.write(w, fmt.Sprintf("%s updated (owner id=%s)", file.Name, file.OwnerID))

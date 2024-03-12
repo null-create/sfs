@@ -213,6 +213,20 @@ func (c *Client) GetFileRequest(file *svc.File) (*http.Request, error) {
 	return req, nil
 }
 
+func (c *Client) GetFileInfoRequest(file *svc.File) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["file info"]+file.ID, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+reqToken)
+	return req, nil
+}
+
 func (c *Client) GetAllFilesRequest(user *auth.User) (*http.Request, error) {
 	var buf bytes.Buffer
 	req, err := http.NewRequest(http.MethodGet, c.Endpoints["all files"], &buf)
@@ -230,6 +244,20 @@ func (c *Client) GetAllFilesRequest(user *auth.User) (*http.Request, error) {
 func (c *Client) GetDirRequest(dir *svc.Directory) (*http.Request, error) {
 	var buf bytes.Buffer
 	req, err := http.NewRequest(http.MethodGet, dir.Endpoint, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	reqToken, err := c.encodeDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+reqToken)
+	return req, nil
+}
+
+func (c *Client) GetDirInfoRequest(dir *svc.Directory) (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["dir info"]+dir.ID, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
