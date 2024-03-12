@@ -90,12 +90,15 @@ func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	if err != nil {
 		return err
 	}
-	if len(file.Content) == 0 {
-		file.Load()
+	// read in file data
+	data, err := os.ReadFile(file.ClientPath)
+	if err != nil {
+		return err
 	}
-	if _, err = fileWriter.Write(file.Content); err != nil {
+	if _, err = fileWriter.Write(data); err != nil {
 		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
+	// prepare request
 	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, destURL)
 	if err != nil {
 		return err
