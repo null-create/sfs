@@ -44,9 +44,8 @@ func NewTransfer() *Transfer {
 func (t *Transfer) dump(resp *http.Response, body bool) {
 	b, err := httputil.DumpResponse(resp, body)
 	if err != nil {
-		t.log.Warn(fmt.Sprintf("failed to parse http response: %v", err))
+		t.log.Error("failed to parse http response: " + err.Error())
 	} else {
-		// log.Printf("[INFO] %v\n", string(b))
 		if resp.StatusCode == http.StatusOK {
 			t.log.Log("INFO", "server response: "+string(b))
 		} else {
@@ -61,8 +60,9 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
 	}
 	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Disposition", "attachment; filename="+file.Name)
 
-	// create file info token to attach to request header
+	// add file metadata to jwt
 	fileData, err := file.ToJSON()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file json string: %v", err)
