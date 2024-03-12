@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -393,9 +394,50 @@ func (c *Client) AddFile(filePath string) error {
 			return err
 		}
 		c.dump(resp, true)
+		// get newly generated server path for the file if successfully created
+		if resp.StatusCode == http.StatusOK {
+			svrpath, err := c.getFileServerPath(newFile)
+			if err != nil {
+				return err
+			}
+			newFile.ServerPath = svrpath
+			if err := c.UpdateFile(newFile); err != nil {
+				return err
+			}
+		}
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
 	return nil
+}
+
+// retrieve the updated server path for the file after a successful
+// registration with the server.
+func (c *Client) getFileServerPath(file *svc.File) (string, error) {
+	req, err := c.GetFileRequest(file)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("server returned non-200 status: %v", resp.Status)
+	}
+	// get file info from response so we can parse it for the new server path
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var f = new(svc.File)
+	if err := json.Unmarshal(buf.Bytes(), &f); err != nil {
+		return "", err
+	}
+	if f.ServerPath == "" || f.ServerPath == f.ClientPath {
+		return "", fmt.Errorf("server path was not set correctly: %v", f.ServerPath)
+	}
+	return f.ServerPath, nil
 }
 
 // add a new file to a specified directory using a directory ID.

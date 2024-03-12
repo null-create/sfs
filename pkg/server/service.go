@@ -23,6 +23,9 @@ type Service struct {
 	// path for sfs service on the server
 	SvcRoot string `json:"service_root"`
 
+	// Service configs
+	svcCfgs *SvcCfg `json:"svc_cfgs"`
+
 	// path to state file
 	StateFile string `json:"state_file"`
 
@@ -60,6 +63,7 @@ type Service struct {
 func NewService(svcRoot string) *Service {
 	return &Service{
 		InitTime: time.Now().UTC(),
+		svcCfgs:  svcCfg,
 		SvcRoot:  svcRoot,
 
 		// we don't set StateFile because we assume it
@@ -637,6 +641,11 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	return files, nil
 }
 
+// generate a server-side path for a file or directory.
+func (s *Service) buildServerPath(user string, fileName string) string {
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, fileName)
+}
+
 // add a file to the service. does not create a physical file,
 // only updates internal service state.
 func (s *Service) AddFile(dirID string, file *svc.File) error {
@@ -644,7 +653,8 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
-	// make sure the directory exists
+	// make sure the files parent directory exists on the server
+	// first. if not, add to server-side sfs root.
 	dir, err := s.Db.GetDirectoryByID(dirID)
 	if err != nil {
 		return err
@@ -654,6 +664,14 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		// parent directory isn't registered server-side yet.
 		file.DirID = drive.RootID
 	}
+	// modify file.ServerPath to point to the server
+	// side users root directory (or subdirectory if managed by the
+	// server side root directory). whenever something gets
+	// uploaded to the server we need to set a unique server path so we
+	// can differentiate between client and server upload/download locations.
+	// NOTE: client makes an additional call to retrieve this new path
+	file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
+
 	// add file to drive service
 	if err := drive.AddFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to add file to drive: %v", err)
