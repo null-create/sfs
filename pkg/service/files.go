@@ -96,6 +96,8 @@ func UnmarshalFileStr(fileInfo string) (*File, error) {
 // returns file size in bytes
 //
 // uses os.Stat() - "length in bytes for regular files; system-dependent for others"
+//
+// NOTE: internally references f.Path, which will be equivalent to f.ClientPath. need to fix this.
 func (f *File) GetSize() int64 {
 	info, err := os.Stat(f.Path)
 	if err != nil {
@@ -181,6 +183,7 @@ func (f *File) Save(data []byte) error {
 		f.m.Lock()
 		defer f.m.Unlock()
 
+		// TODO: add flag to specify server or client path.
 		file, err := os.Create(f.Path)
 		if err != nil {
 			return fmt.Errorf("unable to create file %s: %v", f.Name, err)
