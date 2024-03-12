@@ -646,8 +646,8 @@ func (s *Service) buildServerPath(user string, fileName string) string {
 	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, fileName)
 }
 
-// add a file to the service. does not create a physical file,
-// only updates internal service state.
+// add a new file to the service. creates the physical file,
+// and updates internal service state.
 func (s *Service) AddFile(dirID string, file *svc.File) error {
 	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
@@ -671,6 +671,16 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// can differentiate between client and server upload/download locations.
 	// NOTE: client makes an additional call to retrieve this new path
 	file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
+
+	// create the physical file on the server side
+	f, err := os.Create(file.ServerPath)
+	if err != nil {
+		return fmt.Errorf("failed to create file on server side: %v", err)
+	}
+	_, err = f.Write(file.Content)
+	if err != nil {
+		return fmt.Errorf("failed to write file on server side: %v", err)
+	}
 
 	// add file to drive service
 	if err := drive.AddFile(file.DirID, file); err != nil {

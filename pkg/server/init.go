@@ -282,22 +282,22 @@ func SvcLoad(svcPath string) (*Service, error) {
 	// add configs to service instance
 	svc.svcCfgs = svcCfg
 
-	// attempt to populate from users and drive databases if state file had no user
-	// or drive data.
-	if len(svc.Users) == 0 {
-		_, err := loadUsers(svc)
-		if err != nil {
-			initLogger.Error(fmt.Sprintf("failed to retrieve user data: %v", err))
-			return nil, fmt.Errorf("failed to retrieve user data: %v", err)
-		}
+	// load users and drives
+	_, err = loadUsers(svc)
+	if err != nil {
+		initLogger.Error(fmt.Sprintf("failed to retrieve user data: %v", err))
+		return nil, fmt.Errorf("failed to retrieve user data: %v", err)
 	}
-	if len(svc.Drives) == 0 {
-		_, err := loadDrives(svc)
-		if err != nil {
-			initLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
-			return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
-		}
+	_, err = loadDrives(svc)
+	if err != nil {
+		initLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
+		return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
 	}
+	if err := svc.SaveState(); err != nil {
+		initLogger.Error(fmt.Sprintf("failed to save service state: %v", err))
+		return nil, fmt.Errorf("failed to save state: %v", err)
+	}
+	initLogger.Log("INFO", fmt.Sprintf("service loaded at %s", time.Now().UTC()))
 	return svc, nil
 }
 

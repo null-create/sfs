@@ -273,7 +273,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 						}
 					} else {
 						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
-						if err := c.AddFileWithID(itemID, newFile); err != nil {
+						if err := c.AddFileWithDirID(itemID, newFile); err != nil {
 							c.log.Error(fmt.Sprintf("failed to add new file: %v", err))
 						}
 					}

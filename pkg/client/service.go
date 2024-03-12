@@ -385,6 +385,7 @@ func (c *Client) AddFile(filePath string) error {
 	}
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
+		// send metadata to server
 		req, err := c.NewFileRequest(newFile)
 		if err != nil {
 			return err
@@ -394,7 +395,7 @@ func (c *Client) AddFile(filePath string) error {
 			return err
 		}
 		c.dump(resp, true)
-		// get newly generated server path for the file if successfully created
+		// get newly generated server-side path for the file if successfully created
 		if resp.StatusCode == http.StatusOK {
 			svrpath, err := c.getFileServerPath(newFile)
 			if err != nil {
@@ -442,19 +443,19 @@ func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 
 // add a new file to a specified directory using a directory ID.
 // adds file to database and monitoring services.
-func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
-	if err := c.Drive.AddFile(dirID, file); err != nil {
+func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
+	if err := c.Drive.AddFile(dirID, newFile); err != nil {
 		return err
 	}
-	if err := c.Db.AddFile(file); err != nil {
+	if err := c.Db.AddFile(newFile); err != nil {
 		return err
 	}
-	if err := c.WatchItem(file.ClientPath); err != nil {
+	if err := c.WatchItem(newFile.ClientPath); err != nil {
 		return err
 	}
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
-		req, err := c.NewFileRequest(file)
+		req, err := c.NewFileRequest(newFile)
 		if err != nil {
 			return err
 		}
@@ -462,9 +463,20 @@ func (c *Client) AddFileWithID(dirID string, file *svc.File) error {
 		if err != nil {
 			return err
 		}
+		// get newly generated server-side path for the file if successfully created
+		if resp.StatusCode == http.StatusOK {
+			svrpath, err := c.getFileServerPath(newFile)
+			if err != nil {
+				return err
+			}
+			newFile.ServerPath = svrpath
+			if err := c.UpdateFile(newFile); err != nil {
+				return err
+			}
+		}
 		c.dump(resp, true)
 	}
-	c.log.Info(fmt.Sprintf("added %s to client", file.Name))
+	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
 	return nil
 }
 
@@ -580,7 +592,7 @@ func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
 
 // register new file with the server and push.
 func (c *Client) RegisterFile(file *svc.File) error {
-	req, err := c.GetFileReq(file, "NEW")
+	req, err := c.NewFileRequest(file)
 	if err != nil {
 		return err
 	}
