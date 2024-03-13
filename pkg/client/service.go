@@ -385,7 +385,6 @@ func (c *Client) AddFile(filePath string) error {
 	}
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
-		// send metadata to server
 		req, err := c.NewFileRequest(newFile)
 		if err != nil {
 			return err
@@ -405,6 +404,8 @@ func (c *Client) AddFile(filePath string) error {
 			if err := c.UpdateFile(newFile); err != nil {
 				return err
 			}
+		} else {
+			c.log.Warn(fmt.Sprintf("failed to send metadata to server: %v", resp.Status))
 		}
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
