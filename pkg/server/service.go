@@ -348,14 +348,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	if root == nil {
 		return nil, fmt.Errorf("no root directory found for drive %s", driveID)
 	}
-
-	// add all users files
-	files, err := s.Db.GetFilesByDriveID(driveID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load users files: %v", err)
-	}
-	drive.Root.AddFiles(files)
-	s.log.Log("INFO", fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
+	drive.Root = root
 
 	// add all users directories
 	dirs, err := s.Db.GetDirsByDriveID(driveID)
@@ -364,6 +357,14 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	}
 	drive.Root.AddSubDirs(dirs)
 	s.log.Log("INFO", fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
+
+	// add all users files
+	files, err := s.Db.GetFilesByDriveID(driveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load users files: %v", err)
+	}
+	drive.Root.AddFiles(files)
+	s.log.Log("INFO", fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
 
 	// populate the root directory and generate a new sync index
 	drive.Root = s.Populate(root)
@@ -635,7 +636,10 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // find a file in the drive instance and return.
 func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
-	drive := s.GetDrive(driveID)
+	drive, err := s.LoadDrive(driveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load drive: %v", err)
+	}
 	if drive == nil {
 		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
@@ -648,7 +652,10 @@ func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
 
 // get all file objects for this user.
 func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
-	drive := s.GetDrive(driveID)
+	drive, err := s.LoadDrive(driveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load drive: %v", err)
+	}
 	if drive == nil {
 		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
@@ -661,13 +668,16 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 
 // generate a server-side path for a file or directory.
 func (s *Service) buildServerPath(user string, fileName string) string {
-	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, fileName)
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", fileName)
 }
 
 // add a new file to the service. creates the physical file,
 // and updates internal service state.
 func (s *Service) AddFile(dirID string, file *svc.File) error {
-	drive := s.GetDrive(file.DriveID)
+	drive, err := s.LoadDrive(file.DriveID)
+	if err != nil {
+		return fmt.Errorf("failed to load drive: %v", err)
+	}
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
@@ -716,7 +726,10 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 
 // update a file in the service.
 func (s *Service) UpdateFile(file *svc.File, data []byte) error {
-	drive := s.GetDrive(file.DriveID)
+	drive, err := s.LoadDrive(file.DriveID)
+	if err != nil {
+		return fmt.Errorf("failed to load drive: %v", err)
+	}
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
@@ -741,7 +754,10 @@ func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 // delete the original copy of the file, moves the copy to the recycle bin,
 // and updates database.
 func (s *Service) DeleteFile(file *svc.File) error {
-	drive := s.GetDrive(file.DriveID)
+	drive, err := s.LoadDrive(file.DriveID)
+	if err != nil {
+		return fmt.Errorf("failed to load drive: %v", err)
+	}
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
@@ -765,7 +781,10 @@ func (s *Service) DeleteFile(file *svc.File) error {
 
 // move a file from one directory to another.
 func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) error {
-	drive := s.GetDrive(file.DriveID)
+	drive, err := s.LoadDrive(file.DriveID)
+	if err != nil {
+		return fmt.Errorf("failed to load drive: %v", err)
+	}
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}

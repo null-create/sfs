@@ -183,7 +183,6 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // create a new file on the server
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
-	// download the file
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
@@ -192,8 +191,10 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 	}
 	defer r.Body.Close()
 
-	// save file content so we can write it out after we update the server path
+	// copy file content from buffer so we can write it out
+	// after we update the server path
 	newFile.Content = buf.Bytes()
+	buf.Reset()
 
 	// update service
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
@@ -205,7 +206,6 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 
 // update the file on the server
 func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
-	// retrieve file data from request body
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
