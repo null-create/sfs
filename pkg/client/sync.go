@@ -45,6 +45,20 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
+// enable or disable auto sync with the server.
+func (c *Client) SetAutoSync(mode bool) {
+	c.Conf.AutoSync = mode
+	if err := c.SaveState(); err != nil {
+		c.log.Error(fmt.Sprintf("failed to update state file: %v", err))
+	} else {
+		if mode {
+			c.log.Info("auto sync enabled")
+		} else {
+			c.log.Info("auto sync disabled")
+		}
+	}
+}
+
 type SyncItems struct {
 	pull []*svc.File
 	push []*svc.File

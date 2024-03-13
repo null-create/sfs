@@ -32,4 +32,6 @@ type FlagPole struct {
 
 	// remove cmd
 	delete bool // true to delete. false to just stop monitoring the item.
+
+	auto_sync bool // flag to set auto sync mode
 }
