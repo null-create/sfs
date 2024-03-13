@@ -348,9 +348,27 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	if root == nil {
 		return nil, fmt.Errorf("no root directory found for drive %s", driveID)
 	}
+
+	// add all users files
+	files, err := s.Db.GetFilesByDriveID(driveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load users files: %v", err)
+	}
+	drive.Root.AddFiles(files)
+	s.log.Log("INFO", fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
+
+	// add all users directories
+	dirs, err := s.Db.GetDirsByDriveID(driveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load users directories: %v", err)
+	}
+	drive.Root.AddSubDirs(dirs)
+	s.log.Log("INFO", fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
+
 	// populate the root directory and generate a new sync index
 	drive.Root = s.Populate(root)
 	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
+
 	// save to service instance
 	s.Drives[drive.ID] = drive
 	if err := s.SaveState(); err != nil {
