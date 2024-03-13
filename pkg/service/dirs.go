@@ -360,7 +360,11 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 			}
 			d.Size += file.GetSize() - origSize
 		} else {
-			return fmt.Errorf("file (id=%s) does not belong to this directory", file.ID)
+			var output = fmt.Sprintf(
+				"file (id=%s) does not belong to this directory\nfile dirid=%s cur dirid=%s",
+				file.ID, file.DirID, d.ID,
+			)
+			return fmt.Errorf(output)
 		}
 	} else {
 		return fmt.Errorf("directory %s (id=%s) locked", d.Name, d.ID)
