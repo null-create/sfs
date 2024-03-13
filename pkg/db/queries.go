@@ -259,17 +259,13 @@ const (
 		DELETE FROM Users WHERE id = ? 
 		AND EXISTS (SELECT 1 FROM Users WHERE id=?);`
 
-	DropUserTableQuery string = `
-		DROP TABLE IF EXISTS Users;`
+	DropUserTableQuery string = `DROP TABLE IF EXISTS Users;`
 
-	DropDrivesTableQuery string = `
-		DROP TABLE IF EXISTS Drives;`
+	DropDrivesTableQuery string = `DROP TABLE IF EXISTS Drives;`
 
-	DropDirectoriesTableQuery string = `
-		DROP TABLE IF EXISTS Directories;`
+	DropDirectoriesTableQuery string = `DROP TABLE IF EXISTS Directories;`
 
-	DropFilesTableQuery string = `
-		DROP TABLE IF EXISTS Files;`
+	DropFilesTableQuery string = `DROP TABLE IF EXISTS Files;`
 
 	// ---------- SELECT statements for searching -------------------------------
 
@@ -291,8 +287,10 @@ const (
 	FindFileQuery                string = `SELECT * FROM Files WHERE id = ?;`
 	FindFileByNameQuery          string = `SELECT * FROM Files WHERE name = ?;`
 	FindFileByPathQuery          string = `SELECT * FROM Files WHERE path = ?;`
+	FindFilesByDriveIDQuery      string = `SELECT * FROM Files WHERE drive_id = ?;`
 	FindDirQuery                 string = `SELECT * FROM Directories WHERE id = ?;`
 	FindAllUsersDirectoriesQuery string = `SELECT * FROM Directories WHERE owner_id = ?;`
+	FindDirsByDriveIDQuery       string = `SELECT * FROM Directories WHERE drive_id = ?;`
 	FindDirByPathQuery           string = `SELECT * FROM Directories WHERE path = ?;`
 	FindDirIDByPathQuery         string = `SELECT id FROM Directories WHERE path = ?;`
 	FindDriveQuery               string = `SELECT * FROM Drives WHERE id = ?;`
