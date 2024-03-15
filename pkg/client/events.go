@@ -58,6 +58,14 @@ func (c *Client) InitHandlerMaps() {
 // adds a file to monitor, then creates and starts
 // a dedicated event handler for the new file monitoring goroutine.
 func (c *Client) WatchItem(path string) error {
+	isDir, err := c.Monitor.IsDir(path)
+	if err != nil {
+		return err
+	}
+	// monitoring directories is not supported
+	if isDir {
+		return nil
+	}
 	if err := c.Monitor.Watch(path); err != nil {
 		return err
 	}
@@ -151,16 +159,16 @@ func (c *Client) StartHandlers() error {
 	}
 	// start directory handlers
 	// dirs := c.Drive.GetDirs()
-	dirs, err := c.Db.GetUsersDirectories(c.UserID)
-	if err != nil {
-		return nil
-	}
-	c.log.Info(fmt.Sprintf("starting %d directory handler(s)...", len(dirs)))
-	for _, d := range dirs {
-		if err := c.StartHandler(d.Path); err != nil {
-			return err
-		}
-	}
+	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	// if err != nil {
+	// 	return nil
+	// }
+	// c.log.Info(fmt.Sprintf("starting %d directory handler(s)...", len(dirs)))
+	// for _, d := range dirs {
+	// 	if err := c.StartHandler(d.Path); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -201,21 +209,6 @@ func (c *Client) BuildHandlers() error {
 				return err
 			}
 		}
-	}
-	dirs, err := c.Db.GetUsersDirectories(c.UserID)
-	if err != nil {
-		return err
-	}
-	for _, dir := range dirs {
-		if _, exists := c.Handlers[dir.Path]; !exists {
-			if err := c.NewEHandler(dir.Path); err != nil {
-				return err
-			}
-		}
-	}
-	// handler for root
-	if err := c.NewEHandler(c.Drive.Root.Path); err != nil {
-		return err
 	}
 	return nil
 }
@@ -259,7 +252,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				for _, eitem := range evt.Items {
 					// if this is a known item and it has just changed locations,
 					// then we just need to update the metadata, otherwise
-					// create a new object and register.s
+					// create a new object and register
 					if c.KnownItem(eitem.Path()) {
 						if err := c.UpdateItem(eitem); err != nil {
 							c.log.Error(fmt.Sprintf("failed to update item %s: %v", eitem.Path(), err))

@@ -128,15 +128,16 @@ func (m *Monitor) Watch(path string) error {
 		if err != nil {
 			return err
 		}
-		stop := make(chan bool)
-		m.OffSwitches[path] = stop
-		if isdir {
-			m.AddWatcher(path, watchDir)
-		} else {
+		// NOTE: monitoring directories is too expensive for the time being.
+		// os.ReadDir() took a lot of CPU, especially when
+		// called in a frequent operation loop.
+		if !isdir {
+			stop := make(chan bool)
+			m.OffSwitches[path] = stop
 			m.AddWatcher(path, watchFile)
+			m.StartWatcher(path, stop)
+			m.log.Log("INFO", fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 		}
-		m.StartWatcher(path, stop)
-		m.log.Log("INFO", fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 	}
 	return nil
 }
