@@ -314,6 +314,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	return evt
 }
 
+// NOTE: no longer used, but kept for reference.
 // watch for changes in a directory
 func watchDir(dirPath string, stop chan bool) chan Event {
 	var log = logger.NewLogger("Watcher")
