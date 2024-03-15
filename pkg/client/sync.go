@@ -38,10 +38,14 @@ func (c *Client) reset() {
 func (c *Client) dump(resp *http.Response, body bool) {
 	b, err := httputil.DumpResponse(resp, body)
 	if err != nil {
-		c.log.Warn(fmt.Sprintf("failed to dump http response:\n%v", err))
+		c.log.Warn("failed to dump http response: " + err.Error())
 	} else {
-		c.log.Show(fmt.Sprintf("server response: %v", resp.Status))
-		c.log.Log("INFO", fmt.Sprintf("server response: %s", string(b)))
+		if resp.StatusCode != http.StatusOK {
+			c.log.Warn("request failed: " + resp.Status)
+			c.log.Log("WARN", "server response: \n"+string(b))
+		} else {
+			c.log.Show("server response: " + resp.Status)
+		}
 	}
 }
 
@@ -49,7 +53,7 @@ func (c *Client) dump(resp *http.Response, body bool) {
 func (c *Client) SetAutoSync(mode bool) {
 	c.Conf.AutoSync = mode
 	if err := c.SaveState(); err != nil {
-		c.log.Error(fmt.Sprintf("failed to update state file: %v", err))
+		c.log.Error("failed to update state file: " + err.Error())
 	} else {
 		if mode {
 			c.log.Info("auto sync enabled")
@@ -126,7 +130,7 @@ func (c *Client) Sync() error {
 		go func() {
 			defer wg.Done()
 			if err := c.PushFile(file); err != nil {
-				c.log.Error(fmt.Sprintf("failed to push file: %v", err))
+				c.log.Error("failed to push file: " + err.Error())
 			}
 		}()
 	}
