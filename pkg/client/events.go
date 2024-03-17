@@ -210,15 +210,30 @@ func (c *Client) BuildHandlers() error {
 			}
 		}
 	}
+	// NOTE: monitoring directories is not supported, but may be in the future.
+	// os.ReadDir() was using a lot of resources.
+	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, dir := range dirs {
+	// 	if _, exists := c.Handlers[dir.Path]; !exists {
+	// 		if err := c.NewEHandler(dir.Path); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+	// // watch root
+	// if err := c.WatchItem(c.Drive.Root.Path); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
-	// handler off-switch
 	offSwitch := make(chan bool)
-	// handler
 	handler := func() {
 		go func() {
 			if err := c.handler(path, offSwitch); err != nil {

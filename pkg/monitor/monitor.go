@@ -23,7 +23,7 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 */
 
 // arbitrary wait time between checks
-const WAIT = time.Millisecond * 250
+const WAIT = time.Millisecond * 750
 
 type Watcher func(string, chan bool) chan Event
 
@@ -208,9 +208,9 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("Watcher") // TODO: succinct IDs for each watcher
+	var log = logger.NewLogger("File_Watcher") // TODO: succinct IDs for each watcher
 
-	initialStat, err := os.Stat(filePath)
+	initialStat, err := os.Lstat(filePath)
 	if err != nil {
 		log.Error(
 			fmt.Sprintf("failed to get initial info for %s: %v - unable to monitor",
@@ -233,7 +233,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				close(evt)
 				return
 			default:
-				stat, err := os.Stat(filePath)
+				stat, err := os.Lstat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Log("INFO", fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
 					evt <- Event{
@@ -302,6 +302,9 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				default:
 					// wait before checking again
+					// TODO: experiment with longer wait times (approx 1 second) with
+					// non-buffered events. Want to try strike a balance between frequency of
+					// checking vs faster checks with event bufferring.
 					time.Sleep(WAIT)
 				}
 			}

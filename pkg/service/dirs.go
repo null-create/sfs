@@ -723,10 +723,10 @@ func buildSync(dir *Directory, idx *SyncIndex) *SyncIndex {
 			idx.LastSync[file.ID] = file.LastSync
 		}
 	}
-	// add directory's last sync time too
-	if !idx.HasItem(dir.ID) {
-		idx.LastSync[dir.ID] = dir.LastSync
-	}
+	// NOTE: monitoring directories is no longer supported.
+	// if !idx.HasItem(dir.ID) {
+	// 	idx.LastSync[dir.ID] = dir.LastSync
+	// }
 	return idx
 }
 
@@ -760,11 +760,12 @@ func buildUpdate(dir *Directory, idx *SyncIndex) *SyncIndex {
 			}
 		}
 	}
-	if idx.HasItem(dir.ID) {
-		if dir.LastSync.After(idx.LastSync[dir.ID]) {
-			idx.DirsToUpdate[dir.ID] = dir
-		}
-	}
+	// NOTE: monitoring Directories is no longer supported.
+	// if idx.HasItem(dir.ID) {
+	// 	if dir.LastSync.After(idx.LastSync[dir.ID]) {
+	// 		idx.DirsToUpdate[dir.ID] = dir
+	// 	}
+	// }
 	return idx
 }
 

@@ -471,6 +471,21 @@ func TestRefreshDrive(t *testing.T) {
 	}
 }
 
+func TestLoadDrive(t *testing.T) {
+	env.SetEnv(false)
+
+	// test service
+	testSvc, err := Init(false, false)
+	if err != nil {
+		t.Fail()
+	}
+
+	_, err = testSvc.LoadDrive("ff3d26c8-d783-11ee-90ea-0a0027000014")
+	if err != nil {
+		t.Fail()
+	}
+}
+
 // func TestRemoveDrive(t *testing.T) {}
 
 // func TestServiceReset(t *testing.T) {

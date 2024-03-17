@@ -29,9 +29,10 @@ type SyncIndex struct {
 	// key = file UUID, value = file pointer
 	FilesToUpdate map[string]*File `json:"files_to_update"`
 
+	// NOTE: no longer used since directories aren't being monitored.
 	// map of directories to be queued for uploading or downloading
 	// key = dir UUID, value = dir pointer
-	DirsToUpdate map[string]*Directory `json:"dirs_to_update"`
+	// DirsToUpdate map[string]*Directory `json:"dirs_to_update"`
 }
 
 // create a new sync-index object
@@ -41,7 +42,7 @@ func NewSyncIndex(userID string) *SyncIndex {
 		Sync:          false,
 		LastSync:      make(map[string]time.Time, 0),
 		FilesToUpdate: make(map[string]*File, 0),
-		DirsToUpdate:  make(map[string]*Directory, 0),
+		// DirsToUpdate:  make(map[string]*Directory, 0),
 	}
 }
 
@@ -49,10 +50,10 @@ func NewSyncIndex(userID string) *SyncIndex {
 func (s *SyncIndex) Reset() {
 	s.LastSync = nil
 	s.FilesToUpdate = nil
-	s.DirsToUpdate = nil
+	// s.DirsToUpdate = nil
 	s.LastSync = make(map[string]time.Time, 0)
 	s.FilesToUpdate = make(map[string]*File, 0)
-	s.DirsToUpdate = make(map[string]*Directory, 0)
+	// s.DirsToUpdate = make(map[string]*Directory, 0)
 }
 
 // converts to json format for transfer
@@ -151,13 +152,13 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 		}
 	}
 	// compare directories marked for updating
-	for dirID, newDir := range new.DirsToUpdate {
-		if origDir, exists := orig.DirsToUpdate[dirID]; exists {
-			if newDir.LastSync.After(origDir.LastSync) {
-				diff.DirsToUpdate[dirID] = newDir
-			}
-		}
-	}
+	// for dirID, newDir := range new.DirsToUpdate {
+	// 	if origDir, exists := orig.DirsToUpdate[dirID]; exists {
+	// 		if newDir.LastSync.After(origDir.LastSync) {
+	// 			diff.DirsToUpdate[dirID] = newDir
+	// 		}
+	// 	}
+	// }
 	return diff
 }
 
