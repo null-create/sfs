@@ -54,6 +54,16 @@ func (t *Transfer) dump(resp *http.Response, body bool) {
 	}
 }
 
+// create a zip file of a directory so it can be transferred
+func (t *Transfer) CreateArchive(path string) error {
+	return Zip(path, path+".zip")
+}
+
+// extract contents of a zip file archive
+func (t *Transfer) ExtractArchive(path string) error {
+	return Unzip(path, filepath.Dir(path))
+}
+
 func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.File, destURL string) (*http.Request, error) {
 	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
