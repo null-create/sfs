@@ -22,8 +22,11 @@ modification.
 should also have a mechanism to interrupt a sync operation if a new event occurs.
 */
 
-// arbitrary wait time between checks
-const WAIT = time.Millisecond * 750
+// arbitrary* wait times between checks (*after some hand tuning)
+const (
+	WAIT        = time.Millisecond * 750 // wait duration after checks with no changes
+	WAIT_LONGER = time.Second * 2        // wait duration after checks with changes
+)
 
 type Watcher func(string, chan bool) chan Event
 
@@ -130,7 +133,9 @@ func (m *Monitor) Watch(path string) error {
 		}
 		// NOTE: monitoring directories is too expensive for the time being.
 		// os.ReadDir() took a lot of CPU, especially when
-		// called in a frequent operation loop.
+		// called in a frequent operation loop. for now we're sticking
+		// with monitoring files exclusively (or at least until we can find a
+		// more efficient way to monitor directories.)
 		if !isdir {
 			stop := make(chan bool)
 			m.OffSwitches[path] = stop
@@ -186,7 +191,7 @@ func (m *Monitor) StopWatching(path string) {
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
-		m.log.Log("INFO", fmt.Sprintf("%s is no longer monitored", filepath.Base(path)))
+		m.log.Log("INFO", fmt.Sprintf("%s is no longer being monitored", filepath.Base(path)))
 	}
 }
 
@@ -233,7 +238,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				close(evt)
 				return
 			default:
-				stat, err := os.Lstat(filePath)
+				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Log("INFO", fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
 					evt <- Event{
