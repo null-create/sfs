@@ -27,6 +27,7 @@ type File struct {
 	DriveID string      `json:"drive_id"` // id of the drive this file belongs to
 	Mode    fs.FileMode `json:"mode"`     // file permissions
 	Size    int64       `json:"size"`     // file size in bytes
+	Backup  bool        `json:"backup"`   // flag for whether this is the server-side version of the file
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -72,6 +73,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 		DriveID:    driveID,
 		Mode:       item.Mode(),
 		Size:       item.Size(),
+		Backup:     false,
 		Protected:  false,
 		Key:        "default",
 		LastSync:   time.Now().UTC(),
@@ -117,10 +119,34 @@ func (f *File) ToJSON() ([]byte, error) {
 
 // confirms the physical file associated with this object actually exists.
 func (f *File) Exists() bool {
-	if _, err := os.Stat(f.Path); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(f.GetPath()); errors.Is(err, os.ErrNotExist) {
 		return false
+	} else if err != nil {
+		log.Fatal(err)
 	}
 	return true
+}
+
+// has this file been backed up to the server?
+func (f *File) IsBackedUp() bool { return f.Backup }
+
+// mark this object as being the server side version of the original file.
+func (f *File) MarkBackedUp() {
+	if !f.Backup {
+		f.Backup = true
+	}
+}
+
+// get the path for this file.
+// this will return either the client or server path, depending on instance called
+func (f *File) GetPath() string {
+	var path string
+	if f.Backup {
+		path = f.ServerPath
+	} else {
+		path = f.ClientPath
+	}
+	return path
 }
 
 // ----------- simple security features
@@ -161,9 +187,9 @@ func (f *File) Load() {
 		f.m.Lock()
 		defer f.m.Unlock()
 
-		file, err := os.Open(f.Path)
+		file, err := os.Open(f.GetPath())
 		if err != nil {
-			log.Fatalf("unable to open file %s: %v", f.Path, err)
+			log.Fatalf("unable to open file %s: %v", f.GetPath(), err)
 		}
 		defer file.Close()
 
@@ -183,8 +209,7 @@ func (f *File) Save(data []byte) error {
 		f.m.Lock()
 		defer f.m.Unlock()
 
-		// TODO: add flag to specify server or client path.
-		file, err := os.Create(f.Path)
+		file, err := os.Create(f.GetPath())
 		if err != nil {
 			return fmt.Errorf("unable to create file %s: %v", f.Name, err)
 		}
@@ -192,7 +217,7 @@ func (f *File) Save(data []byte) error {
 
 		_, err = file.Write(data)
 		if err != nil {
-			return fmt.Errorf("unable to write file %s: %v", f.Path, err)
+			return fmt.Errorf("unable to write file %s: %v", f.GetPath(), err)
 		}
 		if err := f.UpdateChecksum(); err != nil {
 			return fmt.Errorf("failed to update checksum: %v", err)
@@ -220,7 +245,7 @@ func (f *File) Clear() error {
 
 // copy this file to another location
 func (f *File) Copy(destPath string) error {
-	src, err := os.Open(f.Path)
+	src, err := os.Open(f.GetPath())
 	if err != nil {
 		return err
 	}
@@ -258,7 +283,7 @@ func CalculateChecksum(filePath string) (string, error) {
 }
 
 func (f *File) ValidateChecksum() error {
-	cs, err := CalculateChecksum(f.Path)
+	cs, err := CalculateChecksum(f.GetPath())
 	if err != nil {
 		return fmt.Errorf("unable to calculate checksum: %v", err)
 	}
@@ -269,7 +294,7 @@ func (f *File) ValidateChecksum() error {
 }
 
 func (f *File) UpdateChecksum() error {
-	newCs, err := CalculateChecksum(f.Path)
+	newCs, err := CalculateChecksum(f.GetPath())
 	if err != nil {
 		return fmt.Errorf("CalculateChecksum failed: %v", err)
 	}

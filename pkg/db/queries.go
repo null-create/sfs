@@ -15,6 +15,7 @@ const (
 			drive_id VARCHAR(50),
 			mode VARCHAR(50),
 			size INTEGER,
+			backup BIT, 
 			protected BIT,
 			key VARCHAR(100),
 			last_sync DATETIME,
@@ -96,6 +97,7 @@ const (
 			drive_id,
 			mode, 
 			size, 
+			backup, 
 			protected,
 			key,
 			last_sync,
@@ -106,7 +108,7 @@ const (
 			checksum,
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT OR IGNORE INTO Directories (
@@ -176,6 +178,7 @@ const (
 				drive_id = ?, 
 				mode = ?, 
 				size = ?, 
+				backup = ?, 
 				protected = ?, 
 				key = ?,
 				last_sync = ?, 
@@ -288,6 +291,7 @@ const (
 	FindFileByNameQuery          string = `SELECT * FROM Files WHERE name = ?;`
 	FindFileByPathQuery          string = `SELECT * FROM Files WHERE path = ?;`
 	FindFilesByDriveIDQuery      string = `SELECT * FROM Files WHERE drive_id = ?;`
+	FindAllBackedUpFilesQuery    string = `SELECT * FROM Files WHERE backup = 1;`
 	FindDirQuery                 string = `SELECT * FROM Directories WHERE id = ?;`
 	FindAllUsersDirectoriesQuery string = `SELECT * FROM Directories WHERE owner_id = ?;`
 	FindDirsByDriveIDQuery       string = `SELECT * FROM Directories WHERE drive_id = ?;`

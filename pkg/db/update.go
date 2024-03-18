@@ -25,6 +25,7 @@ func (q *Query) UpdateFile(f *svc.File) error {
 		&f.DriveID,
 		&f.Mode,
 		&f.Size,
+		&f.Backup,
 		&f.Protected,
 		&f.Key,
 		&f.LastSync,
