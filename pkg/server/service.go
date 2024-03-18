@@ -137,7 +137,7 @@ func (s *Service) cleanSfDir(sfDir string) error {
 			}
 		}
 	} else {
-		s.log.Error(fmt.Sprintf("failed to remove previous state file(s): %v", err))
+		s.log.Error("failed to remove previous state file(s): " + err.Error())
 	}
 	return nil
 }
@@ -145,15 +145,39 @@ func (s *Service) cleanSfDir(sfDir string) error {
 // --------- drives --------------------------------
 
 // check for whether a drive exists. does not check database.
-func (s *Service) DriveExists(driveID string) bool {
+func (s *Service) HasDrive(driveID string) bool {
 	if _, exists := s.Drives[driveID]; exists {
 		return true
 	}
 	return false
 }
 
+// similar to HasDrive, but checks the DB if the drive isn't found in the
+// instance map before giving up. if the drive is found in the db and wasn't
+// in the instance map previous, it gets added to the map and the service
+// state gets updated.
+func (s *Service) DriveExists(driveID string) bool {
+	if _, exists := s.Drives[driveID]; !exists {
+		drive, err := s.Db.GetDrive(driveID)
+		if err != nil {
+			s.log.Error("failed to get drive info from database: " + err.Error())
+			return false
+		}
+		if drive != nil {
+			// save this to the service instance since it wasn't there before for some reason
+			s.Drives[driveID] = drive
+			if err := s.SaveState(); err != nil {
+				s.log.Error("failed to update state file: " + err.Error())
+			}
+			return true
+		}
+		return false
+	}
+	return true
+}
+
 // Populate() populates a drive's root directory with all the users
-// files and subdirectories by recursively traersing the users file system
+// files and subdirectories by recursively traersing the users server-side file system
 // and searching the DB with the name of each file or directory Populate() discoveres
 //
 // Note that Populate() ignores files and subdirectories it doesn't find in the
@@ -167,16 +191,16 @@ func (s *Service) Populate(root *svc.Directory) *svc.Directory {
 }
 
 func (s *Service) populate(dir *svc.Directory) *svc.Directory {
-	entries, err := os.ReadDir(dir.Path)
+	entries, err := os.ReadDir(dir.ServerPath)
 	if err != nil {
-		s.log.Error(fmt.Sprintf("can't read directory: %s", dir.Path))
+		s.log.Error("can't read directory: " + dir.ServerPath)
 		return dir
 	}
 	if len(entries) == 0 {
 		return dir
 	}
 	for _, entry := range entries {
-		entryPath := filepath.Join(dir.Path, entry.Name())
+		entryPath := filepath.Join(dir.ServerPath, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
 			s.log.Error(fmt.Sprintf("could not get stat for entry %s: %v", entryPath, err))
@@ -215,7 +239,7 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 // finds to what is in the database, adding new items as it goes. generates
 // a new root directory object and attaches it to the drive.
 func (s *Service) RefreshDrive(driveID string) error {
-	if s.DriveExists(driveID) {
+	if s.HasDrive(driveID) {
 		// get current full drive state
 		drive := s.GetDrive(driveID)
 		if !drive.IsLoaded {
@@ -240,7 +264,7 @@ func (s *Service) RefreshDrive(driveID string) error {
 }
 
 func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
-	entries, err := os.ReadDir(dir.Path)
+	entries, err := os.ReadDir(dir.ServerPath)
 	if err != nil {
 		s.log.Error(fmt.Sprintf("failed to read directory: %v", err))
 		return dir
@@ -249,7 +273,7 @@ func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
 		return dir
 	}
 	for _, entry := range entries {
-		entryPath := filepath.Join(dir.Path, entry.Name())
+		entryPath := filepath.Join(dir.ServerPath, entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
 			s.log.Error(fmt.Sprintf("failed to get stat for entry %s: %v", entryPath, err))
@@ -433,7 +457,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 // use service.RefreshDrive(driveID) to do a complete refresh of a given drive and its
 // file system.
 func (s *Service) UpdateDrive(drv *svc.Drive) error {
-	if s.DriveExists(drv.ID) {
+	if s.HasDrive(drv.ID) {
 		if err := s.Db.UpdateDrive(drv); err != nil {
 			return err
 		}
