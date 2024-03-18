@@ -116,6 +116,9 @@ func Setup() (*Client, error) {
 	return client, nil
 }
 
+// initialization logger
+var initLog = logger.NewLogger("CLIENT_INIT")
+
 // pulls user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
 func newUser() (*auth.User, error) {
@@ -128,6 +131,7 @@ func newUser() (*auth.User, error) {
 		cfgs.IsAdmin,
 	)
 	if err := envCfg.Set("CLIENT_ID", newUser.ID); err != nil {
+		initLog.Error("failed to set user ID as an env variable: " + err.Error())
 		return nil, err
 	}
 	return newUser, nil
@@ -156,6 +160,7 @@ func loadStateFile() ([]byte, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no state file found for client")
 	} else if len(entries) > 1 {
+		initLog.Warn("more than one state file found in: " + sfDir)
 		for i, entry := range entries {
 			log.Printf("	%d: %s", i+1, entry.Name())
 		}
@@ -178,7 +183,6 @@ func loadStateFile() ([]byte, error) {
 // otherwise set to false if the client should be used for
 // one-off operations.
 func LoadClient(persist bool) (*Client, error) {
-	var initLog = logger.NewLogger("CLIENT_INIT")
 
 	// load client state
 	data, err := loadStateFile()
