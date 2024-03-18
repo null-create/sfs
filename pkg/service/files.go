@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/logger"
 )
 
 type File struct {
@@ -46,6 +47,9 @@ type File struct {
 	Content []byte
 }
 
+// for logging any errors during new file object creation
+var nfLog = logger.NewLogger("FILE_INIT")
+
 // creates a new file struct instance.
 // file contents are not loaded into memory.
 func NewFile(fileName string, driveID string, ownerID string, filePath string) *File {
@@ -61,7 +65,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 	// get baseline checksum
 	cs, err := CalculateChecksum(filePath)
 	if err != nil {
-		log.Printf("[WARNING] error calculating checksum: %v", err)
+		nfLog.Warn("error calculating checksum: " + err.Error())
 	}
 	// assign new id
 	uuid := auth.NewUUID()
