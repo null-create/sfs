@@ -161,7 +161,7 @@ func (c *Client) Push() error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				c.log.Info(fmt.Sprintf("Uploading %s...", file.Name))
+				c.log.Info(fmt.Sprintf("uploading %s...", file.Name))
 				if err := c.Transfer.Upload(
 					http.MethodPut,
 					file,
