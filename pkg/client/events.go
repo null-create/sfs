@@ -345,8 +345,6 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 				if c.autoSync() {
-					// TODO: push pushes NEW items only! Need a way to differentiate between
-					// updated items and new items.
 					if err := c.Push(); err != nil {
 						return err
 					}
