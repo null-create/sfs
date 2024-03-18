@@ -157,6 +157,8 @@ func (c *Client) StartHandlers() error {
 			return err
 		}
 	}
+	// NOTE: directory monitoring is not supported, but may be
+	// in future versions, so this code will stay here for now.
 	// start directory handlers
 	// dirs := c.Drive.GetDirs()
 	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
@@ -262,30 +264,31 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			return nil
 		case evt := <-evtChan:
 			switch evt.Type {
+			// NOTE: this is no longer supported, but may be used in the future versions.
 			// new files or directories were added to a monitored directory
 			case monitor.Add:
-				for _, eitem := range evt.Items {
-					// if this is a known item and it has just changed locations,
-					// then we just need to update the metadata, otherwise
-					// create a new object and register
-					if c.KnownItem(eitem.Path()) {
-						if err := c.UpdateItem(eitem); err != nil {
-							c.log.Error(fmt.Sprintf("failed to update item %s: %v", eitem.Path(), err))
-						}
-					}
-					// otherwise create new object and register
-					if eitem.IsDir() {
-						newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
-						if err := c.AddDirWithID(itemID, newDir); err != nil {
-							c.log.Error(fmt.Sprintf("failed to add new directory: %v", err))
-						}
-					} else {
-						newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
-						if err := c.AddFileWithDirID(itemID, newFile); err != nil {
-							c.log.Error(fmt.Sprintf("failed to add new file: %v", err))
-						}
-					}
-				}
+				// for _, eitem := range evt.Items {
+				// 	// if this is a known item and it has just changed locations,
+				// 	// then we just need to update the metadata, otherwise
+				// 	// create a new object and register
+				// 	if c.KnownItem(eitem.Path()) {
+				// 		if err := c.UpdateItem(eitem); err != nil {
+				// 			c.log.Error(fmt.Sprintf("failed to update item %s: %v", eitem.Path(), err))
+				// 		}
+				// 	}
+				// 	// otherwise create new object and register
+				// 	if eitem.IsDir() {
+				// 		newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
+				// 		if err := c.AddDirWithID(itemID, newDir); err != nil {
+				// 			c.log.Error(fmt.Sprintf("failed to add new directory: %v", err))
+				// 		}
+				// 	} else {
+				// 		newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
+				// 		if err := c.AddFileWithDirID(itemID, newFile); err != nil {
+				// 			c.log.Error(fmt.Sprintf("failed to add new file: %v", err))
+				// 		}
+				// 	}
+				// }
 				// NOTE: these new items may not be pushed to the server
 				// since they will be added with their initial last sync times.
 				// they will be added to the server after some modifications are detected,
@@ -337,7 +340,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				c.log.Warn(fmt.Sprintf("monitor for item (id=%s) encountered an error. stopping handler", itemID))
 				return nil
 			}
-			// trigger synchronization operations once the event buffer has reached capacity
+			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
@@ -348,8 +351,8 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 						return err
 					}
 				}
-				evtBuf.Reset()           // reset events buffer
-				time.Sleep(monitor.WAIT) // wait before resuming event handler
+				evtBuf.Reset()                  // reset events buffer
+				time.Sleep(monitor.WAIT_LONGER) // wait before resuming event handler
 			}
 		default:
 			time.Sleep(monitor.WAIT)
