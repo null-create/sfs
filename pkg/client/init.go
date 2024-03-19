@@ -50,11 +50,13 @@ as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
 func Setup() (*Client, error) {
+	var setupLog = logger.NewLogger("CLIENT_SETUP")
+
 	// get environment variables and client envCfg
 	envCfg := env.NewE()
 
 	// make client service root directory
-	log.Printf("[INFO] making SFS service directories...")
+	setupLog.Info("making SFS service directories...")
 	svcDir := filepath.Join(cfgs.Root, cfgs.User)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
@@ -74,20 +76,20 @@ func Setup() (*Client, error) {
 	}
 
 	// make each database
-	log.Printf("creating databases...")
+	setupLog.Info("creating databases...")
 	if err := db.InitDBs(svcPaths[0]); err != nil {
 		return nil, err
 	}
 
 	// set up new user
-	log.Printf("creating user...")
+	setupLog.Info("creating user...")
 	newUser, err := newUser()
 	if err != nil {
 		return nil, err
 	}
 
 	// initialize a new client for the new user
-	log.Printf("creating client...")
+	setupLog.Info("creating client...")
 	client, err := NewClient(newUser)
 	if err != nil {
 		return nil, err
@@ -112,7 +114,7 @@ func Setup() (*Client, error) {
 		return nil, err
 	}
 
-	log.Printf("all set :)")
+	setupLog.Info("all set :)")
 	return client, nil
 }
 
