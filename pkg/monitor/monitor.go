@@ -412,7 +412,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 // add all files and directories under the given path
 // (assumed to be a root directory) to the monitoring instance
 func watchAll(path string, m *Monitor) error {
-	m.log.Info(fmt.Sprintf("adding watchers for all files and directories under %s ...", path))
+	m.log.Info(fmt.Sprintf("adding watchers for all files under %s ...", path))
 	err := filepath.Walk(path, func(itemPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
