@@ -69,8 +69,6 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
 	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Content-Disposition", "attachment; filename="+file.Name)
 
 	// add file metadata to jwt
 	fileData, err := file.ToJSON()
@@ -89,11 +87,13 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 // prepare and transfer a file for upload or download to the server.
 // server will handle whether this is a new file or an update to an existing file,
 // usually determined by the method.
-//
-// intended to run within its own goroutine.
 func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
 	bodyWriter := multipart.NewWriter(t.Buffer)
-	defer bodyWriter.Close()
+	defer func() {
+		if err := bodyWriter.Close(); err != nil {
+			t.log.Error("failed to close file writer: " + err.Error())
+		}
+	}()
 
 	// create form file and prepare request
 	fileWriter, err := bodyWriter.CreateFormFile("myFile", filepath.Base(file.Path))
