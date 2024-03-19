@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -163,9 +162,11 @@ func loadStateFile() ([]byte, error) {
 		return nil, fmt.Errorf("no state file found for client")
 	} else if len(entries) > 1 {
 		initLog.Warn("more than one state file found in: " + sfDir)
+		var output string
 		for i, entry := range entries {
-			log.Printf("	%d: %s", i+1, entry.Name())
+			output += fmt.Sprintf("	%d: %s\n", i+1, entry.Name())
 		}
+		initLog.Warn(output)
 	}
 	// get most recent one (assuming more than one present somehow)
 	sf := entries[len(entries)-1]
