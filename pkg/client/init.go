@@ -365,7 +365,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	// register drive with the server if autosync is enabled
 	if c.autoSync() {
 		if err := c.RegisterClient(); err != nil {
-			return nil, fmt.Errorf("failed to register drive: %v", err)
+			c.log.Warn("failed to register client with server: " + err.Error())
 		}
 	}
 
