@@ -2,9 +2,9 @@ package service
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/logger"
 )
 
 // max batch size
@@ -48,10 +48,11 @@ func NewCtx() *AddCtx {
 
 // batch represents a collection of files to be uploaded or downloaded
 type Batch struct {
-	ID    string // batch ID (UUID)
-	Cap   int64  // remaining capacity (in bytes)
-	Max   int64  // total capacity (in bytes)
-	Total int    // total files in this batch
+	ID    string         // batch ID (UUID)
+	Cap   int64          // remaining capacity (in bytes)
+	Max   int64          // total capacity (in bytes)
+	Total int            // total files in this batch
+	log   *logger.Logger // batch logger
 
 	Files map[string]*File // files to be uploaded or downloaded
 }
@@ -62,6 +63,7 @@ func NewBatch() *Batch {
 		ID:    auth.NewUUID(),
 		Cap:   MAX,
 		Max:   MAX,
+		log:   logger.NewLogger("Batch_Processing"),
 		Files: make(map[string]*File, 0),
 	}
 }
@@ -119,38 +121,38 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 			} else {
 				// we want to check the other files in this list
 				// since they may be small enough to add onto this batch.
-				log.Printf("[DEBUG] file size (%d bytes) exceeds remaining batch capacity (%d bytes).\nattempting to add others...\n", f.File.GetSize(), b.Cap)
+				b.log.Log("INFO", fmt.Sprintf("file size (%d bytes) exceeds remaining batch capacity (%d bytes).attempting to add others...", f.File.GetSize(), b.Cap))
 				c.NotAdded = append(c.NotAdded, f.File)
 				continue
 			}
 		} else {
-			log.Printf("[DEBUG] file (id=%s) already present. skipping...", f.File.ID)
+			b.log.Warn(fmt.Sprintf("file (id=%s) already present. skipping...", f.File.ID))
 			c.Ignored = append(c.Ignored, f.File)
 			continue
 		}
 	}
 
 	if len(c.Ignored) > 0 {
-		log.Print("[DEBUG] there were duplicates in supplied file list.")
+		b.log.Warn("there were duplicates in supplied file list")
 	}
 
 	// success
 	if len(c.Added) == len(files) {
-		log.Printf("[DEBUG] all files added to batch. remaining batch capacity (in bytes): %d", b.Cap)
+		b.log.Log("INFO", fmt.Sprintf("all files added to batch. remaining batch capacity (in bytes): %d", b.Cap))
 		return c.Added, Success
 	}
 	// if we reach capacity before we finish with files,
 	// return a list of the remaining files
 	if b.Cap == 0 && len(c.Added) < len(files) {
-		log.Printf("[DEBUG] reached capacity before we could finish with the remaining files. \nreturning remaining files\n")
+		b.log.Warn("reached capacity before we could finish with the remaining files. returning remaining files")
 		return DiffFiles(c.Added, files), CapMaxed
 	}
 	// if b.Cap < MAX and we have left over files that were passed over for
 	// being to large for the current batch.
 	if len(c.NotAdded) > 0 && b.Cap < b.Max {
-		log.Printf("[DEBUG] returning files passed over for being too large for this batch")
+		b.log.Log("INFO", "returning files passed over for being too large for this batch")
 		if len(c.Added) == 0 {
-			log.Printf("[WARNING] *no* files were added!")
+			b.log.Warn("*no* files were added!")
 		}
 		return c.NotAdded, UnderCap
 	}
