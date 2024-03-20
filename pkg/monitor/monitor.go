@@ -215,7 +215,7 @@ func (m *Monitor) ShutDown() {
 func watchFile(filePath string, stop chan bool) chan Event {
 	var log = logger.NewLogger("File_Watcher") // TODO: succinct IDs for each watcher
 
-	initialStat, err := os.Lstat(filePath)
+	initialStat, err := os.Stat(filePath)
 	if err != nil {
 		log.Error(
 			fmt.Sprintf("failed to get initial info for %s: %v - unable to monitor",
