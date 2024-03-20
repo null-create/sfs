@@ -262,6 +262,7 @@ func LoadClient(persist bool) (*Client, error) {
 			initLog.Log("ERROR", fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
+		client.log.Info(fmt.Sprintf("monitor is running. watching %d local items", len(client.Monitor.Events)))
 
 		// TODO: pull sync index from server and compare against local index,
 		// then make changes as necessary. this should be part of the standard

@@ -425,6 +425,5 @@ func watchAll(path string, m *Monitor) error {
 	if err != nil {
 		return fmt.Errorf("failed to walk directory: %v", err)
 	}
-	m.log.Info(fmt.Sprintf("monitor is running. watching %d items", len(m.Events)))
 	return nil
 }
