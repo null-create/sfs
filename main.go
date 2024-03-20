@@ -20,15 +20,33 @@ import (
     		SIMPLE FILE SYNC
 */
 
-func main() {
-	// TEMP: for cpu profiling
-	// run go tool pprof -http=localhost:6060 sfs.exe sfs.pprof to see results
-	f, err := os.Create("sfs.pprof")
+func createPprofFiles() (*os.File, *os.File) {
+	cpuFile, err := os.Create("cpu.pprof")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pprof.StartCPUProfile(f)
+	memFile, err := os.Create("mem.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return cpuFile, memFile
+}
+
+func main() {
+	// TEMP: for cpu and memory profiling
+	// run go tool pprof -http=localhost:6060 sfs.exe cpu.pprof to see results
+	cpuFile, memFile := createPprofFiles()
+
+	// cpu profiling
+	if err := pprof.StartCPUProfile(cpuFile); err != nil {
+		log.Fatal(err)
+	}
 	defer pprof.StopCPUProfile()
+
+	// memory profiling (heap allocation)
+	if err := pprof.WriteHeapProfile(memFile); err != nil {
+		log.Fatal(err)
+	}
 
 	// main
 	env.SetEnv(false)
