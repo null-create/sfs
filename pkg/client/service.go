@@ -201,6 +201,7 @@ func (c *Client) GetItemByName(itemName string) *Item {
 	return item
 }
 
+// finds an item by path. returns nil if not found.
 func (c *Client) GetItemByPath(path string) (*Item, error) {
 	thing, err := os.Stat(path)
 	if err != nil {
