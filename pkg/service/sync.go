@@ -127,14 +127,17 @@ func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 	return nil
 }
 
-// compares a given syncindex against a newly generated one and returns the differnece
-// between the two, favoring the newer one for any last sync times.
-//
-// the map this returns will only contain the itemps that were matched and found to have a
-// more recent time -- items that weren't matched will be ignored.
+/*
+compares a given syncindex against a newly generated one and returns the differnece
+between the two, favoring the newer one for any last sync times.
+
+the map this returns will only contain the itemps that were matched and found to have a
+more recent time -- items that weren't matched will be ignored.
+*/
 func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	// index containing most recent items
 	diff := NewSyncIndex(orig.UserID)
+
 	// compare last sync times
 	for itemId, lastSync := range new.LastSync {
 		if origTime, exists := orig.LastSync[itemId]; exists {
@@ -160,6 +163,62 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	// 	}
 	// }
 	return diff
+}
+
+/*
+NOTE: the slice of directories argument is for future implementations.
+probably won't be used during this first iteration. dirs can be set to nil for the time being.
+
+assumes the supplied index's LastSync map is instantiated and populated, otherwise
+will fail.
+*/
+func BuildSyncIndexDist(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
+	for _, f := range files {
+		if !idx.HasItem(f.ID) {
+			idx.LastSync[f.ID] = f.LastSync
+		} else {
+			if f.LastSync.After(idx.LastSync[f.ID]) {
+				idx.LastSync[f.ID] = f.LastSync
+			}
+		}
+	}
+	// NOTE: for future implementation iterations
+	// for _, dir := range dirs {
+	// 	if !idx.HasItem(dir.ID) {
+	// 		idx.LastSync[dir.ID] = dir.LastSync
+	// 	} else {
+	// 		if dir.LastSync.After(idx.LastSync[dir.ID]) {
+	// 			idx.LastSync[dir.ID] = dir.LastSync
+	// 		}
+	// 	}
+	// }
+	return idx
+}
+
+/*
+update the indexes FilesToUpdate map of monitored distrtributed files.
+assumes the supplied index's LastSync map is instantiated and populated, otherwise
+will fail or give inaccurate results.
+*/
+func BuildToUpdateDist(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
+	for _, f := range files {
+		if idx.HasItem(f.ID) {
+			if f.LastSync.After(idx.LastSync[f.ID]) {
+				idx.FilesToUpdate[f.ID] = f
+			}
+		}
+	}
+	// NOTE: for future implementation iterations
+	// for _, d := range dirs {
+	// 	if !idx.HasItem(d.ID) {
+	// 		continue // ignore unknown directories
+	// 	} else {
+	// 		if d.LastSync.After(idx.LastSync[d.ID]) {
+	// 			idx.DirsToUpdate[d.ID] = d
+	// 		}
+	// 	}
+	// }
+	return idx
 }
 
 // ------- transfers --------------------------------
