@@ -64,6 +64,7 @@ func (t *Transfer) ExtractArchive(path string) error {
 	return Unzip(path, filepath.Dir(path))
 }
 
+// prepare file transfer request header.
 func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.File, destURL string) (*http.Request, error) {
 	req, err := http.NewRequest(method, destURL, t.Buffer)
 	if err != nil {
