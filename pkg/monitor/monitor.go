@@ -215,6 +215,7 @@ func (m *Monitor) ShutDown() {
 func watchFile(filePath string, stop chan bool) chan Event {
 	var log = logger.NewLogger("File_Watcher") // TODO: succinct IDs for each watcher
 
+	// get initial info for the file
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
 		log.Error(
@@ -224,6 +225,8 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		)
 		return nil
 	}
+
+	// base file name for easier output reading
 	baseName := filepath.Base(filePath)
 
 	// event channel used by the event handler goroutine
