@@ -1,11 +1,20 @@
+# development stuff
 .vscode
-vendor
 docs
-old-files
-pkg/client/run
-pkg/.env
 .env
-pkg/network/test_files/shrek.txt
-pkg/server/.env
-pkg/server/run
-sfs.exe
+
+# internal stuff
+*/*/run
+*/*/testing
+*/*/logs/*.csv
+*/*/.env
+
+# binaries
+sfs.*
+
+# util testing script
+reset.py
+
+# cpu and memory profiling
+*.pprof
+heap.out
