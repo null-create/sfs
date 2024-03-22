@@ -614,10 +614,14 @@ func walk(d *Directory) *Directory {
 		if item.IsDir() {
 			sd := NewDirectory(item.Name(), d.OwnerID, d.DriveID, entryPath)
 			sd = walk(sd)
-			d.AddSubDir(sd)
+			if err := d.AddSubDir(sd); err != nil {
+				log.Print(err)
+			}
 		} else {
 			file := NewFile(item.Name(), d.DriveID, d.OwnerID, entryPath)
-			d.AddFile(file)
+			if err := d.AddFile(file); err != nil {
+				log.Print(err)
+			}
 		}
 	}
 	return d
