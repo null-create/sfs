@@ -668,9 +668,9 @@ func walkFs(dir *Directory, files map[string]*File) map[string]*File {
 		return files
 	}
 	for _, subDir := range dir.Dirs {
-		return walkFs(subDir, files)
+		files = walkFs(subDir, files)
 	}
-	return nil
+	return files
 }
 
 /*
@@ -716,7 +716,7 @@ func walkDs(dir *Directory, dirMap map[string]*Directory) map[string]*Directory 
 		if _, exists := dirMap[subDir.ID]; !exists {
 			dirMap[subDir.ID] = subDir
 		}
-		return walkDs(subDir, dirMap)
+		dirMap = walkDs(subDir, dirMap)
 	}
 	return dirMap
 }
