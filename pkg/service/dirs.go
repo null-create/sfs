@@ -748,12 +748,10 @@ func walkS(dir *Directory, idx *SyncIndex) *SyncIndex {
 	if len(dir.Dirs) == 0 {
 		return idx
 	}
-	for _, subDirs := range dir.Dirs {
-		if sIndx := walkS(subDirs, idx); sIndx != nil {
-			return sIndx
-		}
+	for _, subDir := range dir.Dirs {
+		idx = walkS(subDir, idx)
 	}
-	return nil
+	return idx
 }
 
 func buildUpdate(dir *Directory, idx *SyncIndex) *SyncIndex {
@@ -782,16 +780,14 @@ func (d *Directory) WalkU(idx *SyncIndex) *SyncIndex {
 // of each file in each subdirectory, populating the ToUpdate map of a given SyncIndex
 // as needed.
 func walkU(dir *Directory, idx *SyncIndex) *SyncIndex {
-	buildUpdate(dir, idx)
+	idx = buildUpdate(dir, idx)
 	if len(dir.Dirs) == 0 {
 		return idx
 	}
-	for _, subDirs := range dir.Dirs {
-		if uIndx := walkU(subDirs, idx); uIndx != nil {
-			return uIndx
-		}
+	for _, subDir := range dir.Dirs {
+		idx = walkU(subDir, idx)
 	}
-	return nil
+	return idx
 }
 
 // TODO: look into how to make this generic. this way
