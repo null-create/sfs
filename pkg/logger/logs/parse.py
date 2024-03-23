@@ -30,6 +30,7 @@ def parse_logs(component: str, level: str, file: str) -> None:
   # parse a single file
   if file:
     return parse_log(component, level, file)
+  
   # parse all the files
   for log_file in log_files:
     if log_file.endswith(".py"):
