@@ -226,13 +226,6 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 	if err := f.Close(); err != nil {
 		a.serverError(w, "failed to close form file: "+err.Error())
 	}
-	// var buf bytes.Buffer
-	// _, err := io.Copy(&buf, r.Body)
-	// if err != nil {
-	// 	a.serverError(w, "failed to download form data: "+err.Error())
-	// 	return
-	// }
-	// r.Body.Close()
 
 	// update file
 	if err := a.Svc.UpdateFile(file, buf.Bytes()); err != nil {
