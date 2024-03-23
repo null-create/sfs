@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 )
@@ -537,48 +538,41 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	return nil
 }
 
-// move a file from one directory to another. set keepOrig to true
-// to keep a copy in the original local.
-func (c *Client) MoveFile(destDirID string, file *svc.File, keepOrig bool) error {
-	origDir := c.Drive.GetDir(file.DirID)
-	if origDir == nil {
-		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
-	}
-	destDir := c.Drive.GetDir(destDirID)
-	if destDir == nil {
-		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
-	}
-	// add file object to destination directory
-	if err := destDir.AddFile(file); err != nil {
+// move a file from one location to another on a users computer via
+// the sfs client. set keepOrig to true to keep the original copy in the original location.
+// sfs will only monitor the new copy after the move.
+//
+// destPath must be the absolute path for the files destination (i.e., end with the file name)
+func (c *Client) MoveFile(destPath string, filePath string, keepOrig bool) error {
+	file, err := c.GetFileByPath(filePath)
+	if err != nil {
 		return err
 	}
+	if file == nil {
+		return fmt.Errorf("file not found: " + filepath.Base(filePath))
+	}
+	if filePath != file.ClientPath {
+		return fmt.Errorf("source path does not match original file path. fp=%q orig=%s", filePath, file.ClientPath)
+	}
+
 	// copy physical file
-	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
-		return err
+	var origPath = file.ClientPath
+	if err := file.Copy(destPath); err != nil {
+		return fmt.Errorf("failed to copy file: %v", err)
 	}
-	if !keepOrig {
-		// remove from origial file (also deletes original physical file)
-		if err := origDir.RemoveFile(file.ID); err != nil {
-			return err
-		}
-	}
+	file.ClientPath = destPath
+
 	// update dbs
-	if err := c.Db.UpdateDir(origDir); err != nil {
-		return err
-	}
-	if err := c.Db.UpdateDir(destDir); err != nil {
-		return err
-	}
 	if err := c.Db.UpdateFile(file); err != nil {
-		return err
+		return fmt.Errorf("failed to update file database: %v", err)
 	}
-	c.log.Info(fmt.Sprintf("%s moved from %s to %s", file.Name, origDir.Path, destDir.Path))
+	c.log.Info(fmt.Sprintf("%s moved from %s to %s", file.Name, origPath, destPath))
 	return nil
 }
 
 // see if this file is registered with the server (exists on servers DB)
 func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
-	req, err := c.GetFileReq(file, "GET")
+	req, err := c.GetFileInfoRequest(file)
 	if err != nil {
 		return false, fmt.Errorf("failed to create file request: %v", err)
 	}
@@ -592,7 +586,8 @@ func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
 	return false, nil
 }
 
-// register new file with the server and push.
+// register new file with the server. does not send file contents,
+// only metadata
 func (c *Client) RegisterFile(file *svc.File) error {
 	req, err := c.NewFileRequest(file)
 	if err != nil {
@@ -601,11 +596,6 @@ func (c *Client) RegisterFile(file *svc.File) error {
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		c.log.Warn(fmt.Sprintf("registration server response: %d", resp.StatusCode))
-	} else {
-		c.log.Log("INFO", fmt.Sprintf("registration server response: %d", resp.StatusCode))
 	}
 	c.dump(resp, true)
 	return nil
@@ -941,13 +931,63 @@ func (c *Client) RegisterClient() error {
 	return nil
 }
 
+/*
+Iterate over ALL users files in the client side DBs and see if
+there are any that aren't registered with the server.
+
+If there's some that aren't, prompt the user whether they want
+to push them to the server. If yes, push non-registered files
+to the server.
+*/
+func (c *Client) Refresh() error {
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		c.log.Info("no files registered with client. nothing to refresh")
+		return nil
+	}
+	// see if any of these aren't registered with the server
+	var toRegister = make([]*svc.File, 0, len(files))
+	for _, file := range files {
+		reg, err := c.IsFileRegistered(file)
+		if err != nil {
+			c.log.Error(err.Error())
+		}
+		if !reg {
+			toRegister = append(toRegister, file)
+		}
+	}
+
+	c.log.Info(fmt.Sprintf("%d files need to be registered with the server", len(toRegister)))
+	if c.Continue() {
+		c.log.Log(logger.INFO, fmt.Sprintf("registering %d files with the server...", len(toRegister)))
+		for _, file := range toRegister {
+			if err := c.RegisterFile(file); err != nil {
+				c.log.Error("failed to register file: " + err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+/*
+TODO:
+
+Query server for all the users file and compare with the local
+client-side DB. If there are any on the server that aren't on the client
+side, pull those files from the server and add to the local client service.
+*/
+func (c *Client) RefreshFromServer() error { return nil }
+
 // discover populates the given root directory with the users file and
 // sub directories, updates the database as it does so, and returns
 // the the directory object when finished, or if there was an error.
 //
 // this should ideally be used for starting a new sfs service in a
 // users root directly that already has files and/or subdirectories.
-func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
+func (c *Client) DiscoverInRoot(root *svc.Directory) (*svc.Directory, error) {
 	// traverse users SFS file system and populate internal structures
 	root.Walk()
 
@@ -962,8 +1002,10 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 		if err := c.WatchItem(file.Path); err != nil {
 			return root, err
 		}
-		if err := c.RegisterFile(file); err != nil {
-			return root, err
+		if c.autoSync() {
+			if err := c.RegisterFile(file); err != nil {
+				return root, err
+			}
 		}
 	}
 
@@ -974,11 +1016,13 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 		return root, fmt.Errorf("failed to add directory to database: %v", err)
 	}
 	for _, subDir := range dirs {
-		if err := c.WatchItem(subDir.Path); err != nil {
-			return root, err
-		}
-		if err := c.RegisterDirectory(subDir); err != nil {
-			return root, err
+		// if err := c.WatchItem(subDir.Path); err != nil {
+		// 	return root, err
+		// }
+		if c.autoSync() {
+			if err := c.RegisterDirectory(subDir); err != nil {
+				return root, err
+			}
 		}
 	}
 
@@ -987,9 +1031,9 @@ func (c *Client) Discover(root *svc.Directory) (*svc.Directory, error) {
 	if err := c.Db.AddDir(root); err != nil {
 		return nil, fmt.Errorf("failed to add root to database: %v", err)
 	}
-	if err := c.WatchItem(root.Path); err != nil {
-		return nil, err
-	}
+	// if err := c.WatchItem(root.Path); err != nil {
+	// 	return nil, err
+	// }
 	return root, nil
 }
 
@@ -1023,11 +1067,14 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		if err := c.WatchItem(file.Path); err != nil {
 			return err
 		}
-		if err := c.RegisterFile(file); err != nil {
-			return err
+		if c.autoSync() {
+			if err := c.RegisterFile(file); err != nil {
+				return err
+			}
 		}
 	}
 
+	// add directories to the database. not monitored (for now)
 	dirs := newDir.GetSubDirs()
 	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
 
@@ -1035,22 +1082,24 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		return err
 	}
 	for _, subDir := range dirs {
-		if err := c.WatchItem(subDir.Path); err != nil {
-			return err
-		}
-		if err := c.RegisterDirectory(subDir); err != nil {
-			return err
+		// if err := c.WatchItem(subDir.Path); err != nil {
+		// 	return err
+		// }
+		if c.autoSync() {
+			if err := c.RegisterDirectory(subDir); err != nil {
+				return err
+			}
 		}
 	}
 
-	// add new directory itself
+	// add new directory itself. not monitored (for now)
 	c.log.Info(fmt.Sprintf("adding %s...", filepath.Base(dirPath)))
 	if err := c.Db.AddDir(newDir); err != nil {
 		return fmt.Errorf("failed to add root to database: %v", err)
 	}
-	if err := c.WatchItem(newDir.Path); err != nil {
-		return err
-	}
+	// if err := c.WatchItem(newDir.Path); err != nil {
+	// 	return err
+	// }
 	if err := c.RegisterDirectory(newDir); err != nil {
 		return err
 	}

@@ -339,7 +339,7 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// run discover to populate the database and internal data structures
 	// with users files and directories
-	root, err := c.Discover(root)
+	root, err := c.DiscoverInRoot(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover user file system: %v", err)
 	}
