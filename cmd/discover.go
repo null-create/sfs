@@ -42,10 +42,6 @@ func RunDiscoverCmd(cmd *cobra.Command, args []string) {
 		showerr(err)
 		return
 	}
-	if path == "" {
-		showerr(fmt.Errorf("missing path"))
-		return
-	}
 	if err := c.DiscoverWithPath(path); err != nil {
 		showerr(err)
 	}
