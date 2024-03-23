@@ -27,6 +27,10 @@ type FlagPole struct {
 	newDir   bool
 	discover bool // used to discover contents of entire file trees
 
+	// copy cmd flags
+	src  string
+	dest string
+
 	// ignore list flag
 	ignore string
 
