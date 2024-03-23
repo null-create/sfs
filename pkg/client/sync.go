@@ -252,9 +252,7 @@ func (c *Client) GetServerIdx(gen bool) (*svc.SyncIndex, error) {
 
 // send a known file to the server. For new files, use PushNewFile() instead.
 func (c *Client) PushFile(file *svc.File) error {
-	if err := c.Transfer.Upload(
-		http.MethodPut, file, file.Endpoint,
-	); err != nil {
+	if err := c.Transfer.Upload(http.MethodPut, file, file.Endpoint); err != nil {
 		return err
 	}
 	return nil
@@ -263,9 +261,7 @@ func (c *Client) PushFile(file *svc.File) error {
 // send a new file to the server. for updats to existing files,
 // use PushFile() instead.
 func (c *Client) PushNewFile(file *svc.File) error {
-	if err := c.Transfer.Upload(
-		http.MethodPost, file, c.Endpoints["new file"],
-	); err != nil {
+	if err := c.Transfer.Upload(http.MethodPost, file, c.Endpoints["new file"]); err != nil {
 		return err
 	}
 	return nil
