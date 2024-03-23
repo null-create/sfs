@@ -225,6 +225,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 	}
 	if err := f.Close(); err != nil {
 		a.serverError(w, "failed to close form file: "+err.Error())
+		return
 	}
 
 	// update file
