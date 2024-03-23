@@ -109,25 +109,25 @@ func (l *Logger) Show(msg string) {
 // Info logs at LevelInfo and displays the message.
 func (l *Logger) Info(msg string) {
 	l.log.Info(msg)
-	l.Log("INFO", msg)
+	l.Log(INFO, msg)
 }
 
 // Debug logs at LevelDebug and displays the message.
 func (l *Logger) Debug(msg string) {
 	l.log.Debug(msg)
-	l.Log("DEBUG", msg)
+	l.Log(DEBUG, msg)
 }
 
 // Warn logs at LevelWarn and displays the message.
 func (l *Logger) Warn(msg string) {
 	l.log.Warn(msg)
-	l.Log("WARN", msg)
+	l.Log(WARN, msg)
 }
 
 // Error logs at LevelError and displays the error message
 func (l *Logger) Error(msg string) {
 	l.log.Error(msg)
-	l.Log("ERROR", msg)
+	l.Log(ERROR, msg)
 }
 
 // Log writes a log entry to the CSV file. Does not display the message.

@@ -10,6 +10,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/logger"
 	logs "github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
@@ -380,7 +381,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("failed to load users directories: %v", err)
 	}
 	drive.Root.AddSubDirs(dirs)
-	s.log.Log("INFO", fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
+	s.log.Log(logger.INFO, fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
 
 	// add all users files
 	files, err := s.Db.GetFilesByDriveID(driveID)
@@ -388,7 +389,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("failed to load users files: %v", err)
 	}
 	drive.Root.AddFiles(files)
-	s.log.Log("INFO", fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
+	s.log.Log(logger.INFO, fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
 
 	// populate the root directory and generate a new sync index
 	drive.Root = s.Populate(root)
