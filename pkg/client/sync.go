@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -34,7 +35,7 @@ func (c *Client) reset() {
 	c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
 }
 
-// display server response clearly.
+// display server response clearly
 func (c *Client) dump(resp *http.Response, body bool) {
 	b, err := httputil.DumpResponse(resp, body)
 	if err != nil {
@@ -44,7 +45,7 @@ func (c *Client) dump(resp *http.Response, body bool) {
 			c.log.Warn("request failed: " + resp.Status)
 			c.log.Log("WARN", "server response: \n"+string(b))
 		} else {
-			c.log.Show("server response: " + resp.Status)
+			c.log.Log(logger.INFO, "server response: "+resp.Status)
 		}
 	}
 }
