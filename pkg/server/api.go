@@ -55,7 +55,7 @@ func (a *API) Placeholder(w http.ResponseWriter, r *http.Request) {
 
 // generic response. sends msg with 200 and logs message.
 func (a *API) write(w http.ResponseWriter, msg string) {
-	a.log.Log("INFO", msg)
+	a.log.Log(logger.INFO, msg)
 	w.Write([]byte(msg))
 }
 
@@ -155,7 +155,6 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
 // retrieve a file from the server
 func (a *API) ServeFile(w http.ResponseWriter, r *http.Request) {
-	// file existance was confirmed by the middleware at this point
 	file := r.Context().Value(File).(*svc.File)
 
 	// set the response header for the download
@@ -181,30 +180,24 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 10 mb memory limit for parsing file contents
+const MAX_MEM int64 = 10 << 20
+
 // create a new file on the server
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
-	// // 10 mb memory limit for parsing form data
-	// if err := r.ParseMultipartForm(10 << 20); err != nil {
-	// 	a.serverError(w, "failed to parse form: "+err.Error())
-	// 	return
-	// }
-	// file, _, err := r.FormFile("myFile")
-	// if err != nil {
-	// 	a.serverError(w, err.Error())
-	// 	return
-	// }
-	// defer file.Close()
-
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r.Body)
+	file, _, err := r.FormFile("myFile")
 	if err != nil {
-		a.serverError(w, "failed to copy file data into buffer: "+err.Error())
+		a.serverError(w, "failed to retrieve form file: "+err.Error())
 		return
 	}
-	defer r.Body.Close()
+	defer file.Close()
 
-	// copy file content from buffer so we can write it out
-	// after we process the new file
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, file)
+	if err != nil {
+		a.serverError(w, "failed to copy form file: "+err.Error())
+		return
+	}
 	newFile.Content = buf.Bytes()
 	buf.Reset()
 
@@ -213,36 +206,40 @@ func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File)
 		a.serverError(w, fmt.Sprintf("failed to add %s to service: %v", newFile.Name, err))
 		return
 	}
-	a.write(w, fmt.Sprintf("%s has been added to the server", newFile.Name))
+	a.write(w, fmt.Sprintf("file (%s) has been added to the server", newFile.Name))
 }
 
 // update the file on the server
 func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
-	// 10 mb memory limit for parsing form data
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		a.serverError(w, "failed to parse form: "+err.Error())
-		return
-	}
 	f, _, err := r.FormFile("myFile")
 	if err != nil {
-		a.serverError(w, err.Error())
+		a.serverError(w, "failed to retrieve form file: "+err.Error())
 		return
 	}
-	defer f.Close()
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, f)
 	if err != nil {
-		a.serverError(w, fmt.Sprintf("failed to download form file data: %v", err))
+		a.serverError(w, "failed to copy file: "+err.Error())
 		return
 	}
+	if err := f.Close(); err != nil {
+		a.serverError(w, "failed to close form file: "+err.Error())
+	}
+	// var buf bytes.Buffer
+	// _, err := io.Copy(&buf, r.Body)
+	// if err != nil {
+	// 	a.serverError(w, "failed to download form data: "+err.Error())
+	// 	return
+	// }
+	// r.Body.Close()
 
 	// update file
 	if err := a.Svc.UpdateFile(file, buf.Bytes()); err != nil {
 		a.serverError(w, fmt.Sprintf("failed to update %s (id=%s): %v", file.Name, file.ID, err))
 		return
 	}
-	a.write(w, fmt.Sprintf("%s updated (owner id=%s)", file.Name, file.OwnerID))
+	a.write(w, fmt.Sprintf("file (%s) updated (owner id=%s)", file.Name, file.OwnerID))
 }
 
 // upload or update a file on/to the server

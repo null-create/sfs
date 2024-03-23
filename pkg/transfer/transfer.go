@@ -21,7 +21,6 @@ import (
 // during synchronization events as well as one off file transfer
 // API calls.
 type Transfer struct {
-	Buffer *bytes.Buffer
 	Tok    *auth.Token
 	log    *logger.Logger
 	Client *http.Client
@@ -29,9 +28,8 @@ type Transfer struct {
 
 func NewTransfer() *Transfer {
 	return &Transfer{
-		Buffer: new(bytes.Buffer),
-		Tok:    auth.NewT(),
-		log:    logger.NewLogger("Transfer"),
+		Tok: auth.NewT(),
+		log: logger.NewLogger("Transfer"),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
@@ -65,13 +63,13 @@ func (t *Transfer) ExtractArchive(path string) error {
 }
 
 // prepare file transfer request header.
-func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.File, destURL string) (*http.Request, error) {
-	req, err := http.NewRequest(method, destURL, t.Buffer)
+func (t *Transfer) PrepareFileReq(method string, destURL string, contentType string, file *svc.File, buf *bytes.Buffer) (*http.Request, error) {
+	req, err := http.NewRequest(method, destURL, buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
 	}
 
-	// add file metadata to jwt
+	// add file metadata to token
 	fileData, err := file.ToJSON()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file json string: %v", err)
@@ -81,6 +79,7 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 		return nil, fmt.Errorf("failed to create file token: %v", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+fileToken)
+	req.Header.Set("Content-Type", contentType)
 
 	return req, nil
 }
@@ -89,28 +88,31 @@ func (t *Transfer) PrepareFileReq(method string, contentType string, file *svc.F
 // server will handle whether this is a new file or an update to an existing file,
 // usually determined by the method.
 func (t *Transfer) Upload(method string, file *svc.File, destURL string) error {
-	bodyWriter := multipart.NewWriter(t.Buffer)
-	defer func() {
-		if err := bodyWriter.Close(); err != nil {
-			t.log.Error("failed to close file writer: " + err.Error())
-		}
-	}()
+	var (
+		buf = new(bytes.Buffer)
+		w   = multipart.NewWriter(buf)
+	)
 
-	// create form file and prepare request
-	fileWriter, err := bodyWriter.CreateFormFile("myFile", filepath.Base(file.Path))
+	// create form file writer and prepare request
+	fw, err := w.CreateFormFile("myFile", filepath.Base(file.Path))
 	if err != nil {
 		return err
 	}
+
 	// read in file data
 	data, err := os.ReadFile(file.ClientPath)
 	if err != nil {
 		return err
 	}
-	if _, err = fileWriter.Write(data); err != nil {
+	if _, err = fw.Write(data); err != nil {
 		return fmt.Errorf("failed to retrieve file data: %v", err)
 	}
+	if err := w.Close(); err != nil {
+		t.log.Error("failed to close writer: " + err.Error())
+	}
+
 	// prepare request
-	req, err := t.PrepareFileReq(method, bodyWriter.FormDataContentType(), file, destURL)
+	req, err := t.PrepareFileReq(method, destURL, w.FormDataContentType(), file, buf)
 	if err != nil {
 		return err
 	}
