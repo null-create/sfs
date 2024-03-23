@@ -203,8 +203,13 @@ func (m *Monitor) ShutDown() {
 	m.log.Info(
 		fmt.Sprintf("shutting down %d active monitoring threads...", len(m.OffSwitches)),
 	)
-	for path := range m.OffSwitches {
-		m.OffSwitches[path] <- true
+	// the "graceful" way
+	// for path := range m.OffSwitches {
+	// 	m.OffSwitches[path] <- true
+	// }
+	// the "just erase it" way
+	for key := range m.Watchers {
+		m.Watchers[key] = nil
 	}
 }
 
