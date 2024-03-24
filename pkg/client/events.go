@@ -30,16 +30,18 @@ func (c *Client) StartMonitor() error {
 			return err
 		}
 	}
+	// NOTE: monitoring directories is currently not supported.
+	// leaving this for future implementation iterations.
 	// dirs := c.Drive.GetDirs()
-	dirs, err := c.Db.GetUsersDirectories(c.UserID)
-	if err != nil {
-		return err
-	}
-	for _, d := range dirs {
-		if err := c.WatchItem(d.Path); err != nil {
-			return err
-		}
-	}
+	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, d := range dirs {
+	// 	if err := c.WatchItem(d.Path); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -62,7 +64,7 @@ func (c *Client) WatchItem(path string) error {
 	if err != nil {
 		return err
 	}
-	// monitoring directories is not supported
+	// directory monitoring is not supported for the moment.
 	if isDir {
 		return fmt.Errorf(
 			"%s is a directory. directory monitoring is not supporetd",
