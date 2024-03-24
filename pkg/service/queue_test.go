@@ -111,7 +111,7 @@ func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
 
 	// build a sync index and mutate files so we can
 	// add them to the ToUpdate map (BuildQ checks for this)
-	idx := BuildSyncIndex(d)
+	idx := BuildRootSyncIndex(d)
 	d.Files = MutateFiles(t, d.Files)
 	idx = BuildToUpdate(d, idx)
 

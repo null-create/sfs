@@ -35,7 +35,7 @@ func TestGetServerSyncIndex(t *testing.T) {
 
 	// create a tmp drive with sync index
 	drive := MakeTmpDriveWithPath(t, client.Root)
-	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
+	drive.SyncIndex = svc.BuildRootSyncIndex(drive.Root)
 	if err := tmpSvc.AddDrive(client.Drive); err != nil {
 		Fail(t, clientRoot, err)
 	}

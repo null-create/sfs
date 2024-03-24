@@ -354,7 +354,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	tmpClient.Drive = svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, tmpClient.UserID, root.Path, root.ID, root)
 
 	// create initial sync index
-	tmpClient.Drive.SyncIndex = svc.BuildSyncIndex(tmpClient.Drive.Root)
+	tmpClient.Drive.SyncIndex = svc.BuildRootSyncIndex(tmpClient.Drive.Root)
 
 	// alter some files so we can mark them to be synced
 	root.Files = MutateFiles(t, root.Files)

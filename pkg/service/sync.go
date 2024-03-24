@@ -105,7 +105,7 @@ but we assume this is the root, and that there is no parent directory!
 
 utilizes the directory's d.WalkS() function
 */
-func BuildSyncIndex(root *Directory) *SyncIndex {
+func BuildRootSyncIndex(root *Directory) *SyncIndex {
 	idx := NewSyncIndex(root.OwnerID)
 	if idx := root.WalkS(idx); idx != nil {
 		return idx
@@ -172,7 +172,7 @@ probably won't be used during this first iteration. dirs can be set to nil for t
 assumes the supplied index's LastSync map is instantiated and populated, otherwise
 will fail.
 */
-func BuildSyncIndexDist(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
+func BuildDistSyncIndex(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
 	for _, f := range files {
 		if !idx.HasItem(f.ID) {
 			idx.LastSync[f.ID] = f.LastSync

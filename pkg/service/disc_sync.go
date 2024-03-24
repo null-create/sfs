@@ -14,7 +14,7 @@ import (
 // via HTTP.
 func SyncDisks(srcDir *Directory, destRootDir *Directory) error {
 	// build sync index
-	srcIdx := BuildSyncIndex(srcDir)
+	srcIdx := BuildRootSyncIndex(srcDir)
 	if srcIdx == nil {
 		return fmt.Errorf("failed to create sync index from source disk")
 	}

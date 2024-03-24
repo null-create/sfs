@@ -393,7 +393,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 
 	// populate the root directory and generate a new sync index
 	drive.Root = s.Populate(root)
-	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
+	drive.SyncIndex = svc.BuildRootSyncIndex(drive.Root)
 
 	// save to service instance
 	s.Drives[drive.ID] = drive
@@ -445,7 +445,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	}
 
 	// generate sync index and save to service instance
-	drv.SyncIndex = svc.BuildSyncIndex(drv.Root)
+	drv.SyncIndex = svc.BuildRootSyncIndex(drv.Root)
 	s.Drives[drv.ID] = drv
 	if err := s.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
@@ -492,13 +492,13 @@ func (s *Service) RemoveDrive(driveID string) error {
 		return fmt.Errorf("failed to remove drives files and directories: %v", err)
 	}
 	// remove all files and directories from the database
-	files := drv.GetFiles()
+	files := drv.GetFilesMap()
 	for _, f := range files {
 		if err := s.Db.RemoveFile(f.ID); err != nil {
 			return err
 		}
 	}
-	dirs := drv.GetDirs()
+	dirs := drv.GetDirsMap()
 	for _, d := range dirs {
 		if err := s.Db.RemoveDirectory(d.ID); err != nil {
 			return err
@@ -684,7 +684,7 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 	if drive == nil {
 		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
-	files := drive.GetFiles()
+	files := drive.GetFilesMap()
 	if len(files) == 0 {
 		s.log.Info(fmt.Sprintf("no files in drive (id=%s)", driveID))
 	}
@@ -974,7 +974,7 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 	if drive == nil {
 		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
-	subDirs := drive.GetDirs()
+	subDirs := drive.GetDirsMap()
 	if len(subDirs) == 0 {
 		s.log.Info(fmt.Sprintf("no directories found for user (id=%s)", drive.OwnerID))
 		return nil, nil
@@ -1024,7 +1024,7 @@ func (s *Service) GenSyncIndex(driveID string) (*svc.SyncIndex, error) {
 	if drive.Root == nil {
 		return nil, fmt.Errorf("drive (id=%s) root not found", drive.RootID)
 	}
-	drive.SyncIndex = svc.BuildSyncIndex(drive.Root)
+	drive.SyncIndex = svc.BuildRootSyncIndex(drive.Root)
 	return drive.SyncIndex, nil
 }
 

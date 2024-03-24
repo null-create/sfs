@@ -274,8 +274,26 @@ func (d *Drive) GetFile(fileID string) *File {
 	return nil
 }
 
+// get a slice of all files in the drive. returns nil if not found, or
+// if the drive is protected.
+func (d *Drive) GetFiles() []*File {
+	if !d.Protected {
+		var (
+			fm    = d.GetFilesMap()
+			files = make([]*File, 0, len(fm))
+		)
+		for _, f := range fm {
+			files = append(files, f)
+		}
+		return files
+	} else {
+		log.Printf("[WARNING] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
 // get a map of all available files for this user
-func (d *Drive) GetFiles() map[string]*File {
+func (d *Drive) GetFilesMap() map[string]*File {
 	if !d.Protected {
 		if !d.HasRoot() {
 			log.Printf("[ERROR] drive (id=%s) has no root directory", d.ID)
@@ -454,8 +472,27 @@ func (d *Drive) GetDir(dirID string) *Directory {
 	return nil
 }
 
-// get a map of all directories for this user
-func (d *Drive) GetDirs() map[string]*Directory {
+// get a slice of all directories in the drive. returns nil if not found,
+// or if the drive is protected.
+func (d *Drive) GetDirs() []*Directory {
+	if !d.Protected {
+		var (
+			drs  = d.GetDirsMap()
+			dirs = make([]*Directory, 0, len(drs))
+		)
+		for _, dir := range drs {
+			dirs = append(dirs, dir)
+		}
+		return dirs
+	} else {
+		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+	}
+	return nil
+}
+
+// get a map of all directories for this user. returns nil
+// if none are found or if the drive is protected.
+func (d *Drive) GetDirsMap() map[string]*Directory {
 	if !d.Protected {
 		if !d.HasRoot() {
 			log.Printf("[WARNING] drive (id=%s) has no root", d.ID)
@@ -563,7 +600,7 @@ func (d *Drive) ClearDrive() error {
 // ---- sync operations --------------------------------
 
 func (d *Drive) BuildSyncIdx() {
-	d.SyncIndex = BuildSyncIndex(d.Root)
+	d.SyncIndex = BuildRootSyncIndex(d.Root)
 }
 
 func (d *Drive) BuildToUpdate() error {

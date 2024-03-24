@@ -251,7 +251,7 @@ func (c *Client) Exists(path string) bool {
 // list all local files managed by the sfs service.
 // does not check database.
 func (c *Client) ListLocalFiles() {
-	files := c.Drive.GetFiles()
+	files := c.Drive.GetFilesMap()
 	for _, f := range files {
 		output := fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 		fmt.Print(output)
@@ -863,11 +863,11 @@ func (c *Client) LoadDrive() error {
 	if err := c.Drive.Root.AddSubDirs(dirs); err != nil {
 		return err
 	}
-
 	c.Drive.IsLoaded = true
-	if !c.Drive.IsIndexed() {
-		c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
-	}
+
+	// build client sync index
+	c.BuildSyncIndex()
+
 	c.log.Log("INFO", "drive loaded")
 	return nil
 }

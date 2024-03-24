@@ -32,7 +32,7 @@ func (c *Client) autoSync() bool { return c.Conf.AutoSync }
 // new baseline for item last sync times.
 func (c *Client) reset() {
 	c.Drive.SyncIndex.Reset()
-	c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.Root)
+	c.BuildSyncIndex()
 }
 
 // display server response clearly
@@ -48,6 +48,18 @@ func (c *Client) dump(resp *http.Response, body bool) {
 			c.log.Log(logger.INFO, "server response: "+resp.Status)
 		}
 	}
+}
+
+// build client sync index.
+func (c *Client) BuildSyncIndex() {
+	files := c.Drive.GetFiles()
+	if len(files) == 0 {
+		c.log.Log(logger.WARN, "no files. sync index is not set.")
+		return
+	}
+	svc.BuildRootSyncIndex(c.Drive.Root)
+	svc.BuildDistSyncIndex(files, nil, c.Drive.SyncIndex)
+	c.log.Log(logger.INFO, fmt.Sprintf("%d files have been indexed", len(files)))
 }
 
 // enable or disable auto sync with the server.

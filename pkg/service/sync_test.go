@@ -45,7 +45,7 @@ func TestCompare(t *testing.T) {
 
 	// make a temp drive and generate a starting sync index
 	tmpDrv := MakeTmpDrive(t)
-	origIdx := BuildSyncIndex(tmpDrv.Root) // ToUpdate is empty
+	origIdx := BuildRootSyncIndex(tmpDrv.Root) // ToUpdate is empty
 
 	// change some files (last three w/e) and generate a new index
 	testFiles := tmpDrv.Root.GetFiles()
@@ -56,7 +56,7 @@ func TestCompare(t *testing.T) {
 	origIdx = BuildToUpdate(tmpDrv.Root, origIdx)
 
 	// change some more stuff, but update newIdx instead
-	newIdx := BuildSyncIndex(tmpDrv.Root)
+	newIdx := BuildRootSyncIndex(tmpDrv.Root)
 	for _, victim := range victims {
 		MutateFile(t, victim)
 	}

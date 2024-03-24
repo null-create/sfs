@@ -56,7 +56,7 @@ func TestUnpack(t *testing.T) {
 		Fail(t, GetTestingDir(), fmt.Errorf("zip file not created"))
 	}
 
-	if err := Unzip(testArchive, filepath.Join("testing", "tmp-result")); err != nil {
+	if err := Unzip(testArchive, filepath.Dir(testArchive)); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 

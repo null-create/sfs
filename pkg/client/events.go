@@ -359,7 +359,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 	}
 }
 
-// apply the given action using the supplied event object
+// apply the given action
 func (c *Client) apply(itemPath string, action string) error {
 	item, err := os.Stat(itemPath)
 	if err != nil {
