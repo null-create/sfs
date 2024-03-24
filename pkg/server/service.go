@@ -19,6 +19,8 @@ import (
 Server-side SFS service instance.
 */
 type Service struct {
+	// service ID and init time
+	ID       string    `json:"id"`
 	InitTime time.Time `json:"init_time"`
 
 	// path for sfs service on the server
@@ -62,7 +64,9 @@ type Service struct {
 
 // intialize a new empty service struct
 func NewService(svcRoot string) *Service {
+	var id = auth.NewUUID()
 	return &Service{
+		ID:       id,
 		InitTime: time.Now().UTC(),
 		svcCfgs:  svcCfg,
 		SvcRoot:  svcRoot,
@@ -73,7 +77,7 @@ func NewService(svcRoot string) *Service {
 		UserDir:   filepath.Join(svcRoot, "users"),
 		DbDir:     filepath.Join(svcRoot, "dbs"),
 		Db:        db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		log:       logs.NewLogger("Service"),
+		log:       logs.NewLogger("Service", id),
 
 		// admin mode is optional.
 		// these are standard default values

@@ -40,7 +40,7 @@ func NewAPI(newService bool, isAdmin bool) *API {
 	return &API{
 		StartTime: time.Now().UTC(),
 		Svc:       svc,
-		log:       logger.NewLogger("API"),
+		log:       logger.NewLogger("API", "None"),
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/logger"
 )
 
@@ -27,7 +28,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		StartTime: time.Now().UTC(),
-		log:       logger.NewLogger("Server"),
+		log:       logger.NewLogger("Server", auth.NewUUID()),
 		Svr: &http.Server{
 			// NewRouter() instantiates the server-side SFS service instance
 			// and handles client requests.

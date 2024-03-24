@@ -58,7 +58,7 @@ type Monitor struct {
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
 		Path:        drvRoot,
-		log:         logger.NewLogger("Monitor"),
+		log:         logger.NewLogger("Monitor", "None"),
 		Events:      make(map[string]chan Event),
 		Watchers:    make(map[string]Watcher),
 		OffSwitches: make(map[string]chan bool),
@@ -218,7 +218,7 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("FILE_WATCHER") // TODO: succinct IDs for each watcher
+	var log = logger.NewLogger("FILE_WATCHER", auth.NewUUID())
 
 	// get initial info for the file
 	initialStat, err := os.Stat(filePath)
@@ -333,7 +333,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 // NOTE: no longer used, but kept for reference.
 // watch for changes in a directory
 func watchDir(dirPath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("DIR_WATCHER")
+	var log = logger.NewLogger("DIR_WATCHER", auth.NewUUID())
 
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)

@@ -31,7 +31,7 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 		DBPath:    dbPath,
 		CurDB:     "",
 		Debug:     false,
-		log:       logger.NewLogger("Database"),
+		log:       logger.NewLogger("Database", "None"),
 		Singleton: isSingleton,
 		DBs:       []string{"users", "drives", "directories", "files"},
 	}

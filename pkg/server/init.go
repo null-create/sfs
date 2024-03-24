@@ -171,7 +171,7 @@ root/
 // initialize a new service and corresponding databases
 func SvcInit(svcRoot string) (*Service, error) {
 	// create a logger for initialization steps
-	initLogger := logger.NewLogger("SERVICE_INIT")
+	initLogger := logger.NewLogger("SERVICE_INIT", "None")
 
 	// make root service directory (wherever it should located)
 	initLogger.Info("creating root service directory...")
@@ -262,7 +262,7 @@ func svcLoad(sfPath string) (*Service, error) {
 // reads in an external service state file and instantiates an SFS service instance.
 func SvcLoad(svcPath string) (*Service, error) {
 	// logger used during an established service initialization
-	var initLogger = logger.NewLogger("SERVICE_INIT")
+	var initLogger = logger.NewLogger("SERVICE_INIT", "None")
 
 	// ensure (at least) the necessary dbs and state files are present
 	sfPath, err := preChecks(svcPath)
@@ -277,7 +277,7 @@ func SvcLoad(svcPath string) (*Service, error) {
 	}
 
 	// load logger
-	svc.log = logger.NewLogger("Service")
+	svc.log = logger.NewLogger("Service", svc.ID)
 
 	// add configs to service instance
 	svc.svcCfgs = svcCfg

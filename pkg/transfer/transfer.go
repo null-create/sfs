@@ -29,7 +29,7 @@ type Transfer struct {
 func NewTransfer() *Transfer {
 	return &Transfer{
 		Tok: auth.NewT(),
-		log: logger.NewLogger("Transfer"),
+		log: logger.NewLogger("Transfer", "None"),
 		Client: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{

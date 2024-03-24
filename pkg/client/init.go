@@ -49,7 +49,7 @@ as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
 func Setup() (*Client, error) {
-	var setupLog = logger.NewLogger("CLIENT_SETUP")
+	var setupLog = logger.NewLogger("CLIENT_SETUP", "None")
 
 	// get environment variables and client envCfg
 	envCfg := env.NewE()
@@ -118,7 +118,7 @@ func Setup() (*Client, error) {
 }
 
 // initialization logger
-var initLog = logger.NewLogger("CLIENT_INIT")
+var initLog = logger.NewLogger("CLIENT_INIT", "None")
 
 // pulls user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
@@ -198,7 +198,7 @@ func LoadClient(persist bool) (*Client, error) {
 	}
 
 	// initialize logger
-	client.log = logger.NewLogger("Client")
+	client.log = logger.NewLogger("Client", client.UserID)
 
 	// load user info
 	if err := client.LoadUser(); err != nil {
@@ -328,7 +328,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		DriveID:     driveID,
 		Drive:       drv,
 		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		log:         logger.NewLogger("Client"),
+		log:         logger.NewLogger("Client", user.ID),
 		Tok:         auth.NewT(),
 		Handlers:    make(map[string]func()),
 		OffSwitches: make(map[string]chan bool),

@@ -12,7 +12,7 @@ import (
 func TestLogger(t *testing.T) {
 	env.SetEnv(false)
 
-	logger := NewLogger("TEST_LOGGER")
+	logger := NewLogger("TEST_LOGGER", "None")
 
 	logger.Info("test info message")
 	logger.Warn("another test message")

@@ -59,11 +59,12 @@ type Batch struct {
 
 // create a new batch with capacity of MAX
 func NewBatch() *Batch {
+	var id = auth.NewUUID()
 	return &Batch{
-		ID:    auth.NewUUID(),
+		ID:    id,
 		Cap:   MAX,
 		Max:   MAX,
-		log:   logger.NewLogger("Batch_Processing"),
+		log:   logger.NewLogger("Batch_Processing", id),
 		Files: make(map[string]*File, 0),
 	}
 }

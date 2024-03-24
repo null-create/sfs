@@ -48,7 +48,7 @@ type File struct {
 }
 
 // for logging any errors during new file object creation
-var nfLog = logger.NewLogger("FILE_INIT")
+var nfLog = logger.NewLogger("FILE_INIT", "None")
 
 // creates a new file struct instance.
 // file contents are not loaded into memory.

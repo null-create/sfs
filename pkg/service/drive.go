@@ -113,7 +113,7 @@ type Drive struct {
 	RecycleBin string `json:"recycle_bin"`
 }
 
-var initLog = logger.NewLogger("DRIVE_INIT")
+var initLog = logger.NewLogger("DRIVE_INIT", "None")
 
 func check(driveID string, ownerName string, ownerID string, rootPath string, root *Directory) bool {
 	if driveID == "" || ownerName == "" || ownerID == "" || rootPath == "" || root == nil {
@@ -141,7 +141,7 @@ func NewDrive(driveID string, ownerName string, ownerID string, rootPath string,
 		RootID:     rootID,
 		Root:       root,
 		RecycleBin: filepath.Join(root.Path, "recycle"),
-		log:        logger.NewLogger("DRIVE"),
+		log:        logger.NewLogger("DRIVE", driveID),
 	}
 }
 

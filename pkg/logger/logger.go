@@ -26,15 +26,16 @@ Log messages are stored as .csv files using the following columns:
 component, level, time, message
 */
 type Logger struct {
-	mu        sync.Mutex   // lock so loggers don't over write each other
-	component string       `json:"component"` // name of the component this logger is attached to
-	logfile   string       `json:"log_file"`  // absolute path to the csv log file
-	log       *slog.Logger // slog instance
-	csvWriter *csv.Writer  // csv writer instance
+	mu          sync.Mutex   // lock so loggers don't over write each other
+	component   string       `json:"component"`    // name of the component this logger is attached to
+	componentID string       `json:"component_ID"` // ID of the component this logger is attached to
+	logfile     string       `json:"log_file"`     // absolute path to the csv log file
+	log         *slog.Logger // slog instance
+	csvWriter   *csv.Writer  // csv writer instance
 }
 
 // instantiate a new logger
-func NewLogger(component string) *Logger {
+func NewLogger(component string, id string) *Logger {
 	// create the log file if it doesn't already exist
 	// log files have the name format: sfs-log-dd-mm-yyyy.csv, so
 	// one new log file should be created per day.
@@ -56,10 +57,11 @@ func NewLogger(component string) *Logger {
 		log.Fatalf(fmt.Sprintf("failed to open log file: %v", err))
 	}
 	return &Logger{
-		component: component,
-		logfile:   logFile,
-		csvWriter: csv.NewWriter(csvFile),
-		log:       slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		component:   component,
+		componentID: id,
+		logfile:     logFile,
+		csvWriter:   csv.NewWriter(csvFile),
+		log:         slog.New(slog.NewTextHandler(os.Stdout, nil)),
 	}
 }
 
@@ -95,7 +97,7 @@ func createLogFile(lfpath string) error {
 		}
 		// add initial column names
 		writer := csv.NewWriter(csvFile)
-		writer.Write([]string{"Component", "Level", "Time", "Message"})
+		writer.Write([]string{"Component", "Level", "Time", "Message", "ID"})
 		writer.Flush()
 	}
 	return nil
@@ -131,7 +133,7 @@ func (l *Logger) Error(msg string) {
 }
 
 // Log writes a log entry to the CSV file. Does not display the message.
-// All logging csv files use the columns: component, level, timestamp, message.
+// All logging csv files use the columns: component, level, timestamp, message, and ID.
 // The component and timestamp are provided by Log(), assuming
 // Logger was instantiated correctly.
 func (l *Logger) Log(level string, msg string) {
@@ -139,7 +141,7 @@ func (l *Logger) Log(level string, msg string) {
 	defer l.mu.Unlock()
 
 	timestamp := time.Now().UTC()
-	l.csvWriter.Write([]string{l.component, level, timestamp.Format(time.RFC3339), msg})
+	l.csvWriter.Write([]string{l.component, level, timestamp.Format(time.RFC3339), msg, l.componentID})
 	l.csvWriter.Flush()
 	if err := l.csvWriter.Error(); err != nil {
 		log.Fatalf("error writing to log file: %v", err)
