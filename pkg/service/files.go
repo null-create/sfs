@@ -99,13 +99,20 @@ func UnmarshalFileStr(fileInfo string) (*File, error) {
 	return file, nil
 }
 
+// retrieve a string in JSON format containing the files metadata.
+func (f *File) ToString() string {
+	data, err := f.ToJSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(data)
+}
+
 // returns file size in bytes
 //
 // uses os.Stat() - "length in bytes for regular files; system-dependent for others"
-//
-// NOTE: internally references f.Path, which will be equivalent to f.ClientPath. need to fix this.
 func (f *File) GetSize() int64 {
-	info, err := os.Stat(f.Path)
+	info, err := os.Stat(f.GetPath())
 	if err != nil {
 		log.Fatalf("unable to determine file size: %v", err)
 	}
@@ -132,7 +139,7 @@ func (f *File) Exists() bool {
 }
 
 // has this file been backed up to the server?
-func (f *File) IsBackedUp() bool { return f.Backup }
+func (f *File) IsBackUp() bool { return f.Backup }
 
 // mark this object as being the server side version of the original file.
 func (f *File) MarkBackedUp() {
@@ -142,7 +149,8 @@ func (f *File) MarkBackedUp() {
 }
 
 // get the path for this file.
-// this will return either the client or server path, depending on instance called
+// this will return either the client or server path, depending on instance called.
+// server side files will have file.Backup set to true, client side files will not.
 func (f *File) GetPath() string {
 	var path string
 	if f.Backup {
@@ -171,8 +179,8 @@ func (f *File) Unlock(password string) {
 	}
 }
 
-func (f *File) ChangePassword(password string, newPassword string) {
-	if password == f.Key {
+func (f *File) ChangePassword(oldPassword string, newPassword string) {
+	if oldPassword == f.Key {
 		f.Key = newPassword
 		log.Printf("[INFO] %s (id=%s) password updated!", f.Name, f.ID)
 	} else {
@@ -184,7 +192,7 @@ func (f *File) ChangePassword(password string, newPassword string) {
 
 // load file contents into memory
 func (f *File) Load() {
-	if f.Path == "" {
+	if f.GetPath() == "" {
 		log.Fatalf("no path specified")
 	}
 	if !f.Protected {
@@ -249,21 +257,25 @@ func (f *File) Clear() error {
 
 // copy this file to another location
 func (f *File) Copy(destPath string) error {
-	src, err := os.Open(f.GetPath())
-	if err != nil {
-		return err
-	}
-	defer src.Close()
+	if !f.Protected {
+		src, err := os.Open(f.GetPath())
+		if err != nil {
+			return err
+		}
+		defer src.Close()
 
-	dest, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer dest.Close()
+		dest, err := os.Create(destPath)
+		if err != nil {
+			return err
+		}
+		defer dest.Close()
 
-	_, err = io.Copy(dest, src)
-	if err != nil {
-		return err
+		_, err = io.Copy(dest, src)
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[WARNING] %s is protected", f.Name)
 	}
 	return nil
 }

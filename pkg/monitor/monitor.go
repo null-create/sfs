@@ -203,7 +203,7 @@ func (m *Monitor) ShutDown() {
 	m.log.Info(
 		fmt.Sprintf("shutting down %d active monitoring threads...", len(m.OffSwitches)),
 	)
-	// the "graceful" way
+	// the "graceful" way. blocks and is really slow.
 	// for path := range m.OffSwitches {
 	// 	m.OffSwitches[path] <- true
 	// }
@@ -218,7 +218,7 @@ func (m *Monitor) ShutDown() {
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
 func watchFile(filePath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("File_Watcher") // TODO: succinct IDs for each watcher
+	var log = logger.NewLogger("FILE_WATCHER") // TODO: succinct IDs for each watcher
 
 	// get initial info for the file
 	initialStat, err := os.Stat(filePath)
@@ -333,7 +333,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 // NOTE: no longer used, but kept for reference.
 // watch for changes in a directory
 func watchDir(dirPath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("Watcher")
+	var log = logger.NewLogger("DIR_WATCHER")
 
 	// get initial slice of file and subdirectories
 	initialItems, err := os.ReadDir(dirPath)

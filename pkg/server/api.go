@@ -180,9 +180,6 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// 10 mb memory limit for parsing file contents
-const MAX_MEM int64 = 10 << 20
-
 // create a new file on the server
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
 	file, _, err := r.FormFile("myFile")

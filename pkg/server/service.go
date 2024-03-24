@@ -734,6 +734,11 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	if err != nil {
 		return fmt.Errorf("failed to write file on server side: %v", err)
 	}
+	f.Close()
+
+	// mark this as a back up so we can access it using the correct path on the
+	// server side
+	file.MarkBackedUp()
 
 	// add file to drive service
 	if err := drive.AddFile(file.DirID, file); err != nil {

@@ -64,7 +64,10 @@ func (c *Client) WatchItem(path string) error {
 	}
 	// monitoring directories is not supported
 	if isDir {
-		return nil
+		return fmt.Errorf(
+			"%s is a directory. directory monitoring is not supporetd",
+			filepath.Dir(path),
+		)
 	}
 	if err := c.Monitor.Watch(path); err != nil {
 		return err

@@ -355,7 +355,7 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 	if !d.Protected {
 		if d.HasFile(file.ID) {
 			var origSize = file.GetSize()
-			if err := os.WriteFile(file.ServerPath, data, PERMS); err != nil {
+			if err := os.WriteFile(file.GetPath(), data, PERMS); err != nil {
 				return err
 			}
 			d.Size += file.GetSize() - origSize

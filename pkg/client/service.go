@@ -339,15 +339,15 @@ func (c *Client) GetFileByName(name string) (*svc.File, error) {
 	return file, nil
 }
 
-// add a file to the service using its file path.
-// should check for whether the directory it resides in is
-// monitored by SFS -- though not contingent on it!
-//
-// SFS should be able to monitor files outside of the designated root directory.
-// if we add a file this way then we should automatically make a backup of it
-// in the SFS root directory with each detected change.
+/*
+add a file to the service using its file path.
+should check for whether the directory it resides in is
+monitored by SFS -- though is not contingent on it!
 
-// add a file to the client-side service. does not push file to server.
+SFS can monitor files outside of the designated root directory, so
+if we add a file this way then we should automatically make a backup of it
+in the SFS root directory with each detected change.
+*/
 func (c *Client) AddFile(filePath string) error {
 	// see if we already have this file in the system
 	file, err := c.Db.GetFileByPath(filePath)
@@ -426,7 +426,7 @@ func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("server returned non-200 status: %v", resp.Status)
+		return "", fmt.Errorf("failed to get server path. server returned non-200 status: %v", resp.Status)
 	}
 	// get file info from response so we can parse it for the new server path
 	var buf bytes.Buffer
@@ -434,12 +434,14 @@ func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	resp.Body.Close()
+
 	var f = new(svc.File)
 	if err := json.Unmarshal(buf.Bytes(), &f); err != nil {
 		return "", err
 	}
 	if f.ServerPath == "" || f.ServerPath == f.ClientPath {
-		return "", fmt.Errorf("server path was not set correctly: %v", f.ServerPath)
+		return "", fmt.Errorf("server path was not set correctly. client_path=%s server_path=%v", f.ClientPath, f.ServerPath)
 	}
 	return f.ServerPath, nil
 }
@@ -710,9 +712,11 @@ func (c *Client) AddDir(dirPath string) error {
 	if err := c.Db.AddDir(newDir); err != nil {
 		return err
 	}
-	if err := c.WatchItem(dirPath); err != nil {
-		return err
-	}
+	// NOTE: directory monitoring is not currently supported.
+	// keeping this for future implementation iterations.
+	// if err := c.WatchItem(dirPath); err != nil {
+	// 	return err
+	// }
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
 		req, err := c.NewDirectoryRequest(newDir)
@@ -723,6 +727,8 @@ func (c *Client) AddDir(dirPath string) error {
 		if err != nil {
 			return err
 		}
+		// TODO: get directory server path.
+
 		c.dump(resp, true)
 	}
 	c.log.Info(fmt.Sprintf("directory (%s) added to client", newDir.Name))
@@ -812,19 +818,21 @@ func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
 }
 
 // see if this directory is registered with the server (exists on servers DB)
-func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
-	req, err := c.GetDirReq(dir, "GET")
+func (c *Client) IsDirRegistered(dir *svc.Directory) bool {
+	req, err := c.GetDirInfoRequest(dir)
 	if err != nil {
-		return false, fmt.Errorf("failed to create directory request: %v", err)
+		c.log.Error("failed to create directory request: " + err.Error())
+		return false
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("failed to execute request: %v", err)
+		c.log.Error("failed to execute request: " + err.Error())
+		return false
 	}
 	if resp.StatusCode == http.StatusOK {
-		return true, nil
+		return true
 	}
-	return false, nil
+	return false
 }
 
 // send directory metadata to the server
