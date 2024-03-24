@@ -45,12 +45,18 @@ func PushCmd(cmd *cobra.Command, args []string) {
 	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(fmt.Errorf("failed to initialize service: %v", err))
+		return
 	}
 	file, err := c.GetFileByPath(filePath)
 	if err != nil {
 		showerr(fmt.Errorf("failed to get file: %v", err))
 		return
 	}
+	if file == nil {
+		showerr(fmt.Errorf("file not found"))
+		return
+	}
+	// are we pushing a new file to the server?
 	newFile, _ := cmd.Flags().GetBool("new-file")
 	if newFile {
 		if err := c.PushNewFile(file); err != nil {
