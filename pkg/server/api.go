@@ -180,25 +180,10 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// create a new file on the server
+// add initial file metadata to the server. does not create file contents, though
+// svc.AddFile() does attempt to write out the data. This will be remidied in a future
+// version.
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
-	file, _, err := r.FormFile("myFile")
-	if err != nil {
-		a.serverError(w, "failed to retrieve form file: "+err.Error())
-		return
-	}
-	defer file.Close()
-
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, file)
-	if err != nil {
-		a.serverError(w, "failed to copy form file: "+err.Error())
-		return
-	}
-	newFile.Content = buf.Bytes()
-	buf.Reset()
-
-	// update service
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
 		a.serverError(w, fmt.Sprintf("failed to add %s to service: %v", newFile.Name, err))
 		return
