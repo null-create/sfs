@@ -54,12 +54,11 @@ func (c *Client) dump(resp *http.Response, body bool) {
 func (c *Client) BuildSyncIndex() {
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		c.log.Log(logger.WARN, "no files. sync index is not set.")
+		c.log.Warn("no files. sync index is not set.")
 		return
 	}
-	var idx *svc.SyncIndex
-	idx = svc.BuildRootSyncIndex(c.Drive.Root)
-	idx = svc.BuildDistSyncIndex(files, nil, idx)
+	idx := svc.BuildRootSyncIndex(c.Drive.Root)
+	idx = svc.BuildDistSyncIndex(files, nil, idx) // NOTE: the dir arg is set to nil until dir monitoring is supported
 	c.Drive.SyncIndex = idx
 
 	c.log.Log(logger.INFO, fmt.Sprintf("%d files have been indexed", len(files)))
