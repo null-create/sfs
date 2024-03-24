@@ -177,16 +177,15 @@ func loadStateFile() ([]byte, error) {
 	return data, nil
 }
 
-// load client from state file, if possible.
-// does not start client services. use client.Start()
-// to start monitoring and synchronization services.
+// load client from state file and initialize.
+// does not automatically start persistent client services.
+// use client.Start() to start monitoring and synchronization services.
 //
 // set persist to true when using as a long-running operation
 // and to utilize real-time monitoring and synchronization services,
 // otherwise set to false if the client should be used for
 // one-off operations.
 func LoadClient(persist bool) (*Client, error) {
-
 	// load client state
 	data, err := loadStateFile()
 	if err != nil {
@@ -263,16 +262,16 @@ func LoadClient(persist bool) (*Client, error) {
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
 		client.log.Info(fmt.Sprintf("monitor is running. watching %d local items", len(client.Monitor.Events)))
-
 		// TODO: pull sync index from server and compare against local index,
 		// then make changes as necessary. this should be part of the standard
 		// start up process for LoadClient()
-		// if c.autoSync() {
-
-		// }
-
-		client.StartTime = time.Now().UTC()
 	}
+	client.StartTime = time.Now().UTC()
+
+	if err := client.SaveState(); err != nil {
+		client.log.Error("failed to save state file: " + err.Error())
+	}
+
 	initLog.Log("INFO", fmt.Sprintf("client started at: %v", time.Now().UTC()))
 	return client, nil
 }
@@ -369,6 +368,9 @@ func NewClient(user *auth.User) (*Client, error) {
 			c.log.Warn("failed to register client with server: " + err.Error())
 		}
 	}
+
+	// initialize local sync index
+	c.BuildSyncIndex()
 
 	// save initial state
 	if err := c.SaveState(); err != nil {

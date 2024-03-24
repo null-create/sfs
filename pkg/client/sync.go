@@ -57,8 +57,11 @@ func (c *Client) BuildSyncIndex() {
 		c.log.Log(logger.WARN, "no files. sync index is not set.")
 		return
 	}
-	svc.BuildRootSyncIndex(c.Drive.Root)
-	svc.BuildDistSyncIndex(files, nil, c.Drive.SyncIndex)
+	var idx *svc.SyncIndex
+	idx = svc.BuildRootSyncIndex(c.Drive.Root)
+	idx = svc.BuildDistSyncIndex(files, nil, idx)
+	c.Drive.SyncIndex = idx
+
 	c.log.Log(logger.INFO, fmt.Sprintf("%d files have been indexed", len(files)))
 }
 
