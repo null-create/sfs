@@ -3,9 +3,10 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/sfs/pkg/logger"
 )
 
 // max size of a single drive (root directory) per user (10GB)
@@ -101,39 +102,29 @@ type Drive struct {
 	IsLoaded bool `json:"is_loaded"`
 
 	// User's root directory & sync index
-	RootPath   string     `json:"drive_root"` // location of the drive on physical server filesystem
-	RootID     string     `json:"root_id"`
-	Root       *Directory `json:"-"` // ignored to avoid json cycle errors
-	SyncIndex  *SyncIndex `json:"sync_index"`
-	Registered bool       `json:"registered"` // flag for whether this drive is registered with the SFS server
+	RootPath   string         `json:"drive_root"` // location of the drive on physical server filesystem
+	RootID     string         `json:"root_id"`
+	Root       *Directory     `json:"-"` // ignored to avoid json cycle errors
+	SyncIndex  *SyncIndex     `json:"sync_index"`
+	Registered bool           `json:"registered"` // flag for whether this drive is registered with the SFS server
+	log        *logger.Logger `json:"-"`          // logging
 
 	// folder for placing "deleted" files and directories
 	RecycleBin string `json:"recycle_bin"`
 }
 
-func check(
-	driveID string,
-	ownerName string,
-	ownerID string,
-	rootPath string,
-	root *Directory,
-) bool {
+var initLog = logger.NewLogger("DRIVE_INIT")
+
+func check(driveID string, ownerName string, ownerID string, rootPath string, root *Directory) bool {
 	if driveID == "" || ownerName == "" || ownerID == "" || rootPath == "" || root == nil {
-		log.Printf("[ERROR] invalid drive parameters. none can be empty!")
+		initLog.Error("invalid drive parameters. none can be empty!")
 		return false
 	}
 	return true
 }
 
 // creates a new drive service for a user. does not create new physical files
-func NewDrive(
-	driveID string,
-	ownerName string,
-	ownerID string,
-	rootPath string,
-	rootID string,
-	root *Directory,
-) *Drive {
+func NewDrive(driveID string, ownerName string, ownerID string, rootPath string, rootID string, root *Directory) *Drive {
 	if !check(driveID, ownerName, ownerID, rootPath, root) {
 		return nil
 	}
@@ -150,6 +141,7 @@ func NewDrive(
 		RootID:     rootID,
 		Root:       root,
 		RecycleBin: filepath.Join(root.Path, "recycle"),
+		log:        logger.NewLogger("DRIVE"),
 	}
 }
 
@@ -200,7 +192,7 @@ func (d *Drive) UpdateDriveSize(size int64) {
 
 func (d *Drive) Lock(password string) {
 	if password != d.Key {
-		log.Printf("[INFO] wrong password: %v", password)
+		d.log.Info("wrong password")
 	} else {
 		d.Protected = true
 	}
@@ -208,7 +200,7 @@ func (d *Drive) Lock(password string) {
 
 func (d *Drive) Unlock(password string) {
 	if password != d.Key {
-		log.Printf("[INFO] wrong password: %v", password)
+		d.log.Info("wrong password")
 	} else {
 		d.Protected = false
 	}
@@ -218,17 +210,17 @@ func (d *Drive) SetNewPassword(password string, newPassword string, isAdmin bool
 	if !d.Protected {
 		if password == d.Key {
 			d.Key = newPassword
-			log.Printf("[INFO] password updated")
+			d.log.Info("password updated")
 		} else {
-			log.Print("[INFO] wrong password")
+			d.log.Info("wrong password")
 		}
 	} else {
 		if isAdmin {
-			log.Print("[INFO] admin password override")
+			d.log.Warn("admin password override!")
 			d.Key = newPassword
 			return
 		}
-		log.Print("[INFO] drive protected. unlock with password.")
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected. unlock with password.", d.ID))
 	}
 }
 
@@ -255,7 +247,7 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 		}
 		d.UpdateDriveSize(file.GetSize())
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -264,12 +256,12 @@ func (d *Drive) AddFile(dirID string, file *File) error {
 func (d *Drive) GetFile(fileID string) *File {
 	if !d.Protected {
 		if !d.HasRoot() {
-			log.Printf("[ERROR] drive (id=%s) has no root directory", d.ID)
+			d.log.Error(fmt.Sprintf("drive (id=%s) has no root directory", d.ID))
 			return nil
 		}
 		return d.Root.WalkF(fileID)
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -287,7 +279,7 @@ func (d *Drive) GetFiles() []*File {
 		}
 		return files
 	} else {
-		log.Printf("[WARNING] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -296,12 +288,12 @@ func (d *Drive) GetFiles() []*File {
 func (d *Drive) GetFilesMap() map[string]*File {
 	if !d.Protected {
 		if !d.HasRoot() {
-			log.Printf("[ERROR] drive (id=%s) has no root directory", d.ID)
+			d.log.Error(fmt.Sprintf("drive (id=%s) has no root directory", d.ID))
 			return nil
 		}
 		return d.Root.WalkFs()
 	} else {
-		log.Printf("[DEBUG] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -328,7 +320,7 @@ func (d *Drive) ModifyFile(dirID string, file *File, data []byte) error {
 			// and adjust the drives used space value accordingly.
 		}
 	} else {
-		log.Printf("[INFO] drive is protected")
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -353,7 +345,7 @@ func (d *Drive) UpdateFile(dirID string, file *File) error {
 			d.UpdateDriveSize(origSize - newSize)
 		}
 	} else {
-		log.Printf("[INFO] drive is protected")
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -383,7 +375,7 @@ func (d *Drive) RemoveFile(dirID string, file *File) error {
 			return nil
 		}
 	} else {
-		log.Printf("[INFO] drive is protected")
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -426,7 +418,7 @@ func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 		}
 		d.UpdateDriveSize(size)
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -450,7 +442,7 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 		}
 		d.UpdateDriveSize(total)
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -459,7 +451,7 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
 		if !d.HasRoot() {
-			log.Printf("[WARNING] drive (id=%s) has no root dir. cant traverse.", d.ID)
+			d.log.Warn(fmt.Sprintf("drive (id=%s) has no root dir. cannot traverse.", d.ID))
 			return nil
 		}
 		if d.Root.ID == dirID {
@@ -467,7 +459,7 @@ func (d *Drive) GetDir(dirID string) *Directory {
 		}
 		return d.Root.WalkD(dirID)
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -477,15 +469,15 @@ func (d *Drive) GetDir(dirID string) *Directory {
 func (d *Drive) GetDirs() []*Directory {
 	if !d.Protected {
 		var (
-			drs  = d.GetDirsMap()
-			dirs = make([]*Directory, 0, len(drs))
+			dm   = d.GetDirsMap()
+			dirs = make([]*Directory, 0, len(dm))
 		)
-		for _, dir := range drs {
+		for _, dir := range dm {
 			dirs = append(dirs, dir)
 		}
 		return dirs
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -495,12 +487,12 @@ func (d *Drive) GetDirs() []*Directory {
 func (d *Drive) GetDirsMap() map[string]*Directory {
 	if !d.Protected {
 		if !d.HasRoot() {
-			log.Printf("[WARNING] drive (id=%s) has no root", d.ID)
+			d.log.Warn(fmt.Sprintf("drive (id=%s) has no root dir. cannot traverse.", d.ID))
 			return nil
 		}
 		return d.Root.WalkDs()
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -516,9 +508,9 @@ func (d *Drive) removeDir(dirID string) error {
 		if dir.Parent != nil {
 			delete(dir.Parent.Dirs, dir.ID)
 		}
-		log.Printf("[INFO] directory (id=%s) removed", dirID)
+		d.log.Info(fmt.Sprintf("directory (id=%s) removed", dirID))
 	} else {
-		log.Printf("[INFO] directory (id=%s) not found", dirID)
+		d.log.Info(fmt.Sprintf("directory (id=%s) not found", dirID))
 	}
 	return nil
 }
@@ -535,7 +527,7 @@ func (d *Drive) RemoveDir(dirID string) error {
 			return err
 		}
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -555,7 +547,7 @@ func (d *Drive) RemoveDirs(dirs []*Directory) error {
 			}
 		}
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -575,7 +567,7 @@ func (d *Drive) UpdateDir(dirID string, updatedDir *Directory) error {
 			return fmt.Errorf("failed to update dir %s: %v", parent.Name, err)
 		}
 	} else {
-		log.Printf("[INFO] drive (id=%s) is protected", d.ID)
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
@@ -592,7 +584,7 @@ func (d *Drive) ClearDrive() error {
 			return err
 		}
 	} else {
-		log.Printf("[INFO] drive protected")
+		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
 	return nil
 }
