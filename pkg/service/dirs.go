@@ -384,6 +384,7 @@ func (d *Directory) PutFile(file *File) error {
 	return nil
 }
 
+// remove physical file and update internal metadata.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
 		if err := os.Remove(file.ServerPath); err != nil {
@@ -399,7 +400,7 @@ func (d *Directory) removeFile(fileID string) error {
 }
 
 // removes file from internal file map and deletes physical file.
-// use with caution!
+// ***use with caution!***
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
@@ -423,11 +424,9 @@ func (d *Directory) GetFiles() []*File {
 	if len(fileMap) == 0 {
 		return make([]*File, 0)
 	}
-	var i int
-	files := make([]*File, len(fileMap))
+	files := make([]*File, 0, len(fileMap))
 	for _, f := range fileMap {
-		files[i] = f
-		i++
+		files = append(files, f)
 	}
 	return files
 }

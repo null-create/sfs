@@ -517,16 +517,18 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 	return nil
 }
 
-// remove a file in a specied directory.
+// remove a file in a specied directory. removes the file from the server too.
 func (c *Client) RemoveFile(file *svc.File) error {
 	// stop monitoring the file
 	c.Monitor.StopWatching(file.Path)
+
 	// we're implementing "soft" deletes here. if a user wants to
 	// actually Delete a file, we can implement another function for that later.
 	// remove from drive and database
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
+
 	// remove physical file from original location
 	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
@@ -534,7 +536,25 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if err := c.Db.RemoveFile(file.ID); err != nil {
 		return err
 	}
-	c.log.Info(fmt.Sprintf("%s was removed", file.Name))
+	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
+
+	// remove file from the server if auto sync is enabled.
+	if c.autoSync() {
+		req, err := c.DeleteFileRequest(file)
+		if err != nil {
+			c.log.Error("failed to create request: " + err.Error())
+			return nil
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			c.log.Error("failed to execute HTTP request: " + err.Error())
+			return nil
+		}
+		c.dump(resp, true)
+		if resp.StatusCode == http.StatusOK {
+			c.log.Info(fmt.Sprintf("%s was removed from the server", file.Name))
+		}
+	}
 	return nil
 }
 
