@@ -592,7 +592,9 @@ func (d *Drive) ClearDrive() error {
 // ---- sync operations --------------------------------
 
 func (d *Drive) BuildSyncIdx() {
+	files := d.GetFiles()
 	d.SyncIndex = BuildRootSyncIndex(d.Root)
+	d.SyncIndex = BuildDistSyncIndex(files, nil, d.SyncIndex)
 }
 
 func (d *Drive) BuildToUpdate() error {
