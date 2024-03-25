@@ -351,7 +351,7 @@ func (s *Service) Reset(svcPath string) error {
 			return fmt.Errorf("failed to save state file: %v", err)
 		}
 	} else {
-		log.Print("[INFO] must be in admin mode to reset service")
+		s.log.Info("must be in admin mode to reset service")
 	}
 	return nil
 }
