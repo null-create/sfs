@@ -180,9 +180,9 @@ func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// add initial file metadata to the server. does not create file contents, though
-// svc.AddFile() does attempt to write out the data. This will be remidied in a future
-// version.
+// add initial file metadata to the server. creates an empty files,
+// does not create file contents, though svc.AddFile() does attempt
+// to write out the data. This will be remidied in a future version.
 func (a *API) newFile(w http.ResponseWriter, r *http.Request, newFile *svc.File) {
 	if err := a.Svc.AddFile(newFile.DirID, newFile); err != nil {
 		a.serverError(w, fmt.Sprintf("failed to add %s to service: %v", newFile.Name, err))
