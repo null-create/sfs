@@ -729,7 +729,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// NOTE: client makes an additional call to retrieve this new path
 	file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
 
-	// create the physical file on the server side
+	// create the (empty) physical file on the server side
 	f, err := os.Create(file.ServerPath)
 	if err != nil {
 		return fmt.Errorf("failed to create file on server side: %v", err)
