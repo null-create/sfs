@@ -120,6 +120,21 @@ func loadUsers(svc *Service) (*Service, error) {
 	return svc, nil
 }
 
+// load all users files and directories.
+func loadDrive(svc *Service, drv *svc.Drive) error {
+	files, err := svc.Db.GetUsersFiles(drv.OwnerID)
+	if err != nil {
+		return err
+	}
+	drv.Root.AddFiles(files)
+	dirs, err := svc.Db.GetUsersDirectories(drv.OwnerID)
+	if err != nil {
+		return err
+	}
+	drv.Root.AddSubDirs(dirs)
+	return nil
+}
+
 // loads each drive from the database.
 func loadDrives(svc *Service) (*Service, error) {
 	drives, err := svc.Db.GetDrives()
@@ -138,12 +153,13 @@ func loadDrives(svc *Service) (*Service, error) {
 			if root == nil {
 				return svc, fmt.Errorf("drive root directory not found")
 			}
-			drive.Root = svc.Populate(root)
+			if err := loadDrive(svc, drive); err != nil {
+				return svc, fmt.Errorf("failed to load drive: %v", err)
+			}
+			drive.BuildSyncIdx()
 			svc.Drives[drive.ID] = drive
 		}
 	}
-	// update state file so we can make each
-	// successive service loads quicker. hopefully.
 	if err := svc.SaveState(); err != nil {
 		return svc, fmt.Errorf("failed to save state: %v", err)
 	}
