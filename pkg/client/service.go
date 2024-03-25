@@ -976,6 +976,7 @@ func (c *Client) Refresh() error {
 		c.log.Info("no files registered with client. nothing to refresh")
 		return nil
 	}
+
 	// see if any of these aren't registered with the server
 	var toRegister = make([]*svc.File, 0, len(files))
 	for _, file := range files {

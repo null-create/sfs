@@ -15,7 +15,7 @@ decide to register, then all the items will be registered.
 var (
 	refreshCmd = &cobra.Command{
 		Use:   "refresh",
-		Short: "find and register any client-side items that aren't registered with the server",
+		Short: "Find and register any client-side items that aren't registered with the server",
 		Run:   refresh,
 	}
 )

@@ -18,7 +18,7 @@ var (
 
 	confCmd = &cobra.Command{
 		Use:   "conf",
-		Short: "set and get client service configurations",
+		Short: "Set and get client service configurations",
 		Run:   RunConfCmd,
 	}
 )
