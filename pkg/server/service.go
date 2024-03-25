@@ -730,15 +730,10 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
 
 	// create the (empty) physical file on the server side
-	f, err := os.Create(file.ServerPath)
+	_, err = os.Create(file.ServerPath)
 	if err != nil {
-		return fmt.Errorf("failed to create file on server side: %v", err)
+		return fmt.Errorf("failed to create empty file on server: %v", err)
 	}
-	_, err = f.Write(file.Content)
-	if err != nil {
-		return fmt.Errorf("failed to write file on server side: %v", err)
-	}
-	f.Close()
 
 	// mark this as a back up so we can access it using the correct path on the
 	// server side
