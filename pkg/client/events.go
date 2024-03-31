@@ -12,12 +12,11 @@ import (
 
 // ---- file monitoring operations
 
-// start monitoring files for changes
+// start monitoring files for changes.
+//
+// NOTE: we don't monitor files under sfs root because
+// that is a desigated backup directory.
 func (c *Client) StartMonitor() error {
-	// monitor files under sfs root
-	if err := c.Monitor.Start(c.Root); err != nil {
-		return err
-	}
 	// monitor all other registered items distributed
 	// in the users system
 	// files := c.Drive.GetFiles()

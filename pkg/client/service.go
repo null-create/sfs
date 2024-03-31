@@ -385,7 +385,16 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
+
+	// create an initial backup of the file in the local sfs root directory
+	if err := newFile.Copy(filepath.Join(c.Drive.Root.Path, newFile.Name)); err != nil {
+		c.log.Error("failed to copy file to local SFS root directory")
+	}
+
 	// push metadata to server if autosync is enabled
+	// this will create an intial EMPTY file on the server-side.
+	// backup contents are created during the first sync of the file
+	// after being registered.
 	if c.autoSync() {
 		req, err := c.NewFileRequest(newFile)
 		if err != nil {
@@ -553,9 +562,6 @@ func (c *Client) RemoveFile(file *svc.File) error {
 			return nil
 		}
 		c.dump(resp, true)
-		if resp.StatusCode == http.StatusOK {
-			c.log.Info(fmt.Sprintf("%s was removed from the server", file.Name))
-		}
 	}
 	return nil
 }
@@ -602,10 +608,8 @@ func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to execute request: %v", err)
 	}
-	if resp.StatusCode == http.StatusOK {
-		return true, nil
-	}
-	return false, nil
+	fmt.Printf("response status: %v", resp.Status)
+	return resp.StatusCode == http.StatusOK, nil
 }
 
 // register new file with the server. does not send file contents,
@@ -973,7 +977,7 @@ func (c *Client) Refresh() error {
 		return err
 	}
 	if len(files) == 0 {
-		c.log.Info("no files registered with client. nothing to refresh")
+		c.log.Log(logger.INFO, "no files registered with client. nothing to refresh")
 		return nil
 	}
 

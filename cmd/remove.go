@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/sfs/pkg/client"
 
@@ -17,7 +18,7 @@ var (
 	RemoveCmd = &cobra.Command{
 		Use:   "remove",
 		Short: "Remove files or directories from the SFS filesystem",
-		Run:   RunRemoveCmd,
+		Run:   removeCmd,
 	}
 )
 
@@ -32,7 +33,7 @@ func init() {
 	drvCmd.AddCommand(RemoveCmd)
 }
 
-func RunRemoveCmd(cmd *cobra.Command, args []string) {
+func removeCmd(cmd *cobra.Command, args []string) {
 	path, _ := cmd.Flags().GetString("path")
 	delete, _ := cmd.Flags().GetBool("delete")
 	if path == "" {
@@ -43,12 +44,14 @@ func RunRemoveCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		showerr(fmt.Errorf("failed to initialize service: %v", err))
 	}
+	// move to recycle bin
+	if err := c.RemoveItem(path); err != nil {
+		showerr(fmt.Errorf("failed to remove item: %v", err))
+	}
+	// hard delete
 	if delete {
-		if err := c.RemoveItem(path); err != nil {
-			showerr(fmt.Errorf("failed to remove item: %v", err))
+		if err := os.Remove(path); err != nil {
+			showerr(fmt.Errorf("failed to remove file: %v", err))
 		}
-	} else {
-		c.Monitor.StopWatching(path)
-		// TODO: create an "ignore" list.
 	}
 }

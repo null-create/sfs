@@ -16,6 +16,9 @@ type FlagPole struct {
 	list_files bool // list all files
 	list_dirs  bool // list all directories
 
+	// discover command flags
+	daemon bool // run in daemon mode
+
 	// configs
 	get bool
 	set bool

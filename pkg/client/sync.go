@@ -39,11 +39,10 @@ func (c *Client) reset() {
 func (c *Client) dump(resp *http.Response, body bool) {
 	b, err := httputil.DumpResponse(resp, body)
 	if err != nil {
-		c.log.Warn("failed to dump http response: " + err.Error())
+		c.log.Error("failed to dump http response: " + err.Error())
 	} else {
 		if resp.StatusCode != http.StatusOK {
-			c.log.Warn("request failed: " + resp.Status)
-			c.log.Log("WARN", "server response: \n"+string(b))
+			c.log.Warn("request failed: " + resp.Status + "\n" + string(b) + "\n")
 		} else {
 			c.log.Log(logger.INFO, "server response: "+resp.Status)
 		}

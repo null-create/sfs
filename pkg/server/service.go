@@ -696,8 +696,8 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 }
 
 // generate a server-side path for a file or directory.
-func (s *Service) buildServerPath(user string, fileName string) string {
-	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", fileName)
+func (s *Service) buildServerPath(user string, itemName string) string {
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", itemName)
 }
 
 // add a new file to the service. creates the physical file,

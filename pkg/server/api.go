@@ -232,7 +232,7 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	file := r.Context().Value(File).(*svc.File)
 	if err := a.Svc.DeleteFile(file); err != nil {
-		a.serverError(w, fmt.Sprintf("\nfailed to delete file: %v\n", err))
+		a.serverError(w, "failed to delete file: "+err.Error())
 		return
 	}
 	a.write(w, fmt.Sprintf("%s (id=%s) deleted from server", file.Name, file.ID))
