@@ -27,9 +27,9 @@ component, level, time, message
 */
 type Logger struct {
 	mu          sync.Mutex   // lock so loggers don't over write each other
-	component   string       `json:"component"`    // name of the component this logger is attached to
-	componentID string       `json:"component_ID"` // ID of the component this logger is attached to
-	logfile     string       `json:"log_file"`     // absolute path to the csv log file
+	component   string       // name of the component this logger is attached to
+	componentID string       // ID of the component this logger is attached to
+	logfile     string       // absolute path to the csv log file
 	log         *slog.Logger // slog instance
 	csvWriter   *csv.Writer  // csv writer instance
 }
