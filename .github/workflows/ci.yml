@@ -2,24 +2,22 @@ name: CI
 
 on:
   pull_request:
-    branches: 
-      — main
+    branches: — main
 
 jobs:
-  
   build:
     name: Build and Test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
-  
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ‘1.20.0’
-      
+          go-version: 1.20.0
+
       - name: Install Dependencies
         shell: bash
         run: |
@@ -29,7 +27,4 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
-          go test
-
-      - name: Build
-        run: go build ./...
+          go test ./...
