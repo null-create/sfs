@@ -735,6 +735,11 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		return fmt.Errorf("failed to create empty file on server: %v", err)
 	}
 
+	// add any file contents to the server side
+	if err := os.WriteFile(file.ServerPath, file.Content, svc.PERMS); err != nil {
+		s.log.Error("failed to write file on server: " + err.Error())
+	}
+
 	// mark this as a back up so we can access it using the correct path on the
 	// server side
 	file.MarkBackedUp()

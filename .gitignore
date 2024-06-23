@@ -18,3 +18,5 @@ reset.py
 # cpu and memory profiling
 *.pprof
 heap.out
+
+test_items

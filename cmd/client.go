@@ -13,7 +13,7 @@ var (
 	clientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "Execute SFS Client Commands",
-		RunE:  ClientCmd,
+		RunE:  runClientCmd,
 	}
 )
 
@@ -46,7 +46,7 @@ func getClientFlags(cmd *cobra.Command) FlagPole {
 	}
 }
 
-func ClientCmd(cmd *cobra.Command, args []string) error {
+func runClientCmd(cmd *cobra.Command, args []string) error {
 	f := getClientFlags(cmd)
 	switch {
 	case f.new:
