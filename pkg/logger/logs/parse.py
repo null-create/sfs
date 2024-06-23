@@ -40,7 +40,7 @@ def parse_logs(component: str, level: str, file: str) -> None:
     for log_file in log_files:
         if log_file.endswith(".py"):
             continue
-        with open(log_file, "r") as f:
+        with open(file=log_file, mode="r") as f:
             reader = csv.reader(f)
             for row in reader:
                 if row[0] == component and row[1] == level:
