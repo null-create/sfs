@@ -7,10 +7,10 @@ on:
 jobs:
   build:
     name: Build and Test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Go
@@ -27,7 +27,4 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
-          go test
-
-      - name: Build
-        run: go build ./...
+          go test ./...
