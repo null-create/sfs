@@ -200,14 +200,14 @@ func LoadClient(persist bool) (*Client, error) {
 	// initialize logger
 	client.log = logger.NewLogger("Client", client.UserID)
 
+	// initialize DB connection
+	client.Db = db.NewQuery(client.Db.DBPath, true)
+
 	// load user info
 	if err := client.LoadUser(); err != nil {
 		initLog.Log("ERROR", fmt.Sprintf("failed to load user: %v", err))
 		return nil, fmt.Errorf("failed to load user: %v", err)
 	}
-
-	// initialize DB connection
-	client.Db = db.NewQuery(client.Db.DBPath, true)
 
 	// load drive with users sfs directory tree populated.
 	// also refreshes (or generates) drive sync index.
