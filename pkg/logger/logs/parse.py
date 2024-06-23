@@ -19,7 +19,7 @@ def parse_args():
 # parse a single log file
 def parse_log(component: str, level: str, file: str) -> None:
     results = ""
-    with open(file, "r") as f:
+    with open(file=file, mode="r") as f:
         reader = csv.reader(f)
         for row in reader:
             if row[0] == component and row[1] == level:
