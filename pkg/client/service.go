@@ -1070,7 +1070,7 @@ func (c *Client) DiscoverInRoot(root *svc.Directory) (*svc.Directory, error) {
 	return root, nil
 }
 
-// similar to Discover, but uses a specified directory path
+// similar to DiscoverInRoot, but uses a specified directory path
 // and does not return a new directory object.
 func (c *Client) DiscoverWithPath(dirPath string) error {
 	// see if we have this directory already
