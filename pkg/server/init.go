@@ -126,12 +126,16 @@ func loadDrive(svc *Service, drv *svc.Drive) error {
 	if err != nil {
 		return err
 	}
-	drv.Root.AddFiles(files)
+	if files != nil {
+		drv.Root.AddFiles(files)
+	}
 	dirs, err := svc.Db.GetUsersDirectories(drv.OwnerID)
 	if err != nil {
 		return err
 	}
-	drv.Root.AddSubDirs(dirs)
+	if len(dirs) > 0 {
+		drv.Root.AddSubDirs(dirs)
+	}
 	return nil
 }
 
