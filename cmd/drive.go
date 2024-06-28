@@ -62,45 +62,30 @@ func getDrvflags(cmd *cobra.Command) FlagPole {
 }
 
 func RunDrvCmd(cmd *cobra.Command, args []string) {
+	c, err := client.LoadClient(false)
+	if err != nil {
+		showerr(fmt.Errorf("failed to initialize service: %v", err))
+	}
+	// Get flag values
 	f := getDrvflags(cmd)
 	switch {
 	case f.register:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
-		}
 		if err := c.RegisterClient(); err != nil {
 			showerr(err)
 		}
 	case f.list_files:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
-		}
 		if err := c.ListLocalFilesDB(); err != nil {
 			showerr(err)
 		}
 	case f.list_dirs:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
-		}
 		if err := c.ListLocalDirsDB(); err != nil {
 			showerr(err)
 		}
 	case f.remote:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
-		}
 		if err := c.ListRemoteFiles(); err != nil {
 			showerr(err)
 		}
 	case f.refresh:
-		c, err := client.LoadClient(false)
-		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
-		}
 		c.RefreshDrive()
 	}
 }
