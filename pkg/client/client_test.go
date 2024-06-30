@@ -207,6 +207,61 @@ func TestLoadAndStartClient(t *testing.T) {
 	}
 }
 
+// func TestClientAddAndRemoveFile(t *testing.T) {
+// 	env.SetEnv(false)
+
+// 	// make sure we clean the right testing directory
+// 	e := env.NewE()
+// 	tmpDir, err := e.Get("CLIENT_ROOT")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	tmpClient, err := Init(false)
+// 	if err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+
+// 	// run a test server to register the file when added to the client
+// 	shutDown := make(chan bool)
+// 	testServer := server.NewServer()
+// 	go func() {
+// 		testServer.Start(shutDown)
+// 	}()
+
+// 	// Add a new file using the client instance
+// 	testFilePath := filepath.Join(tmpDir, "test.txt")
+// 	f, err := os.Create(testFilePath)
+// 	if err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+// 	_, err = f.Write([]byte("test data"))
+// 	if err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+
+// 	if err = tmpClient.AddFile(testFilePath); err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+// 	testFile, err := tmpClient.GetFileByPath(testFilePath)
+// 	if err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+
+// 	// Remove test file
+// 	if err = tmpClient.RemoveFile(testFile); err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+
+// 	if err := Clean(t, tmpDir); err != nil {
+// 		// reset our .env file for other tests
+// 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+// 			log.Fatal(err2)
+// 		}
+// 		log.Fatal(err)
+// 	}
+// }
+
 func TestClientUpdateUser(t *testing.T) {
 	env.SetEnv(false)
 

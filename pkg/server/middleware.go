@@ -290,6 +290,7 @@ func FileCtx(h http.Handler) http.Handler {
 			http.Error(w, "fileID not set", http.StatusBadRequest)
 			return
 		}
+		// See if the file exists
 		file, err := findFile(fileID, getDBConn("Files"))
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to retrieve file info: %v", err), http.StatusInternalServerError)

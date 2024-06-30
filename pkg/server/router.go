@@ -124,6 +124,8 @@ func NewRouter() *chi.Mux {
 		})
 
 		// directories
+		// NOTE: Directories are not supported at this time, but we'll keep these
+		// endpoints in place for future iterations.
 		r.Route("/dirs", func(r chi.Router) {
 			// specific directories
 			r.Route("/{dirID}", func(r chi.Router) {

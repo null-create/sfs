@@ -370,35 +370,36 @@ func (c *Client) apply(itemPath string, action string) error {
 		return err
 	}
 	if item.IsDir() {
-		dir, err := c.GetDirByPath(itemPath)
-		if err != nil {
-			return err
-		}
-		switch action {
-		case "name":
-			dir.Name = item.Name()
-			if err := c.UpdateDirectory(dir); err != nil {
-				return err
-			}
-		case "size":
-			dir.Size = item.Size()
-			if err := c.UpdateDirectory(dir); err != nil {
-				return err
-			}
-		case "modtime":
-			dir.LastSync = item.ModTime()
-			if err := c.UpdateDirectory(dir); err != nil {
-				return err
-			}
-		case "change":
-			break
-		case "delete":
-			if err := c.RemoveDir(dir); err != nil {
-				return err
-			}
-		default:
-			return nil
-		}
+		// *** NOTE: Directory actions are not supported
+		// dir, err := c.GetDirByPath(itemPath)
+		// if err != nil {
+		// 	return err
+		// }
+		// switch action {
+		// case "name":
+		// 	dir.Name = item.Name()
+		// 	if err := c.UpdateDirectory(dir); err != nil {
+		// 		return err
+		// 	}
+		// case "size":
+		// 	dir.Size = item.Size()
+		// 	if err := c.UpdateDirectory(dir); err != nil {
+		// 		return err
+		// 	}
+		// case "modtime":
+		// 	dir.LastSync = item.ModTime()
+		// 	if err := c.UpdateDirectory(dir); err != nil {
+		// 		return err
+		// 	}
+		// case "change":
+		// 	break
+		// case "delete":
+		// 	if err := c.RemoveDir(dir); err != nil {
+		// 		return err
+		// 	}
+		// default:
+		// 	return nil
+		// }
 	} else {
 		file, err := c.GetFileByPath(itemPath)
 		if err != nil {
