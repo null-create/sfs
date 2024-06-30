@@ -755,6 +755,8 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) {
 	for rows.Next() {
 		drv := new(svc.Drive)
 		drv.Root = new(svc.Directory)
+		drv.Root.Files = make(map[string]*svc.File, 0)
+		drv.Root.Dirs = make(map[string]*svc.Directory, 0)
 		drv.SyncIndex = new(svc.SyncIndex)
 		if err := rows.Scan(
 			&drv.ID,
