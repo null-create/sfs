@@ -164,6 +164,7 @@ func (q *Query) GetFileByID(fileID string) (*svc.File, error) {
 }
 
 // find a file in the database by searching with its path
+// returns nil if no file is found.
 func (q *Query) GetFileByPath(filePath string) (*svc.File, error) {
 	q.WhichDB("files")
 	q.Connect()

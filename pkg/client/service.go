@@ -46,17 +46,21 @@ func (c *Client) RemoveItem(itemPath string) error {
 		return err
 	}
 	if item.IsDir() {
-		dir, err := c.Db.GetDirectoryByPath(itemPath)
-		if err != nil {
-			return err
-		}
-		if err := c.RemoveDir(dir); err != nil {
-			return err
-		}
+		// NOTE: directory actions aren't supported yet
+		// dir, err := c.Db.GetDirectoryByPath(itemPath)
+		// if err != nil {
+		// 	return err
+		// }
+		// if err := c.RemoveDir(dir); err != nil {
+		// 	return err
+		// }
 	} else {
 		file, err := c.Db.GetFileByPath(itemPath)
 		if err != nil {
 			return nil
+		}
+		if file == nil {
+			return fmt.Errorf("%s not found", filepath.Base(itemPath))
 		}
 		if err := c.RemoveFile(file); err != nil {
 			return err
