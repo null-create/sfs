@@ -21,7 +21,7 @@ import (
 // create a new SFS service with databases.
 // requires a configured .env file prior to running.
 func Build() error {
-	_, err := SvcInit(svcCfg.SvcRoot)
+	_, err := SetUpService(svcCfg.SvcRoot)
 	if err != nil {
 		return fmt.Errorf("failed to initialize new SFS service: %v", err)
 	}
@@ -43,7 +43,7 @@ func Init(new bool, admin bool) (*Service, error) {
 		return svc, nil
 	} else {
 		// initialize new sfs service
-		svc, err := SvcInit(svcCfg.SvcRoot)
+		svc, err := SetUpService(svcCfg.SvcRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +189,7 @@ root/
 */
 
 // initialize a new service and corresponding databases
-func SvcInit(svcRoot string) (*Service, error) {
+func SetUpService(svcRoot string) (*Service, error) {
 	// create a logger for initialization steps
 	initLogger := logger.NewLogger("SERVICE_INIT", "None")
 

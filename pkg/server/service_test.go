@@ -85,7 +85,7 @@ func TestLoadServiceFromStateFile(t *testing.T) {
 
 func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
 	testRoot := filepath.Join(GetTestingDir(), "tmp")
-	testSvc, err := SvcInit(testRoot)
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
@@ -121,7 +121,7 @@ func TestCreateNewService(t *testing.T) {
 	}
 
 	testRoot := filepath.Join(GetTestingDir(), "tmp")
-	testSvc, err := SvcInit(testRoot)
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
 		Fatal(t, err)
 	}
