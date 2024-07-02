@@ -356,15 +356,15 @@ func NewClient(user *auth.User) (*Client, error) {
 	// add token component
 	c.Tok = auth.NewT()
 
+	// initialize local sync index
+	c.BuildSyncIndex()
+
 	// register drive with the server if autosync is enabled
 	if c.autoSync() {
 		if err := c.RegisterClient(); err != nil {
 			c.log.Warn("failed to register client with server: " + err.Error())
 		}
 	}
-
-	// initialize local sync index
-	c.BuildSyncIndex()
 
 	// save initial state
 	if err := c.SaveState(); err != nil {
