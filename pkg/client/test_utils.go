@@ -289,14 +289,11 @@ func MakeABunchOfTxtFiles(total int) ([]*svc.File, error) {
 func MakeABunchOfTxtFilesWithLoc(total int, loc string) ([]*svc.File, error) {
 	files := make([]*svc.File, 0, total)
 	for i := 0; i < total; i++ {
-		fileName := fmt.Sprintf("tmp-%d.txt", i)
-		filePath := filepath.Join(loc, fileName)
-
+		filePath := filepath.Join(loc, fmt.Sprintf("tmp-%d.txt", i))
 		f, err := MakeTmpTxtFile(filePath, RandInt(1000))
 		if err != nil {
 			return nil, fmt.Errorf("error creating temporary file: %v", err)
 		}
-
 		files = append(files, f)
 	}
 	return files, nil
