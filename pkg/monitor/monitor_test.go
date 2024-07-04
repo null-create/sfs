@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alecthomas/assert/v2"
 	"github.com/sfs/pkg/env"
+
+	"github.com/alecthomas/assert/v2"
 )
 
 // creates a new listener goroutine and checks received events
@@ -40,33 +41,35 @@ func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener
 	}()
 }
 
-func testMonitorListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
-	go func() {
-		log.Print("[TEST] monitoring directory: " + filepath.Base(path))
-		dirChan := watchDir(path, stopMonitor)
-		for {
-			select {
-			case evt := <-dirChan:
-				switch evt.Type {
-				case Add:
-					log.Print("[TEST] add event detected: " + evt.Path)
-					var items string
-					for _, evt := range evt.Items {
-						items += evt.name + "\n"
-					}
-					log.Printf("[TEST] items: " + items)
-				default:
-					continue
-				}
-			case <-stopListener:
-				log.Print("[TEST] stopping listener...")
-				return
-			default:
-				continue
-			}
-		}
-	}()
-}
+// NOTE: this is used for directory monitoring testing, and directory
+// monitoring is currently not supported. This will remain for future iterations.
+// func testMonitorListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
+// 	go func() {
+// 		log.Print("[TEST] monitoring directory: " + filepath.Base(path))
+// 		dirChan := watchDir(path, stopMonitor)
+// 		for {
+// 			select {
+// 			case evt := <-dirChan:
+// 				switch evt.Type {
+// 				case Add:
+// 					log.Print("[TEST] add event detected: " + evt.Path)
+// 					var items string
+// 					for _, evt := range evt.Items {
+// 						items += evt.name + "\n"
+// 					}
+// 					log.Printf("[TEST] items: " + items)
+// 				default:
+// 					continue
+// 				}
+// 			case <-stopListener:
+// 				log.Print("[TEST] stopping listener...")
+// 				return
+// 			default:
+// 				continue
+// 			}
+// 		}
+// 	}()
+// }
 
 // starts a new testListner for a given file.
 // returns a monitor shutdown channel and a listener shut down channel
@@ -77,12 +80,14 @@ func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
 	return stopMonitor, stopListener
 }
 
-func NewTestMonitorListener(t *testing.T, path string) (chan bool, chan bool) {
-	stopMonitor := make(chan bool)
-	stopListener := make(chan bool)
-	testMonitorListener(t, path, stopMonitor, stopListener)
-	return stopMonitor, stopListener
-}
+// NOTE: this is used for directory monitoring testing, and directory
+// monitoring is currently not supported. This will remain for future iterations.
+// func NewTestMonitorListener(t *testing.T, path string) (chan bool, chan bool) {
+// 	stopMonitor := make(chan bool)
+// 	stopListener := make(chan bool)
+// 	testMonitorListener(t, path, stopMonitor, stopListener)
+// 	return stopMonitor, stopListener
+// }
 
 func TestMonitorWithOneFile(t *testing.T) {
 	env.SetEnv(false)
@@ -237,42 +242,43 @@ func TestMonitorWatchAll(t *testing.T) {
 	}
 }
 
-func TestMonitorDirectory(t *testing.T) {
-	env.SetEnv(false)
+// NOTE: monitoring directories is currently not supported
+// func TestMonitorDirectory(t *testing.T) {
+// 	env.SetEnv(false)
 
-	// make temp files to monitor
-	tmp := MakeTmpDirs(t)
+// 	// make temp files to monitor
+// 	tmp := MakeTmpDirs(t)
 
-	// initialize new monitor with watching goroutines
-	// for all files under tmp. none of the watchers will have event
-	// listeners, we just want to see if they all independently
-	// detect file changes.
-	monitor := NewMonitor(tmp.Path)
-	if err := monitor.Start(tmp.Path); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
+// 	// initialize new monitor with watching goroutines
+// 	// for all files under tmp. none of the watchers will have event
+// 	// listeners, we just want to see if they all independently
+// 	// detect file changes.
+// 	monitor := NewMonitor(tmp.Path)
+// 	if err := monitor.Start(tmp.Path); err != nil {
+// 		Fail(t, GetTestingDir(), err)
+// 	}
 
-	// add a test listener for the temp directory
-	stopListener := make(chan bool)
-	testMonitorListener(t, tmp.Path, make(chan bool), stopListener)
+// 	// add a test listener for the temp directory
+// 	stopListener := make(chan bool)
+// 	testMonitorListener(t, tmp.Path, make(chan bool), stopListener)
 
-	// make a new file in the temp directory and add to the monitor
-	file, err := MakeTmpTxtFile(filepath.Join(tmp.Path, "new-thing.txt"), RandInt(500))
-	if err != nil {
-		monitor.ShutDown()
-		stopListener <- true
-		Fatal(t, err)
-	}
-	if err := monitor.Watch(file.Path); err != nil {
-		monitor.ShutDown()
-		stopListener <- true
-		Fail(t, GetTestingDir(), err)
-	}
+// 	// make a new file in the temp directory and add to the monitor
+// 	file, err := MakeTmpTxtFile(filepath.Join(tmp.Path, "new-thing.txt"), RandInt(500))
+// 	if err != nil {
+// 		monitor.ShutDown()
+// 		stopListener <- true
+// 		Fatal(t, err)
+// 	}
+// 	if err := monitor.Watch(file.Path); err != nil {
+// 		monitor.ShutDown()
+// 		stopListener <- true
+// 		Fail(t, GetTestingDir(), err)
+// 	}
 
-	// shut down and clean up
-	monitor.ShutDown()
-	stopListener <- true
-	if err := Clean(t, GetTestingDir()); err != nil {
-		log.Fatal(err)
-	}
-}
+// 	// shut down and clean up
+// 	monitor.ShutDown()
+// 	stopListener <- true
+// 	if err := Clean(t, GetTestingDir()); err != nil {
+// 		log.Fatal(err)
+// 	}
+// }
