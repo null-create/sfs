@@ -42,7 +42,7 @@ func RunDiscoverCmd(cmd *cobra.Command, args []string) {
 		showerr(err)
 		return
 	}
-	if err := c.DiscoverWithPath(path); err != nil {
+	if _, err := c.DiscoverWithPath(path); err != nil {
 		showerr(err)
 	}
 }

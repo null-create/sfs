@@ -58,3 +58,11 @@ func TestTokenExtraction(t *testing.T) {
 	assert.NotContains(t, tokenString, "Bearer")
 	assert.NotEqual(t, "", tokenString)
 }
+
+func TestSecretGeneration(t *testing.T) {
+	env.SetEnv(false)
+	testSecret := GenSecret(64)
+
+	assert.NotEqual(t, testSecret, "")
+	assert.Equal(t, len(testSecret), 64)
+}

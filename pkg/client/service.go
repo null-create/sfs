@@ -46,17 +46,21 @@ func (c *Client) RemoveItem(itemPath string) error {
 		return err
 	}
 	if item.IsDir() {
-		dir, err := c.Db.GetDirectoryByPath(itemPath)
-		if err != nil {
-			return err
-		}
-		if err := c.RemoveDir(dir); err != nil {
-			return err
-		}
+		// NOTE: directory actions aren't supported yet
+		// dir, err := c.Db.GetDirectoryByPath(itemPath)
+		// if err != nil {
+		// 	return err
+		// }
+		// if err := c.RemoveDir(dir); err != nil {
+		// 	return err
+		// }
 	} else {
 		file, err := c.Db.GetFileByPath(itemPath)
 		if err != nil {
 			return nil
+		}
+		if file == nil {
+			return fmt.Errorf("%s not found", filepath.Base(itemPath))
 		}
 		if err := c.RemoveFile(file); err != nil {
 			return err
@@ -355,7 +359,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	if file != nil {
-		return fmt.Errorf("file already exists")
+		return fmt.Errorf("%s is already registered", filepath.Base(filePath))
 	}
 
 	// create new file object
@@ -385,12 +389,6 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
-
-	// create an initial backup of the file in the local sfs root directory
-	if err := newFile.Copy(filepath.Join(c.Drive.Root.Path, newFile.Name)); err != nil {
-		c.log.Error("failed to copy file to local SFS root directory")
-	}
-
 	// push metadata to server if autosync is enabled
 	// this will create an intial EMPTY file on the server-side.
 	// backup contents are created during the first sync of the file
@@ -1072,18 +1070,18 @@ func (c *Client) DiscoverInRoot(root *svc.Directory) (*svc.Directory, error) {
 
 // similar to DiscoverInRoot, but uses a specified directory path
 // and does not return a new directory object.
-func (c *Client) DiscoverWithPath(dirPath string) error {
+func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 	// see if we have this directory already
 	dir, err := c.Db.GetDirectoryByPath(dirPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if dir != nil {
 		c.log.Info(fmt.Sprintf("%s is already known", filepath.Base(dirPath)))
-		return nil
+		return dir, nil
 	}
 
-	// create a new directory object under root and traverse
+	// create a new directory object and traverse
 	c.log.Info(fmt.Sprintf("traversing %s...", dirPath))
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 	newDir.Parent = c.Drive.Root
@@ -1094,15 +1092,15 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	c.log.Info(fmt.Sprintf("adding %d files...", len(files)))
 
 	if err := c.Db.AddFiles(files); err != nil {
-		return fmt.Errorf("failed to add files to database: %v", err)
+		return nil, fmt.Errorf("failed to add files to database: %v", err)
 	}
 	for _, file := range files {
 		if err := c.WatchItem(file.Path); err != nil {
-			return err
+			return nil, err
 		}
 		if c.autoSync() {
 			if err := c.RegisterFile(file); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -1112,7 +1110,7 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
 
 	if err := c.Db.AddDirs(dirs); err != nil {
-		return err
+		return nil, err
 	}
 	for _, subDir := range dirs {
 		// if err := c.WatchItem(subDir.Path); err != nil {
@@ -1120,7 +1118,7 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 		// }
 		if c.autoSync() {
 			if err := c.RegisterDirectory(subDir); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -1128,15 +1126,15 @@ func (c *Client) DiscoverWithPath(dirPath string) error {
 	// add new directory itself. not monitored (for now)
 	c.log.Info(fmt.Sprintf("adding %s...", filepath.Base(dirPath)))
 	if err := c.Db.AddDir(newDir); err != nil {
-		return fmt.Errorf("failed to add root to database: %v", err)
+		return nil, fmt.Errorf("failed to add root to database: %v", err)
 	}
 	// if err := c.WatchItem(newDir.Path); err != nil {
 	// 	return err
 	// }
 	if err := c.RegisterDirectory(newDir); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return newDir, nil
 }
 
 // Populate() populates a drive's root directory with all the users

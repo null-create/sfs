@@ -21,28 +21,33 @@ var BaseEnv = map[string]string{
 	// general settings
 	"ADMIN_MODE":        "false",
 	"BUFFERED_EVENTS":   "true",
-	"EVENT_BUFFER_SIZE": "10",
-	"JWT_SECRET":        "default",
+	"EVENT_BUFFER_SIZE": "2",
+	"JWT_SECRET":        "",
 	"NEW_SERVICE":       "true",
+
 	// client settings
 	"CLIENT":             "",
-	"CLIENT_ADDRESS":     "",
+	"CLIENT_USERNAME":    "",
 	"CLIENT_EMAIL":       "",
-	"CLIENT_ID":          "",
+	"CLIENT_ADDRESS":     "localhost:8080",
+	"CLIENT_AUTO_SYNC":   "true",
 	"CLIENT_NEW_SERVICE": "true",
-	"CLIENT_PASSWORD":    "default",
+	"CLIENT_ID":          "",
+	"CLIENT_LOG_DIR":     "",
+	"CLIENT_PASSWORD":    "",
 	"CLIENT_PORT":        "8080",
 	"CLIENT_ROOT":        "",
 	"CLIENT_TESTING":     "",
-	"CLIENT_USERNAME":    "",
+
 	// server settings
 	"SERVER_ADDR":          "localhost:8080",
 	"SERVER_ADMIN":         "admin",
-	"SERVER_ADMIN_KEY":     "default",
+	"SERVER_ADMIN_KEY":     "",
 	"SERVER_PORT":          "8080",
 	"SERVER_TIMEOUT_IDLE":  "900s",
 	"SERVER_TIMEOUT_READ":  "5s",
 	"SERVER_TIMEOUT_WRITE": "10s",
+
 	// service settings
 	"SERVICE_ROOT":      "",
 	"SERVICE_TEST_ROOT": "",
@@ -74,6 +79,20 @@ func HasDotEnv() bool {
 		log.Fatalf("failed to get working directory: %v", err)
 	}
 	entries, err := os.ReadDir(wd)
+	if err != nil {
+		log.Fatalf("failed to read directory entires: %v", err)
+	}
+	for _, e := range entries {
+		if e.Name() == ".env" {
+			return true
+		}
+	}
+	return false
+}
+
+// check for the presence of a .env file in the given directory
+func CheckForDotEnv(dirpath string) bool {
+	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		log.Fatalf("failed to read directory entires: %v", err)
 	}

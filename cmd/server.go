@@ -41,19 +41,7 @@ func RunServerCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 	case start:
-		startServer()
+		svr := server.NewServer()
+		svr.Run()
 	}
-}
-
-func startServer() {
-	svr := server.NewServer()
-	svr.Run()
-}
-
-func newService() error {
-	_, err := server.Init(svcCfg.NewService, svcCfg.IsAdmin)
-	if err != nil {
-		return err
-	}
-	return nil
 }

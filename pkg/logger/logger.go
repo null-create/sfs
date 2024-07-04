@@ -97,7 +97,7 @@ func createLogFile(lfpath string) error {
 		}
 		// add initial column names
 		writer := csv.NewWriter(csvFile)
-		writer.Write([]string{"Component", "Level", "Time", "Message", "ID"})
+		writer.Write([]string{"Time", "Component", "Level", "Message", "ID"})
 		writer.Flush()
 	}
 	return nil
@@ -141,7 +141,7 @@ func (l *Logger) Log(level string, msg string) {
 	defer l.mu.Unlock()
 
 	timestamp := time.Now().UTC()
-	l.csvWriter.Write([]string{l.component, level, timestamp.Format(time.RFC3339), msg, l.componentID})
+	l.csvWriter.Write([]string{timestamp.Format(time.RFC3339), l.component, level, msg, l.componentID})
 	l.csvWriter.Flush()
 	if err := l.csvWriter.Error(); err != nil {
 		log.Fatalf("error writing to log file: %v", err)
