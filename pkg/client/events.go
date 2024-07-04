@@ -426,8 +426,6 @@ func (c *Client) apply(itemPath string, action string) error {
 			if err := c.UpdateFile(file); err != nil {
 				return err
 			}
-		case "change":
-			break
 		case "delete":
 			if err := c.RemoveFile(file); err != nil {
 				return err
