@@ -230,12 +230,7 @@ func TestMonitorWatchAll(t *testing.T) {
 	}
 
 	// stop all  monitors
-	//
-	// NOTE: off switches don't seem to be working?
-	// test times out currently
-	for _, off := range monitor.OffSwitches {
-		off <- true
-	}
+	monitor.ShutDown()
 
 	if err := Clean(t, GetTestingDir()); err != nil {
 		log.Fatal(err)
