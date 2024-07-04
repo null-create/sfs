@@ -359,7 +359,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	if file != nil {
-		return fmt.Errorf("file already exists")
+		return fmt.Errorf("%s is already registered", filepath.Base(filePath))
 	}
 
 	// create new file object
@@ -389,12 +389,6 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
-
-	// create an initial backup of the file in the local sfs root directory
-	if err := newFile.Copy(filepath.Join(c.Drive.Root.Path, newFile.Name)); err != nil {
-		c.log.Error("failed to copy file to local SFS root directory")
-	}
-
 	// push metadata to server if autosync is enabled
 	// this will create an intial EMPTY file on the server-side.
 	// backup contents are created during the first sync of the file
