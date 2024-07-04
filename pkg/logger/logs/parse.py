@@ -22,8 +22,8 @@ def parse_log(component: str, level: str, file: str) -> None:
     with open(file=file, mode="r") as f:
         reader = csv.reader(f)
         for row in reader:
-            if row[0] == component and row[1] == level:
-                results += f"{component}: {row[2]} - {level}: {row[3]}\n"
+            if row[1] == component and row[2] == level:
+                results += f"{component}: {row[0]} - {level}: {row[3]}\n"
     print(results)
 
 
@@ -43,8 +43,8 @@ def parse_logs(component: str, level: str, file: str) -> None:
         with open(file=log_file, mode="r") as f:
             reader = csv.reader(f)
             for row in reader:
-                if row[0] == component and row[1] == level:
-                    results += f"{component}: {row[2]} - {level}: {row[3]}\n"
+                if row[1] == component and row[2] == level:
+                    results += f"{component}: {row[0]} - {level}: {row[3]}\n"
 
     print(results)
 
