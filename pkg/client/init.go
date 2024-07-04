@@ -42,7 +42,7 @@ this can allow for more individual control over files and directories
 as well as elmininate the need for a dedicated "root" service directory.
 (not that this is an inherently bad idea, just want flexiblity)
 */
-func Setup() (*Client, error) {
+func SetupClient(svcRoot string) (*Client, error) {
 	var setupLog = logger.NewLogger("CLIENT_SETUP", "None")
 
 	// get environment variables and client envCfg
@@ -50,7 +50,7 @@ func Setup() (*Client, error) {
 
 	// make client service root directory
 	setupLog.Info("making SFS service directories...")
-	svcDir := filepath.Join(cfgs.Root, cfgs.User)
+	svcDir := filepath.Join(svcRoot, cfgs.User)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
 	}
@@ -155,12 +155,11 @@ func loadStateFile() ([]byte, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no state file found for client")
 	} else if len(entries) > 1 {
-		initLog.Warn("more than one state file found in: " + sfDir)
 		var output string
 		for i, entry := range entries {
 			output += fmt.Sprintf("	%d: %s\n", i+1, entry.Name())
 		}
-		initLog.Warn(output)
+		initLog.Warn("more than one state file found in: " + sfDir + "\n" + output)
 	}
 	// get most recent one (assuming more than one present somehow)
 	sf := entries[len(entries)-1]
@@ -376,7 +375,7 @@ func NewClient(user *auth.User) (*Client, error) {
 // initialize client service
 func Init(newClient bool) (*Client, error) {
 	if newClient {
-		client, err := Setup()
+		client, err := SetupClient(cfgs.Root)
 		if err != nil {
 			return nil, err
 		}

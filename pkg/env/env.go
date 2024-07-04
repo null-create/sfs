@@ -21,9 +21,10 @@ var BaseEnv = map[string]string{
 	// general settings
 	"ADMIN_MODE":        "false",
 	"BUFFERED_EVENTS":   "true",
-	"EVENT_BUFFER_SIZE": "3",
-	"JWT_SECRET":        "default",
+	"EVENT_BUFFER_SIZE": "2",
+	"JWT_SECRET":        "",
 	"NEW_SERVICE":       "true",
+
 	// client settings
 	"CLIENT":             "",
 	"CLIENT_USERNAME":    "",
@@ -33,7 +34,7 @@ var BaseEnv = map[string]string{
 	"CLIENT_NEW_SERVICE": "true",
 	"CLIENT_ID":          "",
 	"CLIENT_LOG_DIR":     "",
-	"CLIENT_PASSWORD":    "default",
+	"CLIENT_PASSWORD":    "",
 	"CLIENT_PORT":        "8080",
 	"CLIENT_ROOT":        "",
 	"CLIENT_TESTING":     "",
@@ -41,11 +42,12 @@ var BaseEnv = map[string]string{
 	// server settings
 	"SERVER_ADDR":          "localhost:8080",
 	"SERVER_ADMIN":         "admin",
-	"SERVER_ADMIN_KEY":     "default",
+	"SERVER_ADMIN_KEY":     "",
 	"SERVER_PORT":          "8080",
 	"SERVER_TIMEOUT_IDLE":  "900s",
 	"SERVER_TIMEOUT_READ":  "5s",
 	"SERVER_TIMEOUT_WRITE": "10s",
+
 	// service settings
 	"SERVICE_ROOT":      "",
 	"SERVICE_TEST_ROOT": "",

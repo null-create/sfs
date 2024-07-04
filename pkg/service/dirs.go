@@ -641,8 +641,8 @@ func walkF(dir *Directory, fileID string) *File {
 	if len(dir.Dirs) == 0 {
 		return nil
 	}
-	for _, subDirs := range dir.Dirs {
-		if file := walkF(subDirs, fileID); file != nil {
+	for _, subDir := range dir.Dirs {
+		if file := walkF(subDir, fileID); file != nil {
 			return file
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sfs/pkg/client"
+	"github.com/sfs/pkg/env"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -15,6 +16,7 @@ var (
 		Short: "Execute SFS Client Commands",
 		RunE:  runClientCmd,
 	}
+	e = env.NewE()
 )
 
 func init() {
@@ -46,11 +48,26 @@ func getClientFlags(cmd *cobra.Command) FlagPole {
 	}
 }
 
+func isNewService() (bool, error) {
+	val, err := e.Get("CLIENT_NEW_SERVICE")
+	if err != nil {
+		return false, err
+	}
+	return val == "true", nil
+}
+
 func runClientCmd(cmd *cobra.Command, args []string) error {
 	f := getClientFlags(cmd)
 	switch {
 	case f.new:
-		_, err := client.Init(configs.NewService)
+		isNew, err := isNewService()
+		if err != nil {
+			return err
+		}
+		if !isNew {
+			return fmt.Errorf("not a new instance")
+		}
+		_, err = client.Init(configs.NewService)
 		if err != nil {
 			showerr(fmt.Errorf("failed to initialize service: %v", err))
 		}

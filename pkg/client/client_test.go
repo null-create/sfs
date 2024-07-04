@@ -386,7 +386,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	}
 
 	// make a test client
-	tmpClient, err := Init(true)
+	tmpClient, err := Init(false)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -471,7 +471,7 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	}
 
 	testDrive := MakeTmpDrive(t)
-	err = tmpClient.DiscoverWithPath(testDrive.Root.Path)
+	_, err = tmpClient.DiscoverWithPath(testDrive.Root.Path)
 	if err != nil {
 		t.Fatal(err)
 	}

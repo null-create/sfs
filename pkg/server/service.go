@@ -436,8 +436,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 	}
 
 	// allocate new physical drive directories
-	err = svc.AllocateDrive(drv.OwnerName, s.SvcRoot)
-	if err != nil {
+	if err := svc.AllocateDrive(drv.OwnerName, s.SvcRoot); err != nil {
 		s.log.Error(fmt.Sprintf(
 			"failed to allocate new drive for %s (id=%s): %v",
 			drv.OwnerName, drv.OwnerID, err),
