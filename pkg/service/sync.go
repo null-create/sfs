@@ -166,11 +166,14 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 }
 
 /*
-NOTE: the slice of directories argument is for future implementations.
-probably won't be used during this first iteration. dirs can be set to nil for the time being.
+Build a sync index of all files being monitored by the system.
 
-assumes the supplied index's LastSync map is instantiated and populated, otherwise
+Assumes the supplied index's LastSync map is instantiated and populated, otherwise
 will fail.
+
+NOTE: the directories argument is for future implementations.
+probably won't be used during this first iteration.
+dirs can be set to nil for the time being.
 */
 func BuildDistSyncIndex(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
 	for _, f := range files {
