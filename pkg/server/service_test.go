@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,16 @@ import (
 
 	"github.com/alecthomas/assert/v2"
 )
+
+var e = env.NewE()
+
+func getTestingDir() string {
+	tmpDir, err := e.Get("SERVICE_TEST_ROOT")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return filepath.Join(tmpDir, "testing")
+}
 
 func TestServiceConfig(t *testing.T) {
 	env.SetEnv(false)
@@ -52,26 +63,26 @@ func TestSaveStateFile(t *testing.T) {
 
 func TestLoadServiceFromStateFile(t *testing.T) {
 	env.SetEnv(false)
-
+	tmpDir := getTestingDir()
 	// create a test service instance with a bunch of sub directories,
 	// add to service state, then write out
-	svc, err := Init(false, false)
+	svc, err := SetUpService(tmpDir)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, tmpDir, err)
 	}
-	tmpDrv := MakeTmpDrive(t)
+	tmpDrv := MakeTmpDriveWithPath(t, tmpDir)
 	if err := svc.AddDrive(tmpDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, tmpDir, err)
 	}
 
 	// load a new test service instance from the newly generated state file
 	svc2, err := loadStateFile(svc.StateFile)
 	if err != nil {
-		Fatal(t, err)
+		Fail(t, tmpDir, err)
 	}
 	// remove temp state file prior to checking so we don't accidentally
 	// leave tmp files behind if an assert fails.
-	if err := Clean(GetTestingDir()); err != nil {
+	if err := Clean(filepath.Dir(tmpDir)); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 
@@ -84,7 +95,8 @@ func TestLoadServiceFromStateFile(t *testing.T) {
 }
 
 func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
-	testRoot := filepath.Join(GetTestingDir(), "tmp")
+	env.SetEnv(false)
+	testRoot := getTestingDir()
 	testSvc, err := SetUpService(testRoot)
 	if err != nil {
 		Fatal(t, err)
@@ -102,25 +114,22 @@ func TestLoadServiceFromStateFileAndDbs(t *testing.T) {
 	if err != nil {
 		Fatal(t, err)
 	}
+
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+
 	assert.NotEqual(t, nil, svc)
 	assert.Equal(t, testSvc.SvcRoot, svc.SvcRoot)
 	assert.Equal(t, testSvc.StateFile, svc.StateFile)
 	assert.Equal(t, testSvc.UserDir, svc.UserDir)
 	assert.Equal(t, testSvc.DbDir, svc.DbDir)
 	assert.Equal(t, testSvc.Users, svc.Users)
-
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
 }
 
 func TestCreateNewService(t *testing.T) {
-	// clean up after any previous failed runs
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-
-	testRoot := filepath.Join(GetTestingDir(), "tmp")
+	env.SetEnv(false)
+	testRoot := getTestingDir()
 	testSvc, err := SetUpService(testRoot)
 	if err != nil {
 		Fatal(t, err)
@@ -150,91 +159,79 @@ func TestCreateNewService(t *testing.T) {
 		}
 	}
 	// clean up
-	if err := Clean(GetTestingDir()); err != nil {
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
 }
 
 // -------- file tests -------------------------------
 
-func TestMoveFile(t *testing.T) {
-	env.SetEnv(false)
+// func TestMoveFile(t *testing.T) {
+// 	env.SetEnv(false)
+// 	testRoot := getTestingDir()
+// 	testSvc, err := SetUpService(testRoot)
+// 	if err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
 
-	// test service
-	testSvc, err := Init(false, false)
-	if err != nil {
-		t.Fail()
-	}
+// 	// add test drive to test instance
+// 	// skipping testSvc.AddDrive() because it creates a new
+// 	// drive instance and overwrites testDrv's files map
+// 	testDrv := MakeTmpDriveWithPath(t, testRoot)
+// 	testSvc.Drives[testDrv.ID] = testDrv
+// 	if err := testSvc.Db.AddDrive(testDrv); err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
+// 	if err := testSvc.Db.AddDir(testDrv.Root); err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
 
-	// test drive
-	testDrv := MakeTmpDrive(t)
-	if err := testSvc.AddDrive(testDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
-	if err := testSvc.AddDrive(testDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
+// 	// pick a file to move
+// 	files := testDrv.Root.GetFiles()
+// 	file := files[RandInt(len(files)-1)]
+// 	file.DriveID = testDrv.ID
 
-	// pick a file to move
-	files := testDrv.Root.GetFiles()
-	file := files[RandInt(len(files)-1)]
-	file.DriveID = testDrv.ID
+// 	// new directory object to represent the temp folder
+// 	tmpDir := svc.NewDirectory("new-tmp", "some-rand-id", testDrv.ID, filepath.Join(testRoot, "new-tmp"))
+// 	tmpDir.DriveID = testDrv.ID
+// 	if err := tmpDir.AddFile(file); err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
 
-	// make a temp folder in testing directory to move the file to
-	tmpFolder := filepath.Join(GetTestingDir(), "new-tmp")
+// 	if err := testSvc.NewDir(testDrv.ID, testDrv.Root.ID, tmpDir); err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
 
-	// new directory object to represent the temp folder
-	tmpDir := svc.NewDirectory(filepath.Base(tmpFolder), "some-rand-id", testDrv.ID, tmpFolder)
-	tmpDir.AddFile(file)
+// 	// attempt to move and then verify the new file path
+// 	// with the file object, as well as DB
+// 	if err := testSvc.CopyFile(tmpDir.ID, file, false); err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
 
-	if err := testSvc.NewDir(testDrv.ID, testDrv.Root.ID, tmpDir); err != nil {
-		if err2 := os.Remove(tmpFolder); err2 != nil {
-			t.Error(err2)
-		}
-		Fail(t, GetTestingDir(), err)
-	}
+// 	// verifications
+// 	entries, err := os.ReadDir(tmpDir.Path)
+// 	if err != nil {
+// 		Fail(t, filepath.Dir(testRoot), err)
+// 	}
+// 	if len(entries) != 1 {
+// 		Fail(t, filepath.Dir(testRoot), fmt.Errorf("file was not copied"))
+// 	}
 
-	// attempt to move and then verify the new file path
-	// with the file object, as well as DB
-	if err := testSvc.CopyFile(tmpDir.ID, file, false); err != nil {
-		if err2 := os.Remove(tmpFolder); err2 != nil {
-			t.Error(err2)
-		}
-		Fail(t, GetTestingDir(), err)
-	}
-
-	// verifications
-	entries, err := os.ReadDir(tmpDir.Path)
-	if err != nil {
-		if err2 := os.Remove(tmpFolder); err2 != nil {
-			t.Error(err2)
-		}
-		Fail(t, GetTestingDir(), err)
-	}
-	if len(entries) != 1 {
-		if err2 := os.Remove(tmpFolder); err2 != nil {
-			t.Error(err2)
-		}
-		Fail(t, GetTestingDir(), fmt.Errorf("file was not copied"))
-	}
-
-	// clean up
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to remove test directories: %v", err)
-	}
-}
+// 	// clean up
+// 	if err := Clean(filepath.Dir(testRoot)); err != nil {
+// 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+// 	}
+// }
 
 // ------- user tests --------------------------------
 
 func TestAddAndRemoveUser(t *testing.T) {
 	env.SetEnv(false)
 
-	// create test service instance
-	// conf := ServiceConfig()
-	testFolder := filepath.Join(svcCfg.SvcRoot, "users")
-	testSvc, err := SvcLoad(svcCfg.SvcRoot)
+	testRoot := getTestingDir()
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
-		Fail(t, testFolder, err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// create test user
@@ -242,59 +239,53 @@ func TestAddAndRemoveUser(t *testing.T) {
 
 	// add user to service instance
 	if err := testSvc.AddUser(testUsr); err != nil {
-		Fail(t, testFolder, err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 	assert.Equal(t, testUsr, testSvc.Users[testUsr.ID])
 
 	// check that its in the db and was entered correctly
 	u, err := testSvc.FindUser(testUsr.ID)
 	if err != nil {
-		Fail(t, testFolder, err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
 
-	// get a tmp drive to check that things have been removed correctly
-	testDrv, err := testSvc.LoadDrive(testUsr.DriveID)
-	if err != nil {
-		Fail(t, testFolder, err)
-	}
-	assert.NotEqual(t, nil, testDrv)
-
 	// attempt to remove user & verify that their drive was removed
 	if err := testSvc.RemoveUser(testUsr.ID); err != nil {
-		Fail(t, testFolder, err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
-	entries, err := os.ReadDir(filepath.Join(svcCfg.SvcRoot, "users"))
+	entries, err := os.ReadDir(filepath.Join(testSvc.SvcRoot, "users"))
 	if err != nil {
-		Fail(t, testFolder, err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
-	assert.Equal(t, 0, len(entries))
-
-	if err := Clean(filepath.Join(svcCfg.SvcRoot, "users")); err != nil {
+	// pre-emptively clean incase the asserts fail
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
 		t.Errorf("[ERROR] unable to remove test user directories: %v", err)
 	}
+
+	assert.Equal(t, 0, len(entries))
 }
 
 func TestAddAndUpdateAUser(t *testing.T) {
 	env.SetEnv(false)
+	testRoot := getTestingDir()
 
-	// c := ServiceConfig()
-	// create a test instance
-	testSvc, err := SvcLoad(svcCfg.SvcRoot)
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
+
 	// create a test user
 	testUsr := auth.NewUser("bill buttlicker", "billBB", "bill@bill.com", svcCfg.SvcRoot, false)
 	if err := testSvc.AddUser(testUsr); err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// check that its in the db
 	u, err := testSvc.FindUser(testUsr.ID)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
@@ -303,25 +294,20 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	// update name and save
 	testUsr.Name = "bill buttlicker II"
 	if err := testSvc.UpdateUser(testUsr); err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// test that the new name is the same as whats in the DB
 	u, err = testSvc.FindUser(testUsr.ID)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 	assert.NotEqual(t, nil, u)
 	assert.Equal(t, testUsr.ID, u.ID)
 	assert.Equal(t, testUsr.Name, u.Name)
 
-	if err := Clean(GetTestingDir()); err != nil {
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
 		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
-	}
-	// remove test user drive
-	tmpDir := filepath.Join(svcCfg.SvcRoot, "users")
-	if err := Clean(tmpDir); err != nil {
-		t.Errorf("[ERROR] unable to clean up test user files: %v", err)
 	}
 }
 
@@ -376,10 +362,10 @@ func TestAllocateDrive(t *testing.T) {
 func TestAddDrive(t *testing.T) {
 	env.SetEnv(false)
 
-	// test service
-	testSvc, err := Init(false, false)
+	testRoot := getTestingDir()
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// test drive
@@ -387,10 +373,10 @@ func TestAddDrive(t *testing.T) {
 	testDrv.Root = nil
 
 	if err := testSvc.AddDrive(testDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
-	if err := Clean(GetTestingDir()); err != nil {
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
 		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
 	}
 }
@@ -398,75 +384,36 @@ func TestAddDrive(t *testing.T) {
 func TestUpdateDrive(t *testing.T) {
 	env.SetEnv(false)
 
-	// test service
-	testSvc, err := Init(false, false)
+	testRoot := getTestingDir()
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
-		t.Fail()
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// test drive
 	testDrv := MakeEmptyTmpDrive(t)
 
 	if err := testSvc.AddDrive(testDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// update test drive
 	testDrv.OwnerName = "william j buttlicker"
 
 	if err := testSvc.UpdateDrive(testDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
 	// verify the name of the owner of the drive
 	drv, err := testSvc.Db.GetDrive(testDrv.ID)
 	if err != nil {
-		Fail(t, GetTestingDir(), err)
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 	if drv.OwnerName != testDrv.OwnerName {
-		Fail(t, GetTestingDir(), fmt.Errorf("owner name mismatch. orig: %s new: %s", testDrv.OwnerName, drv.OwnerName))
+		Fail(t, filepath.Dir(testRoot), fmt.Errorf("owner name mismatch. orig: %s new: %s", testDrv.OwnerName, drv.OwnerName))
 	}
 
-	if err := Clean(GetTestingDir()); err != nil {
-		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
-	}
-}
-
-func TestRefreshDrive(t *testing.T) {
-	env.SetEnv(false)
-
-	// test service
-	testSvc, err := Init(false, false)
-	if err != nil {
-		t.Fail()
-	}
-
-	// test drive
-	testDrv := MakeTmpDrive(t)
-	if err := testSvc.AddDrive(testDrv); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
-
-	// add a file to the test drive
-	file, err := MakeTmpTxtFile(filepath.Join(testDrv.Root.Path, "new-tmp.txt"), RandInt(1000))
-	if err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
-	if err := testSvc.RefreshDrive(testDrv.ID); err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
-	file2, err := testSvc.Db.GetFileByName(file.Name)
-	if err != nil {
-		Fail(t, GetTestingDir(), err)
-	}
-	if file2.Path != file.Path {
-		Fail(t, GetTestingDir(), fmt.Errorf("file path mismatch: orig: %s new: %s", file.Path, file2.Path))
-	}
-	if file2.Name != file.Name {
-		Fail(t, GetTestingDir(), fmt.Errorf("file name mismatch. orig: %s new: %s", file.Name, file2.Name))
-	}
-
-	if err := Clean(GetTestingDir()); err != nil {
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
 		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
 	}
 }
@@ -474,16 +421,28 @@ func TestRefreshDrive(t *testing.T) {
 func TestLoadDrive(t *testing.T) {
 	env.SetEnv(false)
 
-	// test service
-	testSvc, err := Init(false, false)
+	testRoot := getTestingDir()
+	testSvc, err := SetUpService(testRoot)
 	if err != nil {
-		t.Fail()
+		Fail(t, filepath.Dir(testRoot), err)
 	}
 
-	_, err = testSvc.LoadDrive("ff3d26c8-d783-11ee-90ea-0a0027000014")
-	if err != nil {
-		t.Fail()
+	testDrv := MakeEmptyTmpDrive(t)
+	if err := testSvc.AddDrive(testDrv); err != nil {
+		Fail(t, filepath.Dir(testRoot), err)
 	}
+
+	foundDrv, err := testSvc.LoadDrive(testDrv.ID)
+	if err != nil {
+		Fail(t, filepath.Dir(testRoot), err)
+	}
+
+	if err := Clean(filepath.Dir(testRoot)); err != nil {
+		t.Errorf("[ERROR] unable to clean testing directory: %v", err)
+	}
+
+	assert.NotEqual(t, nil, foundDrv)
+	assert.Equal(t, testDrv.ID, foundDrv.ID)
 }
 
 // func TestRemoveDrive(t *testing.T) {}

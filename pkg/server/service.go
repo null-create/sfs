@@ -10,7 +10,6 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/logger"
 	logs "github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
@@ -169,7 +168,8 @@ func (s *Service) DriveExists(driveID string) bool {
 			return false
 		}
 		if drive != nil {
-			// save this to the service instance since it wasn't there before for some reason
+			// save this to the service instance since it wasn't there
+			// before for some reason
 			s.Drives[driveID] = drive
 			if err := s.SaveState(); err != nil {
 				s.log.Error("failed to update state file: " + err.Error())
@@ -240,90 +240,6 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 	return dir
 }
 
-// recursively descends the drive's directory tree and compares what it
-// finds to what is in the database, adding new items as it goes. generates
-// a new root directory object and attaches it to the drive.
-func (s *Service) RefreshDrive(driveID string) error {
-	if s.HasDrive(driveID) {
-		// get current full drive state
-		drive := s.GetDrive(driveID)
-		if !drive.IsLoaded {
-			// load and populate the root directory if needed
-			root, err := s.loadRoot(drive.RootID)
-			if err != nil {
-				return fmt.Errorf("failed to load root (id=%s): %v", drive.RootID, err)
-			}
-			drive.Root = root
-		}
-		// refresh root against the database and create a new root object
-		drive.Root = s.refreshDrive(drive.Root)
-		// save to service instance
-		s.Drives[drive.ID] = drive
-		if err := s.SaveState(); err != nil {
-			return fmt.Errorf("failed to save state file: %v", err)
-		}
-	} else {
-		return fmt.Errorf("drive (id=%s) not found", driveID)
-	}
-	return nil
-}
-
-func (s *Service) refreshDrive(dir *svc.Directory) *svc.Directory {
-	entries, err := os.ReadDir(dir.ServerPath)
-	if err != nil {
-		s.log.Error(fmt.Sprintf("failed to read directory: %v", err))
-		return dir
-	}
-	if len(entries) == 0 {
-		return dir
-	}
-	for _, entry := range entries {
-		entryPath := filepath.Join(dir.ServerPath, entry.Name())
-		item, err := os.Stat(entryPath)
-		if err != nil {
-			s.log.Error(fmt.Sprintf("failed to get stat for entry %s: %v", entryPath, err))
-			return dir
-		}
-		// add directory then recurse
-		if item.IsDir() {
-			subDir, err := s.Db.GetDirectoryByName(item.Name())
-			if err != nil {
-				s.log.Error(fmt.Sprintf("failed to get directory (%s) from db: %v", item.Name(), err))
-				continue
-			}
-			// new directory
-			if subDir == nil {
-				subDir = svc.NewDirectory(item.Name(), dir.OwnerID, dir.DriveID, entryPath)
-				if err := s.Db.AddDir(subDir); err != nil {
-					s.log.Error(fmt.Sprintf("failed to add directory (%s) to db: %v", item.Name(), err))
-					continue
-				}
-				subDir = s.refreshDrive(subDir)
-				dir.AddSubDir(subDir)
-			}
-		} else {
-			file, err := s.Db.GetFileByName(item.Name())
-			if err != nil {
-				s.log.Error(fmt.Sprintf("failed to get file (%s) from db: %v", item.Name(), err))
-				continue
-			}
-			// new file
-			if file == nil {
-				newFile := svc.NewFile(item.Name(), dir.DriveID, dir.OwnerID, entryPath)
-				newFile.DirID = dir.ID
-				if err := s.Db.AddFile(newFile); err != nil {
-					s.log.Error(fmt.Sprintf("failed to add file (%s) to db: %v", item.Name(), err))
-					continue // TEMP until there's a better way to handle this error
-				}
-				if err := dir.AddFile(newFile); err != nil {
-					s.log.Error(fmt.Sprintf("failed to add file (%s) to service: %v", item.Name(), err))
-				}
-			}
-		}
-	}
-	return dir
-}
-
 // attempts to retrieve a drive from the drive map.
 // populates the drive if found.
 func (s *Service) GetDrive(driveID string) *svc.Drive {
@@ -385,7 +301,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("failed to load users directories: %v", err)
 	}
 	drive.Root.AddSubDirs(dirs)
-	s.log.Log(logger.INFO, fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
+	s.log.Log(logs.INFO, fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
 
 	// add all users files
 	files, err := s.Db.GetFilesByDriveID(driveID)
@@ -393,7 +309,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("failed to load users files: %v", err)
 	}
 	drive.Root.AddFiles(files)
-	s.log.Log(logger.INFO, fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
+	s.log.Log(logs.INFO, fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
 
 	// populate the root directory and generate a new sync index
 	drive.Root = s.Populate(root)

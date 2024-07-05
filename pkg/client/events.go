@@ -270,37 +270,37 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			switch evt.Type {
 			// NOTE: this is no longer supported, but may be used in the future versions.
 			// new files or directories were added to a monitored directory
-			case monitor.Add:
-				// for _, eitem := range evt.Items {
-				// 	// if this is a known item and it has just changed locations,
-				// 	// then we just need to update the metadata, otherwise
-				// 	// create a new object and register
-				// 	if c.KnownItem(eitem.Path()) {
-				// 		if err := c.UpdateItem(eitem); err != nil {
-				// 			c.log.Error(fmt.Sprintf("failed to update item %s: %v", eitem.Path(), err))
-				// 		}
-				// 	}
-				// 	// otherwise create new object and register
-				// 	if eitem.IsDir() {
-				// 		newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
-				// 		if err := c.AddDirWithID(itemID, newDir); err != nil {
-				// 			c.log.Error(fmt.Sprintf("failed to add new directory: %v", err))
-				// 		}
-				// 	} else {
-				// 		newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
-				// 		if err := c.AddFileWithDirID(itemID, newFile); err != nil {
-				// 			c.log.Error(fmt.Sprintf("failed to add new file: %v", err))
-				// 		}
-				// 	}
-				// }
-				// NOTE: these new items may not be pushed to the server
-				// since they will be added with their initial last sync times.
-				// they will be added to the server after some modifications are detected,
-				// and if auto sync is enabled.
-				evtBuf.AddEvent(evt)
-			case monitor.Remove:
-				// TODO: handle for cases when items are removed from a directory
-				// and possibly moved to another location.
+			// case monitor.Add:
+			// for _, eitem := range evt.Items {
+			// 	// if this is a known item and it has just changed locations,
+			// 	// then we just need to update the metadata, otherwise
+			// 	// create a new object and register
+			// 	if c.KnownItem(eitem.Path()) {
+			// 		if err := c.UpdateItem(eitem); err != nil {
+			// 			c.log.Error(fmt.Sprintf("failed to update item %s: %v", eitem.Path(), err))
+			// 		}
+			// 	}
+			// 	// otherwise create new object and register
+			// 	if eitem.IsDir() {
+			// 		newDir := svc.NewDirectory(eitem.Name(), c.UserID, c.DriveID, eitem.Path())
+			// 		if err := c.AddDirWithID(itemID, newDir); err != nil {
+			// 			c.log.Error(fmt.Sprintf("failed to add new directory: %v", err))
+			// 		}
+			// 	} else {
+			// 		newFile := svc.NewFile(eitem.Name(), c.DriveID, c.UserID, eitem.Path())
+			// 		if err := c.AddFileWithDirID(itemID, newFile); err != nil {
+			// 			c.log.Error(fmt.Sprintf("failed to add new file: %v", err))
+			// 		}
+			// 	}
+			// }
+			// NOTE: these new items may not be pushed to the server
+			// since they will be added with their initial last sync times.
+			// they will be added to the server after some modifications are detected,
+			// and if auto sync is enabled.
+			// evtBuf.AddEvent(evt)
+			// case monitor.Remove:
+			// TODO: handle for cases when items are removed from a directory
+			// and possibly moved to another location.
 
 			// item name change
 			case monitor.Name:
@@ -426,8 +426,6 @@ func (c *Client) apply(itemPath string, action string) error {
 			if err := c.UpdateFile(file); err != nil {
 				return err
 			}
-		case "change":
-			break
 		case "delete":
 			if err := c.RemoveFile(file); err != nil {
 				return err

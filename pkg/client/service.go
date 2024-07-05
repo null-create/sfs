@@ -350,7 +350,7 @@ monitored by SFS -- though is not contingent on it!
 
 SFS can monitor files outside of the designated root directory, so
 if we add a file this way then we should automatically make a backup of it
-in the SFS root directory with each detected change.
+in the SFS server.
 */
 func (c *Client) AddFile(filePath string) error {
 	// see if we already have this file in the system
@@ -366,8 +366,7 @@ func (c *Client) AddFile(filePath string) error {
 	newFile := svc.NewFile(filepath.Base(filePath), c.DriveID, c.UserID, filePath)
 
 	// see if we already have the file's parent directory in the file system
-	nfDir := filepath.Dir(filePath)
-	dir, err := c.GetDirByPath(nfDir)
+	dir, err := c.GetDirByPath(filepath.Dir(filePath))
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		// if the parent directory to this file doesn't exist in the file system,
 		// then add it to the SFS root.
@@ -511,7 +510,8 @@ func (c *Client) ModifyFile(dirID string, fileID string, data []byte) error {
 	return nil
 }
 
-// update file metadata in the service instance
+// update file metadata in the service instance. does not
+// update file contents. use c.ModifyFile() instead.
 func (c *Client) UpdateFile(updatedFile *svc.File) error {
 	oldFile := c.Drive.GetFile(updatedFile.ID)
 	if oldFile == nil {
@@ -537,7 +537,6 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
-
 	// remove physical file from original location
 	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
