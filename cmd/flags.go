@@ -20,10 +20,11 @@ type FlagPole struct {
 	daemon bool // run in daemon mode
 
 	// configs
-	get   string
-	set   string
-	show  bool
-	value string
+	get     string
+	set     string
+	setting string
+	show    bool
+	value   string
 
 	// add and push cmd flags
 	path     string

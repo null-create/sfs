@@ -44,31 +44,41 @@ func showSetting(setting string, value string) {
 	fmt.Printf("\n%s = %s\n", setting, value)
 }
 
-func runConfCmd(cmd *cobra.Command, args []string) {
+func getConfigFlags(cmd *cobra.Command) *FlagPole {
 	settingToGet, _ := cmd.Flags().GetString("get")
-	setting, _ := cmd.Flags().GetString("set")
+	settingToSet, _ := cmd.Flags().GetString("set")
 	show, _ := cmd.Flags().GetBool("show")
 	value, _ := cmd.Flags().GetString("value")
 
+	return &FlagPole{
+		setting: settingToSet,
+		get:     settingToGet,
+		show:    show,
+		value:   value,
+	}
+}
+
+func runConfCmd(cmd *cobra.Command, args []string) {
+	f := getConfigFlags(cmd)
 	switch {
-	case show:
+	case f.show:
 		envCfgs.List()
-	case settingToGet != "":
-		val, err := envCfgs.Get(settingToGet)
+	case f.get != "":
+		val, err := envCfgs.Get(f.setting)
 		if err != nil {
 			showerr(err)
 			return
 		}
-		showSetting(settingToGet, val)
-	case setting != "":
-		if value == "" {
-			fmt.Printf("no value supplied for setting %s", setting)
+		showSetting(f.set, val)
+	case f.setting != "":
+		if f.value == "" {
+			fmt.Printf("no value supplied for setting %s", f.setting)
 			return
 		}
-		if err := envCfgs.Set(setting, value); err != nil {
+		if err := envCfgs.Set(f.setting, f.value); err != nil {
 			showerr(err)
 			return
 		}
-		log.Printf("setting %s changed to %s", setting, value)
+		log.Printf("setting %s changed to %s", f.setting, f.value)
 	}
 }
