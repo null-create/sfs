@@ -205,6 +205,6 @@ func (e *Env) Set(k, v string) error {
 
 func (e *Env) List() {
 	for k, v := range e.env {
-		fmt.Printf("%v: %v", k, v)
+		fmt.Printf("%v: %v\n", k, v)
 	}
 }

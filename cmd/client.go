@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/sfs/pkg/client"
-	"github.com/sfs/pkg/env"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,7 +15,6 @@ var (
 		Short: "Execute SFS Client Commands",
 		RunE:  runClientCmd,
 	}
-	e = env.NewE()
 )
 
 func init() {
@@ -49,7 +47,7 @@ func getClientFlags(cmd *cobra.Command) FlagPole {
 }
 
 func isNewService() (bool, error) {
-	val, err := e.Get("CLIENT_NEW_SERVICE")
+	val, err := envCfgs.Get("CLIENT_NEW_SERVICE")
 	if err != nil {
 		return false, err
 	}

@@ -296,7 +296,7 @@ func (c *Client) setEndpoints() {
 // creates a new client object. does not create actual service directories or
 // other necessary infrastructure -- only the client itself.
 func NewClient(user *auth.User) (*Client, error) {
-	ccfg := ClientConfig()
+	ccfg := GetClientConfigs()
 
 	// set up local client services
 	driveID := auth.NewUUID()

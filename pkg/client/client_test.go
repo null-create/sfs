@@ -17,10 +17,8 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-var e = env.NewE()
-
 func newTestClient(t *testing.T) *Client {
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +35,7 @@ func TestNewClient(t *testing.T) {
 
 	client := newTestClient(t)
 
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +53,7 @@ func TestNewClient(t *testing.T) {
 
 	// check that .env was updated after initialization,
 	// specifically that CLIENT_NEW_SERVICE was set to "false"
-	v, err := e.Get("CLIENT_NEW_SERVICE")
+	v, err := envCfgs.Get("CLIENT_NEW_SERVICE")
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -77,7 +75,7 @@ func TestNewClient(t *testing.T) {
 func TestLoadClient(t *testing.T) {
 	env.SetEnv(false)
 
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +119,7 @@ func TestLoadClient(t *testing.T) {
 func TestLoadClientSaveState(t *testing.T) {
 	env.SetEnv(false)
 
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +150,7 @@ func TestLoadAndStartClient(t *testing.T) {
 	env.SetEnv(false)
 
 	// use testing directory for test services
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +233,7 @@ func TestLoadAndStartClient(t *testing.T) {
 func TestClientUpdateUser(t *testing.T) {
 	env.SetEnv(false)
 
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +261,7 @@ func TestClientDeleteUser(t *testing.T) {
 	env.SetEnv(false)
 
 	// make sure we clean the right testing directory
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,7 +288,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 	env.SetEnv(false)
 
 	// make sure we clean the right testing directory
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,7 +333,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	env.SetEnv(false)
 
 	// make sure we clean the right testing directory
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,7 +379,7 @@ func TestClientRefreshDrive(t *testing.T) {
 	env.SetEnv(false)
 
 	// make sure we clean the right testing directory
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,7 +415,7 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	env.SetEnv(false)
 
 	// make sure we clean the right testing directory
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -453,7 +451,7 @@ func TestClientDiscoverWithPath(t *testing.T) {
 func TestClientSendsANewFileToTheServer(t *testing.T) {
 	env.SetEnv(false)
 
-	tmpDir, err := e.Get("CLIENT_TESTING")
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
