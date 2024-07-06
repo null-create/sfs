@@ -198,7 +198,13 @@ func (e *Env) Set(k, v string) error {
 			}
 		}
 	} else {
-		log.Printf("env var %v does not exist", k)
+		fmt.Printf("env var %v does not exist", k)
 	}
 	return nil
+}
+
+func (e *Env) List() {
+	for k, v := range e.env {
+		fmt.Printf("%v: %v", k, v)
+	}
 }
