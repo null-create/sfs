@@ -21,7 +21,6 @@ type FlagPole struct {
 
 	// configs
 	get     string
-	set     string
 	setting string
 	show    bool
 	value   string

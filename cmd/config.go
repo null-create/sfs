@@ -27,7 +27,7 @@ var (
 func init() {
 	flags := FlagPole{}
 	confCmd.PersistentFlags().StringVar(&flags.get, "get", "", "get client service configurations")
-	confCmd.PersistentFlags().StringVar(&flags.set, "set", "", "set client service configurations")
+	confCmd.PersistentFlags().StringVar(&flags.setting, "set", "", "set client service configurations")
 	confCmd.PersistentFlags().BoolVar(&flags.show, "show", false, "show client service configurations")
 	confCmd.PersistentFlags().StringVarP(&flags.value, "value", "v", "", "config setting value")
 
@@ -69,7 +69,7 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 			showerr(err)
 			return
 		}
-		showSetting(f.set, val)
+		showSetting(f.setting, val)
 	case f.setting != "":
 		if f.value == "" {
 			fmt.Printf("no value supplied for setting %s", f.setting)
