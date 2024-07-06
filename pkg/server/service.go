@@ -612,7 +612,7 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 
 // generate a server-side path for a file or directory.
 // path points the new item to the 'root' directory on the server
-func (s *Service) buildServerPath(user string, itemName string) string {
+func (s *Service) buildServerRootPath(user string, itemName string) string {
 	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", itemName)
 }
 
@@ -647,7 +647,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		// we're going to assign this file to root if the client side
 		// parent directory isn't registered server-side yet.
 		file.DirID = drive.Root.ID
-		file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
+		file.ServerPath = s.buildServerRootPath(drive.OwnerName, file.Name)
 	} else {
 		file.DirID = dir.ID
 		file.ServerPath = s.buildServerDirPath(drive.OwnerName, file.Name, dir.ServerPath)
