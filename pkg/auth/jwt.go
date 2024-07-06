@@ -107,10 +107,12 @@ func (t *Token) Validate(r *http.Request) (string, error) {
 	return itemInfo, nil
 }
 
-// create a new token using a given payload/string
+// create a new token using a given payload string
 func (t *Token) Create(payload string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
+	// add the payload to the claims. payloads usually have
+	// the data associated with the request
 	claims["sub"] = payload
 	// TODO: token expires in 1 hour by default.
 	// expiration times should vary depending on the request.
