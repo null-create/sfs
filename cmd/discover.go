@@ -24,7 +24,7 @@ var (
 
 func init() {
 	flags := FlagPole{}
-	discoverCmd.Flags().StringVar(&flags.path, "path", "", "Path to the directory to run discover on")
+	discoverCmd.Flags().StringVarP(&flags.path, "path", "p", "", "Path to the directory to run discover on")
 
 	viper.BindPFlag("path", discoverCmd.Flags().Lookup("path"))
 
