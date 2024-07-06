@@ -1011,62 +1011,6 @@ side, pull those files from the server and add to the local client service.
 */
 func (c *Client) RefreshFromServer() error { return nil }
 
-// discover populates the given root directory with the users file and
-// sub directories, updates the database as it does so, and returns
-// the the directory object when finished, or if there was an error.
-//
-// this should ideally be used for starting a new sfs service in a
-// users root directly that already has files and/or subdirectories.
-func (c *Client) DiscoverInRoot(root *svc.Directory) (*svc.Directory, error) {
-	// traverse users SFS file system and populate internal structures
-	root.Walk()
-
-	// send everything to the database
-	files := root.GetFiles()
-	c.log.Info(fmt.Sprintf("adding %d files...", len(files)))
-
-	if err := c.Db.AddFiles(files); err != nil {
-		return root, fmt.Errorf("failed to add file to database: %v", err)
-	}
-	for _, file := range files {
-		if err := c.WatchItem(file.Path); err != nil {
-			return root, err
-		}
-		if c.autoSync() {
-			if err := c.RegisterFile(file); err != nil {
-				return root, err
-			}
-		}
-	}
-
-	dirs := root.GetSubDirs()
-	c.log.Info(fmt.Sprintf("adding %d directories...", len(dirs)))
-
-	if err := c.Db.AddDirs(dirs); err != nil {
-		return root, fmt.Errorf("failed to add directory to database: %v", err)
-	}
-	for _, subDir := range dirs {
-		// if err := c.WatchItem(subDir.Path); err != nil {
-		// 	return root, err
-		// }
-		if c.autoSync() {
-			if err := c.RegisterDirectory(subDir); err != nil {
-				return root, err
-			}
-		}
-	}
-
-	// add root directory itself
-	c.log.Info("adding root...")
-	if err := c.Db.AddDir(root); err != nil {
-		return nil, fmt.Errorf("failed to add root to database: %v", err)
-	}
-	// if err := c.WatchItem(root.Path); err != nil {
-	// 	return nil, err
-	// }
-	return root, nil
-}
-
 // similar to DiscoverInRoot, but uses a specified directory path
 // and does not return a new directory object.
 func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
