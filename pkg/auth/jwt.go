@@ -1,9 +1,9 @@
 package auth
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -40,7 +40,7 @@ func getSecret() ([]byte, error) {
 
 var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 
-// generate a random string of n length to use as a token secret
+// generate a random string of n length to use as a secret
 //
 // technique from: https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 func GenSecret(length int) string {
