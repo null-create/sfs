@@ -22,7 +22,7 @@ type FlagPole struct {
 	// configs
 	get     string
 	setting string
-	show    bool
+	list    bool
 	value   string
 
 	// add and push cmd flags

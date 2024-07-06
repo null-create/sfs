@@ -26,14 +26,14 @@ var (
 
 func init() {
 	flags := FlagPole{}
-	confCmd.PersistentFlags().StringVar(&flags.get, "get", "", "get client service configurations")
-	confCmd.PersistentFlags().StringVar(&flags.setting, "set", "", "set client service configurations")
-	confCmd.PersistentFlags().BoolVar(&flags.show, "show", false, "show client service configurations")
+	confCmd.PersistentFlags().StringVarP(&flags.get, "get", "g", "", "get client service configurations")
+	confCmd.PersistentFlags().StringVarP(&flags.setting, "set", "s", "", "set client service configurations")
+	confCmd.PersistentFlags().BoolVarP(&flags.list, "list", "l", false, "show client service configurations")
 	confCmd.PersistentFlags().StringVarP(&flags.value, "value", "v", "", "config setting value")
 
 	viper.BindPFlag("get", confCmd.PersistentFlags().Lookup("get"))
 	viper.BindPFlag("set", confCmd.PersistentFlags().Lookup("set"))
-	viper.BindPFlag("show", confCmd.PersistentFlags().Lookup("show"))
+	viper.BindPFlag("list", confCmd.PersistentFlags().Lookup("list"))
 	viper.BindPFlag("value", confCmd.PersistentFlags().Lookup("value"))
 
 	// configurations are a sub-command of the root command
@@ -53,7 +53,7 @@ func getConfigFlags(cmd *cobra.Command) *FlagPole {
 	return &FlagPole{
 		setting: settingToSet,
 		get:     settingToGet,
-		show:    show,
+		list:    show,
 		value:   value,
 	}
 }
@@ -61,7 +61,7 @@ func getConfigFlags(cmd *cobra.Command) *FlagPole {
 func runConfCmd(cmd *cobra.Command, args []string) {
 	f := getConfigFlags(cmd)
 	switch {
-	case f.show:
+	case f.list:
 		envCfgs.List()
 	case f.get != "":
 		val, err := envCfgs.Get(f.setting)
