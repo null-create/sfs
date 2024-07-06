@@ -17,7 +17,7 @@ var (
 	addCmd = &cobra.Command{
 		Use:   "add",
 		Short: "Add a new file or directory to the local SFS client service",
-		Run:   RunAddCmd,
+		Run:   runAddCmd,
 	}
 )
 
@@ -30,7 +30,7 @@ func init() {
 	drvCmd.AddCommand(addCmd)
 }
 
-func RunAddCmd(cmd *cobra.Command, args []string) {
+func runAddCmd(cmd *cobra.Command, args []string) {
 	path, _ := cmd.Flags().GetString("path")
 	if path == "" {
 		showerr(fmt.Errorf("no path specified"))
