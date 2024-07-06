@@ -26,7 +26,7 @@ First time set up. Creates a new client and server, and
 retrieves some basic information about the user to establish
 client side services.
 		`,
-		Run: setup,
+		Run: runSetupCmd,
 	}
 	// technique from:
 	// https://stackoverflow.com/questions/31873396/is-it-possible-to-get-the-current-root-of-package-structure-as-a-string-in-golan
@@ -38,7 +38,7 @@ func init() {
 	rootCmd.AddCommand(setupCmd)
 }
 
-func setup(cmd *cobra.Command, args []string) {
+func runSetupCmd(cmd *cobra.Command, args []string) {
 	// check for whether there are CLIENT configurations already.
 	// we need to check for the presence of at least an .env file
 	// at the root level, then parse it for CLIENT_ prefixes and

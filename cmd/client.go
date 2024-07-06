@@ -10,9 +10,10 @@ import (
 )
 
 var (
+	configs   = client.GetClientConfigs()
 	clientCmd = &cobra.Command{
 		Use:   "client",
-		Short: "Execute SFS Client Commands",
+		Short: "SFS client commands",
 		RunE:  runClientCmd,
 	}
 )
