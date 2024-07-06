@@ -47,13 +47,13 @@ func showSetting(setting string, value string) {
 func getConfigFlags(cmd *cobra.Command) *FlagPole {
 	settingToGet, _ := cmd.Flags().GetString("get")
 	settingToSet, _ := cmd.Flags().GetString("set")
-	show, _ := cmd.Flags().GetBool("show")
+	list, _ := cmd.Flags().GetBool("list")
 	value, _ := cmd.Flags().GetString("value")
 
 	return &FlagPole{
 		setting: settingToSet,
 		get:     settingToGet,
-		list:    show,
+		list:    list,
 		value:   value,
 	}
 }
@@ -64,12 +64,12 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 	case f.list:
 		envCfgs.List()
 	case f.get != "":
-		val, err := envCfgs.Get(f.setting)
+		val, err := envCfgs.Get(f.get)
 		if err != nil {
 			showerr(err)
 			return
 		}
-		showSetting(f.setting, val)
+		showSetting(f.get, val)
 	case f.setting != "":
 		if f.value == "" {
 			fmt.Printf("no value supplied for setting %s", f.setting)
