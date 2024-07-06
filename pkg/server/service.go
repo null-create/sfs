@@ -182,7 +182,7 @@ func (s *Service) DriveExists(driveID string) bool {
 }
 
 // Populate() populates a drive's root directory with all the users
-// files and subdirectories by recursively traersing the users server-side file system
+// files and subdirectories by recursively traversing the users server-side file system
 // and searching the DB with the name of each file or directory Populate() discoveres
 //
 // Note that Populate() ignores files and subdirectories it doesn't find in the
@@ -611,8 +611,14 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 }
 
 // generate a server-side path for a file or directory.
+// path points the new item to the 'root' directory on the server
 func (s *Service) buildServerPath(user string, itemName string) string {
 	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", itemName)
+}
+
+// generate a server-side path for a file that has a server-side directory
+func (s *Service) buildServerDirPath(user string, itemName string, dirPath string) string {
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, dirPath, itemName)
 }
 
 // add a new file to the service. creates the physical file,
@@ -631,18 +637,21 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	if err != nil {
 		return err
 	}
-	if dir == nil {
-		// we're going to assign this file to root if the client side
-		// parent directory isn't registered server-side yet.
-		file.DirID = drive.Root.ID
-	}
 	// modify file.ServerPath to point to the server
 	// side users root directory (or subdirectory if managed by the
 	// server side root directory). whenever something gets
 	// uploaded to the server we need to set a unique server path so we
 	// can differentiate between client and server upload/download locations.
 	// NOTE: client makes an additional call to retrieve this new path
-	file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
+	if dir == nil {
+		// we're going to assign this file to root if the client side
+		// parent directory isn't registered server-side yet.
+		file.DirID = drive.Root.ID
+		file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
+	} else {
+		file.DirID = dir.ID
+		file.ServerPath = s.buildServerDirPath(drive.OwnerName, file.Name, dir.ServerPath)
+	}
 
 	// create the (empty) physical file on the server side
 	_, err = os.Create(file.ServerPath)
