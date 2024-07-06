@@ -18,7 +18,7 @@ var (
 	discoverCmd = &cobra.Command{
 		Use:   "discover",
 		Short: "Use to automatically discover and add all items under a given directory",
-		Run:   RunDiscoverCmd,
+		Run:   runDiscoverCmd,
 	}
 )
 
@@ -31,7 +31,7 @@ func init() {
 	rootCmd.AddCommand(discoverCmd)
 }
 
-func RunDiscoverCmd(cmd *cobra.Command, args []string) {
+func runDiscoverCmd(cmd *cobra.Command, args []string) {
 	path, _ := cmd.Flags().GetString("path")
 	if path == "" {
 		showerr(fmt.Errorf("no path specified"))
