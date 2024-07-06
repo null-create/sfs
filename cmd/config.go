@@ -38,7 +38,7 @@ func init() {
 
 	viper.BindPFlag("get", confCmd.PersistentFlags().Lookup("get"))
 	viper.BindPFlag("set", confCmd.PersistentFlags().Lookup("set"))
-	viper.BindPFlag("show", confCmd.PersistentFlags().Lookup("set"))
+	viper.BindPFlag("show", confCmd.PersistentFlags().Lookup("show"))
 	viper.BindPFlag("setting", confCmd.PersistentFlags().Lookup("setting"))
 	viper.BindPFlag("value", confCmd.PersistentFlags().Lookup("value"))
 
