@@ -43,6 +43,9 @@ func cleanRecycleBin(cmd *cobra.Command, args []string) {
 		showerr(err)
 		return
 	}
+	if len(entries) == 0 {
+		return
+	}
 	if !proceed(len(entries)) {
 		return
 	}
