@@ -852,8 +852,23 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 	if resp.StatusCode != http.StatusOK {
 		c.log.Warn(fmt.Sprintf("server dir registration response: %d", resp.StatusCode))
 	} else {
-		c.log.Log("INFO", fmt.Sprintf("directory %s registered with server", dir.Name))
+		c.log.Log(logger.INFO, fmt.Sprintf("directory %s registered with server", dir.Name))
 	}
+	return nil
+}
+
+func (c *Client) EmptyRecycleBin() error {
+	c.log.Info("emptying client recycle bin...")
+	entries, err := os.ReadDir(c.RecycleBin)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if err := os.Remove(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
+			c.log.Error(err.Error())
+		}
+	}
+	c.log.Info(fmt.Sprintf("client recycle bin emptied. %d files deleted", len(entries)))
 	return nil
 }
 
@@ -900,7 +915,7 @@ func (c *Client) LoadDrive() error {
 	// build client sync index
 	c.BuildSyncIndex()
 
-	c.log.Log("INFO", "drive loaded")
+	c.log.Log(logger.INFO, "drive loaded")
 	return nil
 }
 
