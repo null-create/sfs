@@ -26,7 +26,11 @@ func init() {
 
 func proceed(totalEntries int) bool {
 	var answer string
-	fmt.Printf("WARNING: this process will delete %d files in the SFS recycle bin. Do you want to proceed? (y/n)", totalEntries)
+	fmt.Printf(
+		"WARNING: this process will permanently delete %d files in the SFS recycle bin."+
+			"Do you want to proceed? (y/n)",
+		totalEntries,
+	)
 	fmt.Scan(&answer)
 	return strings.ToLower(answer) == "y"
 }
