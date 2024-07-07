@@ -18,13 +18,13 @@ var (
 		Use:   "remove",
 		Short: "Remove files or directories from the SFS filesystem",
 		Long: `
-		Remove files or directories from the SFS filesystem. Attempts to remove
-		physical files and directories from both the client and the server. 
+Remove files or directories from the SFS filesystem. Attempts to remove
+physical files and directories from both the client and the server. 
 
-		***Use with caution!***
+***Use with caution!***
 
-		Files get copied to the SFS recycle bin directory on the client side, and 
-		will be removed from their original location on the users machine. 
+Files get copied to the SFS recycle bin directory on the client side, and 
+will be removed from their original location on the users machine. 
 		`,
 		Run: removeCmd,
 	}
