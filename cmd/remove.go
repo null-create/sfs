@@ -27,7 +27,6 @@ func init() {
 		&flags.path, "path", "p", "", "Remove files or directories from the SFS filesystem using their absolute paths",
 	)
 	viper.BindPFlag("path", RemoveCmd.Flags().Lookup("path"))
-	viper.BindPFlag("delete", RemoveCmd.Flags().Lookup("delete"))
 
 	drvCmd.AddCommand(RemoveCmd)
 }
