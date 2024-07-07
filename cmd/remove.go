@@ -45,10 +45,4 @@ func removeCmd(cmd *cobra.Command, args []string) {
 	if err := c.RemoveItem(path); err != nil {
 		showerr(fmt.Errorf("failed to remove item: %v", err))
 	}
-	// hard delete
-	// if delete {
-	// 	if err := os.Remove(path); err != nil {
-	// 		showerr(fmt.Errorf("failed to remove file: %v", err))
-	// 	}
-	// }
 }
