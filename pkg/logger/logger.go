@@ -133,7 +133,7 @@ func (l *Logger) Error(msg string) {
 }
 
 // Log writes a log entry to the CSV file. Does not display the message.
-// All logging csv files use the columns: component, level, timestamp, message, and ID.
+// All logging csv files use the columns: timestamp, component, level, message, and ID.
 // The component and timestamp are provided by Log(), assuming
 // Logger was instantiated correctly.
 func (l *Logger) Log(level string, msg string) {

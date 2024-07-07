@@ -535,9 +535,8 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	}
 	// stop monitoring the file
 	c.Monitor.StopWatching(file.Path)
-	// we're implementing "soft" deletes here. if a user wants to
-	// actually Delete a file, then users will pass the --delete flag
-	// to the remove command, which will fully delete the file.
+	// move the file to the SFS recycle bin to help with recovery in case
+	// of an accidental deletion.
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
@@ -853,8 +852,23 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 	if resp.StatusCode != http.StatusOK {
 		c.log.Warn(fmt.Sprintf("server dir registration response: %d", resp.StatusCode))
 	} else {
-		c.log.Log("INFO", fmt.Sprintf("directory %s registered with server", dir.Name))
+		c.log.Log(logger.INFO, fmt.Sprintf("directory %s registered with server", dir.Name))
 	}
+	return nil
+}
+
+func (c *Client) EmptyRecycleBin() error {
+	c.log.Info("emptying client recycle bin...")
+	entries, err := os.ReadDir(c.RecycleBin)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if err := os.Remove(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
+			c.log.Error(err.Error())
+		}
+	}
+	c.log.Info(fmt.Sprintf("client recycle bin emptied. %d files deleted", len(entries)))
 	return nil
 }
 
@@ -901,7 +915,7 @@ func (c *Client) LoadDrive() error {
 	// build client sync index
 	c.BuildSyncIndex()
 
-	c.log.Log("INFO", "drive loaded")
+	c.log.Log(logger.INFO, "drive loaded")
 	return nil
 }
 
@@ -983,7 +997,7 @@ func (c *Client) Refresh() error {
 	}
 
 	// see if any of these aren't registered with the server
-	var toRegister = make([]*svc.File, 0, len(files))
+	var toRegister = make([]*svc.File, 0)
 	for _, file := range files {
 		reg, err := c.IsFileRegistered(file)
 		if err != nil {
