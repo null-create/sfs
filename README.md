@@ -9,24 +9,21 @@ Automatically back up your project files and sync file states across multiple de
 ## Features
 
 - Synchronize file states across devices upon save.
-- Manage a local and remote file system via a simple browser interface.
 - Comes with a robust CLI tool to manage files and directories.
 - Intended for home LAN use but built with scaling capabilities.
 
-
 ## Tech
 
-`SFS` uses a number of open source projects to work properly:
+`sfs` uses a number of open source projects to work properly:
 
 - [Chi] - Chi is a small, idiomatic and composable router for building HTTP services.
 - [SQLite3] - A sqlite3 driver that conforms to the built-in database/sql interface.
-- [godotenv] - A Go port of Ruby's dotenv library (Loads environment variables from .env files)
 - [envdecode] - envdecode is a Go package for populating structs from environment variables.
 
 
 ## Installation
 
-Simple File Sync requires [Go](https://go.dev/) v1.21+ to run.
+Simple File Sync requires [Go](https://go.dev/) v1.20+ to run.
 
 Install the dependencies and initialize the project.
 
@@ -42,6 +39,14 @@ go build main.go -o sfs.exe  # for windows
 cp sfs ~/go/bin              # change to where your go/bin file is located
 sfs --version
 ```
+
+Alternatively, you can use the `build.sh` script to build the project
+
+## Configuration
+
+Run `sfs setup` to run a first time setup of the project after compiling the source code. 
+
+Use `sfs conf` to configure the the SFS client and server services after setup.
 
 ## License
 
