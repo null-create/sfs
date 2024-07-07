@@ -244,7 +244,7 @@ func TestAddAndRemoveUser(t *testing.T) {
 	assert.Equal(t, testUsr, testSvc.Users[testUsr.ID])
 
 	// check that its in the db and was entered correctly
-	u, err := testSvc.FindUser(testUsr.ID)
+	u, err := testSvc.GetUser(testUsr.ID)
 	if err != nil {
 		Fail(t, filepath.Dir(testRoot), err)
 	}
@@ -283,7 +283,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	}
 
 	// check that its in the db
-	u, err := testSvc.FindUser(testUsr.ID)
+	u, err := testSvc.GetUser(testUsr.ID)
 	if err != nil {
 		Fail(t, filepath.Dir(testRoot), err)
 	}
@@ -298,7 +298,7 @@ func TestAddAndUpdateAUser(t *testing.T) {
 	}
 
 	// test that the new name is the same as whats in the DB
-	u, err = testSvc.FindUser(testUsr.ID)
+	u, err = testSvc.GetUser(testUsr.ID)
 	if err != nil {
 		Fail(t, filepath.Dir(testRoot), err)
 	}

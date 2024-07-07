@@ -85,7 +85,5 @@ func runDrvCmd(cmd *cobra.Command, args []string) {
 		if err := c.ListRemoteFiles(); err != nil {
 			showerr(err)
 		}
-	case f.refresh:
-		c.RefreshDrive()
 	}
 }

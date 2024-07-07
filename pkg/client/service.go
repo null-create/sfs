@@ -528,6 +528,11 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 
 // remove a file in a specied directory. removes the file from the server too.
 func (c *Client) RemoveFile(file *svc.File) error {
+	// make sure this file is actually registered with the service
+	// before mucking around.
+	if !c.KnownItem(file.ClientPath) {
+		return fmt.Errorf("file %s not registered", file.Name)
+	}
 	// stop monitoring the file
 	c.Monitor.StopWatching(file.Path)
 	// we're implementing "soft" deletes here. if a user wants to
@@ -536,7 +541,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
-	// remove physical file from original location
+	// **remove physical file from original location**
 	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
 	}

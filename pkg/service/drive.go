@@ -351,7 +351,7 @@ func (d *Drive) UpdateFile(dirID string, file *File) error {
 }
 
 // removes physical file from original location and
-// updates internal data structures. use with caution.
+// updates internal data structures. use with caution!
 func (d *Drive) RemoveFile(dirID string, file *File) error {
 	if !d.Protected {
 		if !d.HasRoot() {
