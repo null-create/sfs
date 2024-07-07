@@ -13,10 +13,10 @@ docs
 sfs.*
 
 # util testing script
-reset.py
+reset.sh
 
 # cpu and memory profiling
 *.pprof
-heap.out
+*.out
 
 test_items

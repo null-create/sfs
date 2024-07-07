@@ -81,6 +81,8 @@ func setUpEnv() error {
 				newEnv[setting] = filepath.Join(Root, "pkg", "client", "testing")
 			} else if setting == "CLIENT_ID" {
 				newEnv[setting] = auth.NewUUID()
+			} else if setting == "CLIENT_PASSWORD" {
+				newEnv[setting] = auth.GenSecret(64)
 			} else { // get the users inputs for specific settings
 				var value string
 				if setting == "CLIENT" {
@@ -89,8 +91,6 @@ func setUpEnv() error {
 					fmt.Print("Enter your username: ")
 				} else if setting == "CLIENT_EMAIL" {
 					fmt.Print("Enter your email: ")
-				} else if setting == "CLIENT_PASSWORD" {
-					fmt.Print("Enter your password: ")
 				}
 				fmt.Scanln(&value)
 				newEnv[setting] = value

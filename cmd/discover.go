@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sfs/pkg/client"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -18,13 +19,18 @@ var (
 	discoverCmd = &cobra.Command{
 		Use:   "discover",
 		Short: "Use to automatically discover and add all items under a given directory",
-		Run:   runDiscoverCmd,
+		Long: `
+		Use sfs discover -p <path> to discover all items under a given directory.
+		
+		Can be used to automatically discover and add all items under a given directory.
+		`,
+		Run: runDiscoverCmd,
 	}
 )
 
 func init() {
 	flags := FlagPole{}
-	discoverCmd.Flags().StringVar(&flags.path, "path", "", "Path to the directory to run discover on")
+	discoverCmd.Flags().StringVarP(&flags.path, "path", "p", "", "Path to the directory to run discover on")
 
 	viper.BindPFlag("path", discoverCmd.Flags().Lookup("path"))
 

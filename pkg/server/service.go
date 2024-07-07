@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -182,7 +181,7 @@ func (s *Service) DriveExists(driveID string) bool {
 }
 
 // Populate() populates a drive's root directory with all the users
-// files and subdirectories by recursively traersing the users server-side file system
+// files and subdirectories by recursively traversing the users server-side file system
 // and searching the DB with the name of each file or directory Populate() discoveres
 //
 // Note that Populate() ignores files and subdirectories it doesn't find in the
@@ -374,8 +373,6 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 
 // take a given drive instance and update db. does not traverse
 // file systen for any other changes, only deals with drive metadata.
-// use service.RefreshDrive(driveID) to do a complete refresh of a given drive and its
-// file system.
 func (s *Service) UpdateDrive(drv *svc.Drive) error {
 	if s.HasDrive(drv.ID) {
 		if err := s.Db.UpdateDrive(drv); err != nil {
@@ -398,13 +395,6 @@ func (s *Service) RemoveDrive(driveID string) error {
 	if drv == nil {
 		s.log.Info(fmt.Sprintf("drive %s not found", driveID))
 		return nil
-	}
-	if drv.Root.IsNil() {
-		root, err := s.loadRoot(drv.RootID)
-		if err != nil {
-			return err
-		}
-		drv.Root = root
 	}
 	// remove drive physical files/directories
 	if err := Clean(drv.Root.Path); err != nil {
@@ -449,12 +439,7 @@ func (s *Service) TotalUsers() int {
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
 	if _, ok := s.Users[userID]; ok {
-		// make sure they exist in the DB too
-		exists, err := s.Db.UserExists(userID)
-		if err != nil {
-			log.Fatalf("failed to check user database: %v", err)
-		}
-		return exists && ok
+		return true
 	}
 	return false
 }
@@ -467,7 +452,7 @@ func (s *Service) addUser(user *auth.User) error {
 		return err
 	}
 	if u != nil {
-		return fmt.Errorf("user (id=%s) is already registered", user.ID)
+		return fmt.Errorf("user '%s' (id=%s) is already registered", user.Name, user.ID)
 	}
 	if err := s.Db.AddUser(user); err != nil {
 		return fmt.Errorf("failed to add %s (id=%s) to the user database: %v", user.Name, user.ID, err)
@@ -491,10 +476,10 @@ func (s *Service) AddUser(newUser *auth.User) error {
 			return err
 		}
 		s.log.Info(fmt.Sprintf("added user (name=%s id=%s)", newUser.Name, newUser.ID))
+		return nil
 	} else {
 		return fmt.Errorf("user (id=%s) already exists", newUser.ID)
 	}
-	return nil
 }
 
 // remove a user and all their files and directories
@@ -523,8 +508,9 @@ func (s *Service) RemoveUser(userID string) error {
 // find a user. if not in the instance, then it will query the database.
 //
 // returns nil if user isn't found
-func (s *Service) FindUser(userId string) (*auth.User, error) {
+func (s *Service) GetUser(userId string) (*auth.User, error) {
 	if u, exists := s.Users[userId]; !exists {
+		// try the database before giving up
 		u, err := s.Db.GetUser(userId)
 		if err != nil {
 			return nil, err
@@ -611,8 +597,14 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 }
 
 // generate a server-side path for a file or directory.
-func (s *Service) buildServerPath(user string, itemName string) string {
+// path points the new item to the 'root' directory on the server
+func (s *Service) buildServerRootPath(user string, itemName string) string {
 	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", itemName)
+}
+
+// generate a server-side path for a file that has a server-side directory
+func (s *Service) buildServerDirPath(user string, itemName string, dirPath string) string {
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, dirPath, itemName)
 }
 
 // add a new file to the service. creates the physical file,
@@ -631,18 +623,21 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	if err != nil {
 		return err
 	}
-	if dir == nil {
-		// we're going to assign this file to root if the client side
-		// parent directory isn't registered server-side yet.
-		file.DirID = drive.Root.ID
-	}
 	// modify file.ServerPath to point to the server
 	// side users root directory (or subdirectory if managed by the
 	// server side root directory). whenever something gets
 	// uploaded to the server we need to set a unique server path so we
 	// can differentiate between client and server upload/download locations.
 	// NOTE: client makes an additional call to retrieve this new path
-	file.ServerPath = s.buildServerPath(drive.OwnerName, file.Name)
+	if dir == nil {
+		// we're going to assign this file to root if the client side
+		// parent directory isn't registered server-side yet.
+		file.DirID = drive.Root.ID
+		file.ServerPath = s.buildServerRootPath(drive.OwnerName, file.Name)
+	} else {
+		file.DirID = dir.ID
+		file.ServerPath = s.buildServerDirPath(drive.OwnerName, file.Name, dir.ServerPath)
+	}
 
 	// create the (empty) physical file on the server side
 	_, err = os.Create(file.ServerPath)
@@ -699,9 +694,7 @@ func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 	return nil
 }
 
-// soft-deletes a file in the service. uses the users drive to
-// delete the original copy of the file, moves the copy to the recycle bin,
-// and updates database.
+// deletes a file and updates the database.
 func (s *Service) DeleteFile(file *svc.File) error {
 	drive, err := s.LoadDrive(file.DriveID)
 	if err != nil {
@@ -710,8 +703,8 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
-	// remove physical file from original location on the server.
-	// NOTE: client side will have the original file moved to the client's recycle bin.
+	// remove physical file from the server.
+	// NOTE: client side will have the original file moved to the client's recycle bin. maybe.
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
 	}
@@ -724,7 +717,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	return nil
 }
 
-// move a file from one directory to another.
+// copy a file from one directory to another.
 func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) error {
 	drive, err := s.LoadDrive(file.DriveID)
 	if err != nil {
@@ -748,12 +741,12 @@ func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) erro
 		return err
 	}
 	// add file object to destination directory
+	file.ServerPath = filepath.Join(destDir.Path, file.Name)
 	if err := destDir.AddFile(file); err != nil {
 		return fmt.Errorf("failed to add file to destination directory: %v", err)
 	}
 	if !keepOrig {
-		// remove physical file from original directory
-		// (also deletes original physical file)
+		// **remove physical file from original directory**
 		if err := origDir.RemoveFile(file.ID); err != nil {
 			return err
 		}

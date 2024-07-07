@@ -398,7 +398,8 @@ func (a *API) NewDrive(w http.ResponseWriter, r *http.Request) {
 
 // -------- sync ----------------------------------
 
-// generate (or refresh) a sync index for a given drive
+// generate (or refresh) a sync index for a given drive.
+// returns the index to the caller.
 func (a *API) GenIndex(w http.ResponseWriter, r *http.Request) {
 	driveID := r.Context().Value(Drive).(string)
 	idx, err := a.Svc.GenSyncIndex(driveID)
@@ -414,7 +415,7 @@ func (a *API) GenIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// retrieves (or generates) a sync index for a given drive.
+// retrieves a sync index for a given drive.
 // sync operations are coordinated on the client side, so the server
 // only needs to manage indicies -- not coordinate operations.
 func (a *API) GetIdx(w http.ResponseWriter, r *http.Request) {

@@ -387,11 +387,11 @@ func (d *Directory) PutFile(file *File) error {
 // remove physical file and update internal metadata.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
+		d.Size -= file.GetSize()
 		if err := os.Remove(file.ServerPath); err != nil {
 			return err
 		}
 		delete(d.Files, file.ID)
-		d.Size -= file.GetSize()
 		d.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("file (id=%s) not found", file.ID)

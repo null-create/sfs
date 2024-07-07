@@ -28,7 +28,7 @@ var (
 	drvCmd = &cobra.Command{
 		Use:   "drive",
 		Short: "Command for managing the client side drive service",
-		Run:   RunDrvCmd,
+		Run:   runDrvCmd,
 	}
 )
 
@@ -61,7 +61,7 @@ func getDrvflags(cmd *cobra.Command) FlagPole {
 	}
 }
 
-func RunDrvCmd(cmd *cobra.Command, args []string) {
+func runDrvCmd(cmd *cobra.Command, args []string) {
 	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(fmt.Errorf("failed to initialize service: %v", err))
@@ -85,7 +85,5 @@ func RunDrvCmd(cmd *cobra.Command, args []string) {
 		if err := c.ListRemoteFiles(); err != nil {
 			showerr(err)
 		}
-	case f.refresh:
-		c.RefreshDrive()
 	}
 }

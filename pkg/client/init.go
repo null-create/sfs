@@ -303,6 +303,8 @@ func NewClient(user *auth.User) (*Client, error) {
 	svcRoot := filepath.Join(ccfg.Root, ccfg.User)
 	root := svc.NewRootDirectory("root", ccfg.UserID, driveID, filepath.Join(svcRoot, "root"))
 	drv := svc.NewDrive(driveID, ccfg.User, user.ID, root.Path, root.ID, root)
+	drv.Root = root
+	drv.IsLoaded = true
 	user.DriveID = driveID
 	user.DrvRoot = drv.RootPath
 	user.SvcRoot = root.Path
@@ -328,15 +330,6 @@ func NewClient(user *auth.User) (*Client, error) {
 		Transfer:    transfer.NewTransfer(),
 		Client:      newHttpClient(),
 	}
-
-	// run discover to populate the database and internal data structures
-	// with users files and directories (if present in the SFS filesystem/root directory)
-	root, err := c.DiscoverInRoot(root)
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover user file system: %v", err)
-	}
-	drv.Root = root
-	drv.IsLoaded = true
 
 	// add drive itself to DB (root was added during discovery)
 	// then attach to client

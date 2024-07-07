@@ -1,9 +1,9 @@
 package auth
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -38,15 +38,17 @@ func getSecret() ([]byte, error) {
 	}
 }
 
-var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
-
-// generate a random string of n length to use as a token secret
+// generate a random string of n length to use as a secret
 //
 // technique from: https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 func GenSecret(length int) string {
+	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 	ll := len(chars)
 	b := make([]byte, length)
-	rand.Read(b) // generates len(b) random bytes
+	_, err := rand.Read(b) // generates len(b) random bytes
+	if err != nil {
+		log.Fatalf("failed to generate secret: %v", err)
+	}
 	for i := 0; i < length; i++ {
 		b[i] = chars[int(b[i])%ll]
 	}
@@ -107,10 +109,12 @@ func (t *Token) Validate(r *http.Request) (string, error) {
 	return itemInfo, nil
 }
 
-// create a new token using a given payload/string
+// create a new token using a given payload string
 func (t *Token) Create(payload string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
+	// add the payload to the claims. payloads usually have
+	// the data associated with the request
 	claims["sub"] = payload
 	// TODO: token expires in 1 hour by default.
 	// expiration times should vary depending on the request.

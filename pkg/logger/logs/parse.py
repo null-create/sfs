@@ -28,7 +28,7 @@ def parse_log(component: str, level: str, file: str) -> None:
 
 
 # search logs for a component with a specified log level
-def parse_logs(component: str, level: str, file: str) -> None:
+def parse_logs(component: str, level: str, file: str = None) -> None:
     results = ""
     log_files = os.listdir(LOG_DIR)
 

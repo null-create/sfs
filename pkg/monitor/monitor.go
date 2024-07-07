@@ -118,9 +118,10 @@ func (m *Monitor) StartWatcher(path string, stop chan bool) {
 	}
 }
 
-// add a file or directory to the events map and create a new monitoring
+// add a file to the events map and create a new monitoring
 // goroutine. will need a corresponding events handler on the client end.
-// will be a no-op if the given path is already being monitored.
+// will be a no-op if the given path is already being monitored, or if the
+// supplied path points to a directory.
 func (m *Monitor) Watch(path string) error {
 	// make sure this item actually exists
 	if !m.Exists(path) {
