@@ -42,7 +42,6 @@ func init() {
 
 func removeCmd(cmd *cobra.Command, args []string) {
 	path, _ := cmd.Flags().GetString("path")
-	// cleanbin, _ := cmd.Flags().GetBool("clean-bin")
 	if path == "" {
 		showerr(fmt.Errorf("path was not provided"))
 		return
