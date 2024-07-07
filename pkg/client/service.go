@@ -997,7 +997,7 @@ func (c *Client) Refresh() error {
 	}
 
 	// see if any of these aren't registered with the server
-	var toRegister = make([]*svc.File, 0, len(files))
+	var toRegister = make([]*svc.File, 0)
 	for _, file := range files {
 		reg, err := c.IsFileRegistered(file)
 		if err != nil {
