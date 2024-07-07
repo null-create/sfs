@@ -33,7 +33,7 @@ var (
 func init() {
 	flags := FlagPole{}
 	RemoveCmd.PersistentFlags().StringVarP(
-		&flags.path, "path", "p", "", "Remove files or directories from the SFS filesystem using their absolute paths",
+		&flags.path, "path", "p", "", "Delete files or directories using their absolute paths",
 	)
 	viper.BindPFlag("path", RemoveCmd.Flags().Lookup("path"))
 
