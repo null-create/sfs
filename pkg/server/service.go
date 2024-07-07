@@ -719,7 +719,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
-	// remove physical file from original location on the server.
+	// remove physical file from the server.
 	// NOTE: client side will have the original file moved to the client's recycle bin.
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
