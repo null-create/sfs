@@ -34,6 +34,7 @@ func init() {
 	RemoveCmd.PersistentFlags().StringVarP(
 		&flags.path, "path", "p", "", "Delete files or directories using their absolute paths",
 	)
+
 	viper.BindPFlag("path", RemoveCmd.Flags().Lookup("path"))
 
 	drvCmd.AddCommand(RemoveCmd)
@@ -41,6 +42,7 @@ func init() {
 
 func removeCmd(cmd *cobra.Command, args []string) {
 	path, _ := cmd.Flags().GetString("path")
+	// cleanbin, _ := cmd.Flags().GetBool("clean-bin")
 	if path == "" {
 		showerr(fmt.Errorf("path was not provided"))
 		return
