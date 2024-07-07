@@ -388,7 +388,7 @@ func (d *Directory) PutFile(file *File) error {
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
 		d.Size -= file.GetSize()
-		if err := os.Remove(file.ServerPath); err != nil {
+		if err := os.Remove(file.GetPath()); err != nil {
 			return err
 		}
 		delete(d.Files, file.ID)
