@@ -535,9 +535,8 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	}
 	// stop monitoring the file
 	c.Monitor.StopWatching(file.Path)
-	// we're implementing "soft" deletes here. if a user wants to
-	// actually Delete a file, then users will pass the --delete flag
-	// to the remove command, which will fully delete the file.
+	// move the file to the SFS recycle bin to help with recovery in case
+	// of an accidental deletion.
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
