@@ -28,15 +28,18 @@ Simple File Sync requires [Go](https://go.dev/) v1.20+ to run.
 Install the dependencies and initialize the project.
 
 ```sh
-cd path/to/sfs
+git clone https://github.com/JayDerderian/sfs.git
+
+cd sfs
 go mod install
 go mod tidy
-
 go build main.go -o sfs      # for linux/macOS
 go build main.go -o sfs.exe  # for windows
 
 # set executable to go path and test
 cp sfs ~/go/bin              # change to where your go/bin file is located
+export PATH:$PATH:$HOME/go/bin/sfs
+
 sfs --version
 ```
 
