@@ -148,7 +148,8 @@ func (m *Monitor) Watch(path string) error {
 	return nil
 }
 
-// get an event listener channel for a given file
+// get an event listener channel for a given file.
+// returns nil no listener channel is found.
 func (m *Monitor) GetEventChan(path string) chan Event {
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
@@ -159,6 +160,7 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 
 // get an off switch for a given monitoring goroutine.
 // off switches, when set to true, will shut down the monitoring process.
+// returns nil if no off switch is available.
 func (m *Monitor) GetOffSwitch(path string) chan bool {
 	if offSwitch, exists := m.OffSwitches[path]; exists {
 		return offSwitch
@@ -202,7 +204,7 @@ func (m *Monitor) ShutDown() {
 		return
 	}
 	m.log.Info(
-		fmt.Sprintf("shutting down %d active monitoring threads...", len(m.OffSwitches)),
+		fmt.Sprintf("shutting down %d active monitoring threads...", len(m.Watchers)),
 	)
 	// the "graceful" way. blocks and is really slow.
 	// for path := range m.OffSwitches {
