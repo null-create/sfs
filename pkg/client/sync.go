@@ -203,8 +203,11 @@ func (c *Client) ServerSync() error {
 // already registered with the server, otherwise this will receive a 404 response
 // and the upload will fail.
 func (c *Client) Push() error {
+	var files = c.Drive.GetFiles()
+	c.Drive.SyncIndex = svc.BuildToUpdate(files, nil, c.Drive.SyncIndex)
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
-		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
+		c.log.Warn("no files marked for uploading. sync index update map is empty")
+		return nil
 	}
 	queue := svc.BuildQ(c.Drive.SyncIndex)
 	if queue == nil {
