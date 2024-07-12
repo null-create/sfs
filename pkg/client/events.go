@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 )
@@ -339,7 +340,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				}
 				evtBuf.AddEvent(evt)
 			case monitor.Delete:
-				c.log.Log("INFO", fmt.Sprintf("handler for item (id=%s) stopping. item was deleted", itemID))
+				c.log.Log(logger.INFO, fmt.Sprintf("handler for item (id=%s) stopping. item was deleted", itemID))
 				return nil
 			case monitor.Error:
 				c.log.Warn(fmt.Sprintf("monitor for item (id=%s) encountered an error. stopping handler", itemID))

@@ -243,13 +243,13 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Log("INFO", fmt.Sprintf("shutting down monitoring for %s...", baseName))
+				log.Log(logger.INFO, fmt.Sprintf("shutting down monitoring for %s...", baseName))
 				close(evt)
 				return
 			default:
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
-					log.Log("INFO", fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
+					log.Log(logger.INFO, fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
 					evt <- Event{
 						Kind: "File",
 						Type: Error,
@@ -262,7 +262,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Log("INFO", fmt.Sprintf("%s was deleted. stopping monitoring.", baseName))
+					log.Log(logger.INFO, fmt.Sprintf("%s was deleted. stopping monitoring.", baseName))
 					evt <- Event{
 						Kind: "File",
 						Type: Delete,
@@ -273,7 +273,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					return
 				// file size change
 				case stat.Size() != initialStat.Size():
-					log.Log("INFO", fmt.Sprintf(
+					log.Log(logger.INFO, fmt.Sprintf(
 						"size change detected: %f kb -> %f kb | path: %s",
 						float64(initialStat.Size()/1000), float64(stat.Size()/1000), filePath),
 					)
@@ -286,7 +286,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				// file modification time change
 				case stat.ModTime() != initialStat.ModTime():
-					log.Log("INFO", fmt.Sprintf("mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime()))
+					log.Log(logger.INFO, fmt.Sprintf("mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime()))
 					evt <- Event{
 						Kind: "File",
 						Type: ModTime,
@@ -296,7 +296,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				// file mode change
 				case stat.Mode() != initialStat.Mode():
-					log.Log("INFO", (fmt.Sprintf("mode change detected: %v -> %v", initialStat.Mode(), stat.Mode())))
+					log.Log(logger.INFO, (fmt.Sprintf("mode change detected: %v -> %v", initialStat.Mode(), stat.Mode())))
 					evt <- Event{
 						Kind: "File",
 						Type: Mode,
@@ -306,7 +306,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				// file name change
 				case stat.Name() != initialStat.Name():
-					log.Log("INFO", fmt.Sprintf("file name change detected: %v -> %v", initialStat.Name(), stat.Name()))
+					log.Log(logger.INFO, fmt.Sprintf("file name change detected: %v -> %v", initialStat.Name(), stat.Name()))
 					evt <- Event{
 						Kind: "File",
 						Type: Name,
@@ -360,7 +360,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Log("INFO", fmt.Sprintf("stopping monitor for %s...", dirName))
+				log.Log(logger.INFO, fmt.Sprintf("stopping monitor for %s...", dirName))
 				return
 			default:
 				currItems, err := os.ReadDir(dirPath)
@@ -371,7 +371,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 				switch {
 				// directory was deleted
 				case err == os.ErrExist:
-					log.Log("INFO", fmt.Sprintf("%s was deleted", dirName))
+					log.Log(logger.INFO, fmt.Sprintf("%s was deleted", dirName))
 					evt <- Event{
 						Kind: "Directory",
 						ID:   auth.NewUUID(),
@@ -382,7 +382,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					return
 				// item(s) were deleted
 				case len(currItems) < len(initialItems):
-					log.Log("INFO", fmt.Sprintf("%d items were deleted in %s", len(currItems)-len(initialItems), dirName))
+					log.Log(logger.INFO, fmt.Sprintf("%d items were deleted in %s", len(currItems)-len(initialItems), dirName))
 					diffs := dirCtx.RemoveItems(currItems) // get list of deleted items
 					evt <- Event{
 						Kind:  "Directory",
@@ -394,7 +394,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					initialItems = currItems
 				// item(s) were added
 				case len(currItems) > len(initialItems):
-					log.Log("INFO", fmt.Sprintf("%d items were added in %s", len(currItems)-len(initialItems), dirName))
+					log.Log(logger.INFO, fmt.Sprintf("%d items were added in %s", len(currItems)-len(initialItems), dirName))
 					diffs := dirCtx.AddItems(currItems) // get list of removed items
 					evt <- Event{
 						Kind:  "Directory",
