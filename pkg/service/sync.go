@@ -312,10 +312,6 @@ func BuildQ(idx *SyncIndex) *Queue {
 	if files == nil {
 		return nil
 	}
-	if len(files) == 0 {
-		log.Printf("[INFO] no files matched for syncing")
-		return nil
-	}
 	// if every individual file exceeds b.MAX, none will able to
 	// be added to the standard batch queue and we like to avoid infinite loops,
 	// so we'll need to just create a large file queue instead.
