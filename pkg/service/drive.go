@@ -263,12 +263,12 @@ func (d *Drive) GetFile(fileID string) *File {
 		return d.Root.WalkF(fileID)
 	} else {
 		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
+		return nil
 	}
-	return nil
 }
 
-// get a slice of all files in the drive. returns nil if not found, or
-// if the drive is protected.
+// get a slice of all files in the drive. returns an empty slice if the drive is protected,
+// or if no files are found.
 func (d *Drive) GetFiles() []*File {
 	if !d.Protected {
 		var (
@@ -281,8 +281,8 @@ func (d *Drive) GetFiles() []*File {
 		return files
 	} else {
 		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
+		return make([]*File, 0)
 	}
-	return nil
 }
 
 // get a map of all available files for this user
