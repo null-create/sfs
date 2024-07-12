@@ -36,6 +36,9 @@ type Client struct {
 	// token creator for requests
 	Tok *auth.Token `json:"token"`
 
+	// Path to the local backup directory
+	LocalBackupDir string `json:"backup_dir"`
+
 	// server api endpoints.
 	// file objects have their own API field, this is for storing
 	// general operation endpoints like sync operations.

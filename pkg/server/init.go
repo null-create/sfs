@@ -204,7 +204,7 @@ func SetUpService(svcRoot string) (*Service, error) {
 
 	// create new service databases
 	initLogger.Info("creating service databases...")
-	if err := db.InitDBs(svcPaths[2]); err != nil {
+	if err := db.InitServerDBs(svcPaths[2]); err != nil {
 		return nil, fmt.Errorf("failed to initialize service databases: %v", err)
 	}
 

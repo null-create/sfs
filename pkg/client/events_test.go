@@ -10,14 +10,12 @@ import (
 
 func TestStartHandler(t *testing.T) {
 	env.SetEnv(false)
-
-	client := newTestClient(t)
-
-	// get the path to the testing directory
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	client := newTestClient(t, tmpDir)
 
 	// add a bunch of test directories to monitor
 	client.Drive.Root = MakeTmpDirsWithPath(t, tmpDir, client.Drive.ID)

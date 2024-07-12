@@ -8,7 +8,7 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-func (q *Query) AddFile(f *svc.File) error {
+func (q *Query) AddFile(file *svc.File) error {
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -21,23 +21,25 @@ func (q *Query) AddFile(f *svc.File) error {
 
 	// execute the statement
 	if _, err := q.Stmt.Exec(
-		&f.ID,
-		&f.Name,
-		&f.OwnerID,
-		&f.DirID,
-		&f.DriveID,
-		&f.Mode,
-		&f.Size,
-		&f.Backup,
-		&f.Protected,
-		&f.Key,
-		&f.LastSync,
-		&f.Path,
-		&f.ServerPath,
-		&f.ClientPath,
-		&f.Endpoint,
-		&f.CheckSum,
-		&f.Algorithm,
+		&file.ID,
+		&file.Name,
+		&file.OwnerID,
+		&file.DirID,
+		&file.DriveID,
+		&file.Mode,
+		&file.Size,
+		&file.LocalBackup,
+		&file.ServerBackup,
+		&file.Protected,
+		&file.Key,
+		&file.LastSync,
+		&file.Path,
+		&file.ServerPath,
+		&file.ClientPath,
+		&file.BackupPath,
+		&file.Endpoint,
+		&file.CheckSum,
+		&file.Algorithm,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}
@@ -50,28 +52,30 @@ func (q *Query) AddFiles(files []*svc.File) error {
 	q.Connect()
 	defer q.Close()
 
-	for _, f := range files {
+	for _, file := range files {
 		if err := q.Prepare(AddFileQuery); err != nil {
 			return fmt.Errorf("failed to prepare statement: %v", err)
 		}
 		if _, err := q.Stmt.Exec(
-			&f.ID,
-			&f.Name,
-			&f.OwnerID,
-			&f.DirID,
-			&f.DriveID,
-			&f.Mode,
-			&f.Size,
-			&f.Backup,
-			&f.Protected,
-			&f.Key,
-			&f.LastSync,
-			&f.Path,
-			&f.ServerPath,
-			&f.ClientPath,
-			&f.Endpoint,
-			&f.CheckSum,
-			&f.Algorithm,
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.LocalBackup,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
 		); err != nil {
 			return fmt.Errorf("failed to execute statement: %v", err)
 		}
@@ -111,7 +115,7 @@ func (q *Query) AddUser(u *auth.User) error {
 	return nil
 }
 
-func (q *Query) AddDir(d *svc.Directory) error {
+func (q *Query) AddDir(dir *svc.Directory) error {
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -123,22 +127,23 @@ func (q *Query) AddDir(d *svc.Directory) error {
 	defer q.Stmt.Close()
 
 	if _, err := q.Stmt.Exec(
-		&d.ID,
-		&d.Name,
-		&d.OwnerID,
-		&d.DriveID,
-		&d.Size,
-		&d.Path,
-		&d.ServerPath,
-		&d.ClientPath,
-		&d.Protected,
-		&d.AuthType,
-		&d.Key,
-		&d.Overwrite,
-		&d.LastSync,
-		&d.Endpoint,
-		&d.Root,
-		&d.RootPath,
+		&dir.ID,
+		&dir.Name,
+		&dir.OwnerID,
+		&dir.DriveID,
+		&dir.Size,
+		&dir.Path,
+		&dir.ServerPath,
+		&dir.ClientPath,
+		&dir.BackupPath,
+		&dir.Protected,
+		&dir.AuthType,
+		&dir.Key,
+		&dir.Overwrite,
+		&dir.LastSync,
+		&dir.Endpoint,
+		&dir.Root,
+		&dir.RootPath,
 	); err != nil {
 		return fmt.Errorf("failed to add directory: %v", err)
 	}
@@ -163,6 +168,7 @@ func (q *Query) AddDirs(dirs []*svc.Directory) error {
 			&d.Path,
 			&d.ServerPath,
 			&d.ClientPath,
+			&d.BackupPath,
 			&d.Protected,
 			&d.AuthType,
 			&d.Key,

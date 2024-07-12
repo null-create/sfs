@@ -41,7 +41,7 @@ func NewTable(path string, query string) {
 }
 
 // initialize server databases
-func InitDBs(dbPath string) error {
+func InitServerDBs(dbPath string) error {
 	// make sure there's no databases where we want to create in
 	entries, err := os.ReadDir(dbPath)
 	if err != nil {

@@ -61,6 +61,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 		filepath.Join(svcDir, "root"),
 		filepath.Join(svcDir, "state"),
 		filepath.Join(svcDir, "recycle"),
+		filepath.Join(svcDir, "backups"),
 	}
 	for _, dirPath := range svcPaths {
 		if err := os.Mkdir(dirPath, svc.PERMS); err != nil {
@@ -70,7 +71,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 
 	// make each database
 	setupLog.Info("creating databases...")
-	if err := db.InitDBs(svcPaths[0]); err != nil {
+	if err := db.InitServerDBs(svcPaths[0]); err != nil {
 		return nil, err
 	}
 
@@ -172,10 +173,10 @@ func loadStateFile() ([]byte, error) {
 
 // load client from state file and initialize.
 // does not automatically start persistent client services.
-// use client.Start() to start monitoring and synchronization services.
 //
 // set persist to true when using as a long-running operation
 // and to utilize real-time monitoring and synchronization services,
+// then follow with a call to client.Start() to start a blocking process.
 // otherwise set to false if the client should be used for
 // one-off operations.
 func LoadClient(persist bool) (*Client, error) {
@@ -186,7 +187,7 @@ func LoadClient(persist bool) (*Client, error) {
 	}
 	client := new(Client)
 	if err := json.Unmarshal(data, &client); err != nil {
-		initLog.Log("ERROR", fmt.Sprintf("failed to unmarshal state file: %v", err))
+		initLog.Log(logger.ERROR, fmt.Sprintf("failed to unmarshal state file: %v", err))
 		return nil, fmt.Errorf("failed to unmarshal state file: %v", err)
 	}
 
@@ -198,14 +199,14 @@ func LoadClient(persist bool) (*Client, error) {
 
 	// load user info
 	if err := client.LoadUser(); err != nil {
-		initLog.Log("ERROR", fmt.Sprintf("failed to load user: %v", err))
+		initLog.Log(logger.ERROR, fmt.Sprintf("failed to load user: %v", err))
 		return nil, fmt.Errorf("failed to load user: %v", err)
 	}
 
 	// load drive with users sfs directory tree populated.
 	// also refreshes (or generates) drive sync index.
 	if err := client.LoadDrive(); err != nil {
-		initLog.Log("ERROR", fmt.Sprintf("failed to load drive: %v", err))
+		initLog.Log(logger.ERROR, fmt.Sprintf("failed to load drive: %v", err))
 		return nil, fmt.Errorf("failed to load drive: %v", err)
 	}
 
@@ -233,25 +234,25 @@ func LoadClient(persist bool) (*Client, error) {
 	// services will be able to actually run.
 	if persist {
 		// make sure the drive was registered before starting
-		if client.autoSync() && !client.Drive.IsRegistered() {
+		if client.autoSync() && !client.localBackup() {
 			if err := client.RegisterClient(); err != nil {
-				initLog.Log("ERROR", fmt.Sprintf("failed to register client: %v", err))
+				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register client: %v", err))
 				return nil, err
 			}
 		}
 		// start monitoring services in SFS root directory
 		if err := client.StartMonitor(); err != nil {
-			initLog.Log("ERROR", fmt.Sprintf("failed to start monitoring services: %v", err))
+			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start monitoring services: %v", err))
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}
 		// initialize handlers map
 		if err := client.BuildHandlers(); err != nil {
-			initLog.Log("ERROR", fmt.Sprintf("failed to initialize handlers: %v", err))
+			initLog.Log(logger.ERROR, fmt.Sprintf("failed to initialize handlers: %v", err))
 			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
 		}
 		// start event handlers
 		if err := client.StartHandlers(); err != nil {
-			initLog.Log("ERROR", fmt.Sprintf("failed to start event handlers: %v", err))
+			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
 		client.log.Info(fmt.Sprintf("monitor is running. watching %d local items", len(client.Monitor.Events)))
@@ -265,7 +266,7 @@ func LoadClient(persist bool) (*Client, error) {
 		client.log.Error("failed to save state file: " + err.Error())
 	}
 
-	initLog.Log("INFO", fmt.Sprintf("client started at: %v", time.Now().UTC()))
+	initLog.Log(logger.INFO, fmt.Sprintf("client started at: %v", time.Now().UTC()))
 	return client, nil
 }
 
@@ -300,9 +301,10 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// set up local client services
 	driveID := auth.NewUUID()
-	svcRoot := filepath.Join(ccfg.Root, ccfg.User)
-	root := svc.NewRootDirectory("root", ccfg.UserID, driveID, filepath.Join(svcRoot, "root"))
-	drv := svc.NewDrive(driveID, ccfg.User, user.ID, root.Path, root.ID, root)
+	svcRoot := filepath.Join(ccfg.Root, user.Name)
+	root := svc.NewRootDirectory("root", user.ID, driveID, filepath.Join(svcRoot, "root"))
+	root.BackupPath = filepath.Join(root.Path, "backups")
+	drv := svc.NewDrive(driveID, user.Name, user.ID, root.Path, root.ID, root)
 	drv.Root = root
 	drv.IsLoaded = true
 	user.DriveID = driveID
@@ -311,24 +313,25 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// intialize client
 	c := &Client{
-		StartTime:   time.Now().UTC(),
-		Conf:        ccfg,
-		UserID:      user.ID,
-		User:        user,
-		Root:        filepath.Join(svcRoot, "root"),
-		SfDir:       filepath.Join(svcRoot, "state"),
-		RecycleBin:  filepath.Join(svcRoot, "recycle"),
-		Endpoints:   make(map[string]string),
-		Monitor:     monitor.NewMonitor(drv.Root.Path),
-		DriveID:     driveID,
-		Drive:       drv,
-		Db:          db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
-		log:         logger.NewLogger("Client", user.ID),
-		Tok:         auth.NewT(),
-		Handlers:    make(map[string]func()),
-		OffSwitches: make(map[string]chan bool),
-		Transfer:    transfer.NewTransfer(),
-		Client:      newHttpClient(),
+		StartTime:      time.Now().UTC(),
+		Conf:           ccfg,
+		UserID:         user.ID,
+		User:           user,
+		Root:           filepath.Join(svcRoot, "root"),
+		SfDir:          filepath.Join(svcRoot, "state"),
+		RecycleBin:     filepath.Join(svcRoot, "recycle"),
+		Endpoints:      make(map[string]string),
+		LocalBackupDir: filepath.Join(root.Path, "backups"), // TODO: allow this to be overriden by a user specification
+		Monitor:        monitor.NewMonitor(drv.Root.Path),
+		DriveID:        driveID,
+		Drive:          drv,
+		Db:             db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
+		log:            logger.NewLogger("Client", user.ID),
+		Tok:            auth.NewT(),
+		Handlers:       make(map[string]func()),
+		OffSwitches:    make(map[string]chan bool),
+		Transfer:       transfer.NewTransfer(),
+		Client:         newHttpClient(),
 	}
 
 	// add drive itself to DB (root was added during discovery)
@@ -351,10 +354,13 @@ func NewClient(user *auth.User) (*Client, error) {
 	// initialize local sync index
 	c.BuildSyncIndex()
 
-	// register drive with the server if autosync is enabled
+	// register drive with the server if autosync is enabled, if not defaulting
+	// to using local storage.
 	if c.autoSync() {
-		if err := c.RegisterClient(); err != nil {
-			c.log.Warn("failed to register client with server: " + err.Error())
+		if !c.localBackup() {
+			if err := c.RegisterClient(); err != nil {
+				c.log.Warn("failed to register client with server: " + err.Error())
+			}
 		}
 	}
 

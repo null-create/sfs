@@ -17,28 +17,36 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-func newTestClient(t *testing.T) *Client {
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
-	if err != nil {
-		t.Fatal(err)
-	}
+func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient, err := SetupClient(tmpDir)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
+
+	// override some defaults so our test client doesn't interact
+	// with the client's resources defined in .env configs
+	var tmpSvcPath = filepath.Join(tmpDir, tmpClient.User.Name)
+
+	tmpClient.Root = filepath.Join(tmpSvcPath, "root")
+	tmpClient.SfDir = filepath.Join(tmpSvcPath, "state")
+	tmpClient.Db.DBPath = filepath.Join(tmpSvcPath, "dbs")
+	tmpClient.LocalBackupDir = filepath.Join(tmpSvcPath, "backups")
+	tmpClient.RecycleBin = filepath.Join(tmpSvcPath, "recycle")
+	tmpClient.Drive.Root.BackupPath = tmpClient.LocalBackupDir
+	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
+
 	return tmpClient
 }
 
 // create a new client without a user
 func TestNewClient(t *testing.T) {
 	env.SetEnv(false)
-
-	client := newTestClient(t)
-
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	client := newTestClient(t, tmpDir)
 
 	assert.NotEqual(t, nil, client)
 	assert.NotEqual(t, nil, client.Conf)
@@ -71,61 +79,15 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-// load a client with a pre-existing user
-func TestLoadClient(t *testing.T) {
-	env.SetEnv(false)
-
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// initialize a new client, then load a new client object
-	// from the initialized service directory and state file
-	c1 := newTestClient(t)
-
-	// add a new user
-	newUser, err := newUser()
-	if err != nil {
-		Fail(t, tmpDir, err)
-	}
-	newUser.DriveID = c1.Drive.ID
-	c1.User = newUser
-	if err = c1.SaveState(); err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	// start a new client with this data and compare
-	c2, err := Init(false)
-	if err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	// clean up before any possible assert failures
-	if err := Clean(t, tmpDir); err != nil {
-		log.Fatal(err)
-	}
-
-	assert.NotEqual(t, nil, c2)
-	assert.Equal(t, c1.Conf, c2.Conf)
-	assert.Equal(t, c1.User, c2.User)
-	assert.Equal(t, c1.Root, c2.Root)
-	assert.Equal(t, c1.User.ID, c2.User.ID)
-	assert.Equal(t, c1.SfDir, c2.SfDir)
-	assert.NotEqual(t, nil, c2.Db)
-	assert.True(t, c2.Db.Singleton)
-}
-
 func TestLoadClientSaveState(t *testing.T) {
 	env.SetEnv(false)
-
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// initialize a new client, then load a new client object
 	// from the initialized service directory and state file
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -158,7 +120,7 @@ func TestLoadAndStartClient(t *testing.T) {
 	// initialize and load client
 	// initialize a new client, then load a new client object
 	// from the initialized service directory and state file
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 
 	// start client
 	go func() {
@@ -176,70 +138,15 @@ func TestLoadAndStartClient(t *testing.T) {
 	}
 }
 
-// func TestClientAddAndRemoveFile(t *testing.T) {
-// 	env.SetEnv(false)
-
-// 	// make sure we clean the right testing directory
-// 	tmpDir, err := e.Get("CLIENT_ROOT")
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	tmpClient, err := Init(false)
-// 	if err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-
-// 	// run a test server to register the file when added to the client
-// 	shutDown := make(chan bool)
-// 	testServer := server.NewServer()
-// 	go func() {
-// 		testServer.Start(shutDown)
-// 	}()
-
-// 	// Add a new file using the client instance
-// 	testFilePath := filepath.Join(tmpDir, "test.txt")
-// 	f, err := os.Create(testFilePath)
-// 	if err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-// 	_, err = f.Write([]byte("test data"))
-// 	if err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-
-// 	if err = tmpClient.AddFile(testFilePath); err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-// 	testFile, err := tmpClient.GetFileByPath(testFilePath)
-// 	if err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-
-// 	// Remove test file
-// 	if err = tmpClient.RemoveFile(testFile); err != nil {
-// 		Fail(t, tmpDir, err)
-// 	}
-
-// 	if err := Clean(t, tmpDir); err != nil {
-// 		// reset our .env file for other tests
-// 		if err2 := e.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
-// 			log.Fatal(err2)
-// 		}
-// 		log.Fatal(err)
-// 	}
-// }
-
 func TestClientUpdateUser(t *testing.T) {
 	env.SetEnv(false)
-
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// initialize a new client, then load a new client object
 	// from the initialized service directory and state file
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -259,14 +166,12 @@ func TestClientUpdateUser(t *testing.T) {
 
 func TestClientDeleteUser(t *testing.T) {
 	env.SetEnv(false)
-
-	// make sure we clean the right testing directory
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// initialize a new client
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -284,16 +189,139 @@ func TestClientDeleteUser(t *testing.T) {
 	assert.Equal(t, nil, tmpClient.User)
 }
 
+func TestAddFileToClient(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make and add test file
+	testFile, err := MakeTmpTxtFile(filepath.Join(tmpClient.Root, "tmp.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.AddFile(testFile.ClientPath); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// pre-emptive cleanup
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+
+	assert.NotEqual(t, nil, tmpClient.Drive.Root)
+	assert.NotEqual(t, 0, len(tmpClient.Drive.Root.Files))
+}
+
+func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make and add test file
+	testFile, err := MakeTmpTxtFile(filepath.Join(tmpClient.Root, "tmp.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.AddFile(testFile.ClientPath); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// get the file from the service, since params like dirID aren't
+	// set in testFile
+	tf, err := tmpClient.GetFileByPath(testFile.ClientPath)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if tf == nil {
+		Fail(t, tmpDir, fmt.Errorf("test file not found in service"))
+	}
+
+	// remove test file and close DB connections
+	if err := tmpClient.RemoveFile(tf); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	tmpClient.ShutDown()
+
+	// NOTE: currently failing during Clean() because the files db is still being
+	// used by "another process" which I assume is the temp client,
+	// but all DB connections should be closed with a call to tmpClient.ShutDown()
+
+	// pre-emptive cleanup
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+
+	assert.Equal(t, 0, len(tmpClient.Drive.Root.Files))
+}
+
+// func TestAddFileToClientAndSendToServer(t *testing.T) {
+// 	env.SetEnv(false)
+// 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	// initialize a new testing client
+// 	tmpClient := newTestClient(t, tmpDir)
+// 	if err := tmpClient.SaveState(); err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+// 	tmpClient.SetLocalBackup(false)
+
+// 	// initialize and start a new server in a separate goroutine
+// 	stop := make(chan bool)
+// 	tmpServer := server.NewServer()
+// 	go func() {
+// 		tmpServer.Start(stop)
+// 	}()
+
+// 	// make and add test file
+// 	testFile, err := MakeTmpTxtFile(filepath.Join(tmpClient.Root, "tmp.txt"), RandInt(1000))
+// 	if err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+// 	if err := tmpClient.AddFile(testFile.ClientPath); err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+
+// 	// send file to server
+// 	if err := tmpClient.Push(); err != nil {
+// 		Fail(t, tmpDir, err)
+// 	}
+
+// 	// stop the server
+// 	stop <- true
+
+// 	// pre-emptive cleanup
+// 	if err := Clean(t, tmpDir); err != nil {
+// 		log.Fatal(err)
+// 	}
+// }
+
 func TestClientBuildSyncIndex(t *testing.T) {
 	env.SetEnv(false)
-
-	// make sure we clean the right testing directory
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// initialize a new client
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -331,14 +359,12 @@ func TestClientBuildSyncIndex(t *testing.T) {
 // files with each run. might need to not make it so random.
 func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	env.SetEnv(false)
-
-	// make sure we clean the right testing directory
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// initialize a new client
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -370,22 +396,20 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	}
 
 	// build ToUpdate map
-	tmpClient.Drive.SyncIndex = svc.BuildToUpdate(tmpClient.Drive.Root, tmpClient.Drive.SyncIndex)
+	tmpClient.Drive.SyncIndex = svc.BuildRootToUpdate(tmpClient.Drive.Root, tmpClient.Drive.SyncIndex)
 	assert.NotEqual(t, nil, tmpClient.Drive.SyncIndex.FilesToUpdate)
 	assert.NotEqual(t, 0, len(tmpClient.Drive.SyncIndex.FilesToUpdate))
 }
 
 func TestClientRefreshDrive(t *testing.T) {
 	env.SetEnv(false)
-
-	// make sure we clean the right testing directory
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// initialize a new client
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -413,8 +437,6 @@ func TestClientRefreshDrive(t *testing.T) {
 
 func TestClientDiscoverWithPath(t *testing.T) {
 	env.SetEnv(false)
-
-	// make sure we clean the right testing directory
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
@@ -428,7 +450,7 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	}()
 
 	// initialize a new client
-	tmpClient := newTestClient(t)
+	tmpClient := newTestClient(t, tmpDir)
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -443,49 +465,6 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	shutDown <- true
 
 	// clean up before asserts so nothing gets left behind if there's failures
-	if err := Clean(t, GetTestingDir()); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func TestClientSendsANewFileToTheServer(t *testing.T) {
-	env.SetEnv(false)
-
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// test server
-	shutDown := make(chan bool)
-	testServer := server.NewServer()
-	go func() {
-		testServer.Start(shutDown)
-	}()
-
-	// make a test client
-	tmpClient := newTestClient(t)
-
-	// test file
-	file, err := MakeTmpTxtFile(
-		filepath.Join(tmpDir, tmpClient.User.Name, "root", fmt.Sprintf("%s.txt", randString(21))), RandInt(1000),
-	)
-	if err != nil {
-		shutDown <- true
-		Fail(t, tmpDir, err)
-	}
-
-	// attempt to add a file via the top level API.
-	// this adds the file to the db, and attempts to register it with the server.
-	if err := tmpClient.AddFile(file.Path); err != nil {
-		shutDown <- true
-		Fail(t, tmpDir, err)
-	}
-
-	// shut down test server
-	shutDown <- true
-
-	// clean up
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
 	}

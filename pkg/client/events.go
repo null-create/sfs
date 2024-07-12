@@ -269,6 +269,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 		case evt := <-evtChan:
 			switch evt.Type {
 			// NOTE: this is no longer supported, but may be used in the future versions.
+			//
 			// new files or directories were added to a monitored directory
 			// case monitor.Add:
 			// for _, eitem := range evt.Items {
@@ -301,7 +302,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// case monitor.Remove:
 			// TODO: handle for cases when items are removed from a directory
 			// and possibly moved to another location.
-
+			//
 			// item name change
 			case monitor.Name:
 				if err := c.apply(evt.Path, "name"); err != nil {
@@ -347,10 +348,53 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap {
 				// build update map and push changes if auto sync is enabled.
-				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.Root, c.Drive.SyncIndex)
+				c.Drive.SyncIndex = svc.BuildRootToUpdate(c.Drive.Root, c.Drive.SyncIndex)
 				if c.autoSync() {
-					if err := c.Push(); err != nil {
-						return err
+					/*
+						TODO:
+
+						we may need to make the client side auto back up system
+						default to a *local* file system, rather than default to
+						saving via the local network.
+
+						Need to research:
+
+							connecting two local computers via a shared
+								wifi connection
+								LAN connection
+
+						If we want to continue prioritizing saving files via an https API,
+						rather than just crud with the local system iteself. This solution
+						may be a bit over-engineered, at the moment. It could also be a lot
+						simpler.
+
+						Maybe the client to server implementation could just be a mode setting,
+						and we can default to saving everything under sfs/pkg/run/<user-name>
+						while recreating directory structures.
+					*/
+					if !c.localBackup() {
+						if err := c.Push(); err != nil {
+							return err
+						}
+					} else {
+						// local backup operations
+						if c.IsDir(evt.Path) {
+							d, err := c.GetDirByPath(evt.Path) // event paths are client side
+							if err != nil {
+								return err
+							}
+							if err := c.BackupDir(d); err != nil {
+								return err
+							}
+						} else {
+							f, err := c.GetFileByPath(evt.Path) // TODO: check which path this is (server or client)
+							if err != nil {
+								return err
+							}
+							if err := c.BackupFile(f); err != nil {
+								return err
+							}
+						}
 					}
 				}
 				evtBuf.Reset()                  // reset events buffer

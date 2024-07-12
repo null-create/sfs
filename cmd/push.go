@@ -33,10 +33,16 @@ func init() {
 	viper.BindPFlag("new-dir", pushCmd.PersistentFlags().Lookup("new-dir"))
 	viper.BindPFlag("is-dir", pushCmd.PersistentFlags().Lookup("is-dir"))
 
-	clientCmd.AddCommand(pushCmd)
+	drvCmd.AddCommand(pushCmd)
 }
 
 func PushCmd(cmd *cobra.Command, args []string) {
+	// see if local backup mode is enabled first
+	// if so, thent he client won't have files stored on the sfs server
+	if localBackupIsEnabled() {
+		fmt.Print("local backup mode is enabled. remote files are not available.")
+		return
+	}
 	filePath, _ := cmd.Flags().GetString("path")
 	if filePath == "" {
 		showerr(fmt.Errorf("no file path specified"))

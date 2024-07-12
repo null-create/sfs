@@ -53,6 +53,7 @@ func AllocateDrive(name string, svcRoot string) error {
 		filepath.Join(userRoot, "root"),
 		filepath.Join(userRoot, "state"),
 		filepath.Join(userRoot, "recycled"),
+		filepath.Join(userRoot, "backups"),
 	}
 	for _, d := range serviceDirs {
 		if err := os.Mkdir(d, PERMS); err != nil {
@@ -447,7 +448,8 @@ func (d *Drive) AddDirs(dirs []*Directory) error {
 	return nil
 }
 
-// find a directory. returns nil if not found (or if drive has no root directory)
+// find a directory using its ID.
+// returns nil if not found (or if drive has no root directory)
 func (d *Drive) GetDir(dirID string) *Directory {
 	if !d.Protected {
 		if !d.HasRoot() {
@@ -593,14 +595,12 @@ func (d *Drive) ClearDrive() error {
 
 func (d *Drive) BuildSyncIdx() {
 	files := d.GetFiles()
-	d.SyncIndex = BuildRootSyncIndex(d.Root)
-	d.SyncIndex = BuildDistSyncIndex(files, nil, d.SyncIndex)
+	d.SyncIndex = BuildSyncIndex(files, nil, d.SyncIndex)
 }
 
-func (d *Drive) BuildToUpdate() error {
+func (d *Drive) BuildToUpdate() {
 	if d.SyncIndex == nil {
-		return fmt.Errorf("no sync index to build from")
+		d.SyncIndex = NewSyncIndex(d.OwnerID)
 	}
-	d.SyncIndex = BuildToUpdate(d.Root, d.SyncIndex)
-	return nil
+	d.SyncIndex = BuildToUpdate(d.GetFiles(), nil, d.SyncIndex)
 }

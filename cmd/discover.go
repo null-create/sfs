@@ -34,7 +34,7 @@ func init() {
 
 	viper.BindPFlag("path", discoverCmd.Flags().Lookup("path"))
 
-	rootCmd.AddCommand(discoverCmd)
+	drvCmd.AddCommand(discoverCmd)
 }
 
 func runDiscoverCmd(cmd *cobra.Command, args []string) {
