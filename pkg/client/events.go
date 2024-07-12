@@ -349,7 +349,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap {
 				// build update map and push changes if auto sync is enabled.
-				c.Drive.SyncIndex = svc.BuildRootToUpdate(c.Drive.Root, c.Drive.SyncIndex)
+				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
 				if c.autoSync() {
 					/*
 						TODO:
@@ -388,7 +388,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 								return err
 							}
 						} else {
-							f, err := c.GetFileByPath(evt.Path) // TODO: check which path this is (server or client)
+							f, err := c.GetFileByPath(evt.Path) // event paths are client side
 							if err != nil {
 								return err
 							}
