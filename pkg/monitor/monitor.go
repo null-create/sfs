@@ -200,7 +200,7 @@ func (m *Monitor) StopWatching(path string) {
 
 // shutdown all active monitoring threads
 func (m *Monitor) ShutDown() {
-	if len(m.OffSwitches) == 0 {
+	if len(m.Watchers) == 0 {
 		return
 	}
 	m.log.Info(
