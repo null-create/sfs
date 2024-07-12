@@ -34,7 +34,8 @@ func createPprofFiles() (*os.File, *os.File) {
 
 func main() {
 	// TEMP: for cpu and memory profiling
-	// run go tool pprof -http=localhost:6060 sfs.exe cpu.pprof to see results
+	// run: go tool pprof -http=localhost:6060 sfs.exe <cpu.pprof or mem.pprof>
+	// to see results
 	cpuFile, memFile := createPprofFiles()
 
 	// cpu profiling
