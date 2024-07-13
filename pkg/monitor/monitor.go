@@ -318,8 +318,8 @@ func watchFile(filePath string, stop chan bool) chan Event {
 					initialStat = stat
 				default:
 					// wait before checking again
-					// TODO: experiment with longer wait times (approx 1 second) with
-					// non-buffered events. Want to try strike a balance between frequency of
+					// TODO: experiment with longer wait times with non-buffered events.
+					// want to try strike a balance between frequency of
 					// checking vs faster checks with event bufferring.
 					time.Sleep(WAIT)
 				}
@@ -389,7 +389,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 					evt <- Event{
 						Kind:  "Directory",
 						ID:    auth.NewUUID(),
-						Type:  Remove,
+						Type:  Delete,
 						Path:  dirPath,
 						Items: diffs,
 					}
