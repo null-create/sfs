@@ -270,6 +270,45 @@ func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 	assert.Equal(t, 0, len(tmpClient.Drive.Root.Files))
 }
 
+func TestAddItemWithAFile(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make and add test file
+	testFile, err := MakeTmpTxtFile(filepath.Join(tmpClient.Root, "tmp.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.AddItem(testFile.Path); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	rootEntries, err := os.ReadDir(tmpClient.Root)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.NotEqual(t, 0, len(rootEntries))
+
+	backupEntries, err := os.ReadDir(tmpClient.LocalBackupDir)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.NotEqual(t, 0, len(backupEntries))
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
 // func TestAddFileToClientAndSendToServer(t *testing.T) {
 // 	env.SetEnv(false)
 // 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
