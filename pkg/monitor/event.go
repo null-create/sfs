@@ -12,7 +12,6 @@ const (
 	Add     EventType = "add"
 	Create  EventType = "create"
 	Delete  EventType = "delete"
-	Remove  EventType = "remove"
 	Change  EventType = "change"
 	ModTime EventType = "modtime"
 	Size    EventType = "size"
@@ -47,7 +46,7 @@ func (e *Event) IsDir() bool { return e.Kind == "Directory" }
 
 func (e *Event) ToString() string {
 	return fmt.Sprintf(
-		"%s event \n(id=%s) -> type: %s | path: %s",
+		"%s event (id=%s) -> type: %s | path: %s",
 		e.Kind, e.ID, e.Type, e.Path,
 	)
 }
@@ -59,7 +58,7 @@ type Events struct {
 	threshold int   // buffer limit
 	Buffered  bool  // whether this event list is buffered
 	Total     int   // current total events
-	AtCap     bool  // flag to indicate whether we've reached the buffer limit
+	atcap     bool  // flag to indicate whether we've reached the buffer limit
 	Events    EList // event object list
 }
 
@@ -80,10 +79,14 @@ func NewEvents(buffered bool) *Events {
 	}
 }
 
+// Whether we've reached the buffer limit
+func (e *Events) AtCap() bool { return e.atcap }
+
+// reset events buffer and internal flags
 func (e *Events) Reset() {
 	e.Events = nil
 	e.Events = make(EList, 0)
-	e.AtCap = false
+	e.atcap = false
 	e.Total = 0
 }
 
@@ -108,7 +111,7 @@ func (e *Events) AddEvent(evt Event) {
 		e.Events = append(e.Events, evt)
 		e.Total += 1
 		if e.Total == e.threshold {
-			e.AtCap = true
+			e.atcap = true
 		}
 	} else {
 		log.Printf("[WARNING] event list threshold met. event (id=%s) not added!", evt.ID)

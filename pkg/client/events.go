@@ -347,7 +347,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				return nil
 			}
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
-			if evtBuf.AtCap {
+			if evtBuf.AtCap() {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
 				if c.autoSync() {
