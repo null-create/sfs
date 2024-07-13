@@ -266,6 +266,9 @@ func (f *File) Clear() error {
 // copy this file to another location
 func (f *File) Copy(destPath string) error {
 	if !f.Protected {
+		f.m.Lock()
+		defer f.m.Unlock()
+
 		src, err := os.Open(f.GetPath())
 		if err != nil {
 			return err
