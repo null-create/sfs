@@ -303,7 +303,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	driveID := auth.NewUUID()
 	svcRoot := filepath.Join(ccfg.Root, user.Name)
 	root := svc.NewRootDirectory("root", user.ID, driveID, filepath.Join(svcRoot, "root"))
-	root.BackupPath = filepath.Join(root.Path, "backups")
+	root.BackupPath = filepath.Join(svcRoot, "backups")
 	drv := svc.NewDrive(driveID, user.Name, user.ID, root.Path, root.ID, root)
 	drv.Root = root
 	drv.IsLoaded = true
