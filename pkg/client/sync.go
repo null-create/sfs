@@ -207,13 +207,13 @@ func (c *Client) Push() error {
 		c.log.Warn("no files marked for uploading. sync index update map is empty")
 		return nil
 	}
-	queue := svc.BuildQ(c.Drive.SyncIndex)
-	if queue == nil {
+	q := svc.BuildQ(c.Drive.SyncIndex)
+	if q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	var wg sync.WaitGroup
-	for len(queue.Queue) > 0 {
-		batch := queue.Dequeue()
+	for len(q.Queue) > 0 {
+		batch := q.Dequeue()
 		for _, file := range batch.Files {
 			wg.Add(1)
 			go func() {
@@ -242,13 +242,13 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 		c.log.Warn("no sync index returned from the server. nothing to pull")
 		return nil
 	}
-	queue := svc.BuildQ(idx)
-	if len(queue.Queue) == 0 || queue == nil {
+	q := svc.BuildQ(idx)
+	if len(q.Queue) == 0 || q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	var wg sync.WaitGroup
-	for len(queue.Queue) > 0 {
-		batch := queue.Dequeue()
+	for len(q.Queue) > 0 {
+		batch := q.Dequeue()
 		for _, file := range batch.Files {
 			wg.Add(1)
 			go func() {
@@ -347,12 +347,19 @@ func (c *Client) LocalSync() error {
 	if len(files) == 0 {
 		return nil
 	}
+	var wg sync.WaitGroup
 	c.Drive.SyncIndex = svc.BuildToUpdate(files, nil, c.Drive.SyncIndex)
 	for _, file := range c.Drive.SyncIndex.FilesToUpdate {
-		if err := c.BackupFile(file); err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func() {
+			if err := c.BackupFile(file); err != nil {
+				c.log.Error(err.Error())
+			}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
+	c.reset()
 	return nil
 }
 
@@ -370,6 +377,5 @@ func (c *Client) BackupDir(dir *svc.Directory) error {
 		c.log.Info(fmt.Sprintf("directory '%s' has no files to backup", dir.Name))
 		return nil
 	}
-
 	return nil
 }
