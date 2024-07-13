@@ -7,9 +7,8 @@ import (
 )
 
 /*
-A SyncIndex is a data structure usued to keep track of a user's
-files and directories within their SFS file system, and coordinate which files
-should be updated, removed, or added between the client and server (or between hard disks,
+A SyncIndex is a data structure usued coordinate which files should be updated,
+removed, or added between the client and server (or between hard disks,
 if this is the service mode that's active)
 */
 type SyncIndex struct {
@@ -83,6 +82,21 @@ func (s *SyncIndex) ToString() string {
 	return string(data)
 }
 
+// add a file to the sync index
+func (s *SyncIndex) AddFile(file *File) {
+	if !s.HasItem(file.ID) {
+		s.LastSync[file.ID] = file.LastSync
+	}
+}
+
+// add a file to the sync index update map.
+// must already be in the sync index first.
+func (s *SyncIndex) AddFileToUpdateMap(file *File) {
+	if !s.HasItem(file.ID) {
+		s.FilesToUpdate[file.ID] = file
+	}
+}
+
 // get a slice of files to sync from the index.ToUpdate map
 func (s *SyncIndex) GetFiles() []*File {
 	if len(s.FilesToUpdate) == 0 {
@@ -120,7 +134,7 @@ internal LastSync map. it's assumed the index was created before this function w
 if the sync time in the last sync map is less recent than whats in the current directory, then we add that file to the ToUpdate map,
 which will be used to create a file upload or download queue
 */
-func BuildToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
+func BuildRootToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 	if idx := root.WalkU(idx); idx != nil {
 		return idx
 	}
@@ -168,20 +182,17 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 /*
 Build a sync index of all files being monitored by the system.
 
-Assumes the supplied index's LastSync map is instantiated and populated, otherwise
-will fail.
-
 NOTE: the directories argument is for future implementations.
 probably won't be used during this first iteration.
 dirs can be set to nil for the time being.
 */
-func BuildDistSyncIndex(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
-	for _, f := range files {
-		if !idx.HasItem(f.ID) {
-			idx.LastSync[f.ID] = f.LastSync
+func BuildSyncIndex(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
+	for _, file := range files {
+		if !idx.HasItem(file.ID) {
+			idx.LastSync[file.ID] = file.LastSync
 		} else {
-			if f.LastSync.After(idx.LastSync[f.ID]) {
-				idx.LastSync[f.ID] = f.LastSync
+			if file.LastSync.After(idx.LastSync[file.ID]) {
+				idx.LastSync[file.ID] = file.LastSync
 			}
 		}
 	}
@@ -202,24 +213,23 @@ func BuildDistSyncIndex(files []*File, dirs []*Directory, idx *SyncIndex) *SyncI
 update the indexes FilesToUpdate map of monitored distrtributed files.
 assumes the supplied index's LastSync map is instantiated and populated, otherwise
 will fail or give inaccurate results.
+
+if item is not known to the index, then it will be ignored.
 */
-func BuildToUpdateDist(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
-	for _, f := range files {
-		if idx.HasItem(f.ID) {
-			if f.LastSync.After(idx.LastSync[f.ID]) {
-				idx.FilesToUpdate[f.ID] = f
+func BuildToUpdate(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
+	for _, file := range files {
+		if idx.HasItem(file.ID) {
+			if file.LastSync.After(idx.LastSync[file.ID]) {
+				idx.FilesToUpdate[file.ID] = file
 			}
 		}
 	}
 	// NOTE: for future implementation iterations
 	// for _, d := range dirs {
-	// 	if !idx.HasItem(d.ID) {
-	// 		continue // ignore unknown directories
-	// 	} else {
+	// 	if idx.HasItem(d.ID) {
 	// 		if d.LastSync.After(idx.LastSync[d.ID]) {
 	// 			idx.DirsToUpdate[d.ID] = d
 	// 		}
-	// 	}
 	// }
 	return idx
 }
@@ -300,10 +310,6 @@ func buildQ(f []*File, b *Batch, q *Queue) *Queue {
 func BuildQ(idx *SyncIndex) *Queue {
 	files := idx.GetFiles()
 	if files == nil {
-		return nil
-	}
-	if len(files) == 0 {
-		log.Printf("[INFO] no files matched for syncing")
 		return nil
 	}
 	// if every individual file exceeds b.MAX, none will able to

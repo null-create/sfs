@@ -113,7 +113,7 @@ func TestBuildQWithFilesLargerThanMAX(t *testing.T) {
 	// add them to the ToUpdate map (BuildQ checks for this)
 	idx := BuildRootSyncIndex(d)
 	d.Files = MutateFiles(t, d.Files)
-	idx = BuildToUpdate(d, idx)
+	idx = BuildRootToUpdate(d, idx)
 
 	// should return a "large file" queue, i.e just a
 	// queue of each of the files.

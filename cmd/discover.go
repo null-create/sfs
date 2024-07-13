@@ -20,9 +20,9 @@ var (
 		Use:   "discover",
 		Short: "Use to automatically discover and add all items under a given directory",
 		Long: `
-		Use sfs discover -p <path> to discover all items under a given directory.
-		
-		Can be used to automatically discover and add all items under a given directory.
+Use sfs discover -p <path> to discover all items under a given directory.
+
+Can be used to automatically discover and add all items under a given directory.
 		`,
 		Run: runDiscoverCmd,
 	}
@@ -34,7 +34,7 @@ func init() {
 
 	viper.BindPFlag("path", discoverCmd.Flags().Lookup("path"))
 
-	rootCmd.AddCommand(discoverCmd)
+	drvCmd.AddCommand(discoverCmd)
 }
 
 func runDiscoverCmd(cmd *cobra.Command, args []string) {

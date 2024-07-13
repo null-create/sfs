@@ -5,15 +5,14 @@ import argparse
 LOG_DIR = os.getcwd()
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-comp", "-c", help="component to search for", type=str, required=True
     )
     parser.add_argument("-level", "-l", help="log level", type=str, required=True)
     parser.add_argument("-file", "-f", help="Specific log file to parse", type=str)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 # parse a single log file

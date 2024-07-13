@@ -20,15 +20,16 @@ type File struct {
 	m sync.Mutex
 
 	// metadata
-	ID      string      `json:"id"`       // file id
-	Name    string      `json:"name"`     // file name
-	NMap    NameMap     `json:"name_map"` // file name map
-	OwnerID string      `json:"owner"`    // file owner ID
-	DirID   string      `json:"dir_id"`   // id of the directory this file belongs to
-	DriveID string      `json:"drive_id"` // id of the drive this file belongs to
-	Mode    fs.FileMode `json:"mode"`     // file permissions
-	Size    int64       `json:"size"`     // file size in bytes
-	Backup  bool        `json:"backup"`   // flag for whether this is the server-side version of the file
+	ID           string      `json:"id"`            // file id
+	Name         string      `json:"name"`          // file name
+	NMap         NameMap     `json:"name_map"`      // file name map
+	OwnerID      string      `json:"owner"`         // file owner ID
+	DirID        string      `json:"dir_id"`        // id of the directory this file belongs to
+	DriveID      string      `json:"drive_id"`      // id of the drive this file belongs to
+	Mode         fs.FileMode `json:"mode"`          // file permissions
+	Size         int64       `json:"size"`          // file size in bytes
+	ServerBackup bool        `json:"server_backup"` // flag for whether this is the server-side version of the file
+	LocalBackup  bool        `json:"local_backup"`  // flag for whether this is a local backup version of the file
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -39,6 +40,7 @@ type File struct {
 	Path       string    `json:"path"`        // temp. will be replaced by server/client path at some point
 	ServerPath string    `json:"server_path"` // path to file on the server
 	ClientPath string    `json:"client_path"` // path to file on the client
+	BackupPath string    `json:"backup_path"` // path to local backup version of this file
 	Endpoint   string    `json:"endpoint"`    // unique server API endpoint
 	CheckSum   string    `json:"checksum"`    // file checksum
 	Algorithm  string    `json:"algorithm"`   // checksum algorithm
@@ -47,19 +49,21 @@ type File struct {
 	Content []byte
 }
 
-// for logging any errors during new file object creation
-var nfLog = logger.NewLogger("FILE_INIT", "None")
-
 // creates a new file struct instance.
 // file contents are not loaded into memory.
 func NewFile(fileName string, driveID string, ownerID string, filePath string) *File {
+	// for logging any errors during new file object creation
+	var nfLog = logger.NewLogger("FILE_INIT", "None")
+
 	cfg := NewSvcCfg()
 	// get baseline information about the file
 	item, err := os.Stat(filePath)
 	if err != nil {
+		nfLog.Error(fmt.Sprintf("failed to get file stats: %v", err))
 		log.Fatal(fmt.Errorf("failed to get file stats: %v", err))
 	}
 	if item.IsDir() {
+		nfLog.Error(fmt.Sprintf("item is a directory: %v", filePath))
 		log.Fatal(fmt.Errorf("item is a directory: %v", filePath))
 	}
 	// get baseline checksum
@@ -70,26 +74,32 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 	// assign new id
 	uuid := auth.NewUUID()
 	return &File{
-		Name:       fileName,
-		ID:         uuid,
-		NMap:       newNameMap(fileName, uuid),
-		OwnerID:    ownerID,
-		DriveID:    driveID,
-		Mode:       item.Mode(),
-		Size:       item.Size(),
-		Backup:     false,
-		Protected:  false,
-		Key:        "default",
-		LastSync:   time.Now().UTC(),
-		Path:       filePath,
-		ServerPath: filePath,
-		ClientPath: filePath,
-		Endpoint:   Endpoint + ":" + cfg.Port + "/v1/files/" + uuid,
-		CheckSum:   cs,
-		Algorithm:  "sha256",
-		Content:    make([]byte, 0),
+		Name:         fileName,
+		ID:           uuid,
+		NMap:         newNameMap(fileName, uuid),
+		OwnerID:      ownerID,
+		DriveID:      driveID,
+		Mode:         item.Mode(),
+		Size:         item.Size(),
+		ServerBackup: false,
+		Protected:    false,
+		Key:          "default",
+		LastSync:     time.Now().UTC(),
+		Path:         filePath,
+		ServerPath:   filePath,
+		ClientPath:   filePath,
+		BackupPath:   filePath,
+		Endpoint:     Endpoint + ":" + cfg.Port + "/v1/files/" + uuid,
+		CheckSum:     cs,
+		Algorithm:    "sha256",
+		Content:      make([]byte, 0),
 	}
 }
+
+// has this file been backed up ?
+func (f *File) IsBackUp() bool        { return f.ServerBackup }
+func (f *File) IsLocalBackup() bool   { return f.LocalBackup }
+func (f *File) GetBackupPath() string { return f.BackupPath }
 
 func UnmarshalFileStr(fileInfo string) (*File, error) {
 	file := new(File)
@@ -138,13 +148,10 @@ func (f *File) Exists() bool {
 	return true
 }
 
-// has this file been backed up to the server?
-func (f *File) IsBackUp() bool { return f.Backup }
-
 // mark this object as being the server side version of the original file.
 func (f *File) MarkBackedUp() {
-	if !f.Backup {
-		f.Backup = true
+	if !f.ServerBackup {
+		f.ServerBackup = true
 	}
 }
 
@@ -153,10 +160,12 @@ func (f *File) MarkBackedUp() {
 // server side files will have file.Backup set to true, client side files will not.
 func (f *File) GetPath() string {
 	var path string
-	if f.Backup {
-		path = f.ServerPath
+	if f.ServerBackup {
+		path = f.ServerPath // server side file path
+	} else if f.LocalBackup {
+		path = f.BackupPath // local backup file path
 	} else {
-		path = f.ClientPath
+		path = f.ClientPath // client side file path (original)
 	}
 	return path
 }
@@ -242,8 +251,7 @@ func (f *File) Save(data []byte) error {
 	return nil
 }
 
-// clears *f.Content*, the in-memory file contents, not the
-// actual external file contents.
+// clears the *in-memory* file contents, not the actual external file contents.
 func (f *File) Clear() error {
 	if !f.Protected {
 		f.Content = nil
@@ -258,6 +266,9 @@ func (f *File) Clear() error {
 // copy this file to another location
 func (f *File) Copy(destPath string) error {
 	if !f.Protected {
+		f.m.Lock()
+		defer f.m.Unlock()
+
 		src, err := os.Open(f.GetPath())
 		if err != nil {
 			return err
@@ -275,7 +286,7 @@ func (f *File) Copy(destPath string) error {
 			return err
 		}
 	} else {
-		log.Printf("[WARNING] %s is protected", f.Name)
+		log.Printf("[WARNING] %s is protected. copy not executed.", f.Name)
 	}
 	return nil
 }

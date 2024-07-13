@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/sfs/pkg/auth"
 	svc "github.com/sfs/pkg/service"
@@ -90,9 +89,7 @@ func Clean(t *testing.T, dir string) error {
 
 // for random file names
 func randString(length int) string {
-	rand.Seed(time.Now().UnixNano())
 	charSet := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 	randbytes := make([]byte, length)
 	for i := 0; i < length; i++ {
 		randbytes[i] = charSet[rand.Intn(len(charSet))]
@@ -222,7 +219,11 @@ func MutateFile(t *testing.T, f *svc.File) {
 func MutateFiles(t *testing.T, files map[string]*svc.File) map[string]*svc.File {
 	var mutated int
 	for _, f := range files {
-		if RandInt(1000)%2 == 0 {
+		var choice = RandInt(1000)
+		if choice == 0 || choice == 1 {
+			choice = 2 // make sure we get at least 1 choice. Otherwise some tests will be flakey
+		}
+		if choice%2 == 0 {
 			var data string
 			total := RandInt(5000)
 			for i := 0; i < total; i++ {

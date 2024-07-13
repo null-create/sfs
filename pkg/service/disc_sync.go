@@ -18,7 +18,7 @@ func SyncDisks(srcDir *Directory, destRootDir *Directory) error {
 	if srcIdx == nil {
 		return fmt.Errorf("failed to create sync index from source disk")
 	}
-	srcIdx = BuildToUpdate(srcDir, srcIdx)
+	srcIdx = BuildRootToUpdate(srcDir, srcIdx)
 	// build sync queue
 	queue := BuildQ(srcIdx)
 	if queue == nil || len(queue.Queue) == 0 {

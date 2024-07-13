@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"strconv"
 	"sync"
 	"time"
 
@@ -27,6 +28,9 @@ const (
 
 // whether auto sync is enabled
 func (c *Client) autoSync() bool { return c.Conf.AutoSync }
+
+// whether we should save to local storage, or push files to server.
+func (c *Client) localBackup() bool { return c.Conf.LocalBackup }
 
 // resets client side sync mechanisms with a
 // new baseline for item last sync times.
@@ -49,22 +53,43 @@ func (c *Client) dump(resp *http.Response, body bool) {
 	}
 }
 
-// build client sync index.
+// build a new client sync index. re-initializes
+// client roots index if called.
 func (c *Client) BuildSyncIndex() {
+	// initialize sync index
+	c.Drive.SyncIndex = svc.NewSyncIndex(c.UserID)
+
+	// get any files
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		c.log.Warn("no files. sync index is not set.")
+		c.log.Warn("no files. nothing to index.")
 		return
 	}
-	// idx := svc.NewSyncIndex(c.User.ID)
+
+	// NOTE: for future implementations when we can support monitoring directories
+	//
+	// get any directories
+	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
+	// if err != nil {
+	// 	c.log.Error(fmt.Sprintf("failed to get users directories: %s", err))
+	// 	return
+	// }
+	// if len(dirs) == 0 {
+	// 	c.log.Warn("no directories. nothing to index")
+	// }
+
 	// NOTE: the dir arg is set to nil until dir monitoring is supported
-	c.Drive.SyncIndex = svc.BuildDistSyncIndex(files, nil, svc.NewSyncIndex(c.User.ID))
+	c.Drive.SyncIndex = svc.BuildSyncIndex(files, nil, c.Drive.SyncIndex)
 	c.log.Log(logger.INFO, fmt.Sprintf("%d files have been indexed", len(files)))
 }
 
 // enable or disable auto sync with the server.
 func (c *Client) SetAutoSync(mode bool) {
 	c.Conf.AutoSync = mode
+	if err := envCfgs.Set("CLIENT_AUTO_SYNC", strconv.FormatBool(mode)); err != nil {
+		c.log.Error(fmt.Sprintf("failed to update environment configurations: %s", err))
+		return
+	}
 	if err := c.SaveState(); err != nil {
 		c.log.Error("failed to update state file: " + err.Error())
 	} else {
@@ -72,6 +97,24 @@ func (c *Client) SetAutoSync(mode bool) {
 			c.log.Info("auto sync enabled")
 		} else {
 			c.log.Info("auto sync disabled")
+		}
+	}
+}
+
+// enable or disable backing up files to local storage.
+func (c *Client) SetLocalBackup(mode bool) {
+	c.Conf.LocalBackup = mode
+	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
+		c.log.Error("failed to update environment configurations: " + err.Error())
+		return
+	}
+	if err := c.SaveState(); err != nil {
+		c.log.Error("failed to update state file: " + err.Error())
+	} else {
+		if mode {
+			c.log.Info("local backup enabled")
+		} else {
+			c.log.Info("local backup disabled")
 		}
 	}
 }
@@ -89,7 +132,7 @@ type SyncItems struct {
 //
 // TODO: handle when a server has a file/directory the client doesn't have,
 // and handle when the client has a file/directory the server doesn't have.
-func (c *Client) Sync() error {
+func (c *Client) ServerSync() error {
 	// get latest server sync index
 	svrIdx, err := c.GetServerIdx(true)
 	if err != nil {
@@ -161,15 +204,16 @@ func (c *Client) Sync() error {
 // and the upload will fail.
 func (c *Client) Push() error {
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
-		return fmt.Errorf("no files marked for uploading. SyncIndex.ToUpdate is empty")
+		c.log.Warn("no files marked for uploading. sync index update map is empty")
+		return nil
 	}
-	queue := svc.BuildQ(c.Drive.SyncIndex)
-	if queue == nil {
+	q := svc.BuildQ(c.Drive.SyncIndex)
+	if q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	var wg sync.WaitGroup
-	for len(queue.Queue) > 0 {
-		batch := queue.Dequeue()
+	for len(q.Queue) > 0 {
+		batch := q.Dequeue()
 		for _, file := range batch.Files {
 			wg.Add(1)
 			go func() {
@@ -198,13 +242,13 @@ func (c *Client) Pull(idx *svc.SyncIndex) error {
 		c.log.Warn("no sync index returned from the server. nothing to pull")
 		return nil
 	}
-	queue := svc.BuildQ(idx)
-	if len(queue.Queue) == 0 || queue == nil {
+	q := svc.BuildQ(idx)
+	if len(q.Queue) == 0 || q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	var wg sync.WaitGroup
-	for len(queue.Queue) > 0 {
-		batch := queue.Dequeue()
+	for len(q.Queue) > 0 {
+		batch := q.Dequeue()
 		for _, file := range batch.Files {
 			wg.Add(1)
 			go func() {
@@ -287,6 +331,51 @@ func (c *Client) PushNewFile(file *svc.File) error {
 func (c *Client) PullFile(file *svc.File) error {
 	if err := c.Transfer.Download(file.ClientPath, file.Endpoint); err != nil {
 		return err
+	}
+	return nil
+}
+
+// ---------------- local synchronization operations ----------------
+
+// build sync index of all locally monitored files, then
+// create backups in the backup directory of everything.
+func (c *Client) LocalSync() error {
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	var wg sync.WaitGroup
+	c.Drive.SyncIndex = svc.BuildToUpdate(files, nil, c.Drive.SyncIndex)
+	for _, file := range c.Drive.SyncIndex.FilesToUpdate {
+		wg.Add(1)
+		go func() {
+			if err := c.BackupFile(file); err != nil {
+				c.log.Error(err.Error())
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	c.reset()
+	return nil
+}
+
+func (c *Client) BackupFile(file *svc.File) error {
+	if err := file.Copy(file.BackupPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO:
+func (c *Client) BackupDir(dir *svc.Directory) error {
+	files := dir.GetFiles()
+	if len(files) == 0 {
+		c.log.Info(fmt.Sprintf("directory '%s' has no files to backup", dir.Name))
+		return nil
 	}
 	return nil
 }

@@ -332,7 +332,7 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 		return err
 	}
 	if root != nil {
-		return fmt.Errorf("drive is already registered")
+		return fmt.Errorf("drive for '%s' (drv-id=%s) is already registered", drv.OwnerName, drv.ID)
 	}
 	// create root from existing client-side drive
 	// info so we can register this new drive
@@ -362,8 +362,8 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 		)
 	}
 
-	// generate sync index and save to service instance
-	drv.SyncIndex = svc.BuildRootSyncIndex(drv.Root)
+	// initalize sync index and save to service instance
+	drv.SyncIndex = svc.NewSyncIndex(drv.OwnerID)
 	s.Drives[drv.ID] = drv
 	if err := s.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
@@ -966,6 +966,6 @@ func (s *Service) RefreshUpdates(driveID string) (*svc.SyncIndex, error) {
 	if !drive.IsIndexed() {
 		return nil, fmt.Errorf("drive (id=%s) has not been indexed", driveID)
 	}
-	drive.SyncIndex = svc.BuildToUpdate(drive.Root, drive.SyncIndex)
+	drive.SyncIndex = svc.BuildRootToUpdate(drive.Root, drive.SyncIndex)
 	return drive.SyncIndex, nil
 }

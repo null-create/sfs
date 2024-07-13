@@ -323,9 +323,9 @@ func (c *Client) GetFileByID(fileID string) (*svc.File, error) {
 func (c *Client) GetFileByPath(path string) (*svc.File, error) {
 	file, err := c.Db.GetFileByPath(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file by path: %v", err)
+		return nil, fmt.Errorf("failed to get file by path from db: %v", err)
 	} else if file == nil {
-		return nil, fmt.Errorf("%s not found", filepath.Base(path))
+		return nil, fmt.Errorf("'%s' not found", filepath.Base(path))
 	}
 	return file, nil
 }
@@ -363,14 +363,14 @@ func (c *Client) AddFile(filePath string) error {
 	}
 
 	// create new file object
-	newFile := svc.NewFile(filepath.Base(filePath), c.DriveID, c.UserID, filePath)
+	newFile := svc.NewFile(filepath.Base(filePath), c.Drive.ID, c.UserID, filePath)
 
 	// see if we already have the file's parent directory in the file system
 	dir, err := c.GetDirByPath(filepath.Dir(filePath))
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		// if the parent directory to this file doesn't exist in the file system,
 		// then add it to the SFS root.
-		newFile.DirID = c.Drive.RootID
+		newFile.DirID = c.Drive.Root.ID
 	} else if err != nil {
 		return err
 	} else {
@@ -378,6 +378,7 @@ func (c *Client) AddFile(filePath string) error {
 		newFile.DirID = dir.ID
 	}
 	// add file to sfs system
+	// NOTE: backup paths are generated when adding the new file to the directory.
 	if err := c.Drive.AddFile(newFile.DirID, newFile); err != nil {
 		return err
 	}
@@ -388,32 +389,41 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
-	// push metadata to server if autosync is enabled
-	// this will create an intial EMPTY file on the server-side.
-	// backup contents are created during the first sync of the file
-	// after being registered.
 	if c.autoSync() {
-		req, err := c.NewFileRequest(newFile)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return err
-		}
-		c.dump(resp, true)
-		// get newly generated server-side path for the file if successfully created
-		if resp.StatusCode == http.StatusOK {
-			svrpath, err := c.getFileServerPath(newFile)
+		if !c.localBackup() {
+			// push metadata to server if autosync is enabled
+			// and we don't default to using local storage for backup purposes.
+			//
+			// this will create an intial EMPTY file on the server-side.
+			// backup contents are created during the first sync of the file
+			// after being registered.
+			req, err := c.NewFileRequest(newFile)
 			if err != nil {
 				return err
 			}
-			newFile.ServerPath = svrpath
-			if err := c.UpdateFile(newFile); err != nil {
+			resp, err := c.Client.Do(req)
+			if err != nil {
 				return err
 			}
+			c.dump(resp, true)
+			// get newly generated server-side path for the file if successfully created
+			if resp.StatusCode == http.StatusOK {
+				svrpath, err := c.getFileServerPath(newFile)
+				if err != nil {
+					return err
+				}
+				newFile.ServerPath = svrpath
+				if err := c.UpdateFile(newFile); err != nil {
+					return err
+				}
+			} else {
+				c.log.Warn(fmt.Sprintf("failed to send metadata to server: %v", resp.Status))
+			}
 		} else {
-			c.log.Warn(fmt.Sprintf("failed to send metadata to server: %v", resp.Status))
+			// make a local backup copy of the file
+			if err := c.BackupFile(newFile); err != nil {
+				return err
+			}
 		}
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
@@ -421,7 +431,8 @@ func (c *Client) AddFile(filePath string) error {
 }
 
 // retrieve the updated server path for the file after a successful
-// registration with the server.
+// registration with the server.//
+// returns an empty string if the client failed to make contact with the server.
 func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 	req, err := c.GetFileInfoRequest(file)
 	if err != nil {
@@ -432,7 +443,8 @@ func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to get server path. server returned non-200 status: %v", resp.Status)
+		c.log.Warn(fmt.Sprintf("failed to get server path. server returned non-200 status: %v", resp))
+		return "", fmt.Errorf(fmt.Sprintf("failed to get server path. server returned non-200 status: %v", resp))
 	}
 	// get file info from response so we can parse it for the new server path
 	var buf bytes.Buffer
@@ -464,28 +476,34 @@ func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
 	if err := c.WatchItem(newFile.ClientPath); err != nil {
 		return err
 	}
-	// push metadata to server if autosync is enabled
 	if c.autoSync() {
-		req, err := c.NewFileRequest(newFile)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return err
-		}
-		// get newly generated server-side path for the file if successfully created
-		if resp.StatusCode == http.StatusOK {
-			svrpath, err := c.getFileServerPath(newFile)
+		if !c.localBackup() {
+			// push metadata to server
+			req, err := c.NewFileRequest(newFile)
 			if err != nil {
 				return err
 			}
-			newFile.ServerPath = svrpath
-			if err := c.UpdateFile(newFile); err != nil {
+			resp, err := c.Client.Do(req)
+			if err != nil {
+				return err
+			}
+			// get newly generated server-side path for the file if successfully created
+			if resp.StatusCode == http.StatusOK {
+				svrpath, err := c.getFileServerPath(newFile)
+				if err != nil {
+					return err
+				}
+				newFile.ServerPath = svrpath
+				if err := c.UpdateFile(newFile); err != nil {
+					return err
+				}
+			}
+			c.dump(resp, true)
+		} else {
+			if err := c.BackupFile(newFile); err != nil {
 				return err
 			}
 		}
-		c.dump(resp, true)
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
 	return nil
@@ -498,7 +516,8 @@ func (c *Client) ModifyFile(dirID string, fileID string, data []byte) error {
 		return fmt.Errorf("no file (id=%s) found", fileID)
 	}
 	if len(data) == 0 {
-		return fmt.Errorf("no data received")
+		c.log.Warn(fmt.Sprintf("no data provided for '%s'. nothing modified", file.Name))
+		return nil
 	}
 	if err := c.Drive.ModifyFile(dirID, file, data); err != nil {
 		return err
@@ -526,7 +545,8 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 	return nil
 }
 
-// remove a file in a specied directory. removes the file from the server too.
+// remove a file in a specied directory.
+// removes the file from the server if local backup is disabled.
 func (c *Client) RemoveFile(file *svc.File) error {
 	// make sure this file is actually registered with the service
 	// before mucking around.
@@ -550,7 +570,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
 
 	// remove file from the server if auto sync is enabled.
-	if c.autoSync() {
+	if c.autoSync() && !c.localBackup() {
 		req, err := c.DeleteFileRequest(file)
 		if err != nil {
 			c.log.Error("failed to create request: " + err.Error())
@@ -629,6 +649,14 @@ func (c *Client) RegisterFile(file *svc.File) error {
 
 // ----- directories --------------------------------
 
+func (c *Client) IsDir(path string) bool {
+	item, err := os.Stat(path)
+	if err != nil {
+		c.log.Error(fmt.Sprintf("failed to get stat for item: %v\n%v", path, err))
+	}
+	return item.IsDir()
+}
+
 // list all directories managed by the SFS client
 func (c *Client) ListLocalDirsDB() error {
 	dirs, err := c.Db.GetUsersDirectories(c.UserID)
@@ -641,7 +669,7 @@ func (c *Client) ListLocalDirsDB() error {
 	}
 	for _, dir := range dirs {
 		var output = fmt.Sprintf(
-			"name: %s\n id: %v\n loc: %s\n\n",
+			"name: %s\nid: %v\nloc: %s\n\n",
 			dir.Name, dir.ID, dir.ClientPath,
 		)
 		fmt.Print(output)
@@ -649,35 +677,35 @@ func (c *Client) ListLocalDirsDB() error {
 	return nil
 }
 
-// add dir to client service instance
-func (c *Client) AddDirWithID(dirID string, dir *svc.Directory) error {
-	if err := c.Drive.AddSubDir(dirID, dir); err != nil {
-		return fmt.Errorf("failed to add directory: %v", err)
+// get the directories server path.
+func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
+	dirReq, err := c.GetDirRequest(dir)
+	if err != nil {
+		return "", err
 	}
-	if err := c.Db.AddDir(dir); err != nil {
-		// remove dir. we only want directories we have a record for.
-		if remErr := os.Remove(dir.Path); remErr != nil {
-			c.log.Warn(fmt.Sprintf("failed to remove directory: %v", remErr))
-		}
-		return err
+	res, err := c.Client.Do(dirReq)
+	if err != nil {
+		return "", err
 	}
-	if err := c.WatchItem(dir.Path); err != nil {
-		return err
+	if res.StatusCode != http.StatusOK {
+		c.log.Warn(fmt.Sprintf("received a non 200 response from server: %v", res))
+		return "", fmt.Errorf("received a non 200 response from server: %v", res)
 	}
-	// push metadata to server if autosync is enabled
-	if c.autoSync() {
-		req, err := c.NewDirectoryRequest(dir)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return err
-		}
-		c.dump(resp, true)
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, res.Body)
+	if err != nil {
+		return "", err
 	}
-	c.log.Info(fmt.Sprintf("directory (%s) added to client", dir.Name))
-	return nil
+	res.Body.Close()
+
+	var d = new(svc.Directory)
+	if err := json.Unmarshal(buf.Bytes(), &d); err != nil {
+		return "", err
+	}
+	if d.ServerPath == "" || d.ServerPath == d.ClientPath {
+		return "", fmt.Errorf("server path was not set correctly. client_path=%s server_path=%v", d.ClientPath, d.ServerPath)
+	}
+	return d.ServerPath, nil
 }
 
 // add a new directory to the sfs file system. if its parent directory
@@ -695,21 +723,22 @@ func (c *Client) AddDir(dirPath string) error {
 	// create new directory object. (parent is not set)
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 
-	// see if the parent for this directory is already known.
+	// see if the parent directory for this directory is already known.
 	// if it is, then add this new directory as a subdirectory there,
 	// otherwise place new directory under sfs root.
-	parent := filepath.Dir(dirPath)
-	pDir, err := c.Db.GetDirectoryByPath(parent)
+	pd := filepath.Dir(dirPath)
+	parent, err := c.Db.GetDirectoryByPath(pd)
 	if err != nil {
 		return err
 	}
-	if pDir != nil {
-		newDir.Parent = pDir
+	if parent != nil {
+		newDir.Parent = parent
 	} else {
 		newDir.Parent = c.Drive.Root
 	}
 
 	// add directory to service
+	// NOTE: directory backup paths are updated when adding to the drive
 	if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
 		return err
 	}
@@ -723,17 +752,30 @@ func (c *Client) AddDir(dirPath string) error {
 	// }
 	// push metadata to server if autosync is enabled
 	if c.autoSync() {
-		req, err := c.NewDirectoryRequest(newDir)
-		if err != nil {
-			return err
+		if !c.localBackup() {
+			req, err := c.NewDirectoryRequest(newDir)
+			if err != nil {
+				return err
+			}
+			resp, err := c.Client.Do(req)
+			if err != nil {
+				return err
+			}
+			c.dump(resp, true)
+			// Get the directory's server path
+			serverPath, err := c.getDirServerPath(newDir)
+			if err != nil {
+				return err
+			}
+			newDir.ServerPath = serverPath
+			if err := c.UpdateDirectory(newDir); err != nil {
+				return err
+			}
+		} else {
+			if err := c.BackupDir(newDir); err != nil {
+				return err
+			}
 		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return err
-		}
-		// TODO: get directory server path.
-
-		c.dump(resp, true)
 	}
 	c.log.Info(fmt.Sprintf("directory (%s) added to client", newDir.Name))
 	return nil
@@ -769,7 +811,7 @@ func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	if err := c.Db.UpdateDir(updatedDir); err != nil {
 		return fmt.Errorf("failed to update directory in database: %v", err)
 	}
-	c.log.Info(fmt.Sprintf("directory (%s) updated", updatedDir.Name))
+	c.log.Info(fmt.Sprintf("directory '%s' (id=%s) updated", updatedDir.Name, updatedDir.ID))
 	return nil
 }
 
@@ -891,18 +933,11 @@ func (c *Client) LoadDrive() error {
 	if root == nil {
 		return fmt.Errorf("no root directory associated with drive")
 	}
+	drive.Root = root
 	c.Drive = drive
+	c.Drive.IsLoaded = true
 
-	// populate with the contents of the designated root directory
-	c.Drive.Root = c.Populate(root)
-
-	// add all other distributed files and subdirectories monitored by sfs
-	files, err := c.Db.GetUsersFiles(c.UserID)
-	if err != nil {
-		return err
-	}
-	c.Drive.Root.AddFiles(files)
-
+	// add users monitored directories
 	dirs, err := c.Db.GetUsersDirectories(c.UserID)
 	if err != nil {
 		return err
@@ -910,7 +945,13 @@ func (c *Client) LoadDrive() error {
 	if err := c.Drive.Root.AddSubDirs(dirs); err != nil {
 		return err
 	}
-	c.Drive.IsLoaded = true
+
+	// add all other distributed files and subdirectories monitored by sfs
+	files, err := c.Db.GetUsersFiles(c.UserID)
+	if err != nil {
+		return err
+	}
+	c.Drive.Root.AddFiles(files)
 
 	// build client sync index
 	c.BuildSyncIndex()
@@ -921,14 +962,19 @@ func (c *Client) LoadDrive() error {
 
 // save drive metadata in the db
 func (c *Client) SaveDrive(drv *svc.Drive) error {
-	if err := c.Db.UpdateDrive(drv); err != nil {
-		return fmt.Errorf("failed to update drive in database: %v", err)
+	if c.DriveID == drv.ID {
+		if err := c.Db.UpdateDrive(drv); err != nil {
+			return fmt.Errorf("failed to update drive in database: %v", err)
+		}
+		c.Drive = drv
+		if err := c.SaveState(); err != nil {
+			return fmt.Errorf("failed to save state: %v", err)
+		}
+		c.log.Info(fmt.Sprintf("drive (id=%s) updated", drv.ID))
+		return nil
+	} else {
+		return fmt.Errorf("drive mismatch. client drive id: %s given drive id: %s", c.DriveID, drv.ID)
 	}
-	if err := c.SaveState(); err != nil {
-		return fmt.Errorf("failed to save state: %v", err)
-	}
-	c.log.Info("drive saved")
-	return nil
 }
 
 // register a new drive with the server. if drive is already known to the server,
@@ -1029,10 +1075,23 @@ side, pull those files from the server and add to the local client service.
 */
 func (c *Client) RefreshFromServer() error { return nil }
 
-// similar to DiscoverInRoot, but uses a specified directory path
-// and does not return a new directory object.
+func (c *Client) isDirPath(path string) bool {
+	item, err := os.Stat(path)
+	if err != nil {
+		c.log.Error(fmt.Sprintf("failed to get stats for path: %s\n%v"+path, err))
+		return false
+	}
+	return item.IsDir()
+}
+
+// Descends a given file tree starting with the given path, assumed to be a directory.
 func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
-	// see if we have this directory already
+	// make sure this is actually a directory
+	if !c.isDirPath(dirPath) {
+		return nil, fmt.Errorf("path is not a directory: %s", dirPath)
+	}
+
+	// see if this directory is already known
 	dir, err := c.Db.GetDirectoryByPath(dirPath)
 	if err != nil {
 		return nil, err
@@ -1060,8 +1119,12 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 			return nil, err
 		}
 		if c.autoSync() {
-			if err := c.RegisterFile(file); err != nil {
-				return nil, err
+			if !c.localBackup() {
+				if err := c.RegisterFile(file); err != nil {
+					return nil, err
+				}
+			} else {
+				// TODO:
 			}
 		}
 	}
@@ -1078,8 +1141,12 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 		// 	return err
 		// }
 		if c.autoSync() {
-			if err := c.RegisterDirectory(subDir); err != nil {
-				return nil, err
+			if !c.localBackup() {
+				if err := c.RegisterDirectory(subDir); err != nil {
+					return nil, err
+				}
+			} else {
+				// TODO:
 			}
 		}
 	}
@@ -1131,7 +1198,7 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 		}
 		// add directory then recurse
 		if item.IsDir() {
-			subDir, err := c.Db.GetDirectoryByName(item.Name())
+			subDir, err := c.Db.GetDirectoryByPath(entryPath)
 			if err != nil {
 				c.log.Error(fmt.Sprintf("could not get directory (%s) from db:  %v", item.Name(), err))
 				continue
@@ -1145,7 +1212,7 @@ func (c *Client) populate(dir *svc.Directory) *svc.Directory {
 				continue
 			}
 		} else { // add file
-			file, err := c.Db.GetFileByName(item.Name())
+			file, err := c.Db.GetFileByPath(entryPath)
 			if err != nil {
 				c.log.Error(fmt.Sprintf("could not get file (%s) from db: %v", item.Name(), err))
 				continue

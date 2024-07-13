@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"time"
 
 	"github.com/sfs/pkg/env"
 )
@@ -22,16 +21,9 @@ func GetWd() string {
 	return wd
 }
 
-// Generate a random integer in the range [1, n)
+// Generate a pseudo-random integer in the range [0, n)
 func RandInt(limit int) int {
-	// Seed the random number generator with the current time
-	rand.Seed(time.Now().UnixNano())
-
-	num := rand.Intn(limit)
-	if num == 0 {
-		return 1
-	}
-	return num
+	return rand.Intn(limit)
 }
 
 // parse the NEW_SERVICE env var to see if we are instantiating a new sfs service

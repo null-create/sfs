@@ -26,7 +26,7 @@ func TestToUpdate(t *testing.T) {
 	MutateFiles(t, files)
 
 	// check new index, make sure some of the times are different
-	toUpdate := BuildToUpdate(d, idx)
+	toUpdate := BuildRootToUpdate(d, idx)
 	assert.NotEqual(t, nil, toUpdate)
 	assert.NotEqual(t, 0, len(toUpdate.FilesToUpdate))
 
@@ -53,14 +53,14 @@ func TestCompare(t *testing.T) {
 	for _, victim := range victims {
 		MutateFile(t, victim)
 	}
-	origIdx = BuildToUpdate(tmpDrv.Root, origIdx)
+	origIdx = BuildRootToUpdate(tmpDrv.Root, origIdx)
 
 	// change some more stuff, but update newIdx instead
 	newIdx := BuildRootSyncIndex(tmpDrv.Root)
 	for _, victim := range victims {
 		MutateFile(t, victim)
 	}
-	newIdx = BuildToUpdate(tmpDrv.Root, newIdx)
+	newIdx = BuildRootToUpdate(tmpDrv.Root, newIdx)
 
 	// compare the two indicies
 	diffs := Compare(origIdx, newIdx)

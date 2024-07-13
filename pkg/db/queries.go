@@ -15,13 +15,15 @@ const (
 			drive_id VARCHAR(50),
 			mode VARCHAR(50),
 			size INTEGER,
-			backup BIT, 
+			server_backup BIT,
+			local_backup BIT,
 			protected BIT,
 			key VARCHAR(100),
 			last_sync DATETIME,
 			path VARCHAR(255),
 			server_path VARCHAR(255),
 			client_path VARCHAR(255),
+			backup_path VARCHAR(255),
 			endpoint VARCHAR(255),
 			checksum VARCHAR(255),
 			algorithm VARCHAR(50),
@@ -38,6 +40,7 @@ const (
 			path VARCHAR(255),
 			server_path VARCHAR(255),
 			client_path VARCHAR(255),
+			backup_path VARCHAR(255),
 			protected BIT,
 			auth_type VARCHAR(50),
 			key VARCHAR(100),
@@ -97,18 +100,20 @@ const (
 			drive_id,
 			mode, 
 			size, 
-			backup, 
+			server_backup, 
+			local_backup,
 			protected,
 			key,
 			last_sync,
 			path,
 			server_path,
 			client_path,
+			backup_path,
 			endpoint,
 			checksum,
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT OR IGNORE INTO Directories (
@@ -120,6 +125,7 @@ const (
 			path,
 			server_path,
 			client_path,
+			backup_path,
 			protected,
 			auth_type,
 			key,
@@ -129,7 +135,7 @@ const (
 			drive_root, 
 			root_path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
 		INSERT OR IGNORE INTO Drives (
@@ -178,13 +184,14 @@ const (
 				drive_id = ?, 
 				mode = ?, 
 				size = ?, 
-				backup = ?, 
+				server_backup = ?, 
 				protected = ?, 
 				key = ?,
 				last_sync = ?, 
 				path = ?, 
 				server_path = ?, 
 				client_path = ?,
+				backup_path = ?, 
 				endpoint = ?,  
 				checksum = ?, 
 				algorithm = ?
@@ -200,6 +207,7 @@ const (
 				path = ?,
 				server_path = ?,
 				client_path = ?,
+				backup_path = ?,
 				protected = ?,
 				auth_type = ?,
 				key = ?,

@@ -122,7 +122,7 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 			} else {
 				// we want to check the other files in this list
 				// since they may be small enough to add onto this batch.
-				b.log.Log("INFO", fmt.Sprintf("file size (%d bytes) exceeds remaining batch capacity (%d bytes).attempting to add others...", f.File.GetSize(), b.Cap))
+				b.log.Log(logger.INFO, fmt.Sprintf("file size (%d bytes) exceeds remaining batch capacity (%d bytes).attempting to add others...", f.File.GetSize(), b.Cap))
 				c.NotAdded = append(c.NotAdded, f.File)
 				continue
 			}
@@ -139,7 +139,7 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 
 	// success
 	if len(c.Added) == len(files) {
-		b.log.Log("INFO", fmt.Sprintf("all files added to batch. remaining batch capacity (in bytes): %d", b.Cap))
+		b.log.Log(logger.INFO, fmt.Sprintf("all files added to batch. remaining batch capacity (in bytes): %d", b.Cap))
 		return c.Added, Success
 	}
 	// if we reach capacity before we finish with files,
@@ -151,7 +151,7 @@ func (b *Batch) AddFiles(files []*File) ([]*File, BatchStatus) {
 	// if b.Cap < MAX and we have left over files that were passed over for
 	// being to large for the current batch.
 	if len(c.NotAdded) > 0 && b.Cap < b.Max {
-		b.log.Log("INFO", "returning files passed over for being too large for this batch")
+		b.log.Log(logger.INFO, "returning files passed over for being too large for this batch")
 		if len(c.Added) == 0 {
 			b.log.Warn("*no* files were added!")
 		}

@@ -59,6 +59,16 @@ func TestTokenExtraction(t *testing.T) {
 	assert.NotEqual(t, "", tokenString)
 }
 
+func TestRetrieveSecret(t *testing.T) {
+	env.SetEnv(false)
+	s, err := GetSecret()
+	if err != nil {
+		t.Fail()
+	}
+	assert.NotEqual(t, nil, s)
+	assert.NotEqual(t, 0, len(s))
+}
+
 func TestSecretGeneration(t *testing.T) {
 	env.SetEnv(false)
 	testSecret := GenSecret(64)

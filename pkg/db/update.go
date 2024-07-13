@@ -7,7 +7,7 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-func (q *Query) UpdateFile(f *svc.File) error {
+func (q *Query) UpdateFile(file *svc.File) error {
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -18,31 +18,32 @@ func (q *Query) UpdateFile(f *svc.File) error {
 	defer q.Stmt.Close()
 
 	if _, err := q.Stmt.Exec(
-		&f.ID,
-		&f.Name,
-		&f.OwnerID,
-		&f.DirID,
-		&f.DriveID,
-		&f.Mode,
-		&f.Size,
-		&f.Backup,
-		&f.Protected,
-		&f.Key,
-		&f.LastSync,
-		&f.Path,
-		&f.ServerPath,
-		&f.ClientPath,
-		&f.Endpoint,
-		&f.CheckSum,
-		&f.Algorithm,
-		&f.ID,
+		&file.ID,
+		&file.Name,
+		&file.OwnerID,
+		&file.DirID,
+		&file.DriveID,
+		&file.Mode,
+		&file.Size,
+		&file.ServerBackup,
+		&file.Protected,
+		&file.Key,
+		&file.LastSync,
+		&file.Path,
+		&file.ServerPath,
+		&file.ClientPath,
+		&file.BackupPath,
+		&file.Endpoint,
+		&file.CheckSum,
+		&file.Algorithm,
+		&file.ID,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}
 	return nil
 }
 
-func (q *Query) UpdateDir(d *svc.Directory) error {
+func (q *Query) UpdateDir(dir *svc.Directory) error {
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -53,23 +54,24 @@ func (q *Query) UpdateDir(d *svc.Directory) error {
 	defer q.Stmt.Close()
 
 	if _, err := q.Stmt.Exec(
-		&d.ID,
-		&d.Name,
-		&d.OwnerID,
-		&d.DriveID,
-		&d.Size,
-		&d.Path,
-		&d.ServerPath,
-		&d.ClientPath,
-		&d.Protected,
-		&d.AuthType,
-		&d.Key,
-		&d.Overwrite,
-		&d.LastSync,
-		&d.Endpoint,
-		&d.Root,
-		&d.RootPath,
-		&d.ID,
+		&dir.ID,
+		&dir.Name,
+		&dir.OwnerID,
+		&dir.DriveID,
+		&dir.Size,
+		&dir.Path,
+		&dir.ServerPath,
+		&dir.ClientPath,
+		&dir.BackupPath,
+		&dir.Protected,
+		&dir.AuthType,
+		&dir.Key,
+		&dir.Overwrite,
+		&dir.LastSync,
+		&dir.Endpoint,
+		&dir.Root,
+		&dir.RootPath,
+		&dir.ID,
 	); err != nil {
 		return fmt.Errorf("failed to add directory: %v", err)
 	}
@@ -108,7 +110,7 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 	return nil
 }
 
-func (q *Query) UpdateUser(u *auth.User) error {
+func (q *Query) UpdateUser(user *auth.User) error {
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -119,19 +121,19 @@ func (q *Query) UpdateUser(u *auth.User) error {
 	defer q.Stmt.Close()
 
 	if _, err := q.Stmt.Exec(
-		&u.ID,
-		&u.Name,
-		&u.UserName,
-		&u.Email,
-		&u.Password,
-		&u.LastLogin,
-		&u.Admin,
-		&u.SfPath,
-		&u.DriveID,
-		&u.TotalFiles,
-		&u.TotalDirs,
-		&u.DrvRoot,
-		&u.ID,
+		&user.ID,
+		&user.Name,
+		&user.UserName,
+		&user.Email,
+		&user.Password,
+		&user.LastLogin,
+		&user.Admin,
+		&user.SfPath,
+		&user.DriveID,
+		&user.TotalFiles,
+		&user.TotalDirs,
+		&user.DrvRoot,
+		&user.ID,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}

@@ -88,7 +88,7 @@ func (q *Query) Connect() error {
 
 func (q *Query) Close() error {
 	if err := q.Conn.Close(); err != nil {
-		q.log.Error(fmt.Sprintf("unable to close databse connnection: %v", err))
+		q.log.Error(fmt.Sprintf("failed to close database connnection: %v", err))
 		return fmt.Errorf("unable to close database connection: %v", err)
 	}
 	return nil

@@ -3,7 +3,7 @@ package cmd
 type FlagPole struct {
 	name string // file or directory name
 
-	// client cmd
+	// ------- client cmd
 	new      bool // create a new client
 	start    bool // start a client
 	local    bool // list all local files and directories managed by SFS
@@ -12,7 +12,7 @@ type FlagPole struct {
 	info     bool // get information about the client
 	cleanBin bool // empty recycle bin
 
-	// drive command flags
+	// ----- drive command flags
 	register   bool // register a new drive with the sfs server
 	list_files bool // list all files
 	list_dirs  bool // list all directories
@@ -43,5 +43,6 @@ type FlagPole struct {
 	// remove cmd
 	delete bool // true to delete. false to just stop monitoring the item.
 
-	auto_sync bool // flag to set auto sync mode
+	auto_sync  bool // flag to set auto sync mode
+	local_sync bool // flag to set local sync mode (local backups only)
 }

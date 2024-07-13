@@ -46,6 +46,7 @@ type Directory struct {
 	// directory client and server side paths
 	ClientPath string `json:"client_path"`
 	ServerPath string `json:"server_path"`
+	BackupPath string `json:"backup_path"`
 
 	// security attributes
 	Protected bool   `json:"protected"`
@@ -100,6 +101,7 @@ func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath s
 		Path:       rootPath,
 		ServerPath: rootPath,
 		ClientPath: rootPath,
+		BackupPath: rootPath,
 		RootPath:   rootPath,
 	}
 }
@@ -128,6 +130,7 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 		Root:       false,
 		Path:       path,
 		ClientPath: path,
+		BackupPath: path,
 		ServerPath: path,
 	}
 }
@@ -273,6 +276,12 @@ func (d *Directory) GetParent() *Directory {
 	return d.Parent
 }
 
+// -------- directory operations and utils --------
+/*
+NOTE: these implementations were adapted from:
+https://github.com/moby/moby/blob/master/daemon/graphdriver/copy/copy.go
+*/
+
 // -------- password protection and other simple security stuff
 
 func (d *Directory) SetPassword(password string, newPassword string) error {
@@ -309,6 +318,7 @@ func (d *Directory) addFile(file *File) {
 	file.DirID = d.ID
 	file.DriveID = d.DriveID
 	file.LastSync = time.Now().UTC()
+	file.BackupPath = filepath.Join(d.BackupPath, file.Name)
 	d.Size += file.GetSize()
 	d.Files[file.ID] = file
 }
@@ -334,17 +344,12 @@ func (d *Directory) AddFile(file *File) error {
 	return nil
 }
 
+// add a slice of files to this directory.
 func (d *Directory) AddFiles(files []*File) {
-	if !d.Protected {
-		for _, f := range files {
-			if !d.HasFile(f.ID) {
-				d.addFile(f)
-			} else {
-				log.Printf("file (id=%s) already exists)", f.ID)
-			}
+	for _, f := range files {
+		if err := d.AddFile(f); err != nil {
+			log.Printf("failed to add file: %v", err)
 		}
-	} else {
-		log.Printf("directory %s (id=%s) locked", d.Name, d.ID)
 	}
 }
 
@@ -355,7 +360,7 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 	if !d.Protected {
 		if d.HasFile(file.ID) {
 			var origSize = file.GetSize()
-			if err := os.WriteFile(file.GetPath(), data, PERMS); err != nil {
+			if err := file.Save(data); err != nil {
 				return err
 			}
 			d.Size += file.GetSize() - origSize
@@ -387,10 +392,11 @@ func (d *Directory) PutFile(file *File) error {
 // remove physical file and update internal metadata.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
-		d.Size -= file.GetSize()
+		var fileSize = file.GetSize()
 		if err := os.Remove(file.GetPath()); err != nil {
 			return err
 		}
+		d.Size -= fileSize
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 	} else {
@@ -439,6 +445,12 @@ func (d *Directory) FindFile(fileID string) *File {
 
 // -------- sub directory methods
 
+// create a physical directory. does not check for whether
+// this path is managed by the system, just creates a physical directory.
+func (d *Directory) Mkdir(dirPath string) error {
+	return os.Mkdir(dirPath, PERMS)
+}
+
 // update a subdirectory. must already exist as a subdirectory
 // for this directory -- this is primarily used for updating a
 // child subdirectory and reattaching it to its parent.
@@ -452,18 +464,13 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 	return nil
 }
 
-// create a physical directory. does not check for whether
-// this path is managed by the system, just creates a physical directory.
-func (d *Directory) Mkdir(dirPath string) error {
-	return os.Mkdir(dirPath, PERMS)
-}
-
 // adds a new subdirectory and updates internal state.
 // does *not* create a physical directory
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
 		dir.Parent = d
 		dir.DriveID = d.DriveID
+		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
 	} else {
@@ -578,8 +585,9 @@ func (d *Directory) GetDirMap() map[string]*Directory {
 
 /*
 Walk() populates all files and subdirectory maps (and their files and subdirectories,
-and so on) until we reach the end of the local directory tree.
-should be used only when instantiating a root directory object
+and so on) until we reach the end of the local directory tree in depth-first order.
+
+Should be used only when instantiating a root directory object
 for the *first* time, as it will generate new file and directory objects
 with their own ID's, and will need to be treated as persistent items rather than
 ephemeral ones.
@@ -593,7 +601,7 @@ func (d *Directory) Walk() *Directory {
 }
 
 // walk recursively descends the directory tree and populates all files
-// and subdirectory maps
+// and subdirectory maps in depth-first order.
 func walk(d *Directory) *Directory {
 	entries, err := os.ReadDir(d.Path)
 	if err != nil {

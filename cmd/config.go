@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"strconv"
 
+	"github.com/sfs/pkg/client"
 	"github.com/sfs/pkg/env"
 
 	"github.com/spf13/cobra"
@@ -27,7 +29,7 @@ var (
 func init() {
 	flags := FlagPole{}
 	confCmd.PersistentFlags().StringVarP(&flags.get, "get", "g", "", "get client service configurations")
-	confCmd.PersistentFlags().StringVarP(&flags.setting, "set", "s", "", "set client service configurations")
+	confCmd.PersistentFlags().StringVarP(&flags.setting, "set", "s", "", "set a client service configuration")
 	confCmd.PersistentFlags().BoolVarP(&flags.list, "list", "l", false, "show client service configurations")
 	confCmd.PersistentFlags().StringVarP(&flags.value, "value", "v", "", "config setting value")
 
@@ -42,6 +44,17 @@ func init() {
 
 func showSetting(setting string, value string) {
 	fmt.Printf("\n%s = %s\n", setting, value)
+}
+
+// see if local backup mode is enabled first
+// if so, thent he client won't have files stored on the sfs server
+func localBackupIsEnabled() bool {
+	b, err := envCfgs.Get("CLIENT_LOCAL_BACKUP")
+	if err != nil {
+		showerr(err)
+		return false
+	}
+	return b == "true"
 }
 
 func getConfigFlags(cmd *cobra.Command) *FlagPole {
@@ -59,6 +72,11 @@ func getConfigFlags(cmd *cobra.Command) *FlagPole {
 }
 
 func runConfCmd(cmd *cobra.Command, args []string) {
+	c, err := client.LoadClient(false)
+	if err != nil {
+		showerr(fmt.Errorf("failed to initialize service: %v", err))
+	}
+
 	f := getConfigFlags(cmd)
 	switch {
 	case f.list:
@@ -74,6 +92,14 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 		if f.value == "" {
 			fmt.Printf("no value supplied for setting %s", f.setting)
 			return
+		}
+		if f.setting == "CLIENT_LOCAL_BACKUP" || f.setting == "CLIENT_AUTO_SYNC" {
+			val, err := strconv.ParseBool(f.value)
+			if err != nil {
+				showerr(err)
+				return
+			}
+			c.SetLocalBackup(val)
 		}
 		if err := envCfgs.Set(f.setting, f.value); err != nil {
 			showerr(err)
