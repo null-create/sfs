@@ -45,7 +45,7 @@ func (t *Transfer) dump(resp *http.Response, body bool) {
 		t.log.Error("failed to parse http response: " + err.Error())
 	} else {
 		if resp.StatusCode == http.StatusOK {
-			t.log.Log("INFO", "server response: "+string(b))
+			t.log.Log(logger.INFO, "server response: "+string(b))
 		} else {
 			t.log.Error(string(b))
 		}
