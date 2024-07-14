@@ -124,6 +124,9 @@ func TestLoadAndStartClient(t *testing.T) {
 
 	// start client
 	go func() {
+		if err := tmpClient.LoadDrive(); err != nil {
+			Fail(t, tmpDir, err)
+		}
 		tmpClient.Start()
 	}()
 
