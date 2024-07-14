@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -83,18 +82,6 @@ func Clean(t *testing.T, dir string) error {
 	}
 
 	return nil
-}
-
-// ----- misc.
-
-// for random file names
-func randString(length int) string {
-	charSet := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	randbytes := make([]byte, length)
-	for i := 0; i < length; i++ {
-		randbytes[i] = charSet[rand.Intn(len(charSet))]
-	}
-	return string(randbytes)
 }
 
 // ---- tmp dirs
