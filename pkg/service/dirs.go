@@ -350,6 +350,7 @@ func (d *Directory) addFile(file *File) {
 	file.BackupPath = filepath.Join(d.BackupPath, file.Name)
 	d.Size += file.GetSize()
 	d.Files[file.ID] = file
+	d.LastSync = time.Now().UTC()
 }
 
 // used when updating metadata for a file that's already in the directory.
@@ -504,6 +505,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
+		dir.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
@@ -546,6 +548,7 @@ func (d *Directory) removeDir(dirID string) error {
 		// 	return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
 		// }
 		delete(d.Dirs, dirID)
+		d.LastSync = time.Now().UTC()
 		log.Printf("directory (id=%s) removed", dirID)
 	} else {
 		log.Printf("directory (id=%s) is not found", dirID)
