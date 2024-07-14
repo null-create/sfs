@@ -320,8 +320,8 @@ func NewClient(user *auth.User) (*Client, error) {
 		Root:           filepath.Join(svcRoot, "root"),
 		SfDir:          filepath.Join(svcRoot, "state"),
 		RecycleBin:     filepath.Join(svcRoot, "recycle"),
+		LocalBackupDir: filepath.Join(root.Path, "backups"),
 		Endpoints:      make(map[string]string),
-		LocalBackupDir: filepath.Join(root.Path, "backups"), // TODO: allow this to be overriden by a user specification
 		Monitor:        monitor.NewMonitor(drv.Root.Path),
 		DriveID:        driveID,
 		Drive:          drv,
