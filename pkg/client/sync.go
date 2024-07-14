@@ -243,7 +243,7 @@ func (c *Client) Pull() error {
 		return nil
 	}
 	q := svc.BuildQ(c.Drive.SyncIndex)
-	if len(q.Queue) == 0 || q == nil {
+	if q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	var wg sync.WaitGroup
