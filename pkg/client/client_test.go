@@ -315,6 +315,47 @@ func TestAddItemWithAFile(t *testing.T) {
 	}
 }
 
+func TestClientRemoveDir(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make a test directory with files and a subdirectory within the client
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.Path)
+	if err := tmpClient.AddDrive(tmpDrive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	if err := tmpClient.RemoveDir(tmpDrive.Root); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make sure everything was actually removed
+	dbFiles, err := tmpClient.Db.GetUsersFiles(tmpClient.UserID)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.Equal(t, 0, len(dbFiles))
+
+	dbDirs, err := tmpClient.Db.GetUsersDirectories(tmpClient.UserID)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.Equal(t, 0, len(dbDirs))
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
 // func TestAddFileToClientAndSendToServer(t *testing.T) {
 // 	env.SetEnv(false)
 // 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
