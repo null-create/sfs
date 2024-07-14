@@ -377,6 +377,10 @@ func (c *Client) AddFile(filePath string) error {
 		// directory already exists. add file to this directory.
 		newFile.DirID = dir.ID
 	}
+
+	// mark this file as being backed up by the service
+	newFile.MarkLocalBackup()
+
 	// add file to sfs system
 	// NOTE: backup paths are generated when adding the new file to the directory.
 	if err := c.Drive.AddFile(newFile.DirID, newFile); err != nil {
@@ -425,6 +429,10 @@ func (c *Client) AddFile(filePath string) error {
 				return err
 			}
 		}
+	}
+	// update service state
+	if err := c.SaveState(); err != nil {
+		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
 	return nil
@@ -783,21 +791,34 @@ func (c *Client) AddDir(dirPath string) error {
 }
 
 // remove a directory from local and remote service instances.
-func (c *Client) RemoveDir(dir *svc.Directory) error {
-	if err := c.Drive.RemoveDir(dir.ID); err != nil {
+func (c *Client) RemoveDir(dirToRemove *svc.Directory) error {
+	d, err := c.Db.GetDirectoryByPath(dirToRemove.Path)
+	if err != nil {
 		return err
 	}
-	if err := c.Db.RemoveDirectory(dir.ID); err != nil {
+	if d == nil {
+		return fmt.Errorf("directory %s not found", dirToRemove.ID)
+	}
+	// first remove all the files and subdirectories in this directory
+	files := dirToRemove.GetFiles()
+	for _, file := range files {
+		if err := c.Db.RemoveFile(file.ID); err != nil {
+			return err
+		}
+	}
+	subDirs := dirToRemove.GetSubDirs()
+	for _, sd := range subDirs {
+		if err := c.Db.RemoveDirectory(sd.ID); err != nil {
+			return err
+		}
+	}
+	// remove directory itself from the service
+	if err := c.Drive.RemoveDir(dirToRemove.ID); err != nil {
 		return err
 	}
-
-	// TODO: remove files and subdirectories for this directory.
-	//
-	// need to think about this. this could easily be a recursive operation,
-	// but there's a lot that needs to be accounted for if that's the route we want to go
-	// subDirs := dir.GetSubDirs()
-	// files := dir.GetFiles()
-
+	if err := c.Db.RemoveDirectory(dirToRemove.ID); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -916,6 +937,33 @@ func (c *Client) EmptyRecycleBin() error {
 }
 
 // ----- drive --------------------------------
+
+// add a new drive to the client. mainly used for testing
+func (c *Client) AddDrive(drv *svc.Drive) error {
+	// first add any files to the DB
+	files := drv.Root.GetFiles()
+	if err := c.Db.AddFiles(files); err != nil {
+		return err
+	}
+	// add any subdirectories to the client
+	subDirs := drv.Root.GetSubDirs()
+	if err := c.Db.AddDirs(subDirs); err != nil {
+		return err
+	}
+	// add the root directory and the drive itself
+	if err := c.Db.AddDir(drv.Root); err != nil {
+		return err
+	}
+	if err := c.Db.AddDrive(drv); err != nil {
+		return err
+	}
+	// finally, add the drive to the client instance and save client state
+	c.Drive = drv
+	if err := c.SaveState(); err != nil {
+		return fmt.Errorf("failed to save state file: %v", err)
+	}
+	return nil
+}
 
 // Loads drive from the database, populates root directory,
 // and attaches to the client service instance.
