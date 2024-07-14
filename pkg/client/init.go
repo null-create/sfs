@@ -23,12 +23,13 @@ define service directory paths, create necessary state file and
 database directories, and create service databases and initial state file
 
 root/
-|		user
-|	  |---root/     <------ users files and directories live here
+|		user/
+|   |---backups/      <------ users files and directories backup location
+|	  |---root/         <------ users files and directories live here
 |	  |---state/
 |   |   |---client-state-d-m-y-hh-mm-ss.json
-|   |---recycle/   <------ "deleted" files and directories live here.
-|   |---dbs/
+|   |---recycle/      <------ "deleted" files and directories live here.
+|   |---dbs/          <------ client side service databases
 |   |   |---users
 |   |   |---files
 |   |   |---directories
