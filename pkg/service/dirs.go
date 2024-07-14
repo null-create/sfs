@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,9 +45,11 @@ type Directory struct {
 	Path string `json:"path"`
 
 	// directory client and server side paths
-	ClientPath string `json:"client_path"`
-	ServerPath string `json:"server_path"`
-	BackupPath string `json:"backup_path"`
+	ClientPath   string `json:"client_path"`
+	ServerPath   string `json:"server_path"`
+	BackupPath   string `json:"backup_path"`
+	ServerBackup bool   `json:"server_backup"` // flag for whether this is the server-side version of the file
+	LocalBackup  bool   `json:"local_backup"`  // flag for whether this is a local backup version of the file
 
 	// security attributes
 	Protected bool   `json:"protected"`
@@ -180,6 +183,32 @@ func (d *Directory) TotalFiles() int { return len(d.Files) }
 
 // return the total number of subdirectories for this directory
 func (d *Directory) TotalSubDirs() int { return len(d.Dirs) }
+
+// mark this instance as being a server-side back up of this directory
+func (d *Directory) MarkServerBackup() {
+	if !d.ServerBackup {
+		d.ServerBackup = true
+	}
+}
+
+// mark this instance as being a clinet-side backup of this directory
+func (d *Directory) MarkLocalBackup() {
+	if !d.LocalBackup {
+		d.LocalBackup = true
+	}
+}
+
+// retrieve the path to this directory depending whether its a
+// server or client side directory
+func (d *Directory) GetPath() string {
+	var path string
+	if !d.ServerBackup {
+		path = d.ClientPath
+	} else {
+		path = d.ClientPath
+	}
+	return path
+}
 
 // Remove all *internal data structure representations* of files and directories
 // *Does not* remove actual files or sub directories themselves!
@@ -389,13 +418,14 @@ func (d *Directory) PutFile(file *File) error {
 	return nil
 }
 
-// remove physical file and update internal metadata.
+// remove file from files map and update internal metadata.
+// does not remove the physical file.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
 		var fileSize = file.GetSize()
-		if err := os.Remove(file.GetPath()); err != nil {
-			return err
-		}
+		// if err := os.Remove(file.GetPath()); err != nil {
+		// 	return err
+		// }
 		d.Size -= fileSize
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
@@ -423,7 +453,8 @@ func (d *Directory) GetFileMap() map[string]*File {
 	return d.WalkFs()
 }
 
-// get a slice of all files starting from this directory.
+// get a slice of all files from this directory, as well as its
+// children.
 // returns an empty slice if no files are found.
 func (d *Directory) GetFiles() []*File {
 	fileMap := d.WalkFs()
@@ -508,11 +539,12 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	return nil
 }
 
+// remove from subdir map. does not remove physical directory!
 func (d *Directory) removeDir(dirID string) error {
-	if dir, exists := d.Dirs[dirID]; exists {
-		if err := os.RemoveAll(dir.Path); err != nil {
-			return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
-		}
+	if _, exists := d.Dirs[dirID]; exists {
+		// if err := os.RemoveAll(dir.Path); err != nil {
+		// 	return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
+		// }
 		delete(d.Dirs, dirID)
 		log.Printf("directory (id=%s) removed", dirID)
 	} else {
@@ -530,8 +562,6 @@ func (d *Directory) RemoveSubDir(dirID string) error {
 		if err := d.removeDir(dirID); err != nil {
 			return err
 		}
-		// remove from subdir map & update sync time
-		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
 		log.Printf("directory (id=%s) deleted", dirID)
 	} else {
@@ -579,6 +609,51 @@ func (d *Directory) GetSubDirs() []*Directory {
 // returns an empty map if nothing is not found
 func (d *Directory) GetDirMap() map[string]*Directory {
 	return d.WalkDs()
+}
+
+// recursively copies the directory tree to the given location.
+//
+// adapted from: https://github.com/plus3it/gorecurcopy/blob/master/gorecurcopy.go
+func (d *Directory) CopyDir(src, dest string) error {
+	entries, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		sourcePath := filepath.Join(src, entry.Name())
+		destPath := filepath.Join(dest, entry.Name())
+
+		fileInfo, err := os.Stat(sourcePath)
+		if err != nil {
+			return err
+		}
+
+		switch fileInfo.Mode() & os.ModeType {
+		case os.ModeDir:
+			if err := CreateIfNotExists(destPath, 0755); err != nil {
+				return err
+			}
+			if err := d.CopyDir(sourcePath, destPath); err != nil {
+				return err
+			}
+		case os.ModeSymlink:
+			if err := CopySymLink(sourcePath, destPath); err != nil {
+				return err
+			}
+		default:
+			if err := Copy(sourcePath, destPath); err != nil {
+				return err
+			}
+		}
+
+		isSymlink := entry.Mode()&os.ModeSymlink != 0
+		if !isSymlink {
+			if err := os.Chmod(destPath, entry.Mode()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // ------------------------------------------------------------
