@@ -560,7 +560,8 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
-	// **remove physical file from original location**
+	// remove file data from the service. does not remove physical file,
+	// only data used by the service.
 	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
 	}
@@ -591,32 +592,32 @@ func (c *Client) RemoveFile(file *svc.File) error {
 // sfs will only monitor the new copy after the move.
 //
 // destPath must be the absolute path for the files destination (i.e., end with the file name)
-func (c *Client) MoveFile(destPath string, filePath string, keepOrig bool) error {
-	file, err := c.GetFileByPath(filePath)
-	if err != nil {
-		return err
-	}
-	if file == nil {
-		return fmt.Errorf("file not found: " + filepath.Base(filePath))
-	}
-	if filePath != file.ClientPath {
-		return fmt.Errorf("source path does not match original file path. fp=%q orig=%s", filePath, file.ClientPath)
-	}
+// func (c *Client) MoveFile(destPath string, filePath string, keepOrig bool) error {
+// 	file, err := c.GetFileByPath(filePath)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if file == nil {
+// 		return fmt.Errorf("file not found: " + filepath.Base(filePath))
+// 	}
+// 	if filePath != file.ClientPath {
+// 		return fmt.Errorf("source path does not match original file path. fp=%q orig=%s", filePath, file.ClientPath)
+// 	}
 
-	// copy physical file
-	var origPath = file.ClientPath
-	if err := file.Copy(destPath); err != nil {
-		return fmt.Errorf("failed to copy file: %v", err)
-	}
-	file.ClientPath = destPath
+// 	// copy physical file
+// 	var origPath = file.ClientPath
+// 	if err := file.Copy(destPath); err != nil {
+// 		return fmt.Errorf("failed to copy file: %v", err)
+// 	}
+// 	file.ClientPath = destPath
 
-	// update dbs
-	if err := c.Db.UpdateFile(file); err != nil {
-		return fmt.Errorf("failed to update file database: %v", err)
-	}
-	c.log.Info(fmt.Sprintf("%s moved from %s to %s", file.Name, origPath, destPath))
-	return nil
-}
+// 	// update dbs
+// 	if err := c.Db.UpdateFile(file); err != nil {
+// 		return fmt.Errorf("failed to update file database: %v", err)
+// 	}
+// 	c.log.Info(fmt.Sprintf("%s moved from %s to %s", file.Name, origPath, destPath))
+// 	return nil
+// }
 
 // see if this file is registered with the server (exists on servers DB)
 func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
