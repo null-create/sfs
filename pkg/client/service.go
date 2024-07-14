@@ -958,6 +958,11 @@ func (c *Client) LoadDrive() error {
 	c.BuildSyncIndex()
 
 	c.log.Log(logger.INFO, "drive loaded")
+
+	// update state file
+	if err := c.SaveState(); err != nil {
+		return err
+	}
 	return nil
 }
 
