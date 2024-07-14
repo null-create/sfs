@@ -120,7 +120,7 @@ func (c *Client) ShutDown() {
 func (c *Client) start(shutDown chan os.Signal) error {
 	// NOTE: this check may be redundant since start is always called
 	// after LoadClient().
-	if !c.Drive.IsLoaded || c.Drive.Root.IsEmpty() {
+	if !c.Drive.IsLoaded {
 		if err := c.LoadDrive(); err != nil {
 			return err
 		}
