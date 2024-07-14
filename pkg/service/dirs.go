@@ -616,7 +616,7 @@ func (d *Directory) GetDirMap() map[string]*Directory {
 
 // recursively copies the directory tree to the given location.
 //
-// adapted from: https://github.com/plus3it/gorecurcopy/blob/master/gorecurcopy.go
+// adapted from: https://stackoverflow.com/questions/51779243/copy-a-folder-in-go
 func (d *Directory) CopyDir(src, dest string) error {
 	entries, err := ioutil.ReadDir(src)
 	if err != nil {
