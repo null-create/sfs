@@ -650,9 +650,9 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		s.log.Error("failed to write file on server: " + err.Error())
 	}
 
-	// mark this as a back up so we can access it using the correct path on the
-	// server side
-	file.MarkBackedUp()
+	// mark this as a server back up so we can access it
+	// using the correct path on the server side
+	file.MarkServerBackUp()
 
 	// add file to drive service
 	if err := drive.AddFile(file.DirID, file); err != nil {
@@ -703,7 +703,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
-	// remove physical file from the server.
+	// remove file from the service.
 	// NOTE: client side will have the original file moved to the client's recycle bin. maybe.
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
@@ -712,57 +712,63 @@ func (s *Service) DeleteFile(file *svc.File) error {
 		return fmt.Errorf("failed to remove %s (id=%s) from database: %v", file.Name, file.ID, err)
 	}
 	if err := s.SaveState(); err != nil {
-		return fmt.Errorf("failed to save state: %v", err)
+		s.log.Error(fmt.Sprintf("failed to save state: %v", err))
+	}
+	// finally, remove the physical file on the server.
+	// dont want users files to be left on the server after removing them
+	// from the service.
+	if err := os.Remove(file.ServerPath); err != nil {
+		s.log.Error(fmt.Sprintf("failed to remove physical on the server: %v", err))
 	}
 	return nil
 }
 
-// copy a file from one directory to another.
-func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) error {
-	drive, err := s.LoadDrive(file.DriveID)
-	if err != nil {
-		return fmt.Errorf("failed to load drive: %v", err)
-	}
-	if drive == nil {
-		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
-	}
-	// move file
-	origDir := drive.GetDir(file.DirID)
-	if origDir == nil {
-		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
-	}
-	destDir := drive.GetDir(destDirID)
-	if destDir == nil {
-		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
-	}
-	// copy physical file first. updating in destDir will change
-	// the file object's original path before we need move it.
-	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
-		return err
-	}
-	// add file object to destination directory
-	file.ServerPath = filepath.Join(destDir.Path, file.Name)
-	if err := destDir.AddFile(file); err != nil {
-		return fmt.Errorf("failed to add file to destination directory: %v", err)
-	}
-	if !keepOrig {
-		// **remove physical file from original directory**
-		if err := origDir.RemoveFile(file.ID); err != nil {
-			return err
-		}
-	}
-	// update directory dbs
-	if err := s.Db.UpdateDir(origDir); err != nil {
-		return err
-	}
-	if err := s.Db.UpdateDir(destDir); err != nil {
-		return err
-	}
-	if err := s.Db.UpdateFile(file); err != nil {
-		return err
-	}
-	return nil
-}
+// // copy a file from one directory to another.
+// func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) error {
+// 	drive, err := s.LoadDrive(file.DriveID)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to load drive: %v", err)
+// 	}
+// 	if drive == nil {
+// 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
+// 	}
+// 	// move file
+// 	origDir := drive.GetDir(file.DirID)
+// 	if origDir == nil {
+// 		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
+// 	}
+// 	destDir := drive.GetDir(destDirID)
+// 	if destDir == nil {
+// 		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
+// 	}
+// 	// copy physical file first. updating in destDir will change
+// 	// the file object's original path before we need move it.
+// 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
+// 		return err
+// 	}
+// 	// add file object to destination directory
+// 	file.ServerPath = filepath.Join(destDir.Path, file.Name)
+// 	if err := destDir.AddFile(file); err != nil {
+// 		return fmt.Errorf("failed to add file to destination directory: %v", err)
+// 	}
+// 	if !keepOrig {
+// 		// **remove physical file from original directory**
+// 		if err := origDir.RemoveFile(file.ID); err != nil {
+// 			return err
+// 		}
+// 	}
+// 	// update directory dbs
+// 	if err := s.Db.UpdateDir(origDir); err != nil {
+// 		return err
+// 	}
+// 	if err := s.Db.UpdateDir(destDir); err != nil {
+// 		return err
+// 	}
+// 	if err := s.Db.UpdateFile(file); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 // --------- directories --------------------------------
 
@@ -852,7 +858,7 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 			return err
 		}
 	}
-	// remove directory itself
+	// remove directory itself from the service
 	if err := s.Db.RemoveDirectory(dirID); err != nil {
 		return fmt.Errorf("failed to remove directory from database: %v", err)
 	}
@@ -861,6 +867,11 @@ func (s *Service) RemoveDir(driveID string, dirID string) error {
 	}
 	if err := drive.RemoveDir(dirID); err != nil {
 		return fmt.Errorf("failed to remove dir %s: %v", dirID, err)
+	}
+	// lastly, remove the physical directory and all its subdirectories
+	// don't want users files to remain on the server after they're done.
+	if err := os.RemoveAll(dir.ServerPath); err != nil {
+		return fmt.Errorf("failed to remove physical directory on server: %s", err)
 	}
 	return nil
 }
