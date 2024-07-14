@@ -633,7 +633,7 @@ func (d *Directory) CopyDir(src, dest string) error {
 
 		switch fileInfo.Mode() & os.ModeType {
 		case os.ModeDir:
-			if err := CreateIfNotExists(destPath, 0755); err != nil {
+			if err := CreateIfNotExists(destPath, PERMS); err != nil {
 				return err
 			}
 			if err := d.CopyDir(sourcePath, destPath); err != nil {
