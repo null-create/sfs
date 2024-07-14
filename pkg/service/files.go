@@ -97,7 +97,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 }
 
 // has this file been backed up ?
-func (f *File) IsBackUp() bool        { return f.ServerBackup }
+func (f *File) IsServerBackUp() bool  { return f.ServerBackup }
 func (f *File) IsLocalBackup() bool   { return f.LocalBackup }
 func (f *File) GetBackupPath() string { return f.BackupPath }
 
@@ -149,9 +149,16 @@ func (f *File) Exists() bool {
 }
 
 // mark this object as being the server side version of the original file.
-func (f *File) MarkBackedUp() {
-	if !f.ServerBackup {
+func (f *File) MarkServerBackUp() {
+	if !f.IsServerBackUp() {
 		f.ServerBackup = true
+	}
+}
+
+// mark this file as being the local back up version of the original file
+func (f *File) MarkLocalBackup() {
+	if !f.IsLocalBackup() {
+		f.LocalBackup = true
 	}
 }
 
