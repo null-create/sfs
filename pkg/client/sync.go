@@ -237,12 +237,12 @@ func (c *Client) Push() error {
 // gets a sync index from the server, compares with the local one,
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
-func (c *Client) Pull(idx *svc.SyncIndex) error {
-	if len(idx.FilesToUpdate) == 0 {
+func (c *Client) Pull() error {
+	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		c.log.Warn("no sync index returned from the server. nothing to pull")
 		return nil
 	}
-	q := svc.BuildQ(idx)
+	q := svc.BuildQ(c.Drive.SyncIndex)
 	if len(q.Queue) == 0 || q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
