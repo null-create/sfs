@@ -32,6 +32,9 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Db.DBPath = filepath.Join(tmpSvcPath, "dbs")
 	tmpClient.LocalBackupDir = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.RecycleBin = filepath.Join(tmpSvcPath, "recycle")
+	tmpClient.Drive.Root.Path = filepath.Join(tmpSvcPath, "root")
+	tmpClient.Drive.Root.ServerPath = filepath.Join(tmpSvcPath, "root")
+	tmpClient.Drive.Root.ClientPath = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.BackupPath = tmpClient.LocalBackupDir
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
@@ -124,15 +127,15 @@ func TestLoadAndStartClient(t *testing.T) {
 
 	// start client
 	go func() {
-		if err := tmpClient.LoadDrive(); err != nil {
+		if err := tmpClient.Start(); err != nil {
 			Fail(t, tmpDir, err)
 		}
-		tmpClient.Start()
 	}()
 
 	log.Print("client started...")
 	time.Sleep(time.Second * 2)
 
+	// shutdown
 	tmpClient.ShutDown()
 
 	// clean up
