@@ -313,7 +313,7 @@ func NewClient(user *auth.User) (*Client, error) {
 	user.SvcRoot = root.Path
 
 	// intialize client
-	c := &Client{
+	client := &Client{
 		StartTime:      time.Now().UTC(),
 		Conf:           ccfg,
 		UserID:         user.ID,
@@ -337,39 +337,39 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// add drive itself to DB (root was added during discovery)
 	// then attach to client
-	if err := c.Db.AddDrive(drv); err != nil {
+	if err := client.Db.AddDrive(drv); err != nil {
 		return nil, fmt.Errorf("failed to add client drive to database: %v", err)
 	}
-	if err := c.Db.AddDir(root); err != nil {
+	if err := client.Db.AddDir(root); err != nil {
 		return nil, fmt.Errorf("failed to add root directory to database: %v", err)
 	}
-	c.Drive = drv
+	client.Drive = drv
 
 	// build services endpoints map (files and directories have endpoints defined
 	// within their respective data structures)
-	c.setEndpoints()
+	client.setEndpoints()
 
 	// add token component
-	c.Tok = auth.NewT()
+	client.Tok = auth.NewT()
 
 	// initialize local sync index
-	c.BuildSyncIndex()
+	client.BuildSyncIndex()
 
 	// register drive with the server if autosync is enabled, if not defaulting
 	// to using local storage.
-	if c.autoSync() {
-		if !c.localBackup() {
-			if err := c.RegisterClient(); err != nil {
-				c.log.Warn("failed to register client with server: " + err.Error())
+	if client.autoSync() {
+		if !client.localBackup() {
+			if err := client.RegisterClient(); err != nil {
+				client.log.Warn("failed to register client with server: " + err.Error())
 			}
 		}
 	}
 
 	// save initial state
-	if err := c.SaveState(); err != nil {
+	if err := client.SaveState(); err != nil {
 		return nil, fmt.Errorf("failed to save initial state: %v", err)
 	}
-	return c, nil
+	return client, nil
 }
 
 // initialize client service
