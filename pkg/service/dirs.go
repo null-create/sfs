@@ -44,7 +44,7 @@ type Directory struct {
 	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
 
-	// directory client and server side paths
+	// client and server side paths
 	ClientPath   string `json:"client_path"`
 	ServerPath   string `json:"server_path"`
 	BackupPath   string `json:"backup_path"`
