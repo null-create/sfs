@@ -169,8 +169,6 @@ func (f *File) GetPath() string {
 	var path string
 	if f.ServerBackup {
 		path = f.ServerPath // server side file path
-	} else if f.LocalBackup {
-		path = f.BackupPath // local backup file path
 	} else {
 		path = f.ClientPath // client side file path (original)
 	}
