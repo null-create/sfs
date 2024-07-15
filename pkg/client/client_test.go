@@ -188,11 +188,17 @@ func TestClientDeleteUser(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 
+	dbUser, err := tmpClient.Db.GetUser(user.ID)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
 	}
 
 	assert.Equal(t, nil, tmpClient.User)
+	assert.Equal(t, nil, dbUser)
 }
 
 func TestAddFileToClient(t *testing.T) {
