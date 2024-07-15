@@ -55,7 +55,9 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 	// for logging any errors during new file object creation
 	var nfLog = logger.NewLogger("FILE_INIT", "None")
 
+	// service configs
 	cfg := NewSvcCfg()
+
 	// get baseline information about the file
 	item, err := os.Stat(filePath)
 	if err != nil {
@@ -66,11 +68,11 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 		nfLog.Error(fmt.Sprintf("item is a directory: %v", filePath))
 		log.Fatal(fmt.Errorf("item is a directory: %v", filePath))
 	}
-	// get baseline checksum
 	cs, err := CalculateChecksum(filePath)
 	if err != nil {
 		nfLog.Warn("error calculating checksum: " + err.Error())
 	}
+
 	// assign new id
 	uuid := auth.NewUUID()
 	return &File{

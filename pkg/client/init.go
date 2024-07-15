@@ -90,7 +90,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 		return nil, err
 	}
 	newUser.DriveID = client.Drive.ID
-	newUser.DrvRoot = client.Drive.Root.Path
+	newUser.DrvRoot = client.Drive.Root.ClientPath
 	client.User = newUser
 	client.UserID = newUser.ID
 
@@ -305,12 +305,12 @@ func NewClient(user *auth.User) (*Client, error) {
 	svcRoot := filepath.Join(ccfg.Root, user.Name)
 	root := svc.NewRootDirectory("root", user.ID, driveID, filepath.Join(svcRoot, "root"))
 	root.BackupPath = filepath.Join(svcRoot, "backups")
-	drv := svc.NewDrive(driveID, user.Name, user.ID, root.Path, root.ID, root)
+	drv := svc.NewDrive(driveID, user.Name, user.ID, root.ClientPath, root.ID, root)
 	drv.Root = root
 	drv.IsLoaded = true
 	user.DriveID = driveID
 	user.DrvRoot = drv.RootPath
-	user.SvcRoot = root.Path
+	user.SvcRoot = root.ClientPath
 
 	// intialize client
 	client := &Client{
@@ -321,9 +321,9 @@ func NewClient(user *auth.User) (*Client, error) {
 		Root:           filepath.Join(svcRoot, "root"),
 		SfDir:          filepath.Join(svcRoot, "state"),
 		RecycleBin:     filepath.Join(svcRoot, "recycle"),
-		LocalBackupDir: filepath.Join(root.Path, "backups"),
+		LocalBackupDir: filepath.Join(root.ClientPath, "backups"),
 		Endpoints:      make(map[string]string),
-		Monitor:        monitor.NewMonitor(drv.Root.Path),
+		Monitor:        monitor.NewMonitor(drv.Root.ClientPath),
 		DriveID:        driveID,
 		Drive:          drv,
 		Db:             db.NewQuery(filepath.Join(svcRoot, "dbs"), true),

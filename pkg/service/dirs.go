@@ -417,11 +417,7 @@ func (d *Directory) PutFile(file *File) error {
 // does not remove the physical file.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
-		var fileSize = file.GetSize()
-		// if err := os.Remove(file.GetPath()); err != nil {
-		// 	return err
-		// }
-		d.Size -= fileSize
+		d.Size -= file.GetSize()
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 	} else {
@@ -430,8 +426,7 @@ func (d *Directory) removeFile(fileID string) error {
 	return nil
 }
 
-// removes file from internal file map and deletes physical file.
-// ***use with caution!***
+// removes file from internal file map. does not remove the physical file.
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
@@ -538,9 +533,6 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 // remove from subdir map. does not remove physical directory!
 func (d *Directory) removeDir(dirID string) error {
 	if _, exists := d.Dirs[dirID]; exists {
-		// if err := os.RemoveAll(dir.Path); err != nil {
-		// 	return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
-		// }
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
 		log.Printf("directory (id=%s) removed", dirID)
@@ -657,12 +649,11 @@ func (d *Directory) CopyDir(src, dest string) error {
 
 /*
 Walk() populates all files and subdirectory maps (and their files and subdirectories,
-and so on) until we reach the end of the local directory tree in depth-first order.
+and so on) until we reach the end of the local directory tree.
 
-Should be used only when instantiating a root directory object
-for the *first* time, as it will generate new file and directory objects
-with their own ID's, and will need to be treated as persistent items rather than
-ephemeral ones.
+Should be used only when instantiating a root directory object for the *first* time,
+as it will generate new file and directory objects with their own ID's, and will need
+to be treated as persistent items rather than ephemeral ones.
 */
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {
