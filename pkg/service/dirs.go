@@ -305,12 +305,6 @@ func (d *Directory) GetParent() *Directory {
 	return d.Parent
 }
 
-// -------- directory operations and utils --------
-/*
-NOTE: these implementations were adapted from:
-https://github.com/moby/moby/blob/master/daemon/graphdriver/copy/copy.go
-*/
-
 // -------- password protection and other simple security stuff
 
 func (d *Directory) SetPassword(password string, newPassword string) error {
