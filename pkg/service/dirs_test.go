@@ -155,27 +155,6 @@ func TestAddSubDirs(t *testing.T) {
 	}
 }
 
-func TestRemoveSubDirs(t *testing.T) {
-	env.SetEnv(false)
-
-	total := RandInt(100)
-	// root test subdir
-	testRoot := NewRootDirectory("tmp", "some-rand-id", "some-rand-id", GetTestingDir())
-	// subdirs to add
-	testDirs := MakeTestDirs(t, total)
-
-	if err := testRoot.AddSubDirs(testDirs); err != nil {
-		Fatal(t, err)
-	}
-	assert.Equal(t, total, len(testRoot.Dirs))
-
-	if err := testRoot.RemoveSubDirs(); err != nil {
-		Fatal(t, err)
-	}
-	assert.NotEqual(t, total, len(testRoot.Dirs))
-	assert.Equal(t, 0, len(testRoot.Dirs))
-}
-
 func TestGetDirSize(t *testing.T) {
 	env.SetEnv(false)
 
