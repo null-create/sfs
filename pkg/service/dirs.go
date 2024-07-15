@@ -508,7 +508,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 // use dir.MkDir(path) instead.
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
-		d.addSubDir(dir)
+		if err := d.addSubDir(dir); err != nil {
+			return err
+		}
 	} else {
 		log.Printf("dir %s is protected", d.Name)
 	}
@@ -522,7 +524,9 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	}
 	if !d.Protected {
 		for _, dir := range dirs {
-			d.addSubDir(dir)
+			if err := d.addSubDir(dir); err != nil {
+				return err
+			}
 		}
 	} else {
 		log.Printf("%s (id=%s) is protected", d.Name, d.ID)
@@ -531,47 +535,33 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 }
 
 // remove from subdir map. does not remove physical directory!
-func (d *Directory) removeDir(dirID string) error {
-	if _, exists := d.Dirs[dirID]; exists {
+func (d *Directory) removeDir(dirID string) *Directory {
+	if sd, exists := d.Dirs[dirID]; exists {
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("directory (id=%s) removed", dirID)
+		return sd
 	} else {
-		log.Printf("directory (id=%s) is not found", dirID)
+		return nil
 	}
-	return nil
 }
 
-// removes a physical sub-directy and *all of its child directories*
-// as well as the clearing the internal data structures.
+// removes subdirectory and *all of its child directories*
 //
-// use with caution!
-func (d *Directory) RemoveSubDir(dirID string) error {
+// returns a pointer to the subdirectory that was just removed, upon success.
+// this should be useful for updating DBs after this operation completes.
+func (d *Directory) RemoveSubDir(dirID string) *Directory {
 	if !d.Protected {
-		if err := d.removeDir(dirID); err != nil {
-			return err
+		sd := d.removeDir(dirID)
+		if sd == nil {
+			log.Printf("directory (id=%s) not found", dirID)
+			return nil
 		}
-		d.LastSync = time.Now().UTC()
 		log.Printf("directory (id=%s) deleted", dirID)
+		return sd
 	} else {
 		log.Printf("directory (id=%s) is protected", dirID)
+		return nil
 	}
-	return nil
-}
-
-// removes *ALL* sub directories and their children for a given directory
-//
-// calls d.Clean() which recursively deletes all subdirctories and their children
-func (d *Directory) RemoveSubDirs() error {
-	if !d.Protected {
-		if err := d.Clean(d.Path); err != nil {
-			return err
-		}
-		log.Printf("dir (id=%s) all sub directories deleted", d.ID)
-	} else {
-		log.Printf("dir (id=%s) is protected. no sub directories deleted", d.ID)
-	}
-	return nil
 }
 
 // attempts to locate the directory or subdirectory starting from the given directory.
