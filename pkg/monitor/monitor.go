@@ -165,7 +165,7 @@ func (m *Monitor) GetOffSwitch(path string) chan bool {
 		return offSwitch
 	}
 	m.log.Error(
-		fmt.Sprintf("off switch not found for %s monitoring goroutine",
+		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
 			filepath.Base(path),
 		),
 	)
@@ -193,7 +193,7 @@ func (m *Monitor) StopWatching(path string) {
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
-		m.log.Log(logger.INFO, fmt.Sprintf("%s is no longer being monitored", filepath.Base(path)))
+		m.log.Log(logger.INFO, fmt.Sprintf("'%s' is no longer being monitored", filepath.Base(path)))
 	}
 }
 
