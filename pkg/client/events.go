@@ -349,29 +349,8 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
 				if c.autoSync() {
-					/*
-						TODO:
-
-						we may need to make the client side auto back up system
-						default to a *local* file system, rather than default to
-						saving via the local network.
-
-						Need to research:
-
-							connecting two local computers via a shared
-								wifi connection
-								LAN connection
-
-						If we want to continue prioritizing saving files via an https API,
-						rather than just crud with the local system iteself. This solution
-						may be a bit over-engineered, at the moment. It could also be a lot
-						simpler.
-
-						Maybe the client to server implementation could just be a mode setting,
-						and we can default to saving everything under sfs/pkg/run/<user-name>
-						while recreating directory structures.
-					*/
 					if !c.localBackup() {
+						// sync operations with the server
 						if err := c.Push(); err != nil {
 							return err
 						}
