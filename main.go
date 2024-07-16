@@ -37,6 +37,8 @@ func main() {
 	// run: go tool pprof -http=localhost:6060 sfs.exe <cpu.pprof or mem.pprof>
 	// to see results
 	cpuFile, memFile := createPprofFiles()
+	defer memFile.Close()
+	defer cpuFile.Close()
 
 	// cpu profiling
 	if err := pprof.StartCPUProfile(cpuFile); err != nil {
