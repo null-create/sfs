@@ -172,7 +172,7 @@ func (d *Directory) IsEmpty() bool {
 
 // check if the physical directory actually exists
 func (d *Directory) Exists() bool {
-	if _, err := os.Stat(d.Path); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(d.GetPath()); errors.Is(err, os.ErrNotExist) {
 		return false
 	}
 	return true
@@ -202,8 +202,8 @@ func (d *Directory) MarkLocalBackup() {
 // server or client side directory
 func (d *Directory) GetPath() string {
 	var path string
-	if !d.ServerBackup {
-		path = d.ClientPath
+	if d.ServerBackup {
+		path = d.ServerPath
 	} else {
 		path = d.ClientPath
 	}
@@ -275,7 +275,7 @@ func (d *Directory) HasDir(dirID string) bool {
 // file sizes.
 func (d *Directory) GetSize() (int64, error) {
 	var size int64
-	err := filepath.Walk(d.Path, func(filePath string, item os.FileInfo, err error) error {
+	err := filepath.Walk(d.GetPath(), func(filePath string, item os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -656,7 +656,7 @@ func (d *Directory) Walk() *Directory {
 // walk recursively descends the directory tree and populates all files
 // and subdirectory maps in depth-first order.
 func walk(d *Directory) *Directory {
-	entries, err := os.ReadDir(d.Path)
+	entries, err := os.ReadDir(d.GetPath())
 	if err != nil {
 		log.Printf("could not read directory: %v", err)
 		return d
@@ -665,7 +665,7 @@ func walk(d *Directory) *Directory {
 		return d
 	}
 	for _, entry := range entries {
-		entryPath := filepath.Join(d.Path, entry.Name())
+		entryPath := filepath.Join(d.GetPath(), entry.Name())
 		item, err := os.Stat(entryPath)
 		if err != nil {
 			log.Printf("could not get stat for %s - %v", entryPath, err)
