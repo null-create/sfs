@@ -553,16 +553,16 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 	return nil
 }
 
-// remove a file in a specied directory.
+// remove a file.
 // removes the file from the server if local backup is disabled.
 func (c *Client) RemoveFile(file *svc.File) error {
 	// make sure this file is actually registered with the service
 	// before mucking around.
 	if !c.KnownItem(file.ClientPath) {
-		return fmt.Errorf("file %s not registered", file.Name)
+		return fmt.Errorf("file '%s' not registered", file.Name)
 	}
 	// stop monitoring the file
-	c.Monitor.StopWatching(file.Path)
+	c.Monitor.StopWatching(file.ClientPath)
 	// move the file to the SFS recycle bin to help with recovery in case
 	// of an accidental deletion.
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
@@ -577,7 +577,6 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return err
 	}
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
-
 	// remove file from the server if auto sync is enabled.
 	if c.autoSync() && !c.localBackup() {
 		req, err := c.DeleteFileRequest(file)
