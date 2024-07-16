@@ -7,16 +7,7 @@ implementations based off
 https://stackoverflow.com/questions/18695346/how-can-i-sort-a-mapstringint-by-its-values
 */
 
-// --------------- sorted batch building
-
-// converts a slice of files to map[*File]int64 where the int is the files size
-func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
-	m := make(map[*File]int64)
-	for _, f := range files {
-		m[f] = f.GetSize()
-	}
-	return m
-}
+// --------------- sorted batch building --------------------
 
 type Item struct {
 	File *File // file object
