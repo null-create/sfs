@@ -23,12 +23,13 @@ define service directory paths, create necessary state file and
 database directories, and create service databases and initial state file
 
 root/
-|		user
-|	  |---root/     <------ users files and directories live here
+|		user/
+|   |---backups/      <------ users files and directories backup location
+|	  |---root/         <------ users files and directories live here
 |	  |---state/
 |   |   |---client-state-d-m-y-hh-mm-ss.json
-|   |---recycle/   <------ "deleted" files and directories live here.
-|   |---dbs/
+|   |---recycle/      <------ "deleted" files and directories live here.
+|   |---dbs/          <------ client side service databases
 |   |   |---users
 |   |   |---files
 |   |   |---directories
@@ -89,7 +90,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 		return nil, err
 	}
 	newUser.DriveID = client.Drive.ID
-	newUser.DrvRoot = client.Drive.Root.Path
+	newUser.DrvRoot = client.Drive.Root.ClientPath
 	client.User = newUser
 	client.UserID = newUser.ID
 
@@ -304,15 +305,15 @@ func NewClient(user *auth.User) (*Client, error) {
 	svcRoot := filepath.Join(ccfg.Root, user.Name)
 	root := svc.NewRootDirectory("root", user.ID, driveID, filepath.Join(svcRoot, "root"))
 	root.BackupPath = filepath.Join(svcRoot, "backups")
-	drv := svc.NewDrive(driveID, user.Name, user.ID, root.Path, root.ID, root)
+	drv := svc.NewDrive(driveID, user.Name, user.ID, root.ClientPath, root.ID, root)
 	drv.Root = root
 	drv.IsLoaded = true
 	user.DriveID = driveID
 	user.DrvRoot = drv.RootPath
-	user.SvcRoot = root.Path
+	user.SvcRoot = root.ClientPath
 
 	// intialize client
-	c := &Client{
+	client := &Client{
 		StartTime:      time.Now().UTC(),
 		Conf:           ccfg,
 		UserID:         user.ID,
@@ -320,9 +321,9 @@ func NewClient(user *auth.User) (*Client, error) {
 		Root:           filepath.Join(svcRoot, "root"),
 		SfDir:          filepath.Join(svcRoot, "state"),
 		RecycleBin:     filepath.Join(svcRoot, "recycle"),
+		LocalBackupDir: filepath.Join(root.ClientPath, "backups"),
 		Endpoints:      make(map[string]string),
-		LocalBackupDir: filepath.Join(root.Path, "backups"), // TODO: allow this to be overriden by a user specification
-		Monitor:        monitor.NewMonitor(drv.Root.Path),
+		Monitor:        monitor.NewMonitor(drv.Root.ClientPath),
 		DriveID:        driveID,
 		Drive:          drv,
 		Db:             db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
@@ -336,39 +337,39 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// add drive itself to DB (root was added during discovery)
 	// then attach to client
-	if err := c.Db.AddDrive(drv); err != nil {
+	if err := client.Db.AddDrive(drv); err != nil {
 		return nil, fmt.Errorf("failed to add client drive to database: %v", err)
 	}
-	if err := c.Db.AddDir(root); err != nil {
+	if err := client.Db.AddDir(root); err != nil {
 		return nil, fmt.Errorf("failed to add root directory to database: %v", err)
 	}
-	c.Drive = drv
+	client.Drive = drv
 
 	// build services endpoints map (files and directories have endpoints defined
 	// within their respective data structures)
-	c.setEndpoints()
+	client.setEndpoints()
 
 	// add token component
-	c.Tok = auth.NewT()
+	client.Tok = auth.NewT()
 
 	// initialize local sync index
-	c.BuildSyncIndex()
+	client.BuildSyncIndex()
 
 	// register drive with the server if autosync is enabled, if not defaulting
 	// to using local storage.
-	if c.autoSync() {
-		if !c.localBackup() {
-			if err := c.RegisterClient(); err != nil {
-				c.log.Warn("failed to register client with server: " + err.Error())
+	if client.autoSync() {
+		if !client.localBackup() {
+			if err := client.RegisterClient(); err != nil {
+				client.log.Warn("failed to register client with server: " + err.Error())
 			}
 		}
 	}
 
 	// save initial state
-	if err := c.SaveState(); err != nil {
+	if err := client.SaveState(); err != nil {
 		return nil, fmt.Errorf("failed to save initial state: %v", err)
 	}
-	return c, nil
+	return client, nil
 }
 
 // initialize client service

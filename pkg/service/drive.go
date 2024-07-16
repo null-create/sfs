@@ -499,10 +499,13 @@ func (d *Drive) GetDirsMap() map[string]*Directory {
 	return nil
 }
 
-// TODO: return all the contents of this removed directory
+// remove a physical directory, as well as all its contents and children
 func (d *Drive) removeDir(dirID string) error {
 	dir := d.GetDir(dirID)
 	if dir != nil {
+		// NOTE: the caller is responsible for ensuring all
+		// subdirectories and files are removed from the database prior to
+		// calling this function
 		if err := os.RemoveAll(dir.Path); err != nil {
 			return err
 		}

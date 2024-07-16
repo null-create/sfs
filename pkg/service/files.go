@@ -55,7 +55,9 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 	// for logging any errors during new file object creation
 	var nfLog = logger.NewLogger("FILE_INIT", "None")
 
+	// service configs
 	cfg := NewSvcCfg()
+
 	// get baseline information about the file
 	item, err := os.Stat(filePath)
 	if err != nil {
@@ -66,11 +68,11 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 		nfLog.Error(fmt.Sprintf("item is a directory: %v", filePath))
 		log.Fatal(fmt.Errorf("item is a directory: %v", filePath))
 	}
-	// get baseline checksum
 	cs, err := CalculateChecksum(filePath)
 	if err != nil {
 		nfLog.Warn("error calculating checksum: " + err.Error())
 	}
+
 	// assign new id
 	uuid := auth.NewUUID()
 	return &File{
@@ -97,7 +99,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 }
 
 // has this file been backed up ?
-func (f *File) IsBackUp() bool        { return f.ServerBackup }
+func (f *File) IsServerBackUp() bool  { return f.ServerBackup }
 func (f *File) IsLocalBackup() bool   { return f.LocalBackup }
 func (f *File) GetBackupPath() string { return f.BackupPath }
 
@@ -149,9 +151,16 @@ func (f *File) Exists() bool {
 }
 
 // mark this object as being the server side version of the original file.
-func (f *File) MarkBackedUp() {
-	if !f.ServerBackup {
+func (f *File) MarkServerBackUp() {
+	if !f.IsServerBackUp() {
 		f.ServerBackup = true
+	}
+}
+
+// mark this file as being the local back up version of the original file
+func (f *File) MarkLocalBackup() {
+	if !f.IsLocalBackup() {
+		f.LocalBackup = true
 	}
 }
 
@@ -162,8 +171,6 @@ func (f *File) GetPath() string {
 	var path string
 	if f.ServerBackup {
 		path = f.ServerPath // server side file path
-	} else if f.LocalBackup {
-		path = f.BackupPath // local backup file path
 	} else {
 		path = f.ClientPath // client side file path (original)
 	}

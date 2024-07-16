@@ -165,7 +165,7 @@ func (c *Client) ServerSync() error {
 		return nil
 	}
 
-	// pull items
+	// pull latest versions of files from the server
 	var wg sync.WaitGroup
 	c.log.Info(fmt.Sprintf("pulling %d files from the server...", len(syncItems.pull)))
 	for _, file := range syncItems.pull {
@@ -179,7 +179,7 @@ func (c *Client) ServerSync() error {
 	}
 	wg.Wait()
 
-	// push items
+	// push latest versions of files to the server
 	c.log.Info(fmt.Sprintf("pushing %d files to the server...", len(syncItems.push)))
 	for _, file := range syncItems.push {
 		wg.Add(1)
@@ -237,13 +237,14 @@ func (c *Client) Push() error {
 // gets a sync index from the server, compares with the local one,
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
-func (c *Client) Pull(idx *svc.SyncIndex) error {
-	if len(idx.FilesToUpdate) == 0 {
+func (c *Client) Pull() error {
+	// TODO: rework this
+	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		c.log.Warn("no sync index returned from the server. nothing to pull")
 		return nil
 	}
-	q := svc.BuildQ(idx)
-	if len(q.Queue) == 0 || q == nil {
+	q := svc.BuildQ(c.Drive.SyncIndex)
+	if q == nil {
 		return fmt.Errorf("unable to build queue: no files found for syncing")
 	}
 	var wg sync.WaitGroup
@@ -370,12 +371,13 @@ func (c *Client) BackupFile(file *svc.File) error {
 	return nil
 }
 
-// TODO:
 func (c *Client) BackupDir(dir *svc.Directory) error {
-	files := dir.GetFiles()
-	if len(files) == 0 {
-		c.log.Info(fmt.Sprintf("directory '%s' has no files to backup", dir.Name))
+	if len(dir.Files) == 0 {
+		c.log.Log(logger.INFO, fmt.Sprintf("directory '%s' has no files to backup", dir.Name))
+	}
+	if len(dir.Dirs) == 0 {
+		c.log.Info(fmt.Sprintf("dir '%s' has no subdirectories to backup", dir.Name))
 		return nil
 	}
-	return nil
+	return dir.CopyDir(dir.GetPath(), dir.BackupPath)
 }

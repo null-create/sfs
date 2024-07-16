@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -154,27 +155,6 @@ func TestAddSubDirs(t *testing.T) {
 	}
 }
 
-func TestRemoveSubDirs(t *testing.T) {
-	env.SetEnv(false)
-
-	total := RandInt(100)
-	// root test subdir
-	testRoot := NewRootDirectory("tmp", "some-rand-id", "some-rand-id", GetTestingDir())
-	// subdirs to add
-	testDirs := MakeTestDirs(t, total)
-
-	if err := testRoot.AddSubDirs(testDirs); err != nil {
-		Fatal(t, err)
-	}
-	assert.Equal(t, total, len(testRoot.Dirs))
-
-	if err := testRoot.RemoveSubDirs(); err != nil {
-		Fatal(t, err)
-	}
-	assert.NotEqual(t, total, len(testRoot.Dirs))
-	assert.Equal(t, 0, len(testRoot.Dirs))
-}
-
 func TestGetDirSize(t *testing.T) {
 	env.SetEnv(false)
 
@@ -194,6 +174,48 @@ func TestGetDirSize(t *testing.T) {
 	if err := Clean(t, GetTestingDir()); err != nil {
 		t.Errorf("[ERROR] unable to remove test directories: %v", err)
 	}
+}
+
+func TestCopyDir(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := env.NewE().Get("CLIENT_TESTING")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// make a temp directory
+	testDirs := MakeTmpDirsWithPath(t, tmpDir, "123")
+
+	// make the destination directory
+	destDir := filepath.Join(tmpDir, "backup")
+	if err := os.Mkdir(destDir, PERMS); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// copy to destination directory
+	if err := testDirs.CopyDir(testDirs.ClientPath, destDir); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// get source item info to compare against
+	srcEntries, err := os.ReadDir(filepath.Join(tmpDir, "tmp"))
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// get dest items
+	destEntries, err := os.ReadDir(destDir)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// pre-emptive clean-up prior to asserts
+	if err := Clean(t, tmpDir); err != nil {
+		t.Errorf("[ERROR] unable to remove test directories: %v", err)
+	}
+
+	assert.NotEqual(t, 0, len(destEntries))
+	assert.Equal(t, len(srcEntries), len(destEntries))
 }
 
 func TestWalk(t *testing.T) {

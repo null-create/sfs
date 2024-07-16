@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -43,10 +44,12 @@ type Directory struct {
 	// .../sfs/user/root/../this_directory
 	Path string `json:"path"`
 
-	// directory client and server side paths
-	ClientPath string `json:"client_path"`
-	ServerPath string `json:"server_path"`
-	BackupPath string `json:"backup_path"`
+	// client and server side paths
+	ClientPath   string `json:"client_path"`
+	ServerPath   string `json:"server_path"`
+	BackupPath   string `json:"backup_path"`
+	ServerBackup bool   `json:"server_backup"` // flag for whether this is the server-side version of the file
+	LocalBackup  bool   `json:"local_backup"`  // flag for whether this is a local backup version of the file
 
 	// security attributes
 	Protected bool   `json:"protected"`
@@ -181,6 +184,32 @@ func (d *Directory) TotalFiles() int { return len(d.Files) }
 // return the total number of subdirectories for this directory
 func (d *Directory) TotalSubDirs() int { return len(d.Dirs) }
 
+// mark this instance as being a server-side back up of this directory
+func (d *Directory) MarkServerBackup() {
+	if !d.ServerBackup {
+		d.ServerBackup = true
+	}
+}
+
+// mark this instance as being a clinet-side backup of this directory
+func (d *Directory) MarkLocalBackup() {
+	if !d.LocalBackup {
+		d.LocalBackup = true
+	}
+}
+
+// retrieve the path to this directory depending whether its a
+// server or client side directory
+func (d *Directory) GetPath() string {
+	var path string
+	if !d.ServerBackup {
+		path = d.ClientPath
+	} else {
+		path = d.ClientPath
+	}
+	return path
+}
+
 // Remove all *internal data structure representations* of files and directories
 // *Does not* remove actual files or sub directories themselves!
 func (d *Directory) clear() {
@@ -276,12 +305,6 @@ func (d *Directory) GetParent() *Directory {
 	return d.Parent
 }
 
-// -------- directory operations and utils --------
-/*
-NOTE: these implementations were adapted from:
-https://github.com/moby/moby/blob/master/daemon/graphdriver/copy/copy.go
-*/
-
 // -------- password protection and other simple security stuff
 
 func (d *Directory) SetPassword(password string, newPassword string) error {
@@ -321,6 +344,7 @@ func (d *Directory) addFile(file *File) {
 	file.BackupPath = filepath.Join(d.BackupPath, file.Name)
 	d.Size += file.GetSize()
 	d.Files[file.ID] = file
+	d.LastSync = time.Now().UTC()
 }
 
 // used when updating metadata for a file that's already in the directory.
@@ -389,14 +413,11 @@ func (d *Directory) PutFile(file *File) error {
 	return nil
 }
 
-// remove physical file and update internal metadata.
+// remove file from files map and update internal metadata.
+// does not remove the physical file.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
-		var fileSize = file.GetSize()
-		if err := os.Remove(file.GetPath()); err != nil {
-			return err
-		}
-		d.Size -= fileSize
+		d.Size -= file.GetSize()
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 	} else {
@@ -405,8 +426,7 @@ func (d *Directory) removeFile(fileID string) error {
 	return nil
 }
 
-// removes file from internal file map and deletes physical file.
-// ***use with caution!***
+// removes file from internal file map. does not remove the physical file.
 func (d *Directory) RemoveFile(fileID string) error {
 	if !d.Protected {
 		if err := d.removeFile(fileID); err != nil {
@@ -423,7 +443,8 @@ func (d *Directory) GetFileMap() map[string]*File {
 	return d.WalkFs()
 }
 
-// get a slice of all files starting from this directory.
+// get a slice of all files from this directory, as well as its
+// children.
 // returns an empty slice if no files are found.
 func (d *Directory) GetFiles() []*File {
 	fileMap := d.WalkFs()
@@ -473,6 +494,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
+		dir.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
@@ -486,7 +508,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 // use dir.MkDir(path) instead.
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
-		d.addSubDir(dir)
+		if err := d.addSubDir(dir); err != nil {
+			return err
+		}
 	} else {
 		log.Printf("dir %s is protected", d.Name)
 	}
@@ -500,7 +524,9 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	}
 	if !d.Protected {
 		for _, dir := range dirs {
-			d.addSubDir(dir)
+			if err := d.addSubDir(dir); err != nil {
+				return err
+			}
 		}
 	} else {
 		log.Printf("%s (id=%s) is protected", d.Name, d.ID)
@@ -508,51 +534,34 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	return nil
 }
 
-func (d *Directory) removeDir(dirID string) error {
-	if dir, exists := d.Dirs[dirID]; exists {
-		if err := os.RemoveAll(dir.Path); err != nil {
-			return fmt.Errorf("unable to remove directory %s: %v", dirID, err)
-		}
-		delete(d.Dirs, dirID)
-		log.Printf("directory (id=%s) removed", dirID)
-	} else {
-		log.Printf("directory (id=%s) is not found", dirID)
-	}
-	return nil
-}
-
-// removes a physical sub-directy and *all of its child directories*
-// as well as the clearing the internal data structures.
-//
-// use with caution!
-func (d *Directory) RemoveSubDir(dirID string) error {
-	if !d.Protected {
-		if err := d.removeDir(dirID); err != nil {
-			return err
-		}
-		// remove from subdir map & update sync time
+// remove from subdir map. does not remove physical directory!
+func (d *Directory) removeDir(dirID string) *Directory {
+	if sd, exists := d.Dirs[dirID]; exists {
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
-		log.Printf("directory (id=%s) deleted", dirID)
+		return sd
 	} else {
-		log.Printf("directory (id=%s) is protected", dirID)
+		return nil
 	}
-	return nil
 }
 
-// removes *ALL* sub directories and their children for a given directory
+// removes subdirectory and *all of its child directories*
 //
-// calls d.Clean() which recursively deletes all subdirctories and their children
-func (d *Directory) RemoveSubDirs() error {
+// returns a pointer to the subdirectory that was just removed, upon success.
+// this should be useful for updating DBs after this operation completes.
+func (d *Directory) RemoveSubDir(dirID string) *Directory {
 	if !d.Protected {
-		if err := d.Clean(d.Path); err != nil {
-			return err
+		sd := d.removeDir(dirID)
+		if sd == nil {
+			log.Printf("directory (id=%s) not found", dirID)
+			return nil
 		}
-		log.Printf("dir (id=%s) all sub directories deleted", d.ID)
+		log.Printf("directory (id=%s) deleted", dirID)
+		return sd
 	} else {
-		log.Printf("dir (id=%s) is protected. no sub directories deleted", d.ID)
+		log.Printf("directory (id=%s) is protected", dirID)
+		return nil
 	}
-	return nil
 }
 
 // attempts to locate the directory or subdirectory starting from the given directory.
@@ -581,16 +590,60 @@ func (d *Directory) GetDirMap() map[string]*Directory {
 	return d.WalkDs()
 }
 
+// recursively copies the directory tree to the given location.
+//
+// adapted from: https://stackoverflow.com/questions/51779243/copy-a-folder-in-go
+func (d *Directory) CopyDir(src, dest string) error {
+	entries, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		sourcePath := filepath.Join(src, entry.Name())
+		destPath := filepath.Join(dest, entry.Name())
+
+		fileInfo, err := os.Stat(sourcePath)
+		if err != nil {
+			return err
+		}
+
+		switch fileInfo.Mode() & os.ModeType {
+		case os.ModeDir:
+			if err := CreateIfNotExists(destPath, PERMS); err != nil {
+				return err
+			}
+			if err := d.CopyDir(sourcePath, destPath); err != nil {
+				return err
+			}
+		case os.ModeSymlink:
+			if err := CopySymLink(sourcePath, destPath); err != nil {
+				return err
+			}
+		default:
+			if err := Copy(sourcePath, destPath); err != nil {
+				return err
+			}
+		}
+
+		isSymlink := entry.Mode()&os.ModeSymlink != 0
+		if !isSymlink {
+			if err := os.Chmod(destPath, entry.Mode()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // ------------------------------------------------------------
 
 /*
 Walk() populates all files and subdirectory maps (and their files and subdirectories,
-and so on) until we reach the end of the local directory tree in depth-first order.
+and so on) until we reach the end of the local directory tree.
 
-Should be used only when instantiating a root directory object
-for the *first* time, as it will generate new file and directory objects
-with their own ID's, and will need to be treated as persistent items rather than
-ephemeral ones.
+Should be used only when instantiating a root directory object for the *first* time,
+as it will generate new file and directory objects with their own ID's, and will need
+to be treated as persistent items rather than ephemeral ones.
 */
 func (d *Directory) Walk() *Directory {
 	if d.Path == "" {

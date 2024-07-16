@@ -32,6 +32,9 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Db.DBPath = filepath.Join(tmpSvcPath, "dbs")
 	tmpClient.LocalBackupDir = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.RecycleBin = filepath.Join(tmpSvcPath, "recycle")
+	tmpClient.Drive.Root.Path = filepath.Join(tmpSvcPath, "root")
+	tmpClient.Drive.Root.ServerPath = filepath.Join(tmpSvcPath, "root")
+	tmpClient.Drive.Root.ClientPath = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.BackupPath = tmpClient.LocalBackupDir
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
@@ -124,12 +127,15 @@ func TestLoadAndStartClient(t *testing.T) {
 
 	// start client
 	go func() {
-		tmpClient.Start()
+		if err := tmpClient.Start(); err != nil {
+			Fail(t, tmpDir, err)
+		}
 	}()
 
 	log.Print("client started...")
 	time.Sleep(time.Second * 2)
 
+	// shutdown
 	tmpClient.ShutDown()
 
 	// clean up
@@ -182,11 +188,17 @@ func TestClientDeleteUser(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 
+	dbUser, err := tmpClient.Db.GetUser(user.ID)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
 	}
 
 	assert.Equal(t, nil, tmpClient.User)
+	assert.Equal(t, nil, dbUser)
 }
 
 func TestAddFileToClient(t *testing.T) {
@@ -303,6 +315,47 @@ func TestAddItemWithAFile(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	assert.NotEqual(t, 0, len(backupEntries))
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestClientRemoveDir(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make a test directory with files and a subdirectory within the client
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.Path)
+	if err := tmpClient.AddDrive(tmpDrive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	if err := tmpClient.RemoveDir(tmpDrive.Root); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make sure everything was actually removed
+	dbFiles, err := tmpClient.Db.GetUsersFiles(tmpClient.UserID)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.Equal(t, 0, len(dbFiles))
+
+	dbDirs, err := tmpClient.Db.GetUsersDirectories(tmpClient.UserID)
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	assert.Equal(t, 0, len(dbDirs))
 
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)

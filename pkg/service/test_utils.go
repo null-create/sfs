@@ -294,6 +294,67 @@ func MakeTestDirFiles(t *testing.T, total int, tdPath string) []*File {
 	return testFiles
 }
 
+// make a bunch of temp .txt files of varying sizes.
+// under pkg/files/testing/tmp
+func MakeABunchOfTxtFilesWithLocation(total int, loc string) ([]*File, error) {
+	files := make([]*File, 0, total)
+	for i := 0; i < total; i++ {
+		fileName := fmt.Sprintf("tmp-%d.txt", i+1)
+		filePath := filepath.Join(loc, fileName)
+		f, err := MakeTmpTxtFile(filePath, RandInt(1000))
+		if err != nil {
+			return nil, fmt.Errorf("error creating temporary file: %v", err)
+		}
+		files = append(files, f)
+	}
+	return files, nil
+}
+
+// create a temporary root directory with files and a subdirectory,
+// also with files, under a specified path.
+//
+// returns complete test root with directory and files
+func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *Directory {
+	// make our temporary directory
+	d, err := MakeTmpDir(t, filepath.Join(path, "tmp"))
+	if err != nil {
+		Fatal(t, err)
+	}
+
+	// create tmp service root directory with some files and
+	// make sure we properly assign these files and directories to the temp drivea
+	tmpRoot := NewRootDirectory("root", "some-rand-id", driveID, filepath.Join(path, "tmp"))
+	files, err := MakeABunchOfTxtFilesWithLocation(10, d.Path)
+	if err != nil {
+		Fatal(t, err)
+	}
+	for _, f := range files {
+		f.DriveID = driveID
+	}
+	tmpRoot.AddFiles(files)
+
+	// add a subdirectory also with files
+	sd, err := MakeTmpDir(t, filepath.Join(tmpRoot.Path, "tmpSubDir"))
+	if err != nil {
+		Fatal(t, err)
+	}
+	sd.DriveID = driveID
+	moreFiles, err := MakeABunchOfTxtFilesWithLocation(10, sd.Path)
+	if err != nil {
+		Fatal(t, err)
+	}
+	for _, f := range moreFiles {
+		f.DriveID = driveID
+	}
+
+	// build the directory structure
+	sd.AddFiles(moreFiles)
+	d.AddSubDir(sd)
+	tmpRoot.AddSubDir(d)
+
+	return tmpRoot
+}
+
 // make testing drive with test files, directories, and subdirectories.
 // all test files will be within the test directory.
 func MakeTmpDrive(t *testing.T) *Drive {
@@ -309,4 +370,13 @@ func MakeEmptyTmpDrive(t *testing.T) *Drive {
 	tmpRoot := NewRootDirectory("tmp", auth.NewUUID(), tmpDriveID, GetTestingDir())
 	testDrv := NewDrive(tmpDriveID, "me", tmpRoot.OwnerID, GetTestingDir(), tmpRoot.ID, tmpRoot)
 	return testDrv
+}
+
+// make testing drive with test files, directories, and subdirectories
+// under a specified path.
+func MakeTmpDriveWithPath(t *testing.T, path string) *Drive {
+	tmpDriveID := auth.NewUUID()
+	root := MakeTmpDirsWithPath(t, path, tmpDriveID)
+	drive := NewDrive(tmpDriveID, "bill buttlicker", root.OwnerID, root.Path, root.ID, root)
+	return drive
 }
