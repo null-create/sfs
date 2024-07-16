@@ -100,7 +100,6 @@ func (c *Client) NewHandler(path string) error {
 // get alll the necessary things for the event handler to operate independently
 func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Events, string, error) {
 	evtChan := c.Monitor.GetEventChan(itemPath)
-
 	thing, err := os.Stat(itemPath)
 	if err != nil {
 		return nil, nil, "", err
@@ -132,10 +131,9 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 		)
 	}
 	// events buffer.
-	// used for managing and triggering synchronization
+	// used for managing synchronization
 	// events between the client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
-
 	return evtChan, evts, id, nil
 }
 
