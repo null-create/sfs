@@ -97,10 +97,9 @@ func (m *Monitor) Exists(path string) bool {
 func (m *Monitor) IsDir(path string) (bool, error) {
 	if stat, err := os.Stat(path); err == nil {
 		return stat.IsDir(), nil
-	} else if err != nil {
+	} else {
 		return false, fmt.Errorf("failed to get stats for %v: %v", filepath.Base(path), err)
 	}
-	return false, nil
 }
 
 // add a new watcher function instance to the monitor.
@@ -142,7 +141,7 @@ func (m *Monitor) Watch(path string) error {
 			m.OffSwitches[path] = stop
 			m.AddWatcher(path, watchFile)
 			m.StartWatcher(path, stop)
-			m.log.Log("INFO", fmt.Sprintf("monitoring %s...", filepath.Base(path)))
+			m.log.Log(logger.INFO, fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 		}
 	}
 	return nil
@@ -194,7 +193,7 @@ func (m *Monitor) StopWatching(path string) {
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
-		m.log.Log("INFO", fmt.Sprintf("%s is no longer being monitored", filepath.Base(path)))
+		m.log.Log(logger.INFO, fmt.Sprintf("%s is no longer being monitored", filepath.Base(path)))
 	}
 }
 
