@@ -38,7 +38,7 @@ type Event struct {
 	Kind  string    // Kind of the event (file or directory)
 	Type  EventType // type of file event, i.e. create, edit, or delete
 	Path  string    // location of the file event (path to the file itself)
-	Items []EItem   // list of files or subdirectories in the directory that were added, created, or deleted
+	Items []EItem   // list of event items (files or directories)
 }
 
 // whether this event is a directory event
@@ -59,7 +59,7 @@ type Events struct {
 	Buffered  bool  // whether this event list is buffered
 	Total     int   // current total events
 	atcap     bool  // flag to indicate whether we've reached the buffer limit
-	Events    EList // event object list
+	Events    EList // event buffer
 }
 
 // new Events tracker. if buffered sync
