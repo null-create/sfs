@@ -17,9 +17,9 @@ type Item struct {
 // A slice of Pairs that implements sort.Interface to sort by Value.
 type ItemList []Item
 
-func (p ItemList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p ItemList) Len() int           { return len(p) }
-func (p ItemList) Less(i, j int) bool { return p[i].Size < p[j].Size }
+func (l ItemList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l ItemList) Len() int           { return len(l) }
+func (l ItemList) Less(i, j int) bool { return l[i].Size < l[j].Size }
 
 // sort a map of files by file size and return as a PairList
 func (b *Batch) SortMapByValue(m map[*File]int64) ItemList {
