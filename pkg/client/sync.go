@@ -238,9 +238,8 @@ func (c *Client) Push() error {
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
 func (c *Client) Pull() error {
-	// TODO: rework this
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
-		c.log.Warn("no sync index returned from the server. nothing to pull")
+		c.log.Warn("sync index update map has no contents. nothing to pull")
 		return nil
 	}
 	q := svc.BuildQ(c.Drive.SyncIndex)
