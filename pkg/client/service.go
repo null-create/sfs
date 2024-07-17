@@ -374,7 +374,6 @@ func (c *Client) AddFile(filePath string) error {
 	} else if err != nil {
 		return err
 	} else {
-		// directory already exists. add file to this directory.
 		newFile.DirID = dir.ID
 	}
 
@@ -514,26 +513,6 @@ func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
 		}
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
-	return nil
-}
-
-// update file contents in a specied directory
-func (c *Client) ModifyFile(dirID string, fileID string, data []byte) error {
-	file := c.Drive.GetFile(fileID)
-	if file == nil {
-		return fmt.Errorf("no file (id=%s) found", fileID)
-	}
-	if len(data) == 0 {
-		c.log.Warn(fmt.Sprintf("no data provided for '%s'. nothing modified", file.Name))
-		return nil
-	}
-	if err := c.Drive.ModifyFile(dirID, file, data); err != nil {
-		return err
-	}
-	if err := c.Db.UpdateFile(file); err != nil {
-		return err
-	}
-	c.log.Info(fmt.Sprintf("%s was modified", file.Name))
 	return nil
 }
 

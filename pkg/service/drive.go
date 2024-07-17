@@ -267,8 +267,9 @@ func (d *Drive) GetFile(fileID string) *File {
 	}
 }
 
-// get a slice of all files in the drive. returns an empty slice if the drive is protected,
-// or if no files are found.
+// get a slice of all files in the drive.
+//
+// returns an empty slice if the drive is protected, or if no files are found.
 func (d *Drive) GetFiles() []*File {
 	if !d.Protected {
 		var (
@@ -293,33 +294,6 @@ func (d *Drive) GetFilesMap() map[string]*File {
 			return nil
 		}
 		return d.Root.WalkFs()
-	} else {
-		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
-	}
-	return nil
-}
-
-// update/ modify a files contents
-func (d *Drive) ModifyFile(dirID string, file *File, data []byte) error {
-	if !d.Protected {
-		if !d.HasRoot() {
-			return fmt.Errorf("no root directory")
-		}
-		if d.Root.ID == dirID {
-			if err := d.Root.ModifyFile(file, data); err != nil {
-				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
-			}
-		} else {
-			dir := d.GetDir(dirID)
-			if dir == nil {
-				return fmt.Errorf("dir (id=%s) not found", dirID)
-			}
-			if err := dir.ModifyFile(file, data); err != nil {
-				return err
-			}
-			// TODO: get the difference between old and new file sizes
-			// and adjust the drives used space value accordingly.
-		}
 	} else {
 		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
