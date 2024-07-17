@@ -21,7 +21,9 @@ func (l ItemList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 func (l ItemList) Len() int           { return len(l) }
 func (l ItemList) Less(i, j int) bool { return l[i].Size < l[j].Size }
 
-// sort a map of files by file size and return as a PairList
+// sort a map of files by file size and return as an ItemList
+// ItemList is a slice of Item objects containing a pointer to the file object,
+// and its size. These types are primarily used just for sorting.
 func (b *Batch) SortMapByValue(m map[*File]int64) ItemList {
 	i := 0
 	p := make(ItemList, len(m))

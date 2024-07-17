@@ -47,6 +47,9 @@ func NewCtx() *AddCtx {
 }
 
 // batch represents a collection of files to be uploaded or downloaded
+//
+// batches are processed one at a time while uploading or downloading,
+// however every file in the batch will be processed in parallel.
 type Batch struct {
 	ID    string         // batch ID (UUID)
 	Cap   int64          // remaining capacity (in bytes)
