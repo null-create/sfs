@@ -24,8 +24,8 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 
 // arbitrary* wait times between checks (*after some hand tuning)
 const (
-	WAIT        = time.Millisecond * 750 // wait duration after checks with no changes
-	WAIT_LONGER = time.Second * 2        // wait duration after checks with changes
+	WAIT        = time.Millisecond * 500 // wait duration after checks with no changes
+	WAIT_LONGER = time.Second            // wait duration after checks with changes
 )
 
 type Watcher func(string, chan bool) chan Event
