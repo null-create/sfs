@@ -767,6 +767,10 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if err := s.Db.AddDir(newDir); err != nil {
 		return err
 	}
+	// finally, create the physical directory
+	if err := os.MkdirAll(newDir.ServerPath, svc.PERMS); err != nil {
+		return err
+	}
 	return nil
 }
 
