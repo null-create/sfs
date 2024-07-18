@@ -14,7 +14,7 @@ func NewQ() *Queue {
 	}
 }
 
-// NOTE: thes does NOT ensure there are no duplicate batches!
+// NOTE: this does NOT ensure there are no duplicate batches!
 //
 // that will need to be done elsewhere
 func (q *Queue) Enqueue(b *Batch) {
