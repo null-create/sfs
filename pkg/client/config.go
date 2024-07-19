@@ -14,7 +14,7 @@ type Conf struct {
 	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`     // whether events should be buffered (i.e. have a delay between sync events)
 	EventBufferSize int    `env:"EVENT_BUFFER_SIZE"`            // size of events buffer
 	AutoSync        bool   `env:"CLIENT_AUTO_SYNC,required"`    // whether the client should auto sync with the server
-	User            string `env:"CLIENT,required"`              // users name
+	User            string `env:"CLIENT_NAME,required"`         // users name
 	UserAlias       string `env:"CLIENT_USERNAME,required"`     // users alias (username)
 	ID              string `env:"CLIENT_ID,required"`           // this is generated at creation time. won't be in the initial .env file
 	Email           string `env:"CLIENT_EMAIL,required"`        // users email

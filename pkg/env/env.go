@@ -26,7 +26,7 @@ var BaseEnv = map[string]string{
 	"NEW_SERVICE":       "true",
 
 	// client settings
-	"CLIENT":              "",
+	"CLIENT_NAME":         "",
 	"CLIENT_ADDRESS":      "localhost:8080",
 	"CLIENT_AUTO_SYNC":    "true",
 	"CLIENT_EMAIL":        "",
