@@ -112,13 +112,13 @@ func (q *Query) RemoveFile(fileID string) error {
 	return nil
 }
 
-func (q *Query) RemoveFiles(fs []*svc.File) error {
+func (q *Query) RemoveFiles(files []*svc.File) error {
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
-	for _, f := range fs {
-		_, err := q.Conn.Exec(RemoveFileQuery, f.ID, f.ID)
+	for _, file := range files {
+		_, err := q.Conn.Exec(RemoveFileQuery, file.ID, file.ID)
 		if err != nil {
 			return fmt.Errorf("failed to remove user: %v", err)
 		}
@@ -143,10 +143,10 @@ func (q *Query) RemoveDirectories(dirs []*svc.Directory) error {
 	q.Connect()
 	defer q.Close()
 
-	for _, d := range dirs {
-		_, err := q.Conn.Exec(RemoveDirectoryQuery, d.ID)
+	for _, dir := range dirs {
+		_, err := q.Conn.Exec(RemoveDirectoryQuery, dir.ID)
 		if err != nil {
-			return fmt.Errorf("failed to remove file (id=%s): %v", d.ID, err)
+			return fmt.Errorf("failed to remove file (id=%s): %v", dir.ID, err)
 		}
 	}
 	return nil
