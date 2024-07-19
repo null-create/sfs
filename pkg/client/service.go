@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/sfs/pkg/logger"
@@ -38,29 +39,30 @@ func (c *Client) AddItem(itemPath string) error {
 	return nil
 }
 
-// remove an item from the local SFS service.
-// does not remove the item from the server.
+// remove an item from the local SFS service
 func (c *Client) RemoveItem(itemPath string) error {
 	item, err := os.Stat(itemPath)
 	if err != nil {
 		return err
 	}
 	if item.IsDir() {
-		// NOTE: directory actions aren't supported yet
-		// dir, err := c.Db.GetDirectoryByPath(itemPath)
-		// if err != nil {
-		// 	return err
-		// }
-		// if err := c.RemoveDir(dir); err != nil {
-		// 	return err
-		// }
+		dir, err := c.Db.GetDirectoryByPath(itemPath)
+		if err != nil {
+			return err
+		}
+		if dir == nil {
+			return fmt.Errorf("dir '%s' not found", filepath.Base(itemPath))
+		}
+		if err := c.RemoveDir(dir); err != nil {
+			return err
+		}
 	} else {
 		file, err := c.Db.GetFileByPath(itemPath)
 		if err != nil {
 			return nil
 		}
 		if file == nil {
-			return fmt.Errorf("%s not found", filepath.Base(itemPath))
+			return fmt.Errorf("file '%s' not found", filepath.Base(itemPath))
 		}
 		if err := c.RemoveFile(file); err != nil {
 			return err
@@ -239,6 +241,80 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 	return item, nil
 }
 
+// ------ configuration --------------------------------
+
+// enable or disable auto sync with the server.
+func (c *Client) SetAutoSync(mode bool) {
+	c.Conf.AutoSync = mode
+	if err := envCfgs.Set("CLIENT_AUTO_SYNC", strconv.FormatBool(mode)); err != nil {
+		c.log.Error(fmt.Sprintf("failed to update environment configurations: %s", err))
+		return
+	}
+	if err := c.SaveState(); err != nil {
+		c.log.Error("failed to update state file: " + err.Error())
+	} else {
+		if mode {
+			c.log.Info("auto sync enabled")
+		} else {
+			c.log.Info("auto sync disabled")
+		}
+	}
+}
+
+// enable or disable backing up files to local storage.
+func (c *Client) SetLocalBackup(mode bool) {
+	c.Conf.LocalBackup = mode
+	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
+		c.log.Error("failed to update environment configurations: " + err.Error())
+		return
+	}
+	if err := c.SaveState(); err != nil {
+		c.log.Error("failed to update state file: " + err.Error())
+	} else {
+		if mode {
+			c.log.Info("local backup enabled")
+		} else {
+			c.log.Info("local backup disabled")
+		}
+	}
+}
+
+// update the backup configurations for the service and all client-side
+// files and directories
+func (c *Client) UpdateBackupPath(newDirPath string) error {
+	if !c.isDirPath(newDirPath) {
+		c.log.Error("path is not a directory")
+		return fmt.Errorf("path is not a directory")
+	}
+	if c.Conf.BackupDir == newDirPath {
+		return nil
+	}
+	c.Conf.BackupDir = newDirPath
+	return c.updateBackupPaths(newDirPath)
+}
+
+// If a user specifies a custom backup directory, then all
+// local backup items need to have their backup paths updated.
+// we don't want files to be backed up to a default directory if
+// a user tries to specify otherwise.
+func (c *Client) updateBackupPaths(newDirPath string) error {
+	dirs := c.Drive.GetDirs()
+	for _, dir := range dirs {
+		dir.BackupPath = filepath.Join(newDirPath, dir.Name)
+	}
+	if err := c.Db.UpdateDirs(dirs); err != nil {
+		return err
+	}
+	files := c.Drive.GetFiles()
+	for _, file := range files {
+		file.BackupPath = filepath.Join(newDirPath, file.Name)
+	}
+	if err := c.Db.UpdateFiles(files); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ----- files --------------------------------------
 
 // does this file or directory exist?
@@ -255,11 +331,12 @@ func (c *Client) Exists(path string) bool {
 // list all local files managed by the sfs service.
 // does not check database.
 func (c *Client) ListLocalFiles() {
+	var output string
 	files := c.Drive.GetFilesMap()
 	for _, f := range files {
-		output := fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
-		fmt.Print(output)
+		output += fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 	}
+	fmt.Print(output)
 }
 
 // list all files managed by the local sfs database
@@ -268,9 +345,11 @@ func (c *Client) ListLocalFilesDB() error {
 	if err != nil {
 		return err
 	}
+	var output string
 	for _, f := range files {
-		fmt.Printf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		output += fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 	}
+	fmt.Print(output)
 	return nil
 }
 
@@ -359,7 +438,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	if file != nil {
-		return fmt.Errorf("%s is already registered", filepath.Base(filePath))
+		return fmt.Errorf("'%s' is already registered", filepath.Base(filePath))
 	}
 
 	// create new file object
@@ -433,7 +512,7 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.SaveState(); err != nil {
 		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}
-	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
+	c.log.Info(fmt.Sprintf("file '%s' added to client", newFile.Name))
 	return nil
 }
 
@@ -654,13 +733,14 @@ func (c *Client) ListLocalDirsDB() error {
 		fmt.Print("no directories found")
 		return nil
 	}
+	var output string
 	for _, dir := range dirs {
-		var output = fmt.Sprintf(
+		output += fmt.Sprintf(
 			"name: %s\nid: %v\nloc: %s\n\n",
 			dir.Name, dir.ID, dir.ClientPath,
 		)
-		fmt.Print(output)
 	}
+	fmt.Print(output)
 	return nil
 }
 
@@ -718,16 +798,16 @@ func (c *Client) AddDir(dirPath string) error {
 	if err != nil {
 		return err
 	}
-	if parent != nil {
-		newDir.Parent = parent
-	} else {
-		newDir.Parent = c.Drive.Root
-	}
-
 	// add directory to service
 	// NOTE: directory backup paths are updated when adding to the drive
-	if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
-		return err
+	if parent != nil {
+		if err := parent.AddSubDir(newDir); err != nil {
+			return err
+		}
+	} else {
+		if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
+			return err
+		}
 	}
 	if err := c.Db.AddDir(newDir); err != nil {
 		return err
@@ -775,20 +855,16 @@ func (c *Client) RemoveDir(dirToRemove *svc.Directory) error {
 		return err
 	}
 	if d == nil {
-		return fmt.Errorf("directory %s not found", dirToRemove.ID)
+		return fmt.Errorf("directory '%s' not found", dirToRemove.ID)
 	}
 	// first remove all the files and subdirectories in this directory
 	files := dirToRemove.GetFiles()
-	for _, file := range files {
-		if err := c.Db.RemoveFile(file.ID); err != nil {
-			return err
-		}
+	if err := c.Db.RemoveFiles(files); err != nil {
+		return err
 	}
 	subDirs := dirToRemove.GetSubDirs()
-	for _, sd := range subDirs {
-		if err := c.Db.RemoveDirectory(sd.ID); err != nil {
-			return err
-		}
+	if err := c.Db.RemoveDirectories(subDirs); err != nil {
+		return err
 	}
 	// remove directory itself from the service
 	if err := c.Drive.RemoveDir(dirToRemove.ID); err != nil {
@@ -894,7 +970,7 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 	if resp.StatusCode != http.StatusOK {
 		c.log.Warn(fmt.Sprintf("server dir registration response: %d", resp.StatusCode))
 	} else {
-		c.log.Log(logger.INFO, fmt.Sprintf("directory %s registered with server", dir.Name))
+		c.log.Log(logger.INFO, fmt.Sprintf("directory '%s' registered with server", dir.Name))
 	}
 	return nil
 }
@@ -906,7 +982,7 @@ func (c *Client) EmptyRecycleBin() error {
 		return err
 	}
 	for _, entry := range entries {
-		if err := os.Remove(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
+		if err := os.RemoveAll(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
 			c.log.Error(err.Error())
 		}
 	}
@@ -1107,6 +1183,7 @@ side, pull those files from the server and add to the local client service.
 */
 func (c *Client) RefreshFromServer() error { return nil }
 
+// Does this path point to a directory?
 func (c *Client) isDirPath(path string) bool {
 	item, err := os.Stat(path)
 	if err != nil {
@@ -1156,7 +1233,9 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 					return nil, err
 				}
 			} else {
-				// TODO:
+				if err := c.BackupFile(file); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -1178,7 +1257,9 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 					return nil, err
 				}
 			} else {
-				// TODO:
+				if err := c.BackupDir(subDir); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -1191,8 +1272,16 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 	// if err := c.WatchItem(newDir.Path); err != nil {
 	// 	return err
 	// }
-	if err := c.RegisterDirectory(newDir); err != nil {
-		return nil, err
+	if err := c.Drive.AddSubDir(c.Drive.RootID, newDir); err != nil {
+		return nil, fmt.Errorf("failed to add root to drive instance: %v", err)
+	}
+	if !c.localBackup() {
+		if err := c.RegisterDirectory(newDir); err != nil {
+			return nil, err
+		}
+	}
+	if err := c.SaveState(); err != nil {
+		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}
 	return newDir, nil
 }

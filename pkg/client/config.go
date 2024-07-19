@@ -10,9 +10,9 @@ import (
 )
 
 type Conf struct {
-	IsAdmin         bool   `env:"ADMIN_MODE"` // whether the service should be run in admin mode or not
-	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`
-	EventBufferSize int    `env:"EVENT_BUFFER_SIZE"`            // whether we add a buffer to the events monitor
+	IsAdmin         bool   `env:"ADMIN_MODE"`                   // whether the service should be run in admin mode or not
+	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`     // whether events should be buffered (i.e. have a delay between sync events)
+	EventBufferSize int    `env:"EVENT_BUFFER_SIZE"`            // size of events buffer
 	AutoSync        bool   `env:"CLIENT_AUTO_SYNC,required"`    // whether the client should auto sync with the server
 	User            string `env:"CLIENT,required"`              // users name
 	UserAlias       string `env:"CLIENT_USERNAME,required"`     // users alias (username)
@@ -22,7 +22,7 @@ type Conf struct {
 	TestRoot        string `env:"CLIENT_TESTING,required"`      // testing root directory
 	Port            int    `env:"CLIENT_PORT,required"`         // port for http client
 	Addr            string `env:"CLIENT_ADDRESS,required"`      // address for http client
-	NewService      bool   `env:"CLIENT_NEW_SERVICE, required"` // whether we need to initialize a new client service instance.
+	NewService      bool   `env:"CLIENT_NEW_SERVICE,required"`  // whether we need to initialize a new client service instance.
 	LogDir          string `env:"CLIENT_LOG_DIR,required"`      // location of log directory
 	LocalBackup     bool   `env:"CLIENT_LOCAL_BACKUP,required"` // whether we're backing up to a local file directory
 	BackupDir       string `env:"CLIENT_BACKUP_DIR,required"`   // location of backup directory

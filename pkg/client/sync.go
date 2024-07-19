@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
-	"strconv"
 	"sync"
 	"time"
 
@@ -81,42 +80,6 @@ func (c *Client) BuildSyncIndex() {
 	// NOTE: the dir arg is set to nil until dir monitoring is supported
 	c.Drive.SyncIndex = svc.BuildSyncIndex(files, nil, c.Drive.SyncIndex)
 	c.log.Log(logger.INFO, fmt.Sprintf("%d files have been indexed", len(files)))
-}
-
-// enable or disable auto sync with the server.
-func (c *Client) SetAutoSync(mode bool) {
-	c.Conf.AutoSync = mode
-	if err := envCfgs.Set("CLIENT_AUTO_SYNC", strconv.FormatBool(mode)); err != nil {
-		c.log.Error(fmt.Sprintf("failed to update environment configurations: %s", err))
-		return
-	}
-	if err := c.SaveState(); err != nil {
-		c.log.Error("failed to update state file: " + err.Error())
-	} else {
-		if mode {
-			c.log.Info("auto sync enabled")
-		} else {
-			c.log.Info("auto sync disabled")
-		}
-	}
-}
-
-// enable or disable backing up files to local storage.
-func (c *Client) SetLocalBackup(mode bool) {
-	c.Conf.LocalBackup = mode
-	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
-		c.log.Error("failed to update environment configurations: " + err.Error())
-		return
-	}
-	if err := c.SaveState(); err != nil {
-		c.log.Error("failed to update state file: " + err.Error())
-	} else {
-		if mode {
-			c.log.Info("local backup enabled")
-		} else {
-			c.log.Info("local backup disabled")
-		}
-	}
 }
 
 type SyncItems struct {

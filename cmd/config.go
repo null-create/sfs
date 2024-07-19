@@ -78,9 +78,11 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 	}
 
 	f := getConfigFlags(cmd)
+
 	switch {
 	case f.list:
 		envCfgs.List()
+	// display a setting
 	case f.get != "":
 		val, err := envCfgs.Get(f.get)
 		if err != nil {
@@ -88,19 +90,33 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 		showSetting(f.get, val)
+	// handle updates to various settings
 	case f.setting != "":
 		if f.value == "" {
-			fmt.Printf("no value supplied for setting %s", f.setting)
+			fmt.Printf("no value supplied for setting '%s'", f.setting)
 			return
 		}
-		if f.setting == "CLIENT_LOCAL_BACKUP" || f.setting == "CLIENT_AUTO_SYNC" {
+		switch f.setting {
+		case "CLIENT_LOCAL_BACKUP":
 			val, err := strconv.ParseBool(f.value)
 			if err != nil {
 				showerr(err)
 				return
 			}
 			c.SetLocalBackup(val)
+		case "CLIENT_AUTO_SYNC":
+			val, err := strconv.ParseBool(f.value)
+			if err != nil {
+				showerr(err)
+				return
+			}
+			c.SetAutoSync(val)
+		case "CLIENT_BACKUP_DIR":
+			if err := c.UpdateBackupPath(f.value); err != nil {
+				log.Fatal(err)
+			}
 		}
+		// update environment configurations
 		if err := envCfgs.Set(f.setting, f.value); err != nil {
 			showerr(err)
 			return

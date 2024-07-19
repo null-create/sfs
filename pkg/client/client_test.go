@@ -335,7 +335,7 @@ func TestClientRemoveDir(t *testing.T) {
 	}
 
 	// make a test directory with files and a subdirectory within the client
-	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.Path)
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
 	if err := tmpClient.AddDrive(tmpDrive); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -356,6 +356,61 @@ func TestClientRemoveDir(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	assert.Equal(t, 0, len(dbDirs))
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestUpdateBackupDirs(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make a test directory with files and a subdirectory within the client
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
+	if err := tmpClient.AddDrive(tmpDrive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// update the backup directory path for the client, and all
+	// files and directories within the client
+	newBackupPath := filepath.Join(tmpDir, "new-backup-dir")
+	if err := os.Mkdir(newBackupPath, svc.PERMS); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.UpdateBackupPath(newBackupPath); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	// pull all files and directories from temp dbs and verify the
+	// backup paths contain newBackupPath
+	files, err := tmpClient.Db.GetUsersFiles("me")
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	for _, file := range files {
+		if !strings.Contains(file.BackupPath, newBackupPath) {
+			Fail(t, tmpDir, fmt.Errorf("backup path not found in file object: %s", file.BackupPath))
+		}
+	}
+
+	dirs, err := tmpClient.Db.GetUsersDirectories("me")
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	for _, dir := range dirs {
+		if !strings.Contains(dir.BackupPath, newBackupPath) {
+			Fail(t, tmpDir, fmt.Errorf("backup path not found in directory: %s", dir.BackupPath))
+		}
+	}
 
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
@@ -434,7 +489,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 	root := svc.NewDirectory("root", tmpClient.Conf.User, tmpClient.Drive.ID, tmpClient.Root)
 	root.AddFiles(files)
 
-	drv := svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.Path, root.ID, root)
+	drv := svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.ClientPath, root.ID, root)
 
 	idx := drv.Root.WalkS(svc.NewSyncIndex(tmpClient.Conf.User))
 	assert.NotEqual(t, nil, idx)
