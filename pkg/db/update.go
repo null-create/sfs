@@ -43,6 +43,44 @@ func (q *Query) UpdateFile(file *svc.File) error {
 	return nil
 }
 
+func (q *Query) UpdateFiles(files []*svc.File) error {
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	if err := q.Prepare(AddFileQuery); err != nil {
+		return err
+	}
+	defer q.Stmt.Close()
+
+	for _, file := range files {
+		if _, err := q.Stmt.Exec(
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+			&file.ID,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (q *Query) UpdateDir(dir *svc.Directory) error {
 	q.WhichDB("directories")
 	q.Connect()
@@ -74,6 +112,43 @@ func (q *Query) UpdateDir(dir *svc.Directory) error {
 		&dir.ID,
 	); err != nil {
 		return fmt.Errorf("failed to add directory: %v", err)
+	}
+	return nil
+}
+
+func (q *Query) UpdateDirs(dirs []*svc.Directory) error {
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	if err := q.Prepare(UpdateDirQuery); err != nil {
+		return err
+	}
+	defer q.Stmt.Close()
+
+	for _, dir := range dirs {
+		if _, err := q.Stmt.Exec(
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Protected,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.Root,
+			&dir.RootPath,
+			&dir.ID,
+		); err != nil {
+			return fmt.Errorf("failed to execute statement: %v", err)
+		}
 	}
 	return nil
 }
