@@ -350,8 +350,8 @@ func (d *Directory) addFile(file *File) {
 // used when updating metadata for a file that's already in the directory.
 // we don't need to modify file's directory info if this is the case.
 func (d *Directory) putFile(file *File) {
-	file.LastSync = time.Now().UTC()
 	d.Files[file.ID] = file
+	d.Files[file.ID].LastSync = time.Now().UTC()
 }
 
 // add a file to this directory if not already present.
