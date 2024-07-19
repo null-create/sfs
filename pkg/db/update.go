@@ -12,12 +12,8 @@ func (q *Query) UpdateFile(file *svc.File) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateFileQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateFileQuery,
 		&file.ID,
 		&file.Name,
 		&file.OwnerID,
@@ -48,13 +44,9 @@ func (q *Query) UpdateFiles(files []*svc.File) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(AddFileQuery); err != nil {
-		return err
-	}
-	defer q.Stmt.Close()
-
 	for _, file := range files {
-		if _, err := q.Stmt.Exec(
+		if _, err := q.Conn.Exec(
+			UpdateFileQuery,
 			&file.ID,
 			&file.Name,
 			&file.OwnerID,
@@ -86,12 +78,8 @@ func (q *Query) UpdateDir(dir *svc.Directory) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateDirQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateDirQuery,
 		&dir.ID,
 		&dir.Name,
 		&dir.OwnerID,
@@ -121,13 +109,9 @@ func (q *Query) UpdateDirs(dirs []*svc.Directory) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateDirQuery); err != nil {
-		return err
-	}
-	defer q.Stmt.Close()
-
 	for _, dir := range dirs {
-		if _, err := q.Stmt.Exec(
+		if _, err := q.Conn.Exec(
+			UpdateDirQuery,
 			&dir.ID,
 			&dir.Name,
 			&dir.OwnerID,
@@ -158,12 +142,8 @@ func (q *Query) UpdateDrive(drv *svc.Drive) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateDriveQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateDriveQuery,
 		&drv.ID,
 		&drv.OwnerName,
 		&drv.OwnerID,
@@ -190,12 +170,8 @@ func (q *Query) UpdateUser(user *auth.User) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateUserQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateUserQuery,
 		&user.ID,
 		&user.Name,
 		&user.UserName,
