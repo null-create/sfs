@@ -67,7 +67,7 @@ func (c *Client) WatchItem(path string) error {
 	// directory monitoring is not supported for the moment.
 	if isDir {
 		return fmt.Errorf(
-			"%s is a directory. directory monitoring is not supporetd",
+			"'%s' is a directory. directory monitoring is not supported",
 			filepath.Dir(path),
 		)
 	}
@@ -92,7 +92,7 @@ func (c *Client) NewHandler(path string) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("%s is already registered", filepath.Base(path))
+		return fmt.Errorf("'%s' is already registered", filepath.Base(path))
 	}
 	return nil
 }
@@ -111,7 +111,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 			return nil, nil, "", err
 		}
 		if itemID == "" {
-			return nil, nil, "", fmt.Errorf("no id found for directory %s", itemPath)
+			return nil, nil, "", fmt.Errorf("no id found for directory '%s'", itemPath)
 		}
 		id = itemID
 	} else {
@@ -120,7 +120,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 			return nil, nil, "", err
 		}
 		if itemID == "" {
-			return nil, nil, "", fmt.Errorf("no id found for file %s", itemPath)
+			return nil, nil, "", fmt.Errorf("no id found for file '%s'", itemPath)
 		}
 		id = itemID
 	}
