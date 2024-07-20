@@ -133,7 +133,7 @@ func validate(k string, env map[string]string) error {
 	if v, exists := env[k]; exists {
 		val := os.Getenv(k) // make sure this is right
 		if val != v {
-			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
+			msg := fmt.Sprintf("env mismatch.\n.env file (k=%v, v=%v)\nos.Getenv() (k=%s, v=%s)", k, v, k, val)
 			return fmt.Errorf(msg)
 		}
 		return nil
