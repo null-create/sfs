@@ -262,7 +262,7 @@ func LoadClient(persist bool) (*Client, error) {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
-		client.log.Info(fmt.Sprintf("monitor is running. watching %d local items", len(client.Monitor.Events)))
+		client.log.Info(fmt.Sprintf("monitor is running. watching %d local item(s)", len(client.Monitor.Events)))
 	}
 	client.StartTime = time.Now().UTC()
 	if err := client.SaveState(); err != nil {
