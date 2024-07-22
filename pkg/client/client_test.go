@@ -30,12 +30,13 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Root = filepath.Join(tmpSvcPath, "root")
 	tmpClient.SfDir = filepath.Join(tmpSvcPath, "state")
 	tmpClient.Db.DBPath = filepath.Join(tmpSvcPath, "dbs")
+	tmpClient.Conf.BackupDir = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.LocalBackupDir = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.RecycleBin = filepath.Join(tmpSvcPath, "recycle")
 	tmpClient.Drive.Root.Path = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ServerPath = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ClientPath = filepath.Join(tmpSvcPath, "root")
-	tmpClient.Drive.Root.BackupPath = tmpClient.LocalBackupDir
+	tmpClient.Drive.Root.BackupPath = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
 	return tmpClient
@@ -321,6 +322,53 @@ func TestAddItemWithAFile(t *testing.T) {
 	}
 }
 
+func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client defaulting to
+	// saving items locally
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	tmpClient.SetLocalBackup(true)
+
+	// make a test directory with files and a subdirectory within the client
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
+	if err := tmpClient.AddDrive(tmpDrive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// initialize and start a new server in a separate goroutine
+	stopServer := make(chan bool)
+	tmpServer := server.NewServer()
+	go func() {
+		tmpServer.Start(stopServer)
+	}()
+
+	// update local backup settings and register items with server
+	tmpClient.SetLocalBackup(false)
+	if err := tmpClient.RegisterClient(); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.RegisterItems(); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+
+	// shut down the server
+	stopServer <- true
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TestClientRemoveDir(t *testing.T) {
 	env.SetEnv(false)
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
@@ -374,6 +422,7 @@ func TestUpdateBackupDirs(t *testing.T) {
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
+	tmpClient.SetLocalBackup(true)
 
 	// make a test directory with files and a subdirectory within the client
 	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
@@ -390,6 +439,7 @@ func TestUpdateBackupDirs(t *testing.T) {
 	if err := tmpClient.UpdateBackupPath(newBackupPath); err != nil {
 		Fail(t, tmpDir, err)
 	}
+
 	// pull all files and directories from temp dbs and verify the
 	// backup paths contain newBackupPath
 	files, err := tmpClient.Db.GetUsersFiles("me")
@@ -401,7 +451,6 @@ func TestUpdateBackupDirs(t *testing.T) {
 			Fail(t, tmpDir, fmt.Errorf("backup path not found in file object: %s", file.BackupPath))
 		}
 	}
-
 	dirs, err := tmpClient.Db.GetUsersDirectories("me")
 	if err != nil {
 		Fail(t, tmpDir, err)
@@ -562,7 +611,10 @@ func TestClientRefreshDrive(t *testing.T) {
 	}
 
 	// make a bunch of dummy files for the test clinet
-	tmpClient.Drive = MakeTmpDriveWithPath(t, tmpDir)
+	tmpDrv := MakeTmpDriveWithPath(t, tmpDir)
+	if err := tmpClient.AddDrive(tmpDrv); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
 	// add some more files
 	_, err = MakeABunchOfTxtFiles(RandInt(25))

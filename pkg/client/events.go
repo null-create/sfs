@@ -336,30 +336,28 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap() {
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
-				if c.autoSync() {
-					if !c.localBackup() {
-						// sync operations with the server
-						if err := c.Push(); err != nil {
+				if !c.localBackup() {
+					// sync operations with the server
+					if err := c.Push(); err != nil {
+						return err
+					}
+				} else {
+					// local backup operations
+					if c.IsDir(evt.Path) {
+						d, err := c.GetDirByPath(evt.Path) // event paths are client side
+						if err != nil {
+							return err
+						}
+						if err := c.BackupDir(d); err != nil {
 							return err
 						}
 					} else {
-						// local backup operations
-						if c.IsDir(evt.Path) {
-							d, err := c.GetDirByPath(evt.Path) // event paths are client side
-							if err != nil {
-								return err
-							}
-							if err := c.BackupDir(d); err != nil {
-								return err
-							}
-						} else {
-							f, err := c.GetFileByPath(evt.Path) // event paths are client side
-							if err != nil {
-								return err
-							}
-							if err := c.BackupFile(f); err != nil {
-								return err
-							}
+						f, err := c.GetFileByPath(evt.Path) // event paths are client side
+						if err != nil {
+							return err
+						}
+						if err := c.BackupFile(f); err != nil {
+							return err
 						}
 					}
 				}

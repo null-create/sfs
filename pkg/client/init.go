@@ -181,7 +181,6 @@ func loadStateFile() ([]byte, error) {
 // otherwise set to false if the client should be used for
 // one-off operations.
 func LoadClient(persist bool) (*Client, error) {
-	// load client state
 	data, err := loadStateFile()
 	if err != nil {
 		return nil, err
@@ -234,10 +233,17 @@ func LoadClient(persist bool) (*Client, error) {
 	// call to client.Start(), otherwise none of the monitoring
 	// services will be able to actually run.
 	if persist {
-		// make sure the drive was registered before starting
-		if client.autoSync() && !client.localBackup() {
+		// make sure the client was registered registered before starting,
+		// if synchronization with the server is enabled. If so, make sure
+		// any local items that have been added since our last sync are also
+		// registered with the server.
+		if !client.localBackup() {
 			if err := client.RegisterClient(); err != nil {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register client: %v", err))
+				return nil, err
+			}
+			// register any files with the server that weren't previously registered
+			if err := client.RegisterItems(); err != nil {
 				return nil, err
 			}
 		}
@@ -257,16 +263,11 @@ func LoadClient(persist bool) (*Client, error) {
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
 		client.log.Info(fmt.Sprintf("monitor is running. watching %d local items", len(client.Monitor.Events)))
-		// TODO: pull sync index from server and compare against local index,
-		// then make changes as necessary. this should be part of the standard
-		// start up process for LoadClient()
 	}
 	client.StartTime = time.Now().UTC()
-
 	if err := client.SaveState(); err != nil {
 		client.log.Error("failed to save state file: " + err.Error())
 	}
-
 	initLog.Log(logger.INFO, fmt.Sprintf("client started at: %v", time.Now().UTC()))
 	return client, nil
 }
@@ -357,14 +358,11 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// register drive with the server if autosync is enabled, if not defaulting
 	// to using local storage.
-	if client.autoSync() {
-		if !client.localBackup() {
-			if err := client.RegisterClient(); err != nil {
-				client.log.Warn("failed to register client with server: " + err.Error())
-			}
+	if !client.localBackup() {
+		if err := client.RegisterClient(); err != nil {
+			client.log.Warn("failed to register client with server: " + err.Error())
 		}
 	}
-
 	// save initial state
 	if err := client.SaveState(); err != nil {
 		return nil, fmt.Errorf("failed to save initial state: %v", err)

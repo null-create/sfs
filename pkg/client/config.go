@@ -9,6 +9,8 @@ import (
 	"github.com/joeshaw/envdecode"
 )
 
+const EndpointRoot = "http://localhost"
+
 type Conf struct {
 	IsAdmin         bool   `env:"ADMIN_MODE"`                   // whether the service should be run in admin mode or not
 	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`     // whether events should be buffered (i.e. have a delay between sync events)

@@ -13,20 +13,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"sync"
-	"time"
 
 	"github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
-
-const (
-	EndpointRoot = "http://localhost"
-	CheckWait    = time.Millisecond * 500
-	SyncWait     = time.Second * 30
-)
-
-// whether auto sync is enabled
-func (c *Client) autoSync() bool { return c.Conf.AutoSync }
 
 // whether we should save to local storage, or push files to server.
 func (c *Client) localBackup() bool { return c.Conf.LocalBackup }
@@ -101,7 +91,6 @@ func (c *Client) ServerSync() error {
 	if err != nil {
 		return err
 	}
-
 	var syncItems = new(SyncItems)
 	var localIndex = c.Drive.SyncIndex
 

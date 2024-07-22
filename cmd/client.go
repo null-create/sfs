@@ -66,7 +66,7 @@ func runClientCmd(cmd *cobra.Command, args []string) {
 		}
 		_, err = client.Init(configs.NewService)
 		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
+			showerr(fmt.Errorf("failed to initialize new service: %v", err))
 		}
 	case f.start:
 		c, err := client.LoadClient(true)
