@@ -1,10 +1,5 @@
 package monitor
 
-import (
-	"fmt"
-	"log"
-)
-
 type EventType string
 
 // event enums
@@ -43,13 +38,6 @@ type Event struct {
 
 // whether this event is a directory event
 func (e *Event) IsDir() bool { return e.Kind == "Directory" }
-
-func (e *Event) ToString() string {
-	return fmt.Sprintf(
-		"%s event (id=%s) -> type: %s | path: %s",
-		e.Kind, e.ID, e.Type, e.Path,
-	)
-}
 
 // Elist is a buffer for monitoring events.
 type EList []Event
@@ -113,20 +101,5 @@ func (e *Events) AddEvent(evt Event) {
 		if e.Total == e.threshold {
 			e.atcap = true
 		}
-	} else {
-		log.Printf("[WARNING] event list threshold met. event (id=%s) not added!", evt.ID)
 	}
-}
-
-// returns a slice of file or directory paths to be used
-// during sync operations
-func (e *Events) GetPaths() ([]string, error) {
-	if len(e.Events) == 0 {
-		return nil, fmt.Errorf("event list is empty")
-	}
-	var paths []string
-	for _, evt := range e.Events {
-		paths = append(paths, evt.Path)
-	}
-	return paths, nil
 }
