@@ -335,7 +335,9 @@ func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
-	tmpClient.SetLocalBackup(true)
+	if err := tmpClient.SetLocalBackup("true"); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
 	// make a test directory with files and a subdirectory within the client
 	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
@@ -351,7 +353,9 @@ func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 	}()
 
 	// update local backup settings and register items with server
-	tmpClient.SetLocalBackup(false)
+	if err := tmpClient.SetLocalBackup("false"); err != nil {
+		Fail(t, tmpDir, err)
+	}
 	if err := tmpClient.RegisterClient(); err != nil {
 		stopServer <- true
 		Fail(t, tmpDir, err)
@@ -422,7 +426,9 @@ func TestUpdateBackupDirs(t *testing.T) {
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
-	tmpClient.SetLocalBackup(true)
+	if err := tmpClient.SetLocalBackup("true"); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
 	// make a test directory with files and a subdirectory within the client
 	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)

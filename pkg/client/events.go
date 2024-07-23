@@ -337,7 +337,6 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			if evtBuf.AtCap() {
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
 				if !c.localBackup() {
-					// sync operations with the server
 					if err := c.Push(); err != nil {
 						return err
 					}

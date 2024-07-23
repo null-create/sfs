@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"strconv"
 
 	"github.com/sfs/pkg/client"
 	"github.com/sfs/pkg/env"
@@ -96,31 +94,8 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 			fmt.Printf("no value supplied for setting '%s'", f.setting)
 			return
 		}
-		switch f.setting {
-		case "CLIENT_LOCAL_BACKUP":
-			val, err := strconv.ParseBool(f.value)
-			if err != nil {
-				showerr(err)
-				return
-			}
-			c.SetLocalBackup(val)
-		case "CLIENT_AUTO_SYNC":
-			val, err := strconv.ParseBool(f.value)
-			if err != nil {
-				showerr(err)
-				return
-			}
-			c.SetAutoSync(val)
-		case "CLIENT_BACKUP_DIR":
-			if err := c.UpdateBackupPath(f.value); err != nil {
-				log.Fatal(err)
-			}
-		}
-		// update environment configurations
-		if err := envCfgs.Set(f.setting, f.value); err != nil {
+		if err := c.UpdateClientUserSetting(f.setting, f.value); err != nil {
 			showerr(err)
-			return
 		}
-		log.Printf("setting %s changed to %s", f.setting, f.value)
 	}
 }

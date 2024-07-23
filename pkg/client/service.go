@@ -243,30 +243,37 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 
 // ------ configuration --------------------------------
 
-// enable or disable auto sync with the server.
-func (c *Client) SetAutoSync(mode bool) {
-	c.Conf.AutoSync = mode
-	if err := envCfgs.Set("CLIENT_AUTO_SYNC", strconv.FormatBool(mode)); err != nil {
-		c.log.Error(fmt.Sprintf("failed to update environment configurations: %s", err))
-		return
+// update user-specific settings
+func (c *Client) UpdateClientUserSetting(setting, value string) error {
+	switch setting {
+	case "CLIENT_NAME":
+		return c.updateClientName(value)
+	case "CLIENT_EMAIL":
+		return c.updateClientEmail(value)
+	case "CLIENT_PASSWORD":
+		return c.updateUserPassword(value, c.User.Password)
+	case "CLIENT_PORT":
+		log.Print("not implemented")
+	case "CLIENT_BACKUP_DIR":
+		return c.UpdateBackupPath(value)
+	case "CLIENT_LOCAL_BACKUP":
+		return c.SetLocalBackup(value)
+	default:
+		return fmt.Errorf("unknown setting: %s", setting)
 	}
-	if err := c.SaveState(); err != nil {
-		c.log.Error("failed to update state file: " + err.Error())
-	} else {
-		if mode {
-			c.log.Info("auto sync enabled")
-		} else {
-			c.log.Info("auto sync disabled")
-		}
-	}
+	return nil
 }
 
 // enable or disable backing up files to local storage.
-func (c *Client) SetLocalBackup(mode bool) {
+func (c *Client) SetLocalBackup(modeStr string) error {
+	mode, err := strconv.ParseBool(modeStr)
+	if err != nil {
+		c.log.Error(fmt.Sprintf("failed to parse string: %v", err))
+		return err
+	}
 	c.Conf.LocalBackup = mode
 	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
-		c.log.Error("failed to update environment configurations: " + err.Error())
-		return
+		return err
 	}
 	if err := c.SaveState(); err != nil {
 		c.log.Error("failed to update state file: " + err.Error())
@@ -277,6 +284,7 @@ func (c *Client) SetLocalBackup(mode bool) {
 			c.log.Info("local backup disabled")
 		}
 	}
+	return nil
 }
 
 // update the backup configurations for the service and all client-side
@@ -313,6 +321,100 @@ func (c *Client) updateBackupPaths(newPath string) error {
 		return err
 	}
 	c.Conf.BackupDir = newPath
+	if err := envCfgs.Set("CLIENT_BACKUP_DIR", newPath); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// update user's name
+func (c *Client) updateClientName(newName string) error {
+	if newName == c.Conf.User && newName == c.User.Name && newName == c.Drive.OwnerName {
+		return nil
+	}
+	user, err := c.Db.GetUser(c.UserID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user not found: %v", c.UserID)
+	}
+	c.User.Name = newName
+	c.Conf.User = newName
+	c.Drive.OwnerName = newName
+	user.Name = newName
+	if err := c.Db.UpdateUser(user); err != nil {
+		return err
+	}
+	if err := c.Db.UpdateDrive(c.Drive); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_NAME", newName); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO: update all items owner name in the DB with the new user's new name
+
+// update user's email
+func (c *Client) updateClientEmail(newEmail string) error {
+	user, err := c.Db.GetUser(c.UserID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user not found: '%s' (id=%v)", c.Conf.User, c.UserID)
+	}
+	c.User.Email = newEmail
+	user.Email = newEmail
+	if err := c.Db.UpdateUser(user); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_EMAIL", newEmail); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// update user's password
+func (c *Client) updateUserPassword(oldPw, newPw string) error {
+	user, err := c.Db.GetUser(c.UserID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user not found: '%s' (id=%v)", c.Conf.User, c.UserID)
+	}
+	if newPw == user.Password && newPw == c.User.Password {
+		return nil // nothing to update
+	}
+	// make sure current password is valid
+	if oldPw != user.Password && oldPw != c.User.Password {
+		return fmt.Errorf("incorrect password. password not updated")
+	}
+	user.Password = newPw
+	c.User.Password = newPw
+	// TODO: hashing of user passwords should occur before saving to DB.
+	// dont save them as plaintext!
+	if err := c.Db.UpdateUser(user); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_PASSWORD", newPw); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
 	return nil
 }
 
