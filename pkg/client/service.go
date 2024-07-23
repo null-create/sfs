@@ -174,7 +174,7 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 // ------ configuration --------------------------------
 
 // update user-specific settings
-func (c *Client) UpdateClientUserSetting(setting, value string) error {
+func (c *Client) UpdateConfigSetting(setting, value string) error {
 	switch setting {
 	case "CLIENT_NAME":
 		return c.updateClientName(value)
@@ -188,6 +188,10 @@ func (c *Client) UpdateClientUserSetting(setting, value string) error {
 		return c.UpdateBackupPath(value)
 	case "CLIENT_LOCAL_BACKUP":
 		return c.SetLocalBackup(value)
+	case "CLIENT_NEW_SERVICE":
+		return envCfgs.Set(setting, value)
+	case "NEW_SERVICE": // this is a server setting but we use it
+		return envCfgs.Set(setting, value)
 	default:
 		return fmt.Errorf("unknown setting: '%s'", setting)
 	}

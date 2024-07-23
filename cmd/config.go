@@ -94,7 +94,7 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 			fmt.Printf("no value supplied for setting '%s'", f.setting)
 			return
 		}
-		if err := c.UpdateClientUserSetting(f.setting, f.value); err != nil {
+		if err := c.UpdateConfigSetting(f.setting, f.value); err != nil {
 			showerr(err)
 		}
 	}
