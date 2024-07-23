@@ -138,38 +138,6 @@ func (c *Client) RegisterItem(itemPath string) error {
 	return nil
 }
 
-// find a file or directory by name.
-//
-// NOTE: this could cause collisions because files are
-// stored in the db with unique *ids,* not names
-func (c *Client) GetItemByName(itemName string) *Item {
-	thing, err := os.Stat(itemName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var item = new(Item)
-	if thing.IsDir() {
-		dir, err := c.GetDirByName(itemName)
-		if err != nil {
-			c.log.Error(err.Error())
-		}
-		if dir == nil {
-			c.log.Error(fmt.Sprintf("%s not found", itemName))
-		}
-		item.Directory = dir
-	} else {
-		file, err := c.GetFileByName(itemName)
-		if err != nil {
-			c.log.Error(err.Error())
-		}
-		if file == nil {
-			c.log.Error(fmt.Sprintf("%s not found found", itemName))
-		}
-		item.File = file
-	}
-	return item
-}
-
 // finds an item by path. returns nil if not found.
 func (c *Client) GetItemByPath(path string) (*Item, error) {
 	thing, err := os.Stat(path)
