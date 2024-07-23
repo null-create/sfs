@@ -235,7 +235,7 @@ func (c *Client) UpdateBackupPath(newDirPath string) error {
 // we don't want files to be backed up to a default directory if
 // a user tries to specify otherwise.
 func (c *Client) updateBackupPaths(newPath string) error {
-	oldPath := c.LocalBackupDir
+	oldPath := c.Root
 	dirs := c.Drive.GetDirs()
 	for _, dir := range dirs {
 		dir.BackupPath = strings.Replace(dir.BackupPath, oldPath, newPath, 1)
