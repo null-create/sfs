@@ -152,7 +152,7 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 			return nil, err
 		}
 		if dir == nil {
-			c.log.Info(fmt.Sprintf("%s not found", filepath.Base(path)))
+			c.log.Info(fmt.Sprintf("'%s' not found", filepath.Base(path)))
 			return nil, nil
 		}
 		item.Directory = dir
@@ -163,7 +163,7 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 			return nil, err
 		}
 		if file == nil {
-			c.log.Info(fmt.Sprintf("%s not found found", filepath.Base(path)))
+			c.log.Info(fmt.Sprintf("'%s' not found found", filepath.Base(path)))
 			return nil, nil
 		}
 		item.File = file
