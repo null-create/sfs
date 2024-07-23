@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"log"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/sfs/pkg/env"
 )
 
@@ -31,4 +33,19 @@ func GenSecret(length int) string {
 		b[i] = chars[int(b[i])%charLen]
 	}
 	return string(b)
+}
+
+// hash a given password
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), err
+}
+
+// check if a given password is hashed correctly
+func CheckPasswordHash(pwPlainText, hashedPw string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPw), []byte(pwPlainText))
+	return err == nil
 }
