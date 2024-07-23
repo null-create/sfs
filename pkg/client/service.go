@@ -189,7 +189,7 @@ func (c *Client) UpdateClientUserSetting(setting, value string) error {
 	case "CLIENT_LOCAL_BACKUP":
 		return c.SetLocalBackup(value)
 	default:
-		return fmt.Errorf("unknown setting: %s", setting)
+		return fmt.Errorf("unknown setting: '%s'", setting)
 	}
 	return nil
 }
