@@ -190,7 +190,7 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 		return c.SetLocalBackup(value)
 	case "CLIENT_NEW_SERVICE":
 		return envCfgs.Set(setting, value)
-	case "NEW_SERVICE": // this is a server setting but we use it
+	case "NEW_SERVICE":
 		return envCfgs.Set(setting, value)
 	default:
 		return fmt.Errorf("unknown setting: '%s'", setting)
