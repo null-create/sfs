@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/sfs/pkg/logger"
-	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -67,43 +66,6 @@ func (c *Client) RemoveItem(itemPath string) error {
 		if err := c.RemoveFile(file); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// send item metadata to the server. used with
-// event handler loop.
-func (c *Client) UpdateItem(item monitor.EItem) error {
-	if item.IsDir() {
-		dir, err := c.GetDirByPath(item.Path())
-		if err != nil {
-			return err
-		}
-		req, err := c.UpdateDirectoryRequest(dir)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			c.log.Error(fmt.Sprintf("failed to execute request: %v", err))
-			return err
-		}
-		c.dump(resp, true)
-	} else {
-		file, err := c.GetFileByPath(item.Path())
-		if err != nil {
-			return err
-		}
-		req, err := c.UpdateFileRequest(file)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			c.log.Error(fmt.Sprintf("failed to execute request: %v", err))
-			return err
-		}
-		c.dump(resp, true)
 	}
 	return nil
 }
@@ -362,6 +324,9 @@ func (c *Client) updateClientName(newName string) error {
 }
 
 // TODO: update all items owner name in the DB with the new user's new name
+func (c *Client) updateFileOwnerName(newName string) error {
+	return nil
+}
 
 // update user's email
 func (c *Client) updateClientEmail(newEmail string) error {
