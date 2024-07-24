@@ -271,10 +271,6 @@ func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 	}
 	tmpClient.ShutDown()
 
-	// NOTE: currently failing during Clean() because the files db is still being
-	// used by "another process" which I assume is the temp client,
-	// but all DB connections should be closed with a call to tmpClient.ShutDown()
-
 	// pre-emptive cleanup
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
@@ -661,7 +657,7 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	}
 
 	testDrive := MakeTmpDriveWithPath(t, tmpDir)
-	_, err = tmpClient.DiscoverWithPath(testDrive.Root.Path)
+	_, err = tmpClient.Discover(testDrive.Root.Path)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
