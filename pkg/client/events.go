@@ -99,11 +99,11 @@ func (c *Client) NewHandler(path string) error {
 
 // get alll the necessary things for the event handler to operate independently
 func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Events, string, error) {
-	evtChan := c.Monitor.GetEventChan(itemPath)
 	thing, err := os.Stat(itemPath)
 	if err != nil {
 		return nil, nil, "", err
 	}
+	// item id is used in event objects
 	var id string
 	if thing.IsDir() {
 		itemID, err := c.Db.GetDirIDFromPath(itemPath)
@@ -124,6 +124,8 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 		}
 		id = itemID
 	}
+	// get the monitoring event channel for this item
+	evtChan := c.Monitor.GetEventChan(itemPath)
 	if evtChan == nil || id == "" {
 		return nil, nil, "", fmt.Errorf(
 			"failed to get param: evt=%v id=%s",
@@ -252,7 +254,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			c.log.Log(logger.INFO, fmt.Sprintf("stopping handler for %s...", filepath.Base(itemPath)))
+			c.log.Log(logger.INFO, fmt.Sprintf("stopping handler for '%s'...", filepath.Base(itemPath)))
 			return nil
 		case evt := <-evtChan:
 			switch evt.Type {
