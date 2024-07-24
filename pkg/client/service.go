@@ -183,7 +183,7 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 	case "CLIENT_PASSWORD":
 		return c.updateUserPassword(value, c.User.Password)
 	case "CLIENT_PORT":
-		log.Print("not implemented")
+		return c.updateClientPort(value)
 	case "CLIENT_BACKUP_DIR":
 		return c.UpdateBackupPath(value)
 	case "CLIENT_LOCAL_BACKUP":
@@ -195,7 +195,6 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 	default:
 		return fmt.Errorf("unknown setting: '%s'", setting)
 	}
-	return nil
 }
 
 // enable or disable backing up files to local storage.
@@ -353,6 +352,19 @@ func (c *Client) updateUserPassword(oldPw, newPw string) error {
 		return err
 	}
 	return nil
+}
+
+// update client port setting
+func (c *Client) updateClientPort(pvalue string) error {
+	port, err := strconv.Atoi(pvalue)
+	if err != nil {
+		return err
+	}
+	if c.Conf.Port == port {
+		return nil // nothing to do here
+	}
+	c.Conf.Port = port
+	return envCfgs.Set("CLIENT_PORT", pvalue)
 }
 
 // ----- files --------------------------------------
@@ -1213,6 +1225,7 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 	c.log.Info(fmt.Sprintf("traversing %s...", dirPath))
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 	newDir.Parent = c.Drive.Root
+	newDir.BackupPath = filepath.Join(c.Conf.BackupDir, newDir.Name)
 	newDir.Walk()
 
 	// add newly discovered files and directories to the service
@@ -1230,10 +1243,6 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 			if err := c.RegisterFile(file); err != nil {
 				return nil, err
 			}
-		} else {
-			if err := c.BackupFile(file); err != nil {
-				return nil, err
-			}
 		}
 	}
 
@@ -1248,13 +1257,8 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 		// if err := c.WatchItem(subDir.Path); err != nil {
 		// 	return err
 		// }
-
 		if !c.localBackup() {
 			if err := c.RegisterDirectory(subDir); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := c.BackupDir(subDir); err != nil {
 				return nil, err
 			}
 		}
