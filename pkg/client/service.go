@@ -1206,7 +1206,6 @@ func (c *Client) isDirPath(path string) bool {
 
 // Descends a given file tree starting with the given path, assumed to be a directory.
 func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
-	// make sure this is actually a directory
 	if !c.isDirPath(dirPath) {
 		return nil, fmt.Errorf("path is not a directory: %s", dirPath)
 	}
