@@ -244,13 +244,13 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Log(logger.INFO, fmt.Sprintf("shutting down monitoring for %s...", baseName))
+				log.Log(logger.INFO, fmt.Sprintf("shutting down monitoring for '%s'...", baseName))
 				close(evt)
 				return
 			default:
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
-					log.Log(logger.INFO, fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
+					log.Log(logger.INFO, fmt.Sprintf("%v - stopping monitoring for '%s'...", err, baseName))
 					evt <- Event{
 						Kind: "File",
 						Type: Error,
@@ -263,7 +263,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Log(logger.INFO, fmt.Sprintf("%s was deleted. stopping monitoring.", baseName))
+					log.Log(logger.INFO, fmt.Sprintf("'%s' was deleted. stopping monitoring.", baseName))
 					evt <- Event{
 						Kind: "File",
 						Type: Delete,
