@@ -9,12 +9,12 @@ import (
 	"github.com/joeshaw/envdecode"
 )
 
-const EndpointRoot = "http://localhost"
+var EndpointRoot = "http://" + cfgs.Host
 
 type Conf struct {
 	IsAdmin         bool   `env:"ADMIN_MODE"`                   // whether the service should be run in admin mode or not
 	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`     // whether events should be buffered (i.e. have a delay between sync events)
-	EventBufferSize int    `env:"EVENT_BUFFER_SIZE"`            // size of events buffer
+	EventBufferSize int    `env:"EVENT_BUFFER_SIZE,required"`   // size of events buffer
 	User            string `env:"CLIENT_NAME,required"`         // users name
 	UserAlias       string `env:"CLIENT_USERNAME,required"`     // users alias (username)
 	ID              string `env:"CLIENT_ID,required"`           // this is generated at creation time. won't be in the initial .env file
@@ -22,6 +22,7 @@ type Conf struct {
 	Password        string `env:"CLIENT_PASSWORD,required"`     // users password for authentication
 	Root            string `env:"CLIENT_ROOT,required"`         // client service root (ie. ../sfs/client/run/)
 	TestRoot        string `env:"CLIENT_TESTING,required"`      // testing root directory
+	Host            string `env:"CLIENT_HOST,required"`         // client host
 	Port            int    `env:"CLIENT_PORT,required"`         // port for http client
 	Addr            string `env:"CLIENT_ADDRESS,required"`      // address for http client
 	NewService      bool   `env:"CLIENT_NEW_SERVICE,required"`  // whether we need to initialize a new client service instance.
