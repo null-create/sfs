@@ -172,19 +172,6 @@ func (m *Monitor) GetOffSwitch(path string) chan bool {
 	return nil
 }
 
-// get a slice of file paths for associated monitoring goroutines.
-// returns nil if none are available.
-func (m *Monitor) GetPaths() []string {
-	if len(m.Events) == 0 {
-		return nil
-	}
-	paths := make([]string, 0, len(m.Events))
-	for path := range m.Events {
-		paths = append(paths, path)
-	}
-	return paths
-}
-
 // close a watcher function and event channel for a given item.
 // will be a no-op if the file is not registered.
 func (m *Monitor) StopWatching(path string) {
