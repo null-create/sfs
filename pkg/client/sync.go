@@ -51,7 +51,6 @@ func (c *Client) BuildSyncIndex() {
 	// get any files
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		c.log.Warn("no files. nothing to index.")
 		return
 	}
 
