@@ -37,16 +37,6 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 	}
 }
 
-// make sure this is a valid database
-func (q *Query) ValidDb(dbName string) bool {
-	for _, db := range q.DBs {
-		if dbName == db {
-			return true
-		}
-	}
-	return false
-}
-
 // sets the file path to the db we want to connect to.
 //
 // used only in singleton mode. will be a no-op if/when used
