@@ -37,16 +37,6 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 	}
 }
 
-// prepare an SQL statement.
-func (q *Query) Prepare(query string) error {
-	stmt, err := q.Conn.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("unable to prepare statement: %v", err)
-	}
-	q.Stmt = stmt
-	return nil
-}
-
 // make sure this is a valid database
 func (q *Query) ValidDb(dbName string) bool {
 	for _, db := range q.DBs {
