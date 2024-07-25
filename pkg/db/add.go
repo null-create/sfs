@@ -9,6 +9,9 @@ import (
 )
 
 func (q *Query) AddFile(file *svc.File) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -43,6 +46,9 @@ func (q *Query) AddFile(file *svc.File) error {
 
 // iterate over the files and execute the statement for each
 func (q *Query) AddFiles(files []*svc.File) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -78,6 +84,9 @@ func (q *Query) AddFiles(files []*svc.File) error {
 
 // add a user to the user database
 func (q *Query) AddUser(user *auth.User) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -103,6 +112,9 @@ func (q *Query) AddUser(user *auth.User) error {
 }
 
 func (q *Query) AddDir(dir *svc.Directory) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -133,6 +145,9 @@ func (q *Query) AddDir(dir *svc.Directory) error {
 }
 
 func (q *Query) AddDirs(dirs []*svc.Directory) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -166,6 +181,9 @@ func (q *Query) AddDirs(dirs []*svc.Directory) error {
 
 // add drive info to drive database
 func (q *Query) AddDrive(drv *svc.Drive) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()

@@ -75,6 +75,9 @@ func (q *Query) DropTable(dbName string) error {
 }
 
 func (q *Query) RemoveUser(userID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -87,6 +90,9 @@ func (q *Query) RemoveUser(userID string) error {
 }
 
 func (q *Query) RemoveUsers(users []*auth.User) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -101,6 +107,9 @@ func (q *Query) RemoveUsers(users []*auth.User) error {
 }
 
 func (q *Query) RemoveFile(fileID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -113,6 +122,9 @@ func (q *Query) RemoveFile(fileID string) error {
 }
 
 func (q *Query) RemoveFiles(files []*svc.File) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -127,6 +139,9 @@ func (q *Query) RemoveFiles(files []*svc.File) error {
 }
 
 func (q *Query) RemoveDirectory(dirID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -139,6 +154,9 @@ func (q *Query) RemoveDirectory(dirID string) error {
 }
 
 func (q *Query) RemoveDirectories(dirs []*svc.Directory) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -153,6 +171,9 @@ func (q *Query) RemoveDirectories(dirs []*svc.Directory) error {
 }
 
 func (q *Query) RemoveDrive(driveID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
@@ -165,6 +186,9 @@ func (q *Query) RemoveDrive(driveID string) error {
 }
 
 func (q *Query) RemoveDrives(drvs []*svc.Drive) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()

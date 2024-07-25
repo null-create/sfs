@@ -12,6 +12,9 @@ import (
 
 // Query to check user existence
 func (q *Query) UserExists(userID string) (bool, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -29,6 +32,9 @@ func (q *Query) UserExists(userID string) (bool, error) {
 
 // get user data from database
 func (q *Query) GetUser(userID string) (*auth.User, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -64,6 +70,9 @@ func (q *Query) GetUser(userID string) (*auth.User, error) {
 // get a userID from a driveID.
 // will return an empty string if no userID is found with this driveID
 func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
@@ -86,6 +95,9 @@ func (q *Query) GetUserIDFromDriveID(driveID string) (string, error) {
 
 // populates a slice of *auth.User structs of all available users from the database
 func (q *Query) GetUsers() ([]*auth.User, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -131,6 +143,9 @@ func (q *Query) GetUsers() ([]*auth.User, error) {
 //
 // file returns nil if no result is available
 func (q *Query) GetFileByID(fileID string) (*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -169,6 +184,9 @@ func (q *Query) GetFileByID(fileID string) (*svc.File, error) {
 // find a file in the database by searching with its path
 // returns nil if no file is found.
 func (q *Query) GetFileByPath(filePath string) (*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -206,6 +224,9 @@ func (q *Query) GetFileByPath(filePath string) (*svc.File, error) {
 
 // get a file by name. returns nil if no file is found in the db.
 func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -243,6 +264,9 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 
 // retrieves a file ID using a given file path
 func (q *Query) GetFileIDFromPath(filePath string) (string, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -261,6 +285,9 @@ func (q *Query) GetFileIDFromPath(filePath string) (string, error) {
 // populate a slice of *svc.File structs from *all*
 // files in the files database
 func (q *Query) GetFiles() ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -310,6 +337,9 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 // associated with the given user. will return an empty slice
 // if no files are found.
 func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -356,6 +386,9 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 }
 
 func (q *Query) GetFilesByDriveID(driveID string) ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -407,6 +440,9 @@ func (q *Query) GetFilesByDriveID(driveID string) ([]*svc.File, error) {
 //
 // returns nil if no information is available
 func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -445,6 +481,9 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 
 // find a directory by name. returns nil if no directory is found.
 func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -483,6 +522,9 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 
 // find a directory by name. returns nil if no directory is found.
 func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -539,6 +581,9 @@ func (q *Query) GetDirIDFromPath(dirPath string) (string, error) {
 // geta a slice of *all* directories on the server, regardless
 // of owner. only for admin users.
 func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -586,6 +631,9 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 
 // get all the directories for this user.
 func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -632,6 +680,9 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 
 // get all the directories for this user.
 func (q *Query) GetDirsByDriveID(driveID string) ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -729,6 +780,9 @@ func (q *Query) FileOrDirID(id string) (string, error) {
 //
 // drive returns nil if no information is available
 func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
@@ -761,6 +815,9 @@ func (q *Query) GetDrive(driveID string) (*svc.Drive, error) {
 
 // return all drives from the database
 func (q *Query) GetDrives() ([]*svc.Drive, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
@@ -808,6 +865,9 @@ func (q *Query) GetDrives() ([]*svc.Drive, error) {
 // find a drive using the given userID.
 // drive will be nil if not found.
 func (q *Query) GetDriveByUserID(userID string) (*svc.Drive, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/sfs/pkg/logger"
 
@@ -15,6 +16,7 @@ import (
 // Setting isSingleton to true will allow Query to automatically
 // switch between different databases.
 type Query struct {
+	mu        sync.Mutex     // guards
 	DBPath    string         // database directory path
 	CurDB     string         // current database we're connecting to
 	Debug     bool           // debug flag
