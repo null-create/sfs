@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/sfs/pkg/auth"
@@ -31,6 +32,8 @@ const (
 type Watcher func(string, chan bool) chan Event
 
 type Monitor struct {
+	mu sync.Mutex // guards
+
 	// path to the users drive root to monitor
 	Path string
 
@@ -122,9 +125,11 @@ func (m *Monitor) StartWatcher(path string, stop chan bool) {
 // will be a no-op if the given path is already being monitored, or if the
 // supplied path points to a directory.
 func (m *Monitor) Watch(path string) error {
-	// make sure this item actually exists
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if !m.Exists(path) {
-		return fmt.Errorf("%s does not exist", filepath.Base(path))
+		return fmt.Errorf("'%s' does not exist", filepath.Base(path))
 	}
 	if !m.IsMonitored(path) {
 		isdir, err := m.IsDir(path)
@@ -150,6 +155,8 @@ func (m *Monitor) Watch(path string) error {
 // get an event listener channel for a given file.
 // returns nil no listener channel is found.
 func (m *Monitor) GetEventChan(path string) chan Event {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
@@ -161,6 +168,9 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 // off switches, when set to true, will shut down the monitoring process.
 // returns nil if no off switch is available.
 func (m *Monitor) GetOffSwitch(path string) chan bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if offSwitch, exists := m.OffSwitches[path]; exists {
 		return offSwitch
 	}
