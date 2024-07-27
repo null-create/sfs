@@ -77,11 +77,10 @@ func (s *Server) Run() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
 				s.log.Warn("shutdown timed out. forcing exit.")
-				rt, err := s.Shutdown()
-				if err != nil {
+				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
-				s.log.Info(fmt.Sprintf("server run time: %s", rt))
+				s.log.Info(fmt.Sprintf("server run time: %s", s.RunTime()))
 			}
 		}()
 
