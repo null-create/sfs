@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -153,7 +152,7 @@ func (c *Client) Start() error {
 	shutDown := make(chan os.Signal)
 	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	if err := c.start(shutDown); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }

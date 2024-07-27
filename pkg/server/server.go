@@ -32,8 +32,7 @@ func NewServer() *Server {
 		Svr: &http.Server{
 			// NewRouter() instantiates the server-side SFS service instance
 			// and handles client requests.
-			Handler: NewRouter(),
-			// server configs
+			Handler:      NewRouter(),
 			Addr:         svrCfg.Addr,
 			ReadTimeout:  svrCfg.TimeoutRead,
 			WriteTimeout: svrCfg.TimeoutWrite,
@@ -76,10 +75,11 @@ func (s *Server) Run() {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				s.log.Warn("hutdown timed out. forcing exit.")
+				s.log.Warn("shutdown timed out. forcing exit.")
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
+				s.log.Info(fmt.Sprintf("server run time: %s", s.RunTime()))
 			}
 		}()
 
@@ -118,6 +118,7 @@ func (s *Server) Start(shutDown chan bool) {
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
+				s.log.Info(fmt.Sprintf("server run time: %s", s.RunTime()))
 			}
 		}()
 
