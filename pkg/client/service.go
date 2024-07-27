@@ -1288,9 +1288,6 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 // make sure all items registered on the client side are also registered
 // on the client side. if not, register them with the server.
 func (c *Client) RegisterItems() error {
-	c.log.Log(logger.INFO, "checking for items not registered with the server...")
-
-	// check files
 	files := c.Drive.GetFiles()
 	for _, file := range files {
 		reg, err := c.IsFileRegistered(file)
@@ -1312,8 +1309,6 @@ func (c *Client) RegisterItems() error {
 			}
 		}
 	}
-
-	// check directories
 	dirs := c.Drive.GetDirs()
 	for _, dir := range dirs {
 		reg, err := c.IsDirRegistered(dir)
