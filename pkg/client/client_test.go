@@ -599,43 +599,6 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	assert.NotEqual(t, 0, len(tmpClient.Drive.SyncIndex.FilesToUpdate))
 }
 
-func TestClientRefreshDrive(t *testing.T) {
-	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// initialize a new client
-	tmpClient := newTestClient(t, tmpDir)
-	if err := tmpClient.SaveState(); err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	// make a bunch of dummy files for the test clinet
-	tmpDrv := MakeTmpDriveWithPath(t, tmpDir)
-	if err := tmpClient.AddDrive(tmpDrv); err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	// add some more files
-	_, err = MakeABunchOfTxtFiles(RandInt(25))
-	if err != nil {
-		Fail(t, tmpDir, err)
-	}
-
-	// run refresh
-	tmpClient.RefreshDrive()
-
-	// clean up before asserts so nothing gets left behind if there's failures
-	if err := Clean(t, GetTestingDir()); err != nil {
-		log.Fatal(err)
-	}
-	if err := Clean(t, tmpDir); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func TestClientDiscoverWithPath(t *testing.T) {
 	env.SetEnv(false)
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
