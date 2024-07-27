@@ -97,6 +97,22 @@ func (c *Client) NewHandler(path string) error {
 	return nil
 }
 
+// build a new event handler for a given file. does not start the handler,
+// only adds it (and its offswitch) to the handlers map.
+func (c *Client) NewEHandler(path string) error {
+	offSwitch := make(chan bool)
+	handler := func() {
+		go func() {
+			if err := c.handler(path, offSwitch); err != nil {
+				c.log.Error(fmt.Sprintf("handler for %s failed: %v", filepath.Base(path), err))
+			}
+		}()
+	}
+	c.Handlers[path] = handler
+	c.OffSwitches[path] = offSwitch
+	return nil
+}
+
 // get alll the necessary things for the event handler to operate independently
 func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Events, string, error) {
 	thing, err := os.Stat(itemPath)
@@ -224,22 +240,6 @@ func (c *Client) BuildHandlers() error {
 	// if err := c.WatchItem(c.Drive.Root.Path); err != nil {
 	// 	return err
 	// }
-	return nil
-}
-
-// build a new event handler for a given file. does not start the handler,
-// only adds it (and its offswitch) to the handlers map.
-func (c *Client) NewEHandler(path string) error {
-	offSwitch := make(chan bool)
-	handler := func() {
-		go func() {
-			if err := c.handler(path, offSwitch); err != nil {
-				c.log.Error(fmt.Sprintf("handler for %s failed: %v", filepath.Base(path), err))
-			}
-		}()
-	}
-	c.Handlers[path] = handler
-	c.OffSwitches[path] = offSwitch
 	return nil
 }
 
