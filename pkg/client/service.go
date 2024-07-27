@@ -980,10 +980,10 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		c.log.Warn(fmt.Sprintf("server registration response: %d", resp.StatusCode))
-	} else {
-		c.log.Log(logger.INFO, fmt.Sprintf("directory '%s' registered with server", dir.Name))
+	if resp.StatusCode == http.StatusInternalServerError {
+		c.dump(resp, true)
+	} else if resp.StatusCode == http.StatusOK {
+		c.log.Info(fmt.Sprintf("directory '%s' registered", dir.Name))
 	}
 	return nil
 }
