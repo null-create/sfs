@@ -22,7 +22,7 @@ type Server struct {
 }
 
 // instantiate a new HTTP server with an sfs service instance
-// contained within the router
+//
 // TODO: more germaine configurations so the server can handle
 // a large amount of active connections and requests.
 func NewServer() *Server {
@@ -30,9 +30,7 @@ func NewServer() *Server {
 		StartTime: time.Now().UTC(),
 		log:       logger.NewLogger("Server", auth.NewUUID()),
 		Svr: &http.Server{
-			// NewRouter() instantiates the server-side SFS service instance
-			// and handles client requests.
-			Handler:      NewRouter(),
+			Handler:      NewRouter(), // NewRouter() instantiates the server-side SFS service instance
 			Addr:         svrCfg.Addr,
 			ReadTimeout:  svrCfg.TimeoutRead,
 			WriteTimeout: svrCfg.TimeoutWrite,
