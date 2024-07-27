@@ -119,6 +119,7 @@ func (s *Server) Start(shutDown chan bool) {
 				if _, err := s.Shutdown(); err != nil {
 					log.Fatal(err)
 				}
+				s.log.Info(fmt.Sprintf("server run time: %s", s.RunTime()))
 			}
 		}()
 
