@@ -704,7 +704,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
 	// remove file from the service.
-	// NOTE: client side will have the original file moved to the client's recycle bin. maybe.
+	// NOTE: client side will have the original file moved to the client's recycle bin.
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
 	}
@@ -722,53 +722,6 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	}
 	return nil
 }
-
-// // copy a file from one directory to another.
-// func (s *Service) CopyFile(destDirID string, file *svc.File, keepOrig bool) error {
-// 	drive, err := s.LoadDrive(file.DriveID)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to load drive: %v", err)
-// 	}
-// 	if drive == nil {
-// 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
-// 	}
-// 	// move file
-// 	origDir := drive.GetDir(file.DirID)
-// 	if origDir == nil {
-// 		return fmt.Errorf("original directory for file not found. dir id=%s", file.DirID)
-// 	}
-// 	destDir := drive.GetDir(destDirID)
-// 	if destDir == nil {
-// 		return fmt.Errorf("destination directory (id=%s) not found", destDirID)
-// 	}
-// 	// copy physical file first. updating in destDir will change
-// 	// the file object's original path before we need move it.
-// 	if err := file.Copy(filepath.Join(destDir.Path, file.Name)); err != nil {
-// 		return err
-// 	}
-// 	// add file object to destination directory
-// 	file.ServerPath = filepath.Join(destDir.Path, file.Name)
-// 	if err := destDir.AddFile(file); err != nil {
-// 		return fmt.Errorf("failed to add file to destination directory: %v", err)
-// 	}
-// 	if !keepOrig {
-// 		// **remove physical file from original directory**
-// 		if err := origDir.RemoveFile(file.ID); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	// update directory dbs
-// 	if err := s.Db.UpdateDir(origDir); err != nil {
-// 		return err
-// 	}
-// 	if err := s.Db.UpdateDir(destDir); err != nil {
-// 		return err
-// 	}
-// 	if err := s.Db.UpdateFile(file); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
 
 // --------- directories --------------------------------
 
@@ -812,6 +765,10 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 		return err
 	}
 	if err := s.Db.AddDir(newDir); err != nil {
+		return err
+	}
+	// finally, create the physical directory
+	if err := os.MkdirAll(newDir.ServerPath, svc.PERMS); err != nil {
 		return err
 	}
 	return nil

@@ -1,10 +1,5 @@
 package monitor
 
-import (
-	"fmt"
-	"log"
-)
-
 type EventType string
 
 // event enums
@@ -38,18 +33,11 @@ type Event struct {
 	Kind  string    // Kind of the event (file or directory)
 	Type  EventType // type of file event, i.e. create, edit, or delete
 	Path  string    // location of the file event (path to the file itself)
-	Items []EItem   // list of files or subdirectories in the directory that were added, created, or deleted
+	Items []EItem   // list of event items (files or directories)
 }
 
 // whether this event is a directory event
 func (e *Event) IsDir() bool { return e.Kind == "Directory" }
-
-func (e *Event) ToString() string {
-	return fmt.Sprintf(
-		"%s event (id=%s) -> type: %s | path: %s",
-		e.Kind, e.ID, e.Type, e.Path,
-	)
-}
 
 // Elist is a buffer for monitoring events.
 type EList []Event
@@ -59,7 +47,7 @@ type Events struct {
 	Buffered  bool  // whether this event list is buffered
 	Total     int   // current total events
 	atcap     bool  // flag to indicate whether we've reached the buffer limit
-	Events    EList // event object list
+	Events    EList // event buffer
 }
 
 // new Events tracker. if buffered sync
@@ -113,20 +101,5 @@ func (e *Events) AddEvent(evt Event) {
 		if e.Total == e.threshold {
 			e.atcap = true
 		}
-	} else {
-		log.Printf("[WARNING] event list threshold met. event (id=%s) not added!", evt.ID)
 	}
-}
-
-// returns a slice of file or directory paths to be used
-// during sync operations
-func (e *Events) GetPaths() ([]string, error) {
-	if len(e.Events) == 0 {
-		return nil, fmt.Errorf("event list is empty")
-	}
-	var paths []string
-	for _, evt := range e.Events {
-		paths = append(paths, evt.Path)
-	}
-	return paths, nil
 }

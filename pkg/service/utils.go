@@ -123,6 +123,15 @@ func GetKeys(mymap map[T]T) []T {
 }
 */
 
+// converts a slice of files to map[*File]int64 where the int is the files size
+func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
+	m := make(map[*File]int64)
+	for _, f := range files {
+		m[f] = f.GetSize()
+	}
+	return m
+}
+
 // copy a file
 func Copy(src, dst string) error {
 	s, err := os.Open(src)

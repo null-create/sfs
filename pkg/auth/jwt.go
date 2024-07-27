@@ -12,8 +12,8 @@ import (
 
 // json web token
 type Token struct {
-	Jwt    string // token string
-	Secret []byte // secret key
+	Jwt    string `json:"-"`
+	Secret []byte `json:"-"`
 }
 
 func NewT() *Token {

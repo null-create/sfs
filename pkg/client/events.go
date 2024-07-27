@@ -67,7 +67,7 @@ func (c *Client) WatchItem(path string) error {
 	// directory monitoring is not supported for the moment.
 	if isDir {
 		return fmt.Errorf(
-			"%s is a directory. directory monitoring is not supporetd",
+			"'%s' is a directory. directory monitoring is not supported",
 			filepath.Dir(path),
 		)
 	}
@@ -92,19 +92,18 @@ func (c *Client) NewHandler(path string) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("%s is already registered", filepath.Base(path))
+		return fmt.Errorf("'%s' is already registered", filepath.Base(path))
 	}
 	return nil
 }
 
 // get alll the necessary things for the event handler to operate independently
 func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Events, string, error) {
-	evtChan := c.Monitor.GetEventChan(itemPath)
-
 	thing, err := os.Stat(itemPath)
 	if err != nil {
 		return nil, nil, "", err
 	}
+	// item id is used in event objects
 	var id string
 	if thing.IsDir() {
 		itemID, err := c.Db.GetDirIDFromPath(itemPath)
@@ -112,7 +111,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 			return nil, nil, "", err
 		}
 		if itemID == "" {
-			return nil, nil, "", fmt.Errorf("no id found for directory %s", itemPath)
+			return nil, nil, "", fmt.Errorf("no id found for directory '%s'", itemPath)
 		}
 		id = itemID
 	} else {
@@ -121,10 +120,12 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 			return nil, nil, "", err
 		}
 		if itemID == "" {
-			return nil, nil, "", fmt.Errorf("no id found for file %s", itemPath)
+			return nil, nil, "", fmt.Errorf("no id found for file '%s'", itemPath)
 		}
 		id = itemID
 	}
+	// get the monitoring event channel for this item
+	evtChan := c.Monitor.GetEventChan(itemPath)
 	if evtChan == nil || id == "" {
 		return nil, nil, "", fmt.Errorf(
 			"failed to get param: evt=%v id=%s",
@@ -132,10 +133,9 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 		)
 	}
 	// events buffer.
-	// used for managing and triggering synchronization
+	// used for managing synchronization
 	// events between the client and the server.
 	evts := monitor.NewEvents(cfgs.BufferedEvents)
-
 	return evtChan, evts, id, nil
 }
 
@@ -176,17 +176,6 @@ func (c *Client) StartHandlers() error {
 	// 		return err
 	// 	}
 	// }
-	return nil
-}
-
-// stop an existening event listener.
-func (c *Client) StopHandler(itemPath string) error {
-	if _, ok := c.OffSwitches[itemPath]; ok {
-		c.OffSwitches[itemPath] <- true
-	}
-	if _, ok := c.Handlers[itemPath]; ok {
-		c.Handlers[itemPath] = nil
-	}
 	return nil
 }
 
@@ -265,7 +254,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 	for {
 		select {
 		case <-stop:
-			c.log.Log(logger.INFO, fmt.Sprintf("stopping handler for %s...", filepath.Base(itemPath)))
+			c.log.Log(logger.INFO, fmt.Sprintf("stopping handler for '%s'...", filepath.Base(itemPath)))
 			return nil
 		case evt := <-evtChan:
 			switch evt.Type {
@@ -348,53 +337,28 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			}
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap() {
-				// build update map and push changes if auto sync is enabled.
 				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
-				if c.autoSync() {
-					/*
-						TODO:
-
-						we may need to make the client side auto back up system
-						default to a *local* file system, rather than default to
-						saving via the local network.
-
-						Need to research:
-
-							connecting two local computers via a shared
-								wifi connection
-								LAN connection
-
-						If we want to continue prioritizing saving files via an https API,
-						rather than just crud with the local system iteself. This solution
-						may be a bit over-engineered, at the moment. It could also be a lot
-						simpler.
-
-						Maybe the client to server implementation could just be a mode setting,
-						and we can default to saving everything under sfs/pkg/run/<user-name>
-						while recreating directory structures.
-					*/
-					if !c.localBackup() {
-						if err := c.Push(); err != nil {
+				if !c.localBackup() {
+					if err := c.Push(); err != nil {
+						return err
+					}
+				} else {
+					// local backup operations
+					if c.IsDir(evt.Path) {
+						d, err := c.GetDirByPath(evt.Path) // event paths are client side
+						if err != nil {
+							return err
+						}
+						if err := c.BackupDir(d); err != nil {
 							return err
 						}
 					} else {
-						// local backup operations
-						if c.IsDir(evt.Path) {
-							d, err := c.GetDirByPath(evt.Path) // event paths are client side
-							if err != nil {
-								return err
-							}
-							if err := c.BackupDir(d); err != nil {
-								return err
-							}
-						} else {
-							f, err := c.GetFileByPath(evt.Path) // event paths are client side
-							if err != nil {
-								return err
-							}
-							if err := c.BackupFile(f); err != nil {
-								return err
-							}
+						f, err := c.GetFileByPath(evt.Path) // event paths are client side
+						if err != nil {
+							return err
+						}
+						if err := c.BackupFile(f); err != nil {
+							return err
 						}
 					}
 				}

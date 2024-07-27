@@ -24,8 +24,8 @@ should also have a mechanism to interrupt a sync operation if a new event occurs
 
 // arbitrary* wait times between checks (*after some hand tuning)
 const (
-	WAIT        = time.Millisecond * 750 // wait duration after checks with no changes
-	WAIT_LONGER = time.Second * 2        // wait duration after checks with changes
+	WAIT        = time.Millisecond * 500 // wait duration after checks with no changes
+	WAIT_LONGER = time.Second            // wait duration after checks with changes
 )
 
 type Watcher func(string, chan bool) chan Event
@@ -97,10 +97,9 @@ func (m *Monitor) Exists(path string) bool {
 func (m *Monitor) IsDir(path string) (bool, error) {
 	if stat, err := os.Stat(path); err == nil {
 		return stat.IsDir(), nil
-	} else if err != nil {
+	} else {
 		return false, fmt.Errorf("failed to get stats for %v: %v", filepath.Base(path), err)
 	}
-	return false, nil
 }
 
 // add a new watcher function instance to the monitor.
@@ -142,7 +141,7 @@ func (m *Monitor) Watch(path string) error {
 			m.OffSwitches[path] = stop
 			m.AddWatcher(path, watchFile)
 			m.StartWatcher(path, stop)
-			m.log.Log("INFO", fmt.Sprintf("monitoring %s...", filepath.Base(path)))
+			m.log.Log(logger.INFO, fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 		}
 	}
 	return nil
@@ -166,24 +165,11 @@ func (m *Monitor) GetOffSwitch(path string) chan bool {
 		return offSwitch
 	}
 	m.log.Error(
-		fmt.Sprintf("off switch not found for %s monitoring goroutine",
+		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
 			filepath.Base(path),
 		),
 	)
 	return nil
-}
-
-// get a slice of file paths for associated monitoring goroutines.
-// returns nil if none are available.
-func (m *Monitor) GetPaths() []string {
-	if len(m.Events) == 0 {
-		return nil
-	}
-	paths := make([]string, 0, len(m.Events))
-	for path := range m.Events {
-		paths = append(paths, path)
-	}
-	return paths
 }
 
 // close a watcher function and event channel for a given item.
@@ -194,7 +180,7 @@ func (m *Monitor) StopWatching(path string) {
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
-		m.log.Log("INFO", fmt.Sprintf("%s is no longer being monitored", filepath.Base(path)))
+		m.log.Log(logger.INFO, fmt.Sprintf("'%s' is no longer being monitored", filepath.Base(path)))
 	}
 }
 
@@ -245,13 +231,13 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		for {
 			select {
 			case <-stop:
-				log.Log(logger.INFO, fmt.Sprintf("shutting down monitoring for %s...", baseName))
+				log.Log(logger.INFO, fmt.Sprintf("shutting down monitoring for '%s'...", baseName))
 				close(evt)
 				return
 			default:
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
-					log.Log(logger.INFO, fmt.Sprintf("%v - stopping monitoring for %s...", err, baseName))
+					log.Log(logger.INFO, fmt.Sprintf("%v - stopping monitoring for '%s'...", err, baseName))
 					evt <- Event{
 						Kind: "File",
 						Type: Error,
@@ -264,7 +250,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
-					log.Log(logger.INFO, fmt.Sprintf("%s was deleted. stopping monitoring.", baseName))
+					log.Log(logger.INFO, fmt.Sprintf("'%s' was deleted. stopping monitoring.", baseName))
 					evt <- Event{
 						Kind: "File",
 						Type: Delete,

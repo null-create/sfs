@@ -12,12 +12,8 @@ func (q *Query) UpdateFile(file *svc.File) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateFileQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateFileQuery,
 		&file.ID,
 		&file.Name,
 		&file.OwnerID,
@@ -43,17 +39,47 @@ func (q *Query) UpdateFile(file *svc.File) error {
 	return nil
 }
 
+func (q *Query) UpdateFiles(files []*svc.File) error {
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	for _, file := range files {
+		if _, err := q.Conn.Exec(
+			UpdateFileQuery,
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+			&file.ID,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (q *Query) UpdateDir(dir *svc.Directory) error {
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateDirQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateDirQuery,
 		&dir.ID,
 		&dir.Name,
 		&dir.OwnerID,
@@ -78,17 +104,46 @@ func (q *Query) UpdateDir(dir *svc.Directory) error {
 	return nil
 }
 
+func (q *Query) UpdateDirs(dirs []*svc.Directory) error {
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	for _, dir := range dirs {
+		if _, err := q.Conn.Exec(
+			UpdateDirQuery,
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Protected,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.Root,
+			&dir.RootPath,
+			&dir.ID,
+		); err != nil {
+			return fmt.Errorf("failed to execute statement: %v", err)
+		}
+	}
+	return nil
+}
+
 func (q *Query) UpdateDrive(drv *svc.Drive) error {
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateDriveQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateDriveQuery,
 		&drv.ID,
 		&drv.OwnerName,
 		&drv.OwnerID,
@@ -115,12 +170,8 @@ func (q *Query) UpdateUser(user *auth.User) error {
 	q.Connect()
 	defer q.Close()
 
-	if err := q.Prepare(UpdateUserQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		UpdateUserQuery,
 		&user.ID,
 		&user.Name,
 		&user.UserName,

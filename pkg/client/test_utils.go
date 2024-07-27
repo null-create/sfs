@@ -80,7 +80,6 @@ func Clean(t *testing.T, dir string) error {
 			t.Errorf("[ERROR] unable to remove file: %v", err)
 		}
 	}
-
 	return nil
 }
 
@@ -155,9 +154,6 @@ func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *svc.Directo
 	if err != nil {
 		Fatal(t, err)
 	}
-	for _, f := range files {
-		f.DriveID = driveID
-	}
 	tmpRoot.AddFiles(files)
 
 	// add a subdirectory also with files
@@ -165,13 +161,9 @@ func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *svc.Directo
 	if err != nil {
 		Fatal(t, err)
 	}
-	sd.DriveID = driveID
 	moreFiles, err := MakeABunchOfTxtFilesWithLoc(10, sd.Path)
 	if err != nil {
 		Fatal(t, err)
-	}
-	for _, f := range moreFiles {
-		f.DriveID = driveID
 	}
 
 	// build the directory structure
@@ -185,13 +177,13 @@ func MakeTmpDirsWithPath(t *testing.T, path string, driveID string) *svc.Directo
 // ---- files
 
 // alter a test file with additional data
-func MutateFile(t *testing.T, f *svc.File) {
+func MutateFile(t *testing.T, file *svc.File) {
 	var data string
 	total := RandInt(5000)
 	for i := 0; i < total; i++ {
 		data += txtData
 	}
-	if err := f.Save([]byte(data)); err != nil {
+	if err := file.Save([]byte(data)); err != nil {
 		Fail(t, GetTestingDir(), err)
 	}
 }
@@ -258,7 +250,6 @@ func MakeTmpTxtFile(filePath string, textReps int) (*svc.File, error) {
 // under pkg/files/testing/tmp
 func MakeABunchOfTxtFiles(total int) ([]*svc.File, error) {
 	tmpDir := filepath.Join(GetTestingDir(), "tmp")
-
 	files := make([]*svc.File, 0)
 	for i := 0; i < total; i++ {
 		fileName := fmt.Sprintf("tmp-%d.txt", i)

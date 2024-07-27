@@ -26,7 +26,7 @@ var BaseEnv = map[string]string{
 	"NEW_SERVICE":       "true",
 
 	// client settings
-	"CLIENT":              "",
+	"CLIENT_NAME":         "",
 	"CLIENT_ADDRESS":      "localhost:8080",
 	"CLIENT_AUTO_SYNC":    "true",
 	"CLIENT_EMAIL":        "",
@@ -133,7 +133,7 @@ func validate(k string, env map[string]string) error {
 	if v, exists := env[k]; exists {
 		val := os.Getenv(k) // make sure this is right
 		if val != v {
-			msg := fmt.Sprintf("env mismatch. \n.env file (k=%v, v=%v) \nos.Getenv() (k=%s, v=%s)", k, v, k, val)
+			msg := fmt.Sprintf("env mismatch.\n.env file (k=%v, v=%v)\nos.Getenv() (k=%s, v=%s)", k, v, k, val)
 			return fmt.Errorf(msg)
 		}
 		return nil
@@ -194,10 +194,12 @@ func (e *Env) Set(k, v string) error {
 	if err != nil {
 		return err
 	}
-	if val, exists := env[k]; exists && val != v {
-		env[k] = v
-		if err := set(k, v, env); err != nil {
-			return err
+	if val, exists := env[k]; exists {
+		if val != v {
+			env[k] = v
+			if err := set(k, v, env); err != nil {
+				return err
+			}
 		}
 	} else {
 		fmt.Printf("env var %v does not exist", k)

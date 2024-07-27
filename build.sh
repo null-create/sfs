@@ -22,8 +22,6 @@ fi
 # download and install dependencies
 download_deps
 
-# OUTFILE=""
-
 # build executable based on the host OS
 case "$(uname -s)" in
 Linux*)

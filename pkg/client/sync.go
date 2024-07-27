@@ -12,22 +12,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
-	"strconv"
 	"sync"
-	"time"
 
 	"github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
-
-const (
-	EndpointRoot = "http://localhost"
-	CheckWait    = time.Millisecond * 500
-	SyncWait     = time.Second * 30
-)
-
-// whether auto sync is enabled
-func (c *Client) autoSync() bool { return c.Conf.AutoSync }
 
 // whether we should save to local storage, or push files to server.
 func (c *Client) localBackup() bool { return c.Conf.LocalBackup }
@@ -62,7 +51,7 @@ func (c *Client) BuildSyncIndex() {
 	// get any files
 	files := c.Drive.GetFiles()
 	if len(files) == 0 {
-		c.log.Warn("no files. nothing to index.")
+		c.log.Log(logger.WARN, "no files. nothing to index.")
 		return
 	}
 
@@ -81,42 +70,6 @@ func (c *Client) BuildSyncIndex() {
 	// NOTE: the dir arg is set to nil until dir monitoring is supported
 	c.Drive.SyncIndex = svc.BuildSyncIndex(files, nil, c.Drive.SyncIndex)
 	c.log.Log(logger.INFO, fmt.Sprintf("%d files have been indexed", len(files)))
-}
-
-// enable or disable auto sync with the server.
-func (c *Client) SetAutoSync(mode bool) {
-	c.Conf.AutoSync = mode
-	if err := envCfgs.Set("CLIENT_AUTO_SYNC", strconv.FormatBool(mode)); err != nil {
-		c.log.Error(fmt.Sprintf("failed to update environment configurations: %s", err))
-		return
-	}
-	if err := c.SaveState(); err != nil {
-		c.log.Error("failed to update state file: " + err.Error())
-	} else {
-		if mode {
-			c.log.Info("auto sync enabled")
-		} else {
-			c.log.Info("auto sync disabled")
-		}
-	}
-}
-
-// enable or disable backing up files to local storage.
-func (c *Client) SetLocalBackup(mode bool) {
-	c.Conf.LocalBackup = mode
-	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
-		c.log.Error("failed to update environment configurations: " + err.Error())
-		return
-	}
-	if err := c.SaveState(); err != nil {
-		c.log.Error("failed to update state file: " + err.Error())
-	} else {
-		if mode {
-			c.log.Info("local backup enabled")
-		} else {
-			c.log.Info("local backup disabled")
-		}
-	}
 }
 
 type SyncItems struct {
@@ -138,7 +91,6 @@ func (c *Client) ServerSync() error {
 	if err != nil {
 		return err
 	}
-
 	var syncItems = new(SyncItems)
 	var localIndex = c.Drive.SyncIndex
 
@@ -238,9 +190,8 @@ func (c *Client) Push() error {
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
 func (c *Client) Pull() error {
-	// TODO: rework this
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
-		c.log.Warn("no sync index returned from the server. nothing to pull")
+		c.log.Warn("sync index update map has no contents. nothing to pull")
 		return nil
 	}
 	q := svc.BuildQ(c.Drive.SyncIndex)

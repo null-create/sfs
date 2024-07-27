@@ -9,18 +9,16 @@ import (
 )
 
 func (q *Query) AddFile(file *svc.File) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
-	// prepare query
-	if err := q.Prepare(AddFileQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
 	// execute the statement
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		AddFileQuery,
 		&file.ID,
 		&file.Name,
 		&file.OwnerID,
@@ -48,15 +46,16 @@ func (q *Query) AddFile(file *svc.File) error {
 
 // iterate over the files and execute the statement for each
 func (q *Query) AddFiles(files []*svc.File) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
 	for _, file := range files {
-		if err := q.Prepare(AddFileQuery); err != nil {
-			return fmt.Errorf("failed to prepare statement: %v", err)
-		}
-		if _, err := q.Stmt.Exec(
+		if _, err := q.Conn.Exec(
+			AddFileQuery,
 			&file.ID,
 			&file.Name,
 			&file.OwnerID,
@@ -79,36 +78,33 @@ func (q *Query) AddFiles(files []*svc.File) error {
 		); err != nil {
 			return fmt.Errorf("failed to execute statement: %v", err)
 		}
-		q.Stmt.Close()
 	}
 	return nil
 }
 
 // add a user to the user database
-func (q *Query) AddUser(u *auth.User) error {
+func (q *Query) AddUser(user *auth.User) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
 
-	// prepare query
-	if err := q.Prepare(AddUserQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
-		&u.ID,
-		&u.Name,
-		&u.UserName,
-		&u.Email,
-		&u.Password,
-		&u.LastLogin,
-		&u.Admin,
-		&u.SfPath,
-		&u.DriveID,
-		&u.TotalFiles,
-		&u.TotalDirs,
-		&u.DrvRoot,
+	if _, err := q.Conn.Exec(
+		AddUserQuery,
+		&user.ID,
+		&user.Name,
+		&user.UserName,
+		&user.Email,
+		&user.Password,
+		&user.LastLogin,
+		&user.Admin,
+		&user.SfPath,
+		&user.DriveID,
+		&user.TotalFiles,
+		&user.TotalDirs,
+		&user.DrvRoot,
 	); err != nil {
 		return fmt.Errorf("failed to execute statement: %v", err)
 	}
@@ -116,17 +112,15 @@ func (q *Query) AddUser(u *auth.User) error {
 }
 
 func (q *Query) AddDir(dir *svc.Directory) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
-	// prepare query
-	if err := q.Prepare(AddDirQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		AddDirQuery,
 		&dir.ID,
 		&dir.Name,
 		&dir.OwnerID,
@@ -151,53 +145,51 @@ func (q *Query) AddDir(dir *svc.Directory) error {
 }
 
 func (q *Query) AddDirs(dirs []*svc.Directory) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
-	for _, d := range dirs {
-		if err := q.Prepare(AddDirQuery); err != nil {
-			return fmt.Errorf("failed to prepare statement: %v", err)
-		}
-		if _, err := q.Stmt.Exec(
-			&d.ID,
-			&d.Name,
-			&d.OwnerID,
-			&d.DriveID,
-			&d.Size,
-			&d.Path,
-			&d.ServerPath,
-			&d.ClientPath,
-			&d.BackupPath,
-			&d.Protected,
-			&d.AuthType,
-			&d.Key,
-			&d.Overwrite,
-			&d.LastSync,
-			&d.Endpoint,
-			&d.Root,
-			&d.RootPath,
+	for _, dir := range dirs {
+		if _, err := q.Conn.Exec(
+			AddDirQuery,
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Protected,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.Root,
+			&dir.RootPath,
 		); err != nil {
 			return fmt.Errorf("failed to add directory: %v", err)
 		}
-		q.Stmt.Close()
 	}
 	return nil
 }
 
 // add drive info to drive database
 func (q *Query) AddDrive(drv *svc.Drive) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
 
-	// prepare query
-	if err := q.Prepare(AddDriveQuery); err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer q.Stmt.Close()
-
-	if _, err := q.Stmt.Exec(
+	if _, err := q.Conn.Exec(
+		AddDriveQuery,
 		&drv.ID,
 		&drv.OwnerName,
 		&drv.OwnerID,

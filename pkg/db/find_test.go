@@ -49,6 +49,48 @@ func TestFindFileIdByPath(t *testing.T) {
 	}
 }
 
+func TestFileByUserID(t *testing.T) {
+	env.SetEnv(false)
+
+	testDir := GetTestingDir()
+
+	// make testing objects
+	tmpFile, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "tmp.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// create tmp table
+	NewTable(filepath.Join(testDir, "tmp-db"), CreateFileTable)
+
+	// test query
+	q := NewQuery(filepath.Join(testDir, "tmp-db"), false)
+
+	// add file
+	if err := q.AddFile(tmpFile); err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+
+	// retrieves all files with this user ID
+	files, err := q.GetUsersFiles(tmpFile.OwnerID)
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
+	if len(files) == 0 {
+		Fail(t, GetTestingDir(), fmt.Errorf("no files found with userID: '%s'", tmpFile.OwnerID))
+	}
+	for _, file := range files {
+		if file.OwnerID != tmpFile.OwnerID {
+			Fail(t, GetTestingDir(), fmt.Errorf("db file owner ID does not match original file owner ID"))
+		}
+	}
+
+	// clean up tmp db
+	if err := Clean(t, GetTestingDir()); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TestFindFileByName(t *testing.T) {
 	env.SetEnv(false)
 

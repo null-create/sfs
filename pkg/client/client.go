@@ -33,33 +33,38 @@ type Client struct {
 	Db         *db.Query      `json:"db"`              // local db connection
 	log        *logger.Logger `json:"logger"`          // logger
 
-	// token creator for requests
+	// Token creator for server requests
 	Tok *auth.Token `json:"token"`
 
 	// Path to the local backup directory
 	LocalBackupDir string `json:"backup_dir"`
 
-	// server api endpoints.
+	// Server api endpoints.
+	//
 	// file objects have their own API field, this is for storing
 	// general operation endpoints like sync operations.
 	// key == file or dir uuid, val == associated server API endpoint
 	Endpoints map[string]string `json:"endpoints"`
 
-	// listener that checks for file or directory events
+	// Monitoring component. monitor actively watches for changes
+	// to files and sends events to their respective event handler.
+	//
 	Monitor *monitor.Monitor `json:"-"`
 
-	// map of active event handlers for individual files and directories
+	// Map of active event handlers for files and directories
+	// being monitored by the client
+	//
 	// key == item path, value == event handler function
 	Handlers map[string]func() `json:"-"`
 
-	// map of listener off switches. used during shutdown.
+	// Map of event handler off switches.
 	// key == filepath, value == chan bool
 	OffSwitches map[string]chan bool `json:"-"`
 
-	// file transfer component. handles file uploads and downloads.
+	// File transfer component. Handles file uploads and downloads.
 	Transfer *transfer.Transfer `json:"-"`
 
-	// http client. used mainly for small-scope calls to the server.
+	// HTTP client. Used for calls to the server.
 	Client *http.Client `json:"-"`
 }
 
@@ -124,9 +129,6 @@ func (c *Client) start(shutDown chan os.Signal) error {
 		if err := c.LoadDrive(); err != nil {
 			return err
 		}
-		// refresh drive on startup. this will find anything that was
-		// added to the *SFS root dir* wasn't running at the time.
-		c.RefreshDrive()
 	}
 	// save initial state
 	if err := c.SaveState(); err != nil {

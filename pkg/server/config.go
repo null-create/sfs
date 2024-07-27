@@ -48,3 +48,5 @@ func ServiceConfig() *SvcCfg {
 }
 
 var svcCfg = ServiceConfig()
+
+// TODO: update and manage server and service configs

@@ -30,12 +30,13 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Root = filepath.Join(tmpSvcPath, "root")
 	tmpClient.SfDir = filepath.Join(tmpSvcPath, "state")
 	tmpClient.Db.DBPath = filepath.Join(tmpSvcPath, "dbs")
+	tmpClient.Conf.BackupDir = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.LocalBackupDir = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.RecycleBin = filepath.Join(tmpSvcPath, "recycle")
 	tmpClient.Drive.Root.Path = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ServerPath = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ClientPath = filepath.Join(tmpSvcPath, "root")
-	tmpClient.Drive.Root.BackupPath = tmpClient.LocalBackupDir
+	tmpClient.Drive.Root.BackupPath = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
 	return tmpClient
@@ -270,10 +271,6 @@ func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 	}
 	tmpClient.ShutDown()
 
-	// NOTE: currently failing during Clean() because the files db is still being
-	// used by "another process" which I assume is the temp client,
-	// but all DB connections should be closed with a call to tmpClient.ShutDown()
-
 	// pre-emptive cleanup
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
@@ -321,6 +318,57 @@ func TestAddItemWithAFile(t *testing.T) {
 	}
 }
 
+func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client defaulting to
+	// saving items locally
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.SetLocalBackup("true"); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make a test directory with files and a subdirectory within the client
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
+	if err := tmpClient.AddDrive(tmpDrive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// initialize and start a new server in a separate goroutine
+	stopServer := make(chan bool)
+	tmpServer := server.NewServer()
+	go func() {
+		tmpServer.Start(stopServer)
+	}()
+
+	// update local backup settings and register items with server
+	if err := tmpClient.SetLocalBackup("false"); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.RegisterClient(); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.RegisterItems(); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+
+	// shut down the server
+	stopServer <- true
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TestClientRemoveDir(t *testing.T) {
 	env.SetEnv(false)
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
@@ -335,7 +383,7 @@ func TestClientRemoveDir(t *testing.T) {
 	}
 
 	// make a test directory with files and a subdirectory within the client
-	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.Path)
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
 	if err := tmpClient.AddDrive(tmpDrive); err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -356,6 +404,64 @@ func TestClientRemoveDir(t *testing.T) {
 		Fail(t, tmpDir, err)
 	}
 	assert.Equal(t, 0, len(dbDirs))
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestUpdateBackupDirs(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.SetLocalBackup("true"); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// make a test directory with files and a subdirectory within the client
+	tmpDrive := MakeTmpDriveWithPath(t, tmpClient.Drive.Root.ClientPath)
+	if err := tmpClient.AddDrive(tmpDrive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// update the backup directory path for the client, and all
+	// files and directories within the client
+	newBackupPath := filepath.Join(tmpDir, "new-backup-dir")
+	if err := os.Mkdir(newBackupPath, svc.PERMS); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.UpdateBackupPath(newBackupPath); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// pull all files and directories from temp dbs and verify the
+	// backup paths contain newBackupPath
+	files, err := tmpClient.Db.GetUsersFiles("me")
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	for _, file := range files {
+		if !strings.Contains(file.BackupPath, newBackupPath) {
+			Fail(t, tmpDir, fmt.Errorf("backup path not found in file object: %s", file.BackupPath))
+		}
+	}
+	dirs, err := tmpClient.Db.GetUsersDirectories("me")
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	for _, dir := range dirs {
+		if !strings.Contains(dir.BackupPath, newBackupPath) {
+			Fail(t, tmpDir, fmt.Errorf("backup path not found in directory: %s", dir.BackupPath))
+		}
+	}
 
 	if err := Clean(t, tmpDir); err != nil {
 		log.Fatal(err)
@@ -434,7 +540,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 	root := svc.NewDirectory("root", tmpClient.Conf.User, tmpClient.Drive.ID, tmpClient.Root)
 	root.AddFiles(files)
 
-	drv := svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.Path, root.ID, root)
+	drv := svc.NewDrive(auth.NewUUID(), tmpClient.Conf.User, auth.NewUUID(), root.ClientPath, root.ID, root)
 
 	idx := drv.Root.WalkS(svc.NewSyncIndex(tmpClient.Conf.User))
 	assert.NotEqual(t, nil, idx)
@@ -507,7 +613,10 @@ func TestClientRefreshDrive(t *testing.T) {
 	}
 
 	// make a bunch of dummy files for the test clinet
-	tmpClient.Drive = MakeTmpDriveWithPath(t, tmpDir)
+	tmpDrv := MakeTmpDriveWithPath(t, tmpDir)
+	if err := tmpClient.AddDrive(tmpDrv); err != nil {
+		Fail(t, tmpDir, err)
+	}
 
 	// add some more files
 	_, err = MakeABunchOfTxtFiles(RandInt(25))
@@ -548,7 +657,7 @@ func TestClientDiscoverWithPath(t *testing.T) {
 	}
 
 	testDrive := MakeTmpDriveWithPath(t, tmpDir)
-	_, err = tmpClient.DiscoverWithPath(testDrive.Root.Path)
+	_, err = tmpClient.Discover(testDrive.Root.Path)
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}

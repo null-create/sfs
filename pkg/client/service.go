@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/sfs/pkg/logger"
-	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
 )
 
@@ -38,70 +38,34 @@ func (c *Client) AddItem(itemPath string) error {
 	return nil
 }
 
-// remove an item from the local SFS service.
-// does not remove the item from the server.
+// remove an item from the local SFS service
 func (c *Client) RemoveItem(itemPath string) error {
 	item, err := os.Stat(itemPath)
 	if err != nil {
 		return err
 	}
 	if item.IsDir() {
-		// NOTE: directory actions aren't supported yet
-		// dir, err := c.Db.GetDirectoryByPath(itemPath)
-		// if err != nil {
-		// 	return err
-		// }
-		// if err := c.RemoveDir(dir); err != nil {
-		// 	return err
-		// }
+		dir, err := c.Db.GetDirectoryByPath(itemPath)
+		if err != nil {
+			return err
+		}
+		if dir == nil {
+			return fmt.Errorf("dir '%s' not found", filepath.Base(itemPath))
+		}
+		if err := c.RemoveDir(dir); err != nil {
+			return err
+		}
 	} else {
 		file, err := c.Db.GetFileByPath(itemPath)
 		if err != nil {
 			return nil
 		}
 		if file == nil {
-			return fmt.Errorf("%s not found", filepath.Base(itemPath))
+			return fmt.Errorf("file '%s' not found", filepath.Base(itemPath))
 		}
 		if err := c.RemoveFile(file); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// send item metadata to the server. used with
-// event handler loop.
-func (c *Client) UpdateItem(item monitor.EItem) error {
-	if item.IsDir() {
-		dir, err := c.GetDirByPath(item.Path())
-		if err != nil {
-			return err
-		}
-		req, err := c.UpdateDirectoryRequest(dir)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			c.log.Error(fmt.Sprintf("failed to execute request: %v", err))
-			return err
-		}
-		c.dump(resp, true)
-	} else {
-		file, err := c.GetFileByPath(item.Path())
-		if err != nil {
-			return err
-		}
-		req, err := c.UpdateFileRequest(file)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			c.log.Error(fmt.Sprintf("failed to execute request: %v", err))
-			return err
-		}
-		c.dump(resp, true)
 	}
 	return nil
 }
@@ -174,38 +138,6 @@ func (c *Client) RegisterItem(itemPath string) error {
 	return nil
 }
 
-// find a file or directory by name.
-//
-// NOTE: this could cause collisions because files are
-// stored in the db with unique *ids,* not names
-func (c *Client) GetItemByName(itemName string) *Item {
-	thing, err := os.Stat(itemName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var item = new(Item)
-	if thing.IsDir() {
-		dir, err := c.GetDirByName(itemName)
-		if err != nil {
-			c.log.Error(err.Error())
-		}
-		if dir == nil {
-			c.log.Error(fmt.Sprintf("%s not found", itemName))
-		}
-		item.Directory = dir
-	} else {
-		file, err := c.GetFileByName(itemName)
-		if err != nil {
-			c.log.Error(err.Error())
-		}
-		if file == nil {
-			c.log.Error(fmt.Sprintf("%s not found found", itemName))
-		}
-		item.File = file
-	}
-	return item
-}
-
 // finds an item by path. returns nil if not found.
 func (c *Client) GetItemByPath(path string) (*Item, error) {
 	thing, err := os.Stat(path)
@@ -220,7 +152,7 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 			return nil, err
 		}
 		if dir == nil {
-			c.log.Info(fmt.Sprintf("%s not found", filepath.Base(path)))
+			c.log.Info(fmt.Sprintf("'%s' not found", filepath.Base(path)))
 			return nil, nil
 		}
 		item.Directory = dir
@@ -231,12 +163,208 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 			return nil, err
 		}
 		if file == nil {
-			c.log.Info(fmt.Sprintf("%s not found found", filepath.Base(path)))
+			c.log.Info(fmt.Sprintf("'%s' not found found", filepath.Base(path)))
 			return nil, nil
 		}
 		item.File = file
 	}
 	return item, nil
+}
+
+// ------ configuration --------------------------------
+
+// update user-specific settings
+func (c *Client) UpdateConfigSetting(setting, value string) error {
+	switch setting {
+	case "CLIENT_NAME":
+		return c.updateClientName(value)
+	case "CLIENT_EMAIL":
+		return c.updateClientEmail(value)
+	case "CLIENT_PASSWORD":
+		return c.updateUserPassword(value, c.User.Password)
+	case "CLIENT_PORT":
+		return c.updateClientPort(value)
+	case "CLIENT_BACKUP_DIR":
+		return c.UpdateBackupPath(value)
+	case "CLIENT_LOCAL_BACKUP":
+		return c.SetLocalBackup(value)
+	case "CLIENT_NEW_SERVICE":
+		return envCfgs.Set(setting, value)
+	case "NEW_SERVICE":
+		return envCfgs.Set(setting, value)
+	default:
+		return fmt.Errorf("unknown setting: '%s'", setting)
+	}
+}
+
+// enable or disable backing up files to local storage.
+func (c *Client) SetLocalBackup(modeStr string) error {
+	mode, err := strconv.ParseBool(modeStr)
+	if err != nil {
+		c.log.Error(fmt.Sprintf("failed to parse string: %v", err))
+		return err
+	}
+	c.Conf.LocalBackup = mode
+	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		c.log.Error("failed to update state file: " + err.Error())
+	} else {
+		if mode {
+			c.log.Info("local backup enabled")
+		} else {
+			c.log.Info("local backup disabled")
+		}
+	}
+	return nil
+}
+
+// update the backup configurations for the service and all client-side
+// files and directories
+func (c *Client) UpdateBackupPath(newDirPath string) error {
+	if !c.isDirPath(newDirPath) {
+		c.log.Error("path is not a directory")
+		return fmt.Errorf("path is not a directory")
+	}
+	if c.LocalBackupDir == newDirPath {
+		return nil // nothing to replace
+	}
+	return c.updateBackupPaths(filepath.Clean(newDirPath))
+}
+
+// If a user specifies a custom backup directory, then all
+// local backup items need to have their backup paths updated.
+// we don't want files to be backed up to a default directory if
+// a user tries to specify otherwise.
+func (c *Client) updateBackupPaths(newPath string) error {
+	oldPath := c.Root
+	dirs := c.Drive.GetDirs()
+	for _, dir := range dirs {
+		dir.BackupPath = strings.Replace(dir.BackupPath, oldPath, newPath, 1)
+	}
+	if err := c.Db.UpdateDirs(dirs); err != nil {
+		return err
+	}
+	files := c.Drive.GetFiles()
+	for _, file := range files {
+		file.BackupPath = strings.Replace(file.BackupPath, oldPath, newPath, 1)
+	}
+	if err := c.Db.UpdateFiles(files); err != nil {
+		return err
+	}
+	c.Conf.BackupDir = newPath
+	if err := envCfgs.Set("CLIENT_BACKUP_DIR", newPath); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// update user's name
+func (c *Client) updateClientName(newName string) error {
+	if newName == c.Conf.User && newName == c.User.Name && newName == c.Drive.OwnerName {
+		return nil
+	}
+	user, err := c.Db.GetUser(c.UserID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user not found: %v", c.UserID)
+	}
+	c.User.Name = newName
+	c.Conf.User = newName
+	c.Drive.OwnerName = newName
+	user.Name = newName
+	if err := c.Db.UpdateUser(user); err != nil {
+		return err
+	}
+	if err := c.Db.UpdateDrive(c.Drive); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_NAME", newName); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO: update all items owner name in the DB with the new user's new name
+func (c *Client) updateFileOwnerName(newName string) error {
+	return nil
+}
+
+// update user's email
+func (c *Client) updateClientEmail(newEmail string) error {
+	user, err := c.Db.GetUser(c.UserID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user not found: '%s' (id=%v)", c.Conf.User, c.UserID)
+	}
+	c.User.Email = newEmail
+	user.Email = newEmail
+	if err := c.Db.UpdateUser(user); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_EMAIL", newEmail); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// update user's password
+func (c *Client) updateUserPassword(oldPw, newPw string) error {
+	user, err := c.Db.GetUser(c.UserID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user not found: '%s' (id=%v)", c.Conf.User, c.UserID)
+	}
+	if newPw == user.Password && newPw == c.User.Password {
+		return nil // nothing to update
+	}
+	// make sure current password is valid
+	if oldPw != user.Password && oldPw != c.User.Password {
+		return fmt.Errorf("incorrect password. password not updated")
+	}
+	user.Password = newPw
+	c.User.Password = newPw
+	// TODO: hashing of user passwords should occur before saving to DB.
+	// dont save them as plaintext!
+	if err := c.Db.UpdateUser(user); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_PASSWORD", newPw); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// update client port setting
+func (c *Client) updateClientPort(pvalue string) error {
+	port, err := strconv.Atoi(pvalue)
+	if err != nil {
+		return err
+	}
+	if c.Conf.Port == port {
+		return nil // nothing to do here
+	}
+	c.Conf.Port = port
+	return envCfgs.Set("CLIENT_PORT", pvalue)
 }
 
 // ----- files --------------------------------------
@@ -255,11 +383,12 @@ func (c *Client) Exists(path string) bool {
 // list all local files managed by the sfs service.
 // does not check database.
 func (c *Client) ListLocalFiles() {
+	var output string
 	files := c.Drive.GetFilesMap()
 	for _, f := range files {
-		output := fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
-		fmt.Print(output)
+		output += fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 	}
+	fmt.Print(output)
 }
 
 // list all files managed by the local sfs database
@@ -268,9 +397,11 @@ func (c *Client) ListLocalFilesDB() error {
 	if err != nil {
 		return err
 	}
+	var output string
 	for _, f := range files {
-		fmt.Printf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		output += fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
 	}
+	fmt.Print(output)
 	return nil
 }
 
@@ -350,7 +481,8 @@ monitored by SFS -- though is not contingent on it!
 
 SFS can monitor files outside of the designated root directory, so
 if we add a file this way then we should automatically make a backup of it
-in the SFS server.
+in the SFS server, or locally to a designated directory, depending
+on the service configurations.
 */
 func (c *Client) AddFile(filePath string) error {
 	// see if we already have this file in the system
@@ -359,7 +491,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	if file != nil {
-		return fmt.Errorf("%s is already registered", filepath.Base(filePath))
+		return fmt.Errorf("'%s' is already registered", filepath.Base(filePath))
 	}
 
 	// create new file object
@@ -374,7 +506,6 @@ func (c *Client) AddFile(filePath string) error {
 	} else if err != nil {
 		return err
 	} else {
-		// directory already exists. add file to this directory.
 		newFile.DirID = dir.ID
 	}
 
@@ -393,48 +524,46 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
-	if c.autoSync() {
-		if !c.localBackup() {
-			// push metadata to server if autosync is enabled
-			// and we don't default to using local storage for backup purposes.
-			//
-			// this will create an intial EMPTY file on the server-side.
-			// backup contents are created during the first sync of the file
-			// after being registered.
-			req, err := c.NewFileRequest(newFile)
+	if !c.localBackup() {
+		// push metadata to server if autosync is enabled
+		// and we don't default to using local storage for backup purposes.
+		//
+		// this will create an intial EMPTY file on the server-side.
+		// backup contents are created during the first sync of the file
+		// after being registered.
+		req, err := c.NewFileRequest(newFile)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		c.dump(resp, true)
+		// get newly generated server-side path for the file if successfully created
+		if resp.StatusCode == http.StatusOK {
+			svrpath, err := c.getFileServerPath(newFile)
 			if err != nil {
 				return err
 			}
-			resp, err := c.Client.Do(req)
-			if err != nil {
+			newFile.ServerPath = svrpath
+			if err := c.UpdateFile(newFile); err != nil {
 				return err
-			}
-			c.dump(resp, true)
-			// get newly generated server-side path for the file if successfully created
-			if resp.StatusCode == http.StatusOK {
-				svrpath, err := c.getFileServerPath(newFile)
-				if err != nil {
-					return err
-				}
-				newFile.ServerPath = svrpath
-				if err := c.UpdateFile(newFile); err != nil {
-					return err
-				}
-			} else {
-				c.log.Warn(fmt.Sprintf("failed to send metadata to server: %v", resp.Status))
 			}
 		} else {
-			// make a local backup copy of the file
-			if err := c.BackupFile(newFile); err != nil {
-				return err
-			}
+			c.log.Warn(fmt.Sprintf("failed to send metadata to server: %v", resp.Status))
+		}
+	} else {
+		// make a local backup copy of the file
+		if err := c.BackupFile(newFile); err != nil {
+			return err
 		}
 	}
 	// update service state
 	if err := c.SaveState(); err != nil {
 		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}
-	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
+	c.log.Info(fmt.Sprintf("file '%s' added to client", newFile.Name))
 	return nil
 }
 
@@ -484,56 +613,34 @@ func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
 	if err := c.WatchItem(newFile.ClientPath); err != nil {
 		return err
 	}
-	if c.autoSync() {
-		if !c.localBackup() {
-			// push metadata to server
-			req, err := c.NewFileRequest(newFile)
+	if !c.localBackup() {
+		// push metadata to server
+		req, err := c.NewFileRequest(newFile)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		// get newly generated server-side path for the file if successfully created
+		if resp.StatusCode == http.StatusOK {
+			svrpath, err := c.getFileServerPath(newFile)
 			if err != nil {
 				return err
 			}
-			resp, err := c.Client.Do(req)
-			if err != nil {
-				return err
-			}
-			// get newly generated server-side path for the file if successfully created
-			if resp.StatusCode == http.StatusOK {
-				svrpath, err := c.getFileServerPath(newFile)
-				if err != nil {
-					return err
-				}
-				newFile.ServerPath = svrpath
-				if err := c.UpdateFile(newFile); err != nil {
-					return err
-				}
-			}
-			c.dump(resp, true)
-		} else {
-			if err := c.BackupFile(newFile); err != nil {
+			newFile.ServerPath = svrpath
+			if err := c.UpdateFile(newFile); err != nil {
 				return err
 			}
 		}
+		c.dump(resp, true)
+	} else {
+		if err := c.BackupFile(newFile); err != nil {
+			return err
+		}
 	}
 	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
-	return nil
-}
-
-// update file contents in a specied directory
-func (c *Client) ModifyFile(dirID string, fileID string, data []byte) error {
-	file := c.Drive.GetFile(fileID)
-	if file == nil {
-		return fmt.Errorf("no file (id=%s) found", fileID)
-	}
-	if len(data) == 0 {
-		c.log.Warn(fmt.Sprintf("no data provided for '%s'. nothing modified", file.Name))
-		return nil
-	}
-	if err := c.Drive.ModifyFile(dirID, file, data); err != nil {
-		return err
-	}
-	if err := c.Db.UpdateFile(file); err != nil {
-		return err
-	}
-	c.log.Info(fmt.Sprintf("%s was modified", file.Name))
 	return nil
 }
 
@@ -553,16 +660,16 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 	return nil
 }
 
-// remove a file in a specied directory.
+// remove a file.
 // removes the file from the server if local backup is disabled.
 func (c *Client) RemoveFile(file *svc.File) error {
 	// make sure this file is actually registered with the service
 	// before mucking around.
 	if !c.KnownItem(file.ClientPath) {
-		return fmt.Errorf("file %s not registered", file.Name)
+		return fmt.Errorf("file '%s' not registered", file.Name)
 	}
 	// stop monitoring the file
-	c.Monitor.StopWatching(file.Path)
+	c.Monitor.StopWatching(file.ClientPath)
 	// move the file to the SFS recycle bin to help with recovery in case
 	// of an accidental deletion.
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
@@ -577,9 +684,8 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return err
 	}
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
-
-	// remove file from the server if auto sync is enabled.
-	if c.autoSync() && !c.localBackup() {
+	// remove file from the server if local backup is disabled
+	if !c.localBackup() {
 		req, err := c.DeleteFileRequest(file)
 		if err != nil {
 			c.log.Error("failed to create request: " + err.Error())
@@ -595,38 +701,6 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	return nil
 }
 
-// move a file from one location to another on a users computer via
-// the sfs client. set keepOrig to true to keep the original copy in the original location.
-// sfs will only monitor the new copy after the move.
-//
-// destPath must be the absolute path for the files destination (i.e., end with the file name)
-// func (c *Client) MoveFile(destPath string, filePath string, keepOrig bool) error {
-// 	file, err := c.GetFileByPath(filePath)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if file == nil {
-// 		return fmt.Errorf("file not found: " + filepath.Base(filePath))
-// 	}
-// 	if filePath != file.ClientPath {
-// 		return fmt.Errorf("source path does not match original file path. fp=%q orig=%s", filePath, file.ClientPath)
-// 	}
-
-// 	// copy physical file
-// 	var origPath = file.ClientPath
-// 	if err := file.Copy(destPath); err != nil {
-// 		return fmt.Errorf("failed to copy file: %v", err)
-// 	}
-// 	file.ClientPath = destPath
-
-// 	// update dbs
-// 	if err := c.Db.UpdateFile(file); err != nil {
-// 		return fmt.Errorf("failed to update file database: %v", err)
-// 	}
-// 	c.log.Info(fmt.Sprintf("%s moved from %s to %s", file.Name, origPath, destPath))
-// 	return nil
-// }
-
 // see if this file is registered with the server (exists on servers DB)
 func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
 	req, err := c.GetFileInfoRequest(file)
@@ -637,7 +711,6 @@ func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to execute request: %v", err)
 	}
-	fmt.Printf("response status: %v", resp.Status)
 	return resp.StatusCode == http.StatusOK, nil
 }
 
@@ -652,7 +725,11 @@ func (c *Client) RegisterFile(file *svc.File) error {
 	if err != nil {
 		return err
 	}
-	c.dump(resp, true)
+	if resp.StatusCode == http.StatusInternalServerError {
+		c.dump(resp, true)
+	} else if resp.StatusCode == http.StatusOK {
+		c.log.Info(fmt.Sprintf("file '%s' registered", file.Name))
+	}
 	return nil
 }
 
@@ -676,13 +753,14 @@ func (c *Client) ListLocalDirsDB() error {
 		fmt.Print("no directories found")
 		return nil
 	}
+	var output string
 	for _, dir := range dirs {
-		var output = fmt.Sprintf(
+		output += fmt.Sprintf(
 			"name: %s\nid: %v\nloc: %s\n\n",
 			dir.Name, dir.ID, dir.ClientPath,
 		)
-		fmt.Print(output)
 	}
+	fmt.Print(output)
 	return nil
 }
 
@@ -740,16 +818,16 @@ func (c *Client) AddDir(dirPath string) error {
 	if err != nil {
 		return err
 	}
-	if parent != nil {
-		newDir.Parent = parent
-	} else {
-		newDir.Parent = c.Drive.Root
-	}
-
 	// add directory to service
 	// NOTE: directory backup paths are updated when adding to the drive
-	if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
-		return err
+	if parent != nil {
+		if err := parent.AddSubDir(newDir); err != nil {
+			return err
+		}
+	} else {
+		if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
+			return err
+		}
 	}
 	if err := c.Db.AddDir(newDir); err != nil {
 		return err
@@ -760,30 +838,28 @@ func (c *Client) AddDir(dirPath string) error {
 	// 	return err
 	// }
 	// push metadata to server if autosync is enabled
-	if c.autoSync() {
-		if !c.localBackup() {
-			req, err := c.NewDirectoryRequest(newDir)
-			if err != nil {
-				return err
-			}
-			resp, err := c.Client.Do(req)
-			if err != nil {
-				return err
-			}
-			c.dump(resp, true)
-			// Get the directory's server path
-			serverPath, err := c.getDirServerPath(newDir)
-			if err != nil {
-				return err
-			}
-			newDir.ServerPath = serverPath
-			if err := c.UpdateDirectory(newDir); err != nil {
-				return err
-			}
-		} else {
-			if err := c.BackupDir(newDir); err != nil {
-				return err
-			}
+	if !c.localBackup() {
+		req, err := c.NewDirectoryRequest(newDir)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		c.dump(resp, true)
+		// Get the directory's server path
+		serverPath, err := c.getDirServerPath(newDir)
+		if err != nil {
+			return err
+		}
+		newDir.ServerPath = serverPath
+		if err := c.UpdateDirectory(newDir); err != nil {
+			return err
+		}
+	} else {
+		if err := c.BackupDir(newDir); err != nil {
+			return err
 		}
 	}
 	c.log.Info(fmt.Sprintf("directory (%s) added to client", newDir.Name))
@@ -797,20 +873,16 @@ func (c *Client) RemoveDir(dirToRemove *svc.Directory) error {
 		return err
 	}
 	if d == nil {
-		return fmt.Errorf("directory %s not found", dirToRemove.ID)
+		return fmt.Errorf("directory '%s' not found", dirToRemove.ID)
 	}
 	// first remove all the files and subdirectories in this directory
 	files := dirToRemove.GetFiles()
-	for _, file := range files {
-		if err := c.Db.RemoveFile(file.ID); err != nil {
-			return err
-		}
+	if err := c.Db.RemoveFiles(files); err != nil {
+		return err
 	}
 	subDirs := dirToRemove.GetSubDirs()
-	for _, sd := range subDirs {
-		if err := c.Db.RemoveDirectory(sd.ID); err != nil {
-			return err
-		}
+	if err := c.Db.RemoveDirectories(subDirs); err != nil {
+		return err
 	}
 	// remove directory itself from the service
 	if err := c.Drive.RemoveDir(dirToRemove.ID); err != nil {
@@ -886,21 +958,16 @@ func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
 }
 
 // see if this directory is registered with the server (exists on servers DB)
-func (c *Client) IsDirRegistered(dir *svc.Directory) bool {
+func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
 	req, err := c.GetDirInfoRequest(dir)
 	if err != nil {
-		c.log.Error("failed to create directory request: " + err.Error())
-		return false
+		return false, fmt.Errorf("failed to create directory request: " + err.Error())
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		c.log.Error("failed to execute request: " + err.Error())
-		return false
+		return false, fmt.Errorf("failed to execute request: " + err.Error())
 	}
-	if resp.StatusCode == http.StatusOK {
-		return true
-	}
-	return false
+	return resp.StatusCode == http.StatusOK, nil
 }
 
 // send directory metadata to the server
@@ -914,9 +981,9 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		c.log.Warn(fmt.Sprintf("server dir registration response: %d", resp.StatusCode))
+		c.log.Warn(fmt.Sprintf("server registration response: %d", resp.StatusCode))
 	} else {
-		c.log.Log(logger.INFO, fmt.Sprintf("directory %s registered with server", dir.Name))
+		c.log.Log(logger.INFO, fmt.Sprintf("directory '%s' registered with server", dir.Name))
 	}
 	return nil
 }
@@ -928,7 +995,7 @@ func (c *Client) EmptyRecycleBin() error {
 		return err
 	}
 	for _, entry := range entries {
-		if err := os.Remove(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
+		if err := os.RemoveAll(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
 			c.log.Error(err.Error())
 		}
 	}
@@ -940,12 +1007,10 @@ func (c *Client) EmptyRecycleBin() error {
 
 // add a new drive to the client. mainly used for testing
 func (c *Client) AddDrive(drv *svc.Drive) error {
-	// first add any files to the DB
 	files := drv.Root.GetFiles()
 	if err := c.Db.AddFiles(files); err != nil {
 		return err
 	}
-	// add any subdirectories to the client
 	subDirs := drv.Root.GetSubDirs()
 	if err := c.Db.AddDirs(subDirs); err != nil {
 		return err
@@ -1129,6 +1194,7 @@ side, pull those files from the server and add to the local client service.
 */
 func (c *Client) RefreshFromServer() error { return nil }
 
+// Does this path point to a directory?
 func (c *Client) isDirPath(path string) bool {
 	item, err := os.Stat(path)
 	if err != nil {
@@ -1139,8 +1205,7 @@ func (c *Client) isDirPath(path string) bool {
 }
 
 // Descends a given file tree starting with the given path, assumed to be a directory.
-func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
-	// make sure this is actually a directory
+func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 	if !c.isDirPath(dirPath) {
 		return nil, fmt.Errorf("path is not a directory: %s", dirPath)
 	}
@@ -1151,7 +1216,7 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 		return nil, err
 	}
 	if dir != nil {
-		c.log.Info(fmt.Sprintf("%s is already known", filepath.Base(dirPath)))
+		c.log.Info(fmt.Sprintf("'%s' is already known", filepath.Base(dirPath)))
 		return dir, nil
 	}
 
@@ -1159,6 +1224,7 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 	c.log.Info(fmt.Sprintf("traversing %s...", dirPath))
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 	newDir.Parent = c.Drive.Root
+	newDir.BackupPath = filepath.Join(c.Conf.BackupDir, newDir.Name)
 	newDir.Walk()
 
 	// add newly discovered files and directories to the service
@@ -1172,13 +1238,9 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 		if err := c.WatchItem(file.Path); err != nil {
 			return nil, err
 		}
-		if c.autoSync() {
-			if !c.localBackup() {
-				if err := c.RegisterFile(file); err != nil {
-					return nil, err
-				}
-			} else {
-				// TODO:
+		if !c.localBackup() {
+			if err := c.RegisterFile(file); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -1194,13 +1256,9 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 		// if err := c.WatchItem(subDir.Path); err != nil {
 		// 	return err
 		// }
-		if c.autoSync() {
-			if !c.localBackup() {
-				if err := c.RegisterDirectory(subDir); err != nil {
-					return nil, err
-				}
-			} else {
-				// TODO:
+		if !c.localBackup() {
+			if err := c.RegisterDirectory(subDir); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -1213,8 +1271,16 @@ func (c *Client) DiscoverWithPath(dirPath string) (*svc.Directory, error) {
 	// if err := c.WatchItem(newDir.Path); err != nil {
 	// 	return err
 	// }
-	if err := c.RegisterDirectory(newDir); err != nil {
-		return nil, err
+	if err := c.Drive.AddSubDir(c.Drive.RootID, newDir); err != nil {
+		return nil, fmt.Errorf("failed to add root to drive instance: %v", err)
+	}
+	if !c.localBackup() {
+		if err := c.RegisterDirectory(newDir); err != nil {
+			return nil, err
+		}
+	}
+	if err := c.SaveState(); err != nil {
+		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}
 	return newDir, nil
 }
@@ -1359,4 +1425,57 @@ func (c *Client) refreshDrive(dir *svc.Directory) *svc.Directory {
 		}
 	}
 	return dir
+}
+
+// make sure all items registered on the client side are also registered
+// on the client side. if not, register them with the server.
+func (c *Client) RegisterItems() error {
+	c.log.Log(logger.INFO, "checking for items not registered with the server...")
+
+	// check files
+	files := c.Drive.GetFiles()
+	for _, file := range files {
+		reg, err := c.IsFileRegistered(file)
+		if err != nil {
+			return err
+		}
+		if !reg {
+			if err := c.RegisterFile(file); err != nil {
+				c.log.Error(fmt.Sprintf("failed to register file '%s': %v", file.Name, err))
+				return err
+			}
+			serverPath, err := c.getFileServerPath(file)
+			if err != nil {
+				return err
+			}
+			file.ServerPath = serverPath
+			if err := c.UpdateFile(file); err != nil {
+				return err
+			}
+		}
+	}
+
+	// check directories
+	dirs := c.Drive.GetDirs()
+	for _, dir := range dirs {
+		reg, err := c.IsDirRegistered(dir)
+		if err != nil {
+			return err
+		}
+		if !reg {
+			if err := c.RegisterDirectory(dir); err != nil {
+				c.log.Error(fmt.Sprintf("failed to register directory '%s': %v", dir.Name, err))
+				return err
+			}
+			serverPath, err := c.getDirServerPath(dir)
+			if err != nil {
+				return err
+			}
+			dir.ServerPath = serverPath
+			if err := c.UpdateDirectory(dir); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -7,30 +7,23 @@ implementations based off
 https://stackoverflow.com/questions/18695346/how-can-i-sort-a-mapstringint-by-its-values
 */
 
-// --------------- sorted batch building
-
-// converts a slice of files to map[*File]int64 where the int is the files size
-func (b *Batch) SliceToMap(files []*File) map[*File]int64 {
-	m := make(map[*File]int64)
-	for _, f := range files {
-		m[f] = f.GetSize()
-	}
-	return m
-}
+// --------------- sorted batch building --------------------
 
 type Item struct {
 	File *File // file object
 	Size int64 // size of file
 }
 
-// A slice of Pairs that implements sort.Interface to sort by Value.
+// A slice of Item objects that implements sort.Interface to sort by Value.
 type ItemList []Item
 
-func (p ItemList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p ItemList) Len() int           { return len(p) }
-func (p ItemList) Less(i, j int) bool { return p[i].Size < p[j].Size }
+func (l ItemList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l ItemList) Len() int           { return len(l) }
+func (l ItemList) Less(i, j int) bool { return l[i].Size < l[j].Size }
 
-// sort a map of files by file size and return as a PairList
+// sort a map of files by file size and return as an ItemList
+// ItemList is a slice of Item objects containing a pointer to the file object,
+// and its size. These types are primarily used just for sorting.
 func (b *Batch) SortMapByValue(m map[*File]int64) ItemList {
 	i := 0
 	p := make(ItemList, len(m))

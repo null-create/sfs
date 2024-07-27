@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/sfs/pkg/logger"
 
@@ -15,6 +16,7 @@ import (
 // Setting isSingleton to true will allow Query to automatically
 // switch between different databases.
 type Query struct {
+	mu        sync.Mutex     // guards
 	DBPath    string         // database directory path
 	CurDB     string         // current database we're connecting to
 	Debug     bool           // debug flag
@@ -35,26 +37,6 @@ func NewQuery(dbPath string, isSingleton bool) *Query {
 		Singleton: isSingleton,
 		DBs:       []string{"users", "drives", "directories", "files"},
 	}
-}
-
-// prepare an SQL statement.
-func (q *Query) Prepare(query string) error {
-	stmt, err := q.Conn.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("unable to prepare statement: %v", err)
-	}
-	q.Stmt = stmt
-	return nil
-}
-
-// make sure this is a valid database
-func (q *Query) ValidDb(dbName string) bool {
-	for _, db := range q.DBs {
-		if dbName == db {
-			return true
-		}
-	}
-	return false
 }
 
 // sets the file path to the db we want to connect to.

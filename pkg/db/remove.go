@@ -75,6 +75,9 @@ func (q *Query) DropTable(dbName string) error {
 }
 
 func (q *Query) RemoveUser(userID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -87,6 +90,9 @@ func (q *Query) RemoveUser(userID string) error {
 }
 
 func (q *Query) RemoveUsers(users []*auth.User) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("users")
 	q.Connect()
 	defer q.Close()
@@ -101,6 +107,9 @@ func (q *Query) RemoveUsers(users []*auth.User) error {
 }
 
 func (q *Query) RemoveFile(fileID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
@@ -112,13 +121,16 @@ func (q *Query) RemoveFile(fileID string) error {
 	return nil
 }
 
-func (q *Query) RemoveFiles(fs []*svc.File) error {
+func (q *Query) RemoveFiles(files []*svc.File) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("files")
 	q.Connect()
 	defer q.Close()
 
-	for _, f := range fs {
-		_, err := q.Conn.Exec(RemoveFileQuery, f.ID, f.ID)
+	for _, file := range files {
+		_, err := q.Conn.Exec(RemoveFileQuery, file.ID, file.ID)
 		if err != nil {
 			return fmt.Errorf("failed to remove user: %v", err)
 		}
@@ -127,6 +139,9 @@ func (q *Query) RemoveFiles(fs []*svc.File) error {
 }
 
 func (q *Query) RemoveDirectory(dirID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
@@ -139,20 +154,26 @@ func (q *Query) RemoveDirectory(dirID string) error {
 }
 
 func (q *Query) RemoveDirectories(dirs []*svc.Directory) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 
-	for _, d := range dirs {
-		_, err := q.Conn.Exec(RemoveDirectoryQuery, d.ID)
+	for _, dir := range dirs {
+		_, err := q.Conn.Exec(RemoveDirectoryQuery, dir.ID)
 		if err != nil {
-			return fmt.Errorf("failed to remove file (id=%s): %v", d.ID, err)
+			return fmt.Errorf("failed to remove file (id=%s): %v", dir.ID, err)
 		}
 	}
 	return nil
 }
 
 func (q *Query) RemoveDrive(driveID string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
@@ -165,6 +186,9 @@ func (q *Query) RemoveDrive(driveID string) error {
 }
 
 func (q *Query) RemoveDrives(drvs []*svc.Drive) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	q.WhichDB("drives")
 	q.Connect()
 	defer q.Close()
