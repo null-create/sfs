@@ -124,6 +124,7 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 		}
 		id = itemID
 	}
+
 	// get the monitoring event channel for this item
 	evtChan := c.Monitor.GetEventChan(itemPath)
 	if evtChan == nil || id == "" {
@@ -181,7 +182,7 @@ func (c *Client) StartHandlers() error {
 
 // stops all event handler goroutines.
 func (c *Client) StopHandlers() {
-	c.log.Info(fmt.Sprintf("shutting down %d event handlers...", len(c.OffSwitches)))
+	c.log.Info(fmt.Sprintf("shutting down %d event handlers...", len(c.Handlers)))
 	for path := range c.Handlers {
 		c.Handlers[path] = nil
 	}
