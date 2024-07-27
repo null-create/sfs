@@ -32,8 +32,7 @@ func NewServer() *Server {
 		Svr: &http.Server{
 			// NewRouter() instantiates the server-side SFS service instance
 			// and handles client requests.
-			Handler: NewRouter(),
-			// server configs
+			Handler:      NewRouter(),
 			Addr:         svrCfg.Addr,
 			ReadTimeout:  svrCfg.TimeoutRead,
 			WriteTimeout: svrCfg.TimeoutWrite,
