@@ -492,9 +492,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.Parent = d
 		dir.DriveID = d.DriveID
 		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
+		dir.LastSync = time.Now().UTC()
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
-		dir.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
