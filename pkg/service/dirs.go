@@ -75,7 +75,7 @@ type Directory struct {
 	Dirs map[string]*Directory `json:"-"`
 
 	// pointer to parent directory (if not root).
-	Parent *Directory
+	Parent *Directory `json:"-"`
 
 	// disignator for whether this directory is considerd the "root" directory
 	Root     bool   `json:"root"`
@@ -534,15 +534,15 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	return nil
 }
 
-// remove from subdir map. does not remove physical directory!
+// remove from subdir map. returns nil if the directory is not found.
+// does not remove physical directory!
 func (d *Directory) removeDir(dirID string) *Directory {
 	if sd, exists := d.Dirs[dirID]; exists {
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
 		return sd
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // removes subdirectory and *all of its child directories*
