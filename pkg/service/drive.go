@@ -93,7 +93,7 @@ type Drive struct {
 
 	// Security stuff
 	Protected bool   `json:"protected"`
-	Key       string `json:"key"`
+	Key       string `json:"-"`
 	AuthType  string `json:"auth_type"`
 
 	// Flag for whether Populate() has been called
