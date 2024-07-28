@@ -334,16 +334,6 @@ func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
 	a.write(w, fmt.Sprintf("directory (id=%s) has been updated", dir.ID))
 }
 
-// TODO:
-// create a new directory with supplied contents on the server.
-// should take a .zip file sent from the user, unpack it in the
-// desired location, and update internal data structures and databases
-// accordingly
-
-// func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
-//
-// }
-
 // create a new empty physical directory on the server for a user
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 	newDir := r.Context().Value(Directory).(*svc.Directory)
@@ -365,10 +355,6 @@ func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 }
 
 // -------- drives --------------------------------
-
-/*
-NOTE: drive create/delete are handled by user API functions.
-*/
 
 // sends drive metadata. does not return entire contents of drive.
 func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
