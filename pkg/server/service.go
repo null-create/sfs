@@ -432,9 +432,7 @@ func (s *Service) RemoveDrive(driveID string) error {
 
 // --------- users --------------------------------
 
-func (s *Service) TotalUsers() int {
-	return len(s.Users)
-}
+func (s *Service) TotalUsers() int { return len(s.Users) }
 
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
@@ -739,8 +737,7 @@ func (s *Service) FindDir(driveID string, dirID string) (*svc.Directory, error) 
 	return dir, nil
 }
 
-// add a sub-directory to the given drive directory.
-// makes a physical directory for this new directory object
+// add a sub-directory to the given drive directory
 // and updates the database.
 func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory) error {
 	drive := s.GetDrive(driveID)
@@ -760,7 +757,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 		id = drive.RootID
 		newDir.Parent = drive.Root
 	}
-	// add directory to service. creates physical directory.
+	// add directory to service.
 	if err := drive.AddSubDir(id, newDir); err != nil {
 		return err
 	}
