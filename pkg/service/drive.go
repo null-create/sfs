@@ -473,20 +473,14 @@ func (d *Drive) GetDirsMap() map[string]*Directory {
 	return nil
 }
 
-// remove a physical directory, as well as all its contents and children
+// remove a directory from the drive service. does not remove physical directories!
 func (d *Drive) removeDir(dirID string) error {
 	dir := d.GetDir(dirID)
 	if dir != nil {
-		// NOTE: the caller is responsible for ensuring all
-		// subdirectories and files are removed from the database prior to
-		// calling this function
-		if err := os.RemoveAll(dir.Path); err != nil {
-			return err
-		}
-		// this should only apply to child directories
 		if dir.Parent != nil {
 			delete(dir.Parent.Dirs, dir.ID)
 		}
+		_ = d.Root.RemoveSubDir(dir.ID)
 		d.log.Info(fmt.Sprintf("directory (id=%s) removed", dirID))
 	} else {
 		d.log.Info(fmt.Sprintf("directory (id=%s) not found", dirID))
@@ -494,9 +488,7 @@ func (d *Drive) removeDir(dirID string) error {
 	return nil
 }
 
-// removed a directory from the drive.
-// removes physical directory and all its children, as well as deletes
-// the directory entry from the sfs filesystem.
+// remove a directory entry from the sfs filesystem.
 func (d *Drive) RemoveDir(dirID string) error {
 	if !d.Protected {
 		if !d.HasRoot() {
