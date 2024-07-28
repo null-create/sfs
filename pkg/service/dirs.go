@@ -566,9 +566,7 @@ func (d *Directory) RemoveSubDir(dirID string) *Directory {
 
 // attempts to locate the directory or subdirectory starting from the given directory.
 // returns nil if not found.
-func (d *Directory) GetSubDir(dirID string) *Directory {
-	return d.WalkD(dirID)
-}
+func (d *Directory) GetSubDir(dirID string) *Directory { return d.WalkD(dirID) }
 
 // get a slice of all sub directories starting from the given directory.
 // returns an empty slice if none are found.
@@ -586,9 +584,7 @@ func (d *Directory) GetSubDirs() []*Directory {
 
 // returns a map of all subdirectories starting from the current directory.
 // returns an empty map if nothing is not found
-func (d *Directory) GetDirMap() map[string]*Directory {
-	return d.WalkDs()
-}
+func (d *Directory) GetDirMap() map[string]*Directory { return d.WalkDs() }
 
 // recursively copies the directory tree to the given location.
 //
