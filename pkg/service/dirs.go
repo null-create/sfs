@@ -75,7 +75,8 @@ type Directory struct {
 	Dirs map[string]*Directory `json:"-"`
 
 	// pointer to parent directory (if not root).
-	Parent *Directory
+	Parent   *Directory `json:"-"`
+	ParentID string     `json:"parent_id"`
 
 	// disignator for whether this directory is considerd the "root" directory
 	Root     bool   `json:"root"`
@@ -100,6 +101,7 @@ func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath s
 		Files:      make(map[string]*File, 0),
 		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
 		Parent:     nil,
+		ParentID:   "",
 		Root:       true,
 		Path:       rootPath,
 		ServerPath: rootPath,
@@ -130,6 +132,7 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 		Files:      make(map[string]*File, 0),
 		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
 		Parent:     nil,
+		ParentID:   "",
 		Root:       false,
 		Path:       path,
 		ClientPath: path,
@@ -478,6 +481,7 @@ func (d *Directory) Mkdir(dirPath string) error {
 func (d *Directory) PutSubDir(subDir *Directory) error {
 	if d.HasDir(subDir.ID) {
 		subDir.Parent = d
+		subDir.ParentID = d.ID
 		d.Dirs[subDir.ID] = subDir
 	} else {
 		return fmt.Errorf("dir (id=%s) not found. need to add before updating", subDir.ID)
@@ -490,11 +494,12 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
 		dir.Parent = d
+		dir.ParentID = d.ID
 		dir.DriveID = d.DriveID
 		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
+		dir.LastSync = time.Now().UTC()
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
-		dir.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
@@ -534,15 +539,15 @@ func (d *Directory) AddSubDirs(dirs []*Directory) error {
 	return nil
 }
 
-// remove from subdir map. does not remove physical directory!
+// remove from subdir map. returns nil if the directory is not found.
+// does not remove physical directory!
 func (d *Directory) removeDir(dirID string) *Directory {
 	if sd, exists := d.Dirs[dirID]; exists {
 		delete(d.Dirs, dirID)
 		d.LastSync = time.Now().UTC()
 		return sd
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // removes subdirectory and *all of its child directories*
@@ -566,9 +571,7 @@ func (d *Directory) RemoveSubDir(dirID string) *Directory {
 
 // attempts to locate the directory or subdirectory starting from the given directory.
 // returns nil if not found.
-func (d *Directory) GetSubDir(dirID string) *Directory {
-	return d.WalkD(dirID)
-}
+func (d *Directory) GetSubDir(dirID string) *Directory { return d.WalkD(dirID) }
 
 // get a slice of all sub directories starting from the given directory.
 // returns an empty slice if none are found.
@@ -586,9 +589,7 @@ func (d *Directory) GetSubDirs() []*Directory {
 
 // returns a map of all subdirectories starting from the current directory.
 // returns an empty map if nothing is not found
-func (d *Directory) GetDirMap() map[string]*Directory {
-	return d.WalkDs()
-}
+func (d *Directory) GetDirMap() map[string]*Directory { return d.WalkDs() }
 
 // recursively copies the directory tree to the given location.
 //

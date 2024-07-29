@@ -47,6 +47,7 @@ const (
 			overwrite BIT,
 			last_sync DATETIME,
 			endpoint VARCHAR(255),
+			parent_id VARCHAR(50),
 			drive_root VARCHAR(255),
 			root_path VARCHAR(255),
 			UNIQUE(id)
@@ -131,11 +132,12 @@ const (
 			key,
 			overwrite,
 			last_sync,
-			endpoint, 
+			endpoint,
+			parent_id, 
 			drive_root, 
 			root_path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
 		INSERT OR IGNORE INTO Drives (
@@ -214,6 +216,7 @@ const (
 				overwrite = ?,
 				last_sync = ?, 
 				endpoint = ?,
+				parent_id = ?,
 				drive_root = ?, 
 				root_path = ?
 		WHERE id = ?;`

@@ -91,7 +91,6 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/all", func(r chi.Router) {
 				// get a list of all active users
-				r.Use(AllUsersCtx)
 				r.Get("/", api.GetAllUsers)
 			})
 		})
@@ -118,7 +117,6 @@ func NewRouter() *chi.Mux {
 			})
 			// temp for testing
 			r.Route("/all", func(r chi.Router) {
-				r.Use(AllFilesCtx)
 				r.Get("/", api.GetAllFileInfo) // get info
 			})
 		})
@@ -144,14 +142,13 @@ func NewRouter() *chi.Mux {
 				r.Use(DirCtx)
 				r.Get("/", api.GetDirInfo)
 			})
-			// get info about all directories
+			// get info about *all* directories
 			r.Route("/i/all/{userID}", func(r chi.Router) {
-				r.Use(AllUsersDirsCtx)
-				r.Get("/", api.GetAllDirsInfo)
+				r.Use(UserCtx)
+				r.Get("/", api.GetUsersDirs)
 			})
 			// temp for testing
 			r.Route("/all", func(r chi.Router) {
-				r.Use(AllDirsCtx)
 				r.Get("/", api.GetAllDirsInfo)
 			})
 		})
@@ -170,7 +167,7 @@ func NewRouter() *chi.Mux {
 
 		// sync operations
 		r.Route("/sync/{driveID}", func(r chi.Router) {
-			r.Use(DriveIdCtx)
+			r.Use(DriveCtx)
 			// fetch file last sync times for all
 			// user files (in all directories) from server
 			r.Get("/", api.GetIdx)

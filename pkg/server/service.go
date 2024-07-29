@@ -240,15 +240,19 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 }
 
 // attempts to retrieve a drive from the drive map.
-// populates the drive if found.
+// if Isloaded is false, service will fully load the drive
+// with users files and directories, and generate a new sync index
 func (s *Service) GetDrive(driveID string) *svc.Drive {
 	if drive, exists := s.Drives[driveID]; exists {
-		root, err := s.loadRoot(drive.RootID)
-		if err != nil {
-			s.log.Error(fmt.Sprintf("failed to load drive root %s: %v", drive.RootID, err))
+		if !drive.IsLoaded {
+			drive, err := s.LoadDrive(drive.ID)
+			if err != nil {
+				s.log.Error(fmt.Sprintf("failed to load drive: %v", err))
+			}
+			s.Drives[driveID] = drive
+			drive.IsLoaded = true
+			return drive
 		}
-		drive.Root = root
-		drive.IsLoaded = true
 		return drive
 	}
 	return nil
@@ -432,9 +436,7 @@ func (s *Service) RemoveDrive(driveID string) error {
 
 // --------- users --------------------------------
 
-func (s *Service) TotalUsers() int {
-	return len(s.Users)
-}
+func (s *Service) TotalUsers() int { return len(s.Users) }
 
 // checks service instance and user db for whether a user exists
 func (s *Service) UserExists(userID string) bool {
@@ -510,8 +512,7 @@ func (s *Service) RemoveUser(userID string) error {
 // returns nil if user isn't found
 func (s *Service) GetUser(userId string) (*auth.User, error) {
 	if u, exists := s.Users[userId]; !exists {
-		// try the database before giving up
-		u, err := s.Db.GetUser(userId)
+		u, err := s.Db.GetUser(userId) // try the database before giving up
 		if err != nil {
 			return nil, err
 		}
@@ -725,22 +726,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 
 // --------- directories --------------------------------
 
-// find a directory in the database. does not populate with files or subdirectories,
-// just returns metadata.
-func (s *Service) FindDir(driveID string, dirID string) (*svc.Directory, error) {
-	drive := s.GetDrive(driveID)
-	if drive == nil {
-		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
-	}
-	dir := drive.GetDir(dirID)
-	if dir == nil {
-		return nil, fmt.Errorf("directory (id=%s) not found", dirID)
-	}
-	return dir, nil
-}
-
-// add a sub-directory to the given drive directory.
-// makes a physical directory for this new directory object
+// add a sub-directory to the given drive directory
 // and updates the database.
 func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory) error {
 	drive := s.GetDrive(driveID)
@@ -748,20 +734,19 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 		return fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	// check if the parent directory exists on the server. if not, add to root.
-	var id string
 	dir, err := s.Db.GetDirectoryByID(destDirID)
 	if err != nil {
 		return err
 	}
 	if dir != nil {
-		id = dir.ID
 		newDir.Parent = dir
+		newDir.ParentID = dir.ID
 	} else {
-		id = drive.RootID
 		newDir.Parent = drive.Root
+		newDir.ParentID = drive.Root.ID
 	}
-	// add directory to service. creates physical directory.
-	if err := drive.AddSubDir(id, newDir); err != nil {
+	// add directory to service.
+	if err := drive.AddSubDir(newDir.ParentID, newDir); err != nil {
 		return err
 	}
 	if err := s.Db.AddDir(newDir); err != nil {
