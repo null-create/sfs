@@ -266,19 +266,6 @@ func (s *Service) SaveDrive(drv *svc.Drive) error {
 	return nil
 }
 
-// load and populate the root directory
-func (s *Service) loadRoot(rootID string) (*svc.Directory, error) {
-	root, err := s.Db.GetDirectoryByID(rootID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get root directory: %v", err)
-	}
-	if root == nil {
-		return nil, fmt.Errorf("root directory (id=%s) not found", rootID)
-	}
-	popRoot := s.Populate(root)
-	return popRoot, nil
-}
-
 // Loads drive and root directory from the database, populates
 // the root, and generates a new sync index.
 func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
@@ -731,6 +718,11 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	drive := s.GetDrive(driveID)
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", driveID)
+	}
+	// check if this directory already exists
+	nd := drive.GetDir(newDir.ID)
+	if nd != nil {
+		return fmt.Errorf("directory (name=%s id=%s) already exists", newDir.Name, newDir.ID)
 	}
 	// check if the parent directory exists on the server. if not, add to root.
 	dir, err := s.Db.GetDirectoryByID(destDirID)
