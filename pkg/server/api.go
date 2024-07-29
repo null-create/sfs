@@ -222,7 +222,12 @@ func (a *API) ServeFile(w http.ResponseWriter, r *http.Request) {
 // get json blobs of all files available on the server for a user.
 // only sends metadata, not the actual files.
 func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
-	files, err := a.Svc.Db.GetFiles()
+	user, err := a.getUserFromRequest(r)
+	if err != nil {
+		a.serverError(w, err.Error())
+		return
+	}
+	files, err := a.Svc.GetAllFiles(user.DriveID)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
