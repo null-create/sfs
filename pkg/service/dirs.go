@@ -501,10 +501,7 @@ func (d *Directory) addSubDir(dir *Directory) error {
 }
 
 // add a single sub directory to the current directory.
-// sets dir's parent pointer to the directory this
-// function is attached to.
 // does *not* create a physical directory!
-// use dir.MkDir(path) instead.
 func (d *Directory) AddSubDir(dir *Directory) error {
 	if !d.Protected {
 		if err := d.addSubDir(dir); err != nil {
