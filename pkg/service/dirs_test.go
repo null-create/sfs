@@ -246,7 +246,10 @@ func TestWalkF(t *testing.T) {
 	env.SetEnv(false)
 
 	d := MakeTmpDirs(t)
-	fileToFind := NewFile("findMe", "some-rand-id", "bill", filepath.Join(d.Path, "findMe"))
+	fileToFind, err := MakeTmpTxtFile(filepath.Join(GetTestingDir(), "test.txt"), RandInt(1000))
+	if err != nil {
+		Fail(t, GetTestingDir(), err)
+	}
 	d.addFile(fileToFind)
 
 	found := d.WalkF(fileToFind.ID)
