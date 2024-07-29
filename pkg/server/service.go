@@ -740,11 +740,13 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	}
 	if dir != nil {
 		newDir.Parent = dir
+		newDir.ParentID = dir.ID
 	} else {
 		newDir.Parent = drive.Root
+		newDir.ParentID = drive.Root.ID
 	}
 	// add directory to service.
-	if err := drive.AddSubDir(destDirID, newDir); err != nil {
+	if err := drive.AddSubDir(newDir.ParentID, newDir); err != nil {
 		return err
 	}
 	if err := s.Db.AddDir(newDir); err != nil {
