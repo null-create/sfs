@@ -98,10 +98,6 @@ func NewUserCtx(h http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if newUser == nil {
-			http.Error(w, "user data unmarshalling failed", http.StatusInternalServerError)
-			return
-		}
 		newCtx := context.WithValue(r.Context(), User, newUser)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
@@ -121,10 +117,6 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if newDir == nil {
-			http.Error(w, "directory unmarshalling failed", http.StatusInternalServerError)
-			return
-		}
 		newCtx := context.WithValue(r.Context(), Directory, newDir)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
@@ -142,10 +134,6 @@ func NewDriveCtx(h http.Handler) http.Handler {
 		newDrive, err := svc.UnmarshalDriveString(drvInfo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if newDrive == nil {
-			http.Error(w, "drive data unmarshal failed", http.StatusInternalServerError)
 			return
 		}
 		newCtx := context.WithValue(r.Context(), Drive, newDrive)
