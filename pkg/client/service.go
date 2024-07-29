@@ -848,14 +848,15 @@ func (c *Client) AddDir(dirPath string) error {
 			return err
 		}
 		c.dump(resp, true)
-		// Get the directory's server path
-		serverPath, err := c.getDirServerPath(newDir)
-		if err != nil {
-			return err
-		}
-		newDir.ServerPath = serverPath
-		if err := c.UpdateDirectory(newDir); err != nil {
-			return err
+		if resp.StatusCode == http.StatusOK {
+			serverPath, err := c.getDirServerPath(newDir)
+			if err != nil {
+				return err
+			}
+			newDir.ServerPath = serverPath
+			if err := c.UpdateDirectory(newDir); err != nil {
+				return err
+			}
 		}
 	} else {
 		if err := c.BackupDir(newDir); err != nil {
