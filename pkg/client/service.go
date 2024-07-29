@@ -825,7 +825,7 @@ func (c *Client) AddDir(dirPath string) error {
 			return err
 		}
 	} else {
-		if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
+		if err := c.Drive.Root.AddSubDir(newDir); err != nil {
 			return err
 		}
 	}
