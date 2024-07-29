@@ -74,7 +74,6 @@ func NewFileCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("failed to verify token: %v", err), http.StatusInternalServerError)
 			return
 		}
-		// unmarshal new file data and check if it already exists before creating
 		newFile, err := svc.UnmarshalFileStr(fileInfo)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to unmarshal file data: %v", err), http.StatusInternalServerError)
