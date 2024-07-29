@@ -476,8 +476,6 @@ func (c *Client) GetFileByName(name string) (*svc.File, error) {
 
 /*
 add a file to the service using its file path.
-should check for whether the directory it resides in is
-monitored by SFS -- though is not contingent on it!
 
 SFS can monitor files outside of the designated root directory, so
 if we add a file this way then we should automatically make a backup of it
@@ -540,8 +538,9 @@ func (c *Client) AddFile(filePath string) error {
 			return err
 		}
 		c.dump(resp, true)
-		// get newly generated server-side path for the file if successfully created
 		if resp.StatusCode == http.StatusOK {
+			// update client side info about the file to
+			// include the server path generated after a successful registration
 			svrpath, err := c.getFileServerPath(newFile)
 			if err != nil {
 				return err
