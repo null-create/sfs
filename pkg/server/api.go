@@ -481,11 +481,7 @@ func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 		a.clientError(w, fmt.Sprintf("directory (name=%s id=%s) already registered", newDir.Name, newDir.ID))
 		return
 	}
-	if newDir.Parent == nil && !newDir.IsRoot() {
-		a.clientError(w, "no parent directory assigned to given directory. no ID for destination directory available.")
-		return
-	}
-	if err := a.Svc.NewDir(newDir.DriveID, newDir.Parent.ID, newDir); err != nil {
+	if err := a.Svc.NewDir(newDir.DriveID, newDir.ParentID, newDir); err != nil {
 		a.serverError(w, fmt.Sprintf("failed to create directory: %v", err))
 		return
 	}
