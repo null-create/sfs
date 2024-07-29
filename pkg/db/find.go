@@ -467,6 +467,7 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 		&dir.Overwrite,
 		&dir.LastSync,
 		&dir.Endpoint,
+		&dir.ParentID,
 		&dir.Root,
 		&dir.RootPath,
 	); err != nil {
@@ -508,6 +509,7 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 		&dir.Overwrite,
 		&dir.LastSync,
 		&dir.Endpoint,
+		&dir.ParentID,
 		&dir.Root,
 		&dir.RootPath,
 	); err != nil {
@@ -549,6 +551,7 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 		&dir.Overwrite,
 		&dir.LastSync,
 		&dir.Endpoint,
+		&dir.ParentID,
 		&dir.Root,
 		&dir.RootPath,
 	); err != nil {
@@ -619,6 +622,7 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 			&dir.Overwrite,
 			&dir.LastSync,
 			&dir.Endpoint,
+			&dir.ParentID,
 			&dir.Root,
 			&dir.RootPath,
 		); err != nil {
@@ -668,6 +672,7 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 			&dir.Overwrite,
 			&dir.LastSync,
 			&dir.Endpoint,
+			&dir.ParentID,
 			&dir.Root,
 			&dir.RootPath,
 		); err != nil {
@@ -717,6 +722,7 @@ func (q *Query) GetDirsByDriveID(driveID string) ([]*svc.Directory, error) {
 			&dir.Overwrite,
 			&dir.LastSync,
 			&dir.Endpoint,
+			&dir.ParentID,
 			&dir.Root,
 			&dir.RootPath,
 		); err != nil {

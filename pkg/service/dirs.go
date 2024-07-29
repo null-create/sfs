@@ -75,7 +75,8 @@ type Directory struct {
 	Dirs map[string]*Directory `json:"-"`
 
 	// pointer to parent directory (if not root).
-	Parent *Directory `json:"-"`
+	Parent   *Directory `json:"-"`
+	ParentID string     `json:"parent_id"`
 
 	// disignator for whether this directory is considerd the "root" directory
 	Root     bool   `json:"root"`
@@ -100,6 +101,7 @@ func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath s
 		Files:      make(map[string]*File, 0),
 		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
 		Parent:     nil,
+		ParentID:   "",
 		Root:       true,
 		Path:       rootPath,
 		ServerPath: rootPath,
@@ -130,6 +132,7 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 		Files:      make(map[string]*File, 0),
 		Endpoint:   fmt.Sprint(Endpoint, ":", cfg.Port, "/v1/dirs/", uuid),
 		Parent:     nil,
+		ParentID:   "",
 		Root:       false,
 		Path:       path,
 		ClientPath: path,
@@ -478,6 +481,7 @@ func (d *Directory) Mkdir(dirPath string) error {
 func (d *Directory) PutSubDir(subDir *Directory) error {
 	if d.HasDir(subDir.ID) {
 		subDir.Parent = d
+		subDir.ParentID = d.ID
 		d.Dirs[subDir.ID] = subDir
 	} else {
 		return fmt.Errorf("dir (id=%s) not found. need to add before updating", subDir.ID)
@@ -490,6 +494,7 @@ func (d *Directory) PutSubDir(subDir *Directory) error {
 func (d *Directory) addSubDir(dir *Directory) error {
 	if _, exists := d.Dirs[dir.ID]; !exists {
 		dir.Parent = d
+		dir.ParentID = d.ID
 		dir.DriveID = d.DriveID
 		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
 		dir.LastSync = time.Now().UTC()
