@@ -314,8 +314,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	drive.Root.AddFiles(files)
 	s.log.Log(logs.INFO, fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
 
-	// populate the root directory and generate a new sync index
-	drive.Root = s.Populate(root)
+	// generate a new sync index
 	drive.SyncIndex = svc.BuildRootSyncIndex(drive.Root)
 
 	// save to service instance
