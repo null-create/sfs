@@ -45,23 +45,6 @@ func AllUsersFilesCtx(h http.Handler) http.Handler {
 	})
 }
 
-func AllDirsCtx(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: same as AllFilesCtx -- this should be handled by SFS
-		dirs, err := findAllTheDirs(getDBConn("Directories"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if len(dirs) == 0 {
-			w.Write([]byte("no directories found"))
-			return
-		}
-		newCtx := context.WithValue(r.Context(), Directories, dirs)
-		h.ServeHTTP(w, r.WithContext(newCtx))
-	})
-}
-
 // -------- new item/user context --------------------------------
 
 // attempts to get filename, owner, and path from a requets
