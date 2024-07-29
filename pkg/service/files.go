@@ -33,7 +33,7 @@ type File struct {
 
 	// security stuff
 	Protected bool   `json:"protected"`
-	Key       string `json:"key"`
+	Key       string `json:"-"`
 
 	// synchronization and file integrity fields
 	LastSync   time.Time `json:"last_sync"`   // last sync time for this file
@@ -85,7 +85,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 		Size:         item.Size(),
 		ServerBackup: false,
 		Protected:    false,
-		Key:          "default",
+		Key:          auth.GenSecret(64),
 		LastSync:     time.Now().UTC(),
 		Path:         filePath,
 		ServerPath:   filePath,
