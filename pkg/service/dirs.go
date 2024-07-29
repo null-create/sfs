@@ -469,12 +469,6 @@ func (d *Directory) FindFile(fileID string) *File {
 
 // -------- sub directory methods
 
-// create a physical directory. does not check for whether
-// this path is managed by the system, just creates a physical directory.
-func (d *Directory) Mkdir(dirPath string) error {
-	return os.Mkdir(dirPath, PERMS)
-}
-
 // update a subdirectory. must already exist as a subdirectory
 // for this directory -- this is primarily used for updating a
 // child subdirectory and reattaching it to its parent.
