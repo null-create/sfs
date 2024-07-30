@@ -774,7 +774,7 @@ func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
 		return "", err
 	}
 	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("received a non 200 response from server: %v", res)
+		return "", fmt.Errorf("received a non 200 response from server: %v", res.Body)
 	}
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, res.Body)
@@ -788,7 +788,9 @@ func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
 		return "", err
 	}
 	if d.ServerPath == "" || d.ServerPath == d.ClientPath {
-		return "", fmt.Errorf("server path was not set correctly. client_path=%s server_path=%v", d.ClientPath, d.ServerPath)
+		return "", fmt.Errorf(
+			"server path was not set correctly.\n client_path=%s\n server_path=%v", d.ClientPath, d.ServerPath,
+		)
 	}
 	return d.ServerPath, nil
 }
