@@ -145,6 +145,33 @@ func TestLoadAndStartClient(t *testing.T) {
 	}
 }
 
+func TestLoadClientAndRegisterWithServer(t *testing.T) {
+	env.SetEnv(false)
+
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpClient := newTestClient(t, tmpDir)
+
+	// initialize and start a new server in a separate goroutine
+	stopServer := make(chan bool)
+	tmpServer := server.NewServer()
+	go func() {
+		tmpServer.Start(stopServer)
+	}()
+
+	if err := tmpClient.RegisterClient(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// clean up
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TestClientUpdateUser(t *testing.T) {
 	env.SetEnv(false)
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
