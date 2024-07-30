@@ -774,7 +774,6 @@ func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
 		return "", err
 	}
 	if res.StatusCode != http.StatusOK {
-		c.log.Warn(fmt.Sprintf("received a non 200 response from server: %v", res))
 		return "", fmt.Errorf("received a non 200 response from server: %v", res)
 	}
 	var buf bytes.Buffer
@@ -941,22 +940,6 @@ func (c *Client) GetDirIDFromPath(path string) (string, error) {
 	return dir.ID, nil
 }
 
-// search for a directory by name.
-// returns an error if the directory does not exist
-func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
-	if name == "" {
-		return nil, fmt.Errorf("no path specified")
-	}
-	dir, err := c.Db.GetDirectoryByName(name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get directory: %v", err)
-	}
-	if dir == nil {
-		return nil, fmt.Errorf(fmt.Sprintf("directory does not exist: %s", name))
-	}
-	return dir, nil
-}
-
 // see if this directory is registered with the server (exists on servers DB)
 func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
 	req, err := c.GetDirInfoRequest(dir)
@@ -972,7 +955,7 @@ func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
 
 // send directory metadata to the server
 func (c *Client) RegisterDirectory(dir *svc.Directory) error {
-	req, err := c.GetDirReq(dir, "NEW")
+	req, err := c.NewDirectoryRequest(dir)
 	if err != nil {
 		return err
 	}
@@ -980,10 +963,10 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		c.dump(resp, true)
-	} else if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusOK {
 		c.log.Info(fmt.Sprintf("directory '%s' registered", dir.Name))
+	} else {
+		c.dump(resp, true)
 	}
 	return nil
 }
