@@ -244,15 +244,12 @@ func (s *Service) populate(dir *svc.Directory) *svc.Directory {
 // with users files and directories, and generate a new sync index
 func (s *Service) GetDrive(driveID string) *svc.Drive {
 	if drive, exists := s.Drives[driveID]; exists {
-		if !drive.IsLoaded {
-			drive, err := s.LoadDrive(drive.ID)
-			if err != nil {
-				s.log.Error(fmt.Sprintf("failed to load drive: %v", err))
-			}
-			s.Drives[driveID] = drive
-			drive.IsLoaded = true
-			return drive
+		drive, err := s.LoadDrive(drive.ID)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("failed to load drive: %v", err))
 		}
+		s.Drives[driveID] = drive
+		drive.IsLoaded = true
 		return drive
 	}
 	return nil
