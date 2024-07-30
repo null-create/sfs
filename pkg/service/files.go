@@ -33,7 +33,7 @@ type File struct {
 
 	// security stuff
 	Protected bool   `json:"protected"`
-	Key       string `json:"key"`
+	Key       string `json:"-"`
 
 	// synchronization and file integrity fields
 	LastSync   time.Time `json:"last_sync"`   // last sync time for this file
@@ -85,7 +85,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 		Size:         item.Size(),
 		ServerBackup: false,
 		Protected:    false,
-		Key:          "default",
+		Key:          auth.GenSecret(64),
 		LastSync:     time.Now().UTC(),
 		Path:         filePath,
 		ServerPath:   filePath,
@@ -120,6 +120,15 @@ func (f *File) ToString() string {
 	return string(data)
 }
 
+// convert file object to json-formatted byte slice
+func (f *File) ToJSON() ([]byte, error) {
+	data, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 // returns file size in bytes
 //
 // uses os.Stat() - "length in bytes for regular files; system-dependent for others"
@@ -129,15 +138,6 @@ func (f *File) GetSize() int64 {
 		log.Fatalf("unable to determine file size: %v", err)
 	}
 	return info.Size()
-}
-
-// convert file object to json-formatted byte slice
-func (f *File) ToJSON() ([]byte, error) {
-	data, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
 }
 
 // confirms the physical file associated with this object actually exists.

@@ -240,11 +240,10 @@ func LoadClient(persist bool) (*Client, error) {
 		if !client.localBackup() {
 			if err := client.RegisterClient(); err != nil {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register client: %v", err))
-				return nil, err
 			}
 			// register any files with the server that weren't previously registered
 			if err := client.RegisterItems(); err != nil {
-				return nil, err
+				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register local items: %v", err))
 			}
 		}
 		// start monitoring services in SFS root directory

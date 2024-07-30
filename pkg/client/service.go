@@ -476,8 +476,6 @@ func (c *Client) GetFileByName(name string) (*svc.File, error) {
 
 /*
 add a file to the service using its file path.
-should check for whether the directory it resides in is
-monitored by SFS -- though is not contingent on it!
 
 SFS can monitor files outside of the designated root directory, so
 if we add a file this way then we should automatically make a backup of it
@@ -540,8 +538,9 @@ func (c *Client) AddFile(filePath string) error {
 			return err
 		}
 		c.dump(resp, true)
-		// get newly generated server-side path for the file if successfully created
 		if resp.StatusCode == http.StatusOK {
+			// update client side info about the file to
+			// include the server path generated after a successful registration
 			svrpath, err := c.getFileServerPath(newFile)
 			if err != nil {
 				return err
@@ -766,7 +765,7 @@ func (c *Client) ListLocalDirsDB() error {
 
 // get the directories server path.
 func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
-	dirReq, err := c.GetDirRequest(dir)
+	dirReq, err := c.GetDirInfoRequest(dir)
 	if err != nil {
 		return "", err
 	}
@@ -775,8 +774,7 @@ func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
 		return "", err
 	}
 	if res.StatusCode != http.StatusOK {
-		c.log.Warn(fmt.Sprintf("received a non 200 response from server: %v", res))
-		return "", fmt.Errorf("received a non 200 response from server: %v", res)
+		return "", fmt.Errorf("received a non 200 response from server: %v", res.Body)
 	}
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, res.Body)
@@ -790,7 +788,9 @@ func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
 		return "", err
 	}
 	if d.ServerPath == "" || d.ServerPath == d.ClientPath {
-		return "", fmt.Errorf("server path was not set correctly. client_path=%s server_path=%v", d.ClientPath, d.ServerPath)
+		return "", fmt.Errorf(
+			"server path was not set correctly.\n client_path=%s\n server_path=%v", d.ClientPath, d.ServerPath,
+		)
 	}
 	return d.ServerPath, nil
 }
@@ -825,7 +825,7 @@ func (c *Client) AddDir(dirPath string) error {
 			return err
 		}
 	} else {
-		if err := c.Drive.AddSubDir(newDir.Parent.ID, newDir); err != nil {
+		if err := c.Drive.Root.AddSubDir(newDir); err != nil {
 			return err
 		}
 	}
@@ -942,22 +942,6 @@ func (c *Client) GetDirIDFromPath(path string) (string, error) {
 	return dir.ID, nil
 }
 
-// search for a directory by name.
-// returns an error if the directory does not exist
-func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
-	if name == "" {
-		return nil, fmt.Errorf("no path specified")
-	}
-	dir, err := c.Db.GetDirectoryByName(name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get directory: %v", err)
-	}
-	if dir == nil {
-		return nil, fmt.Errorf(fmt.Sprintf("directory does not exist: %s", name))
-	}
-	return dir, nil
-}
-
 // see if this directory is registered with the server (exists on servers DB)
 func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
 	req, err := c.GetDirInfoRequest(dir)
@@ -973,7 +957,7 @@ func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
 
 // send directory metadata to the server
 func (c *Client) RegisterDirectory(dir *svc.Directory) error {
-	req, err := c.GetDirReq(dir, "NEW")
+	req, err := c.NewDirectoryRequest(dir)
 	if err != nil {
 		return err
 	}
@@ -981,10 +965,10 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		c.dump(resp, true)
-	} else if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusOK {
 		c.log.Info(fmt.Sprintf("directory '%s' registered", dir.Name))
+	} else {
+		c.dump(resp, true)
 	}
 	return nil
 }
@@ -1132,7 +1116,7 @@ func (c *Client) RegisterClient() error {
 	}
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
-	} else {
+	} else if resp.StatusCode == http.StatusBadRequest {
 		c.log.Warn(fmt.Sprintf("failed to register new drive. server status: %v", resp.Status))
 		c.dump(resp, true)
 		return nil

@@ -45,23 +45,6 @@ func AllUsersFilesCtx(h http.Handler) http.Handler {
 	})
 }
 
-func AllDirsCtx(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: same as AllFilesCtx -- this should be handled by SFS
-		dirs, err := findAllTheDirs(getDBConn("Directories"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if len(dirs) == 0 {
-			w.Write([]byte("no directories found"))
-			return
-		}
-		newCtx := context.WithValue(r.Context(), Directories, dirs)
-		h.ServeHTTP(w, r.WithContext(newCtx))
-	})
-}
-
 // -------- new item/user context --------------------------------
 
 // attempts to get filename, owner, and path from a requets
@@ -74,7 +57,6 @@ func NewFileCtx(h http.Handler) http.Handler {
 			http.Error(w, fmt.Sprintf("failed to verify token: %v", err), http.StatusInternalServerError)
 			return
 		}
-		// unmarshal new file data and check if it already exists before creating
 		newFile, err := svc.UnmarshalFileStr(fileInfo)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to unmarshal file data: %v", err), http.StatusInternalServerError)
@@ -99,10 +81,6 @@ func NewUserCtx(h http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if newUser == nil {
-			http.Error(w, "user data unmarshalling failed", http.StatusInternalServerError)
-			return
-		}
 		newCtx := context.WithValue(r.Context(), User, newUser)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
@@ -122,10 +100,6 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if newDir == nil {
-			http.Error(w, "directory unmarshalling failed", http.StatusInternalServerError)
-			return
-		}
 		newCtx := context.WithValue(r.Context(), Directory, newDir)
 		h.ServeHTTP(w, r.WithContext(newCtx))
 	})
@@ -143,10 +117,6 @@ func NewDriveCtx(h http.Handler) http.Handler {
 		newDrive, err := svc.UnmarshalDriveString(drvInfo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if newDrive == nil {
-			http.Error(w, "drive data unmarshal failed", http.StatusInternalServerError)
 			return
 		}
 		newCtx := context.WithValue(r.Context(), Drive, newDrive)

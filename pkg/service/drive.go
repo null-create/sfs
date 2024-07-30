@@ -387,11 +387,14 @@ func (d *Drive) AddSubDir(dirID string, dir *Directory) error {
 		if err := d.addSubDir(dirID, dir); err != nil {
 			return err
 		}
-		size, err := dir.GetSize()
-		if err != nil {
-			return err
+		// Client is only concered about the directory size. server doesnt' care.
+		if dir.LocalBackup {
+			size, err := dir.GetSize()
+			if err != nil {
+				return err
+			}
+			d.UpdateDriveSize(size)
 		}
-		d.UpdateDriveSize(size)
 	} else {
 		d.log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
