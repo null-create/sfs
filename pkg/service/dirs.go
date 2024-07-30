@@ -54,7 +54,7 @@ type Directory struct {
 	// security attributes
 	Protected bool   `json:"protected"`
 	AuthType  string `json:"auth_type"`
-	Key       string `json:"key"`
+	Key       string `json:"-"`
 
 	// allows for automatic file overwriting or
 	// directory replacement
@@ -145,6 +145,7 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 // into a directory object.
 func UnmarshalDirStr(data string) (*Directory, error) {
 	dir := new(Directory)
+	fmt.Printf("\nraw data string: %v\n\n", data)
 	if err := json.Unmarshal([]byte(data), &dir); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal dir data: %v", err)
 	}
