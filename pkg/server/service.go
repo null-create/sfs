@@ -431,7 +431,6 @@ func (s *Service) UserExists(userID string) bool {
 
 // generate new user instance, and create drive and other base files
 func (s *Service) addUser(user *auth.User) error {
-	// check to see if this user is already registered
 	u, err := s.Db.GetUser(user.ID)
 	if err != nil {
 		return err
