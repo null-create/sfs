@@ -720,20 +720,14 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if nd != nil {
 		return fmt.Errorf("directory (name=%s id=%s) already exists", newDir.Name, newDir.ID)
 	}
-	// check if the parent directory exists on the server. if not, add to root.
-	dir, err := s.Db.GetDirectoryByID(destDirID)
-	if err != nil {
-		return err
-	}
-	if dir != nil {
-		newDir.Parent = dir
-		newDir.ParentID = dir.ID
-		newDir.ServerPath = s.buildServerDirPath(dir.ServerPath, newDir.Name)
-	} else {
-		newDir.Parent = drive.Root
-		newDir.ParentID = drive.Root.ID
-		newDir.ServerPath = s.buildServerRootPath(drive.OwnerName, newDir.Name)
-	}
+	// NOTE: server doesn't actually create a backup directory for this object.
+	// it's only concerned about keeping records of the directories used by the files
+	// being backed up.
+	// Files are kept in a "flat" server-side directory, so maintaining the original
+	// directory tree structure isn't necessary, since the serve is only about object storage
+	newDir.Parent = drive.Root
+	newDir.ParentID = drive.Root.ID
+	newDir.ServerPath = s.buildServerRootPath(drive.OwnerName, newDir.Name)
 
 	// mark this directory as the server-side version of the directory
 	newDir.MarkServerBackup()
@@ -745,9 +739,8 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if err := s.Db.AddDir(newDir); err != nil {
 		return err
 	}
-	// finally, create the physical directory
-	if err := os.MkdirAll(newDir.ServerPath, svc.PERMS); err != nil {
-		return err
+	if err := s.SaveState(); err != nil {
+		s.log.Error("failed to save state file: " + err.Error())
 	}
 	return nil
 }
