@@ -581,13 +581,13 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 
 // generate a server-side path for a file or directory.
 // path points the new item to the 'root' directory on the server
-func (s *Service) buildServerRootPath(user string, itemName string) string {
-	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, "root", itemName)
+func (s *Service) buildServerRootPath(userName string, itemName string) string {
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", userName, "root", itemName)
 }
 
 // generate a server-side path for a file that has a server-side directory
-func (s *Service) buildServerDirPath(user string, itemName string, parentPath string) string {
-	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, parentPath, itemName)
+func (s *Service) buildServerDirPath(parentServerPath string, itemName string) string {
+	return filepath.Join(parentServerPath, itemName)
 }
 
 // add a new file to the service. creates the physical file,
@@ -619,7 +619,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		file.ServerPath = s.buildServerRootPath(drive.OwnerName, file.Name)
 	} else {
 		file.DirID = dir.ID
-		file.ServerPath = s.buildServerDirPath(drive.OwnerName, file.Name, dir.ServerPath)
+		file.ServerPath = s.buildServerDirPath(dir.ServerPath, file.Name)
 	}
 
 	// create the (empty) physical file on the server side
@@ -728,11 +728,11 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if dir != nil {
 		newDir.Parent = dir
 		newDir.ParentID = dir.ID
-		newDir.ServerPath = s.buildServerDirPath(newDir.OwnerID, newDir.Name, dir.ServerPath)
+		newDir.ServerPath = s.buildServerDirPath(dir.ServerPath, newDir.Name)
 	} else {
 		newDir.Parent = drive.Root
 		newDir.ParentID = drive.Root.ID
-		newDir.ServerPath = s.buildServerRootPath(newDir.OwnerID, newDir.Name)
+		newDir.ServerPath = s.buildServerRootPath(drive.OwnerName, newDir.Name)
 	}
 
 	// mark this directory as the server-side version of the directory
