@@ -244,6 +244,7 @@ func LoadClient(persist bool) (*Client, error) {
 			}
 			// register any files with the server that weren't previously registered
 			if err := client.RegisterItems(); err != nil {
+				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register local items: %v", err))
 				return nil, err
 			}
 		}
