@@ -587,8 +587,8 @@ func (s *Service) buildServerRootPath(user string, itemName string) string {
 }
 
 // generate a server-side path for a file that has a server-side directory
-func (s *Service) buildServerDirPath(user string, itemName string, dirPath string) string {
-	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, dirPath, itemName)
+func (s *Service) buildServerDirPath(user string, itemName string, parentPath string) string {
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", user, parentPath, itemName)
 }
 
 // add a new file to the service. creates the physical file,
@@ -729,9 +729,11 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	if dir != nil {
 		newDir.Parent = dir
 		newDir.ParentID = dir.ID
+		newDir.ServerPath = s.buildServerDirPath(newDir.OwnerID, newDir.Name, dir.ServerPath)
 	} else {
 		newDir.Parent = drive.Root
 		newDir.ParentID = drive.Root.ID
+		newDir.ServerPath = s.buildServerRootPath(newDir.OwnerID, newDir.Name)
 	}
 	// add directory to service.
 	if err := drive.AddSubDir(newDir.ParentID, newDir); err != nil {
@@ -745,6 +747,26 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 		return err
 	}
 	return nil
+}
+
+// Get a directory from a specified drive
+func (s *Service) GetDir(driveID string, dirID string) (*svc.Directory, error) {
+	drive := s.GetDrive(driveID)
+	if drive == nil {
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
+	}
+	dir := drive.GetDir(dirID)
+	if dir == nil {
+		d, err := s.Db.GetDirectoryByID(dirID) // try database directly before giving up
+		if err != nil {
+			return nil, err
+		}
+		if d == nil {
+			return nil, fmt.Errorf("directory (id=%s) not found", dirID)
+		}
+		return d, nil
+	}
+	return dir, nil
 }
 
 // remove a physical directory from a user's drive service.
