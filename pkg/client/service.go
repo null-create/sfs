@@ -1114,7 +1114,7 @@ func (c *Client) RegisterClient() error {
 	}
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
-	} else {
+	} else if resp.StatusCode == http.StatusBadRequest {
 		c.log.Warn(fmt.Sprintf("failed to register new drive. server status: %v", resp.Status))
 		c.dump(resp, true)
 		return nil

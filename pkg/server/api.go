@@ -80,7 +80,7 @@ func (a *API) serverError(w http.ResponseWriter, err string) {
 // -------- users (admin only) -----------------------------------------
 
 // returns a user struct for a new or existing user, assuming it exists in the server database.
-func (a *API) getUserFromRequest(r *http.Request) (*auth.User, error) {
+func (a *API) getNewUserFromRequest(r *http.Request) (*auth.User, error) {
 	user := r.Context().Value(User).(*auth.User)
 	if user == nil {
 		return nil, fmt.Errorf("no user in request")
@@ -88,17 +88,33 @@ func (a *API) getUserFromRequest(r *http.Request) (*auth.User, error) {
 	return user, nil
 }
 
+// get a user from the ID supplied by the request. returns nil if not found.
+func (a *API) getUserFromRequest(r *http.Request) (*auth.User, error) {
+	userID := r.Context().Value(User).(string)
+	if userID == "" {
+		return nil, fmt.Errorf("no user ID string found")
+	}
+	user, err := a.Svc.GetUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user (id=%s) not found", userID)
+	}
+	return user, nil
+}
+
 // add a new user and drive to sfs instance. user existance and
 // struct pointer should be created by NewUser middleware
 func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
-	user, err := a.getUserFromRequest(r)
+	user, err := a.getNewUserFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
 	}
 	if err := a.Svc.AddUser(user); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			a.clientError(w, err.Error()) // user already exists
+			a.write(w, "user is already registered") // user already exists
 			return
 		} else {
 			a.serverError(w, err.Error())
@@ -113,7 +129,11 @@ func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
 func (a *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "user") { // non-existing user or missing ID errors
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	userData, err := user.ToJSON()
@@ -145,7 +165,11 @@ func (a *API) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "user") { // non-existing user or missing ID errors
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	if err := a.Svc.UpdateUser(user); err != nil {
@@ -159,7 +183,11 @@ func (a *API) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "user") { // non-existing user or missing ID errors
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	if err := a.Svc.RemoveUser(user.ID); err != nil {
@@ -171,10 +199,26 @@ func (a *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 // -------- files -----------------------------------------
 
-func (a *API) getFileFromRequest(r *http.Request) (*svc.File, error) {
+func (a *API) getNewFileFromRequest(r *http.Request) (*svc.File, error) {
 	file := r.Context().Value(File).(*svc.File)
 	if file == nil {
-		return nil, fmt.Errorf("file not found")
+		return nil, fmt.Errorf("file object not found in request")
+	}
+	return file, nil
+}
+
+// gets a file from the ID provided by the request. returns nil if not found.
+func (a *API) getFileFromRequest(r *http.Request) (*svc.File, error) {
+	fileID := r.Context().Value(File).(string)
+	if fileID == "" {
+		return nil, fmt.Errorf("no file ID found in request")
+	}
+	file, err := a.Svc.Db.GetFileByID(fileID)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		return nil, fmt.Errorf("file (id=%s) not found", fileID)
 	}
 	return file, nil
 }
@@ -183,7 +227,11 @@ func (a *API) getFileFromRequest(r *http.Request) (*svc.File, error) {
 func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	f, err := a.getFileFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "file") { // not found or missing ID errors
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	file, err := a.Svc.GetFile(f.DriveID, f.ID)
@@ -203,7 +251,11 @@ func (a *API) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 func (a *API) ServeFile(w http.ResponseWriter, r *http.Request) {
 	f, err := a.getFileFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "file") { // not found or missing ID errors
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	file, err := a.Svc.GetFile(f.DriveID, f.ID)
@@ -224,7 +276,11 @@ func (a *API) ServeFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) GetAllFileInfo(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "user") {
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	files, err := a.Svc.GetAllFiles(user.DriveID)
@@ -290,7 +346,7 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
-	file, err := a.getFileFromRequest(r)
+	file, err := a.getNewFileFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
@@ -304,7 +360,7 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 
 // delete a file from the server
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	file, err := a.getFileFromRequest(r)
+	file, err := a.getNewFileFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
@@ -318,10 +374,28 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 // ------- directories --------------------------------
 
-func (a *API) getDirFromRequest(r *http.Request) (*svc.Directory, error) {
+// used by functions that are creating new objects. requests will
+// send entire objects from the client when new items need to be registered.
+func (a *API) getNewDirFromRequest(r *http.Request) (*svc.Directory, error) {
 	dir := r.Context().Value(Directory).(*svc.Directory)
 	if dir == nil {
 		return nil, fmt.Errorf("dir not found")
+	}
+	return dir, nil
+}
+
+// used by functions working with registered directories
+func (a *API) getDirFromRequest(r *http.Request) (*svc.Directory, error) {
+	dirID := r.Context().Value(Directory).(string)
+	if dirID == "" {
+		return nil, fmt.Errorf("no directory specified")
+	}
+	dir, err := a.Svc.Db.GetDirectoryByID(dirID) // TODO: Svc should only deal with DB calls, not API
+	if err != nil {
+		return nil, err
+	}
+	if dir == nil {
+		return nil, fmt.Errorf("directory (id=%s) not found", dirID)
 	}
 	return dir, nil
 }
@@ -344,7 +418,7 @@ func (a *API) GetAllDirsInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) GetUsersDirs(w http.ResponseWriter, r *http.Request) {
-	user, err := a.getUserFromRequest(r)
+	user, err := a.getNewUserFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
@@ -368,32 +442,7 @@ func (a *API) GetUsersDirs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// returns metadata for a single directory (not its children).
-func (a *API) GetDirInfo(w http.ResponseWriter, r *http.Request) {
-	d, err := a.getDirFromRequest(r)
-	if err != nil {
-		a.serverError(w, err.Error())
-		return
-	}
-	dir, err := a.Svc.Db.GetDirectoryByID(d.ID)
-	if err != nil {
-		a.serverError(w, err.Error())
-		return
-	}
-	if dir == nil {
-		a.clientError(w, fmt.Sprintf("dir (name=%s id=%s) not found", d.Name, d.ID))
-		return
-	}
-	data, err := dir.ToJSON()
-	if err != nil {
-		a.serverError(w, err.Error())
-		return
-	}
-	w.Write(data)
-}
-
 func (a *API) walkDir(w http.ResponseWriter, dir *svc.Directory) error {
-	// send file info, if any
 	for _, file := range dir.Files {
 		fileData, err := file.ToJSON()
 		if err != nil {
@@ -423,7 +472,16 @@ func (a *API) walkDir(w http.ResponseWriter, dir *svc.Directory) error {
 // retrieve metadata for a directory as well as all its files and children.
 // does not return file contents, only metadata.
 func (a *API) GetManyDirsInfo(w http.ResponseWriter, r *http.Request) {
-	dir := r.Context().Value(Directory).(*svc.Directory)
+	dir, err := a.getDirFromRequest(r)
+	if err != nil {
+		if strings.Contains(err.Error(), "directory") {
+			a.clientError(w, err.Error()) // no directory or missing ID errors
+		} else {
+			a.serverError(w, err.Error())
+		}
+		return
+	}
+	// populate metadata
 	dir = a.Svc.Populate(dir)
 	// walk the directory tree starting from this directory, and
 	// send JSON blobs for each object it discovers along the way.
@@ -432,17 +490,40 @@ func (a *API) GetManyDirsInfo(w http.ResponseWriter, r *http.Request) {
 	a.walkDir(w, dir)
 }
 
-// retrieve a zipfile of the directory (and all its children)
-func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
+// returns metadata for a single directory (not its children).
+func (a *API) GetDirInfo(w http.ResponseWriter, r *http.Request) {
 	dir, err := a.getDirFromRequest(r)
+	if err != nil {
+		if strings.Contains(err.Error(), "directory") {
+			a.clientError(w, err.Error()) // no directory or missing ID errors
+		} else {
+			a.serverError(w, err.Error())
+		}
+		return
+	}
+	data, err := dir.ToJSON()
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
 	}
+	w.Write(data)
+}
+
+// retrieve a zipfile of the directory (and all its children)
+func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
+	dir, err := a.getDirFromRequest(r)
+	if err != nil {
+		if strings.Contains(err.Error(), "directory") {
+			a.clientError(w, err.Error()) // no directory or missing ID errors
+		} else {
+			a.serverError(w, err.Error())
+		}
+		return
+	}
 
 	// create a tmp .zip file so we can transfer the directory and its contents
-	archive := filepath.Join(dir.Path, dir.Name+".zip")
-	if err := transfer.Zip(dir.Path, archive); err != nil {
+	archive := filepath.Join(dir.ServerPath, dir.Name+".zip")
+	if err := transfer.Zip(dir.ServerPath, archive); err != nil {
 		a.serverError(w, fmt.Sprintf("failed to compress directory: %v", err))
 		return
 	}
@@ -460,7 +541,11 @@ func (a *API) GetDir(w http.ResponseWriter, r *http.Request) {
 func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
 	dir, err := a.getDirFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "directory") {
+			a.clientError(w, err.Error()) // no directory or missing ID errors
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	if err := a.Svc.UpdateDir(dir.DriveID, dir); err != nil {
@@ -472,7 +557,7 @@ func (a *API) PutDir(w http.ResponseWriter, r *http.Request) {
 
 // create a new empty physical directory on the server for a user
 func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
-	newDir, err := a.getDirFromRequest(r)
+	newDir, err := a.getNewDirFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
@@ -497,7 +582,11 @@ func (a *API) NewDir(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteDir(w http.ResponseWriter, r *http.Request) {
 	dir, err := a.getDirFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "directory") {
+			a.clientError(w, err.Error()) // no directory or missing ID errors
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
 	if err := a.Svc.RemoveDir(dir.DriveID, dir.ID); err != nil {
@@ -554,7 +643,7 @@ func (a *API) NewDrive(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := a.Svc.AddDrive(newDrive); err != nil {
 		if strings.Contains(err.Error(), "already registered") {
-			a.clientError(w, err.Error())
+			a.write(w, "drive is already registered")
 			return
 		}
 		a.serverError(w, err.Error())

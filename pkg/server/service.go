@@ -735,6 +735,10 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 		newDir.ParentID = drive.Root.ID
 		newDir.ServerPath = s.buildServerRootPath(newDir.OwnerID, newDir.Name)
 	}
+
+	// mark this directory as the server-side version of the directory
+	newDir.MarkServerBackup()
+
 	// add directory to service.
 	if err := drive.AddSubDir(newDir.ParentID, newDir); err != nil {
 		return err
