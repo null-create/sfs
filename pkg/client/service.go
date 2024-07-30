@@ -765,7 +765,7 @@ func (c *Client) ListLocalDirsDB() error {
 
 // get the directories server path.
 func (c *Client) getDirServerPath(dir *svc.Directory) (string, error) {
-	dirReq, err := c.GetDirRequest(dir)
+	dirReq, err := c.GetDirInfoRequest(dir)
 	if err != nil {
 		return "", err
 	}
