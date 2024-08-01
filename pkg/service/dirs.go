@@ -165,10 +165,6 @@ func (d *Directory) HasParent() bool {
 	return !d.IsRoot() && d.Parent == nil
 }
 
-func (d *Directory) IsNil() bool {
-	return d.Files == nil && d.Dirs == nil
-}
-
 func (d *Directory) IsEmpty() bool {
 	return len(d.Files) == 0 && len(d.Dirs) == 0
 }
