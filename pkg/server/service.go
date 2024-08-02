@@ -613,8 +613,6 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// can differentiate between client and server upload/download locations.
 	// NOTE: client makes an additional call to retrieve this new path
 	if dir == nil {
-		// we're going to assign this file to root if the client side
-		// parent directory isn't registered server-side yet.
 		file.DirID = drive.Root.ID
 		file.ServerPath = s.buildServerRootPath(drive.OwnerName, file.Name)
 	} else {
@@ -625,12 +623,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// create the (empty) physical file on the server side
 	_, err = os.Create(file.ServerPath)
 	if err != nil {
-		return fmt.Errorf("failed to create empty file on server: %v", err)
-	}
-
-	// add any file contents to the server side
-	if err := os.WriteFile(file.ServerPath, file.Content, svc.PERMS); err != nil {
-		s.log.Error("failed to write file on server: " + err.Error())
+		return fmt.Errorf("failed to file on server: %v", err)
 	}
 
 	// mark this as a server back up so we can access it
