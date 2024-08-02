@@ -76,7 +76,7 @@ func NewUserCtx(h http.Handler) http.Handler {
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
-		newUser, err := auth.UnmarshalUser(userInfo)
+		newUser, err := auth.UnmarshalUserStr(userInfo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
