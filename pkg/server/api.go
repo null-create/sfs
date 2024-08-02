@@ -418,7 +418,7 @@ func (a *API) GetAllDirsInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) GetUsersDirs(w http.ResponseWriter, r *http.Request) {
-	user, err := a.getNewUserFromRequest(r)
+	user, err := a.getUserFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
