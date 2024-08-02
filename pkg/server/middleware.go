@@ -59,6 +59,10 @@ func NewFileCtx(h http.Handler) http.Handler {
 		}
 		newFile, err := svc.UnmarshalFileStr(fileInfo)
 		if err != nil {
+			if err.Error() == "invalid token" {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			http.Error(w, fmt.Sprintf("failed to unmarshal file data: %v", err), http.StatusInternalServerError)
 			return
 		}
@@ -72,6 +76,10 @@ func NewUserCtx(h http.Handler) http.Handler {
 		tokenValidator := auth.NewT()
 		userInfo, err := tokenValidator.Validate(r)
 		if err != nil {
+			if err.Error() == "invalid token" {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			msg := fmt.Sprintf("failed to verify user token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
@@ -91,6 +99,10 @@ func NewDirectoryCtx(h http.Handler) http.Handler {
 		tokenValidator := auth.NewT()
 		dirInfo, err := tokenValidator.Validate(r)
 		if err != nil {
+			if err.Error() == "invalid token" {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			msg := fmt.Sprintf("failed to verify directory token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
@@ -110,6 +122,10 @@ func NewDriveCtx(h http.Handler) http.Handler {
 		tokenValidator := auth.NewT()
 		drvInfo, err := tokenValidator.Validate(r)
 		if err != nil {
+			if err.Error() == "invalid token" {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			msg := fmt.Sprintf("failed to verify new drive token: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
