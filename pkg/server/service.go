@@ -724,7 +724,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	// it's only concerned about keeping records of the directories used by the files
 	// being backed up.
 	// Files are kept in a "flat" server-side directory, so maintaining the original
-	// directory tree structure isn't necessary, since the serve is only about object storage
+	// directory tree structure isn't necessary since the server is only about object storage
 	newDir.Parent = drive.Root
 	newDir.ParentID = drive.Root.ID
 	newDir.ServerPath = s.buildServerRootPath(drive.OwnerName, newDir.Name)
@@ -856,32 +856,6 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 		dirs = append(dirs, sd)
 	}
 	return dirs, nil
-}
-
-func (s *Service) MoveDir(driveID string, dirID string, destDirID string) error {
-	drive := s.GetDrive(driveID)
-	if drive == nil {
-		return fmt.Errorf("drive (id=%s) not found", driveID)
-	}
-
-	// directory to move
-	dir := drive.GetDir(dirID)
-	if dir == nil {
-		return fmt.Errorf("dir (id=%s) not found", dirID)
-	}
-	// parent of this directory
-	// parent := dir.Parent
-	// parent.RemoveSubDir(dir.ID)
-
-	// TODO: directory.Copy(destPath)
-
-	// directory to move to
-	destDir := drive.GetDir(destDirID)
-	if destDir == nil {
-		return fmt.Errorf("dest dir (id=%s) not found", destDirID)
-	}
-
-	return nil
 }
 
 // --------- sync --------------------------------
