@@ -341,7 +341,7 @@ func (c *Client) updateUserPassword(oldPw, newPw string) error {
 	user.Password = newPw
 	c.User.Password = newPw
 	// TODO: hashing of user passwords should occur before saving to DB.
-	// dont save them as plaintext!
+	// dont save them as plaintext! or not save the PW at all?
 	if err := c.Db.UpdateUser(user); err != nil {
 		return err
 	}
@@ -483,7 +483,6 @@ in the SFS server, or locally to a designated directory, depending
 on the service configurations.
 */
 func (c *Client) AddFile(filePath string) error {
-	// see if we already have this file in the system
 	file, err := c.Db.GetFileByPath(filePath)
 	if err != nil {
 		return err
