@@ -23,7 +23,7 @@ var (
 
 func init() {
 	flags := FlagPole{}
-	pushCmd.PersistentFlags().StringVar(&flags.path, "path", "", "path to the file to push to the server")
+	pushCmd.PersistentFlags().StringVarP(&flags.path, "path", "p", "", "path to the file to push to the server")
 	pushCmd.PersistentFlags().BoolVarP(&flags.isDir, "is-dir", "d", false, "flag for whether we're sending a directory.")
 	pushCmd.PersistentFlags().BoolVar(&flags.newFile, "new-file", false, "flag for whether this is a new file to the service")
 	pushCmd.PersistentFlags().BoolVar(&flags.newDir, "new-dir", false, "flag for whether this is a new directory to the service")
@@ -37,9 +37,7 @@ func init() {
 }
 
 func PushCmd(cmd *cobra.Command, args []string) {
-	// see if local backup mode is enabled first
-	// if so, thent he client won't have files stored on the sfs server
-	if localBackupIsEnabled() {
+	if localBackupEnabled() {
 		fmt.Print("local backup mode is enabled. remote files are not available.")
 		return
 	}
@@ -48,6 +46,7 @@ func PushCmd(cmd *cobra.Command, args []string) {
 		showerr(fmt.Errorf("no file path specified"))
 		return
 	}
+
 	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(fmt.Errorf("failed to initialize service: %v", err))
@@ -62,6 +61,7 @@ func PushCmd(cmd *cobra.Command, args []string) {
 		showerr(fmt.Errorf("file not found"))
 		return
 	}
+
 	// are we pushing a new file to the server?
 	newFile, _ := cmd.Flags().GetBool("new-file")
 	if newFile {

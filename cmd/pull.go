@@ -31,12 +31,11 @@ func init() {
 }
 
 func runPullCmd(cmd *cobra.Command, args []string) {
-	// see if local backup mode is enabled first
-	// if so, thent he client won't have files stored on the sfs server
-	if localBackupIsEnabled() {
+	if localBackupEnabled() {
 		fmt.Print("local backup mode is enabled. remote files are not available.")
 		return
 	}
+
 	name, _ := cmd.Flags().GetString("name")
 	if name == "" {
 		showerr(fmt.Errorf("no name specified"))
@@ -55,7 +54,7 @@ func runPullCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	if file == nil {
-		showerr(fmt.Errorf("file %s not found", name))
+		showerr(fmt.Errorf("file '%s' not found", name))
 		return
 	}
 
