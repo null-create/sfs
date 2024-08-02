@@ -152,11 +152,6 @@ func (d *Drive) HasRoot() bool { return d.Root != nil }
 // check whether this drive is registered with the server.
 func (d *Drive) IsRegistered() bool { return d.Registered }
 
-// remaining drive space.
-func (d *Drive) RemainingSize() int64 {
-	return d.TotalSize - d.UsedSpace
-}
-
 // check whether the root directory has files and subdirectories
 func (d *Drive) EmptyRoot() bool {
 	return len(d.Root.Files) == 0 && len(d.Root.Dirs) == 0
