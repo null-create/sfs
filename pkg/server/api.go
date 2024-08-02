@@ -390,7 +390,7 @@ func (a *API) getDirFromRequest(r *http.Request) (*svc.Directory, error) {
 	if dirID == "" {
 		return nil, fmt.Errorf("no directory specified")
 	}
-	dir, err := a.Svc.Db.GetDirectoryByID(dirID) // TODO: Svc should only deal with DB calls, not API
+	dir, err := a.Svc.GetDirByID(dirID)
 	if err != nil {
 		return nil, err
 	}

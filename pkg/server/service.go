@@ -765,6 +765,19 @@ func (s *Service) GetDir(driveID string, dirID string) (*svc.Directory, error) {
 	return dir, nil
 }
 
+// Find a directory by ID.
+// Queries the database directly. Returns nil if not found.
+func (s *Service) GetDirByID(dirID string) (*svc.Directory, error) {
+	dir, err := s.Db.GetDirectoryByID(dirID)
+	if err != nil {
+		return nil, err
+	}
+	if dir == nil {
+		return nil, nil
+	}
+	return dir, nil
+}
+
 // remove a physical directory from a user's drive service.
 // use with caution! will remove all children of this subdirectory
 // as well.
