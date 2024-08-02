@@ -169,6 +169,10 @@ func AuthUserHandler(h http.Handler) http.Handler {
 		}
 		user, err := AuthenticateUser(reqToken)
 		if err != nil {
+			if err.Error() == "invalid token" {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			if strings.Contains(err.Error(), "failed to query database") {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
