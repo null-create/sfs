@@ -74,10 +74,7 @@ func runClientCmd(cmd *cobra.Command, args []string) {
 			showerr(fmt.Errorf("failed to initialize service: %v", err))
 			return
 		}
-		err = c.Start() // starts a blocking process to allow services to run
-		if err != nil {
-			showerr(fmt.Errorf("failed to start client: %v", err))
-		}
+		c.Start() // starts a blocking process to allow services to run
 	case f.info:
 		c, err := client.LoadClient(false)
 		if err != nil {
