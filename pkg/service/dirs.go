@@ -554,7 +554,6 @@ func (d *Directory) GetSubDir(dirID string) *Directory { return d.WalkD(dirID) }
 // returns an empty slice if none are found.
 func (d *Directory) GetSubDirs() []*Directory {
 	dirMap := d.WalkDs()
-	// convert to slice
 	var i int
 	dirs := make([]*Directory, len(dirMap))
 	for _, d := range dirMap {
