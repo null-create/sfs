@@ -86,7 +86,6 @@ func loadStateFile(sfPath string) (*Service, error) {
 		return nil, fmt.Errorf("failed unmarshal service state file: %v", err)
 	}
 	svc.StateFile = sfPath
-	svc.InitTime = time.Now().UTC()
 	return svc, nil
 }
 
@@ -116,7 +115,7 @@ func loadDrive(svc *Service, drv *svc.Drive) error {
 	if err != nil {
 		return err
 	}
-	if files != nil {
+	if len(files) > 0 {
 		drv.Root.AddFiles(files)
 	}
 	dirs, err := svc.Db.GetUsersDirectories(drv.OwnerID)
@@ -262,10 +261,6 @@ func svcLoad(sfPath string) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	// explicity initialize the db connection since its logger
-	// doesnt get initialized when we load the service from the
-	// state file
-	svc.Db = db.NewQuery(svc.DbDir, true)
 	return svc, nil
 }
 
@@ -285,6 +280,10 @@ func SvcLoad(svcPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize service: %v", err)
 	}
+	// explicity initialize the db connection since its logger
+	// doesnt get initialized when we load the service from the
+	// state file
+	svc.Db = db.NewQuery(svc.DbDir, true)
 
 	// load logger
 	svc.log = logger.NewLogger("Service", svc.ID)
@@ -303,11 +302,14 @@ func SvcLoad(svcPath string) (*Service, error) {
 		initLogger.Error(fmt.Sprintf("failed to retrieve drive data: %v", err))
 		return nil, fmt.Errorf("failed to retrieve drive data: %v", err)
 	}
+
+	// update state file and start time
 	if err := svc.SaveState(); err != nil {
 		initLogger.Error(fmt.Sprintf("failed to save service state: %v", err))
 		return nil, fmt.Errorf("failed to save state: %v", err)
 	}
-	initLogger.Log("INFO", fmt.Sprintf("service loaded at %s", time.Now().UTC()))
+	svc.InitTime = time.Now().UTC()
+	initLogger.Log("INFO", fmt.Sprintf("service loaded at %s", svc.InitTime))
 	return svc, nil
 }
 
