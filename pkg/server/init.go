@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
 	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/logger"
@@ -311,43 +310,4 @@ func SvcLoad(svcPath string) (*Service, error) {
 	svc.InitTime = time.Now().UTC()
 	initLogger.Log("INFO", fmt.Sprintf("service loaded at %s", svc.InitTime))
 	return svc, nil
-}
-
-// re-initialize users map and service state file
-func (s *Service) resetUserMap() {
-	s.Users = nil
-	s.Users = make(map[string]*auth.User)
-}
-
-func (s *Service) resetDrivesMap() {
-	s.Drives = nil
-	s.Drives = make(map[string]*svc.Drive)
-}
-
-// SFS reset function to clear dbs (not delete tables, just all data),
-// reset sfs state file, and user root directory. primarily for testing.
-func (s *Service) Reset(svcPath string) error {
-	if s.AdminMode {
-		// clear all databases
-		for _, dbName := range s.Db.DBs {
-			if err := s.Db.ClearTable(dbName); err != nil {
-				return fmt.Errorf("failed to clear databases: %v", err)
-			}
-		}
-		// clear users directory of all roots and subdirectories
-		for _, user := range s.Users {
-			if err := Clean(user.SvcRoot); err != nil {
-				return fmt.Errorf("failed to remove user files: %v", err)
-			}
-		}
-		// reset internal data structures
-		s.resetUserMap()
-		s.resetDrivesMap()
-		if err := s.SaveState(); err != nil {
-			return fmt.Errorf("failed to save state file: %v", err)
-		}
-	} else {
-		s.log.Info("must be in admin mode to reset service")
-	}
-	return nil
 }
