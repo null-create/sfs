@@ -27,19 +27,19 @@ var BaseEnv = map[string]string{
 
 	// client settings
 	"CLIENT_NAME":         "",
+	"CLIENT_USERNAME":     "",
+	"CLIENT_EMAIL":        "",
+	"CLIENT_PASSWORD":     "",
 	"CLIENT_ADDRESS":      "localhost:8080",
 	"CLIENT_AUTO_SYNC":    "true",
-	"CLIENT_EMAIL":        "",
 	"CLIENT_ID":           "",
 	"CLIENT_LOCAL_BACKUP": "true",
 	"CLIENT_BACKUP_DIR":   "",
 	"CLIENT_LOG_DIR":      "",
 	"CLIENT_NEW_SERVICE":  "true",
-	"CLIENT_PASSWORD":     "",
 	"CLIENT_PORT":         "8080",
 	"CLIENT_ROOT":         "",
 	"CLIENT_TESTING":      "",
-	"CLIENT_USERNAME":     "",
 
 	// server settings
 	"SERVER_ADDR":          "localhost:8080",
