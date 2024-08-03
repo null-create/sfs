@@ -77,6 +77,10 @@ func NewRouter() *chi.Mux {
 
 	//v1 routing
 	r.Route("/v1", func(r chi.Router) {
+		// Get the total runtime of the server and SFS service
+		r.Route("/runtime", func(r chi.Router) {
+			r.Get("/", api.GetRunTime)
+		})
 		r.Route("/users", func(r chi.Router) {
 			// TODO: add admin-only context here
 			r.Route("/{userID}", func(r chi.Router) {

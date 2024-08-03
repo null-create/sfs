@@ -60,17 +60,6 @@ func (c *Client) InitHandlerMaps() {
 // adds a file to monitor, then creates and starts
 // a dedicated event handler for the new file monitoring goroutine.
 func (c *Client) WatchItem(path string) error {
-	isDir, err := c.Monitor.IsDir(path)
-	if err != nil {
-		return err
-	}
-	// directory monitoring is not supported for the moment.
-	if isDir {
-		return fmt.Errorf(
-			"'%s' is a directory. directory monitoring is not supported",
-			filepath.Dir(path),
-		)
-	}
 	if err := c.Monitor.Watch(path); err != nil {
 		return err
 	}

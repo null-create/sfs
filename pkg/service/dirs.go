@@ -165,14 +165,6 @@ func (d *Directory) HasParent() bool {
 	return !d.IsRoot() && d.Parent == nil
 }
 
-func (d *Directory) IsNil() bool {
-	return d.Files == nil && d.Dirs == nil
-}
-
-func (d *Directory) IsEmpty() bool {
-	return len(d.Files) == 0 && len(d.Dirs) == 0
-}
-
 // check if the physical directory actually exists
 func (d *Directory) Exists() bool {
 	if _, err := os.Stat(d.GetPath()); errors.Is(err, os.ErrNotExist) {
@@ -180,12 +172,6 @@ func (d *Directory) Exists() bool {
 	}
 	return true
 }
-
-// returns the total count of files for only this directory.
-func (d *Directory) TotalFiles() int { return len(d.Files) }
-
-// return the total number of subdirectories for this directory
-func (d *Directory) TotalSubDirs() int { return len(d.Dirs) }
 
 // mark this instance as being a server-side back up of this directory
 func (d *Directory) MarkServerBackup() {
@@ -568,7 +554,6 @@ func (d *Directory) GetSubDir(dirID string) *Directory { return d.WalkD(dirID) }
 // returns an empty slice if none are found.
 func (d *Directory) GetSubDirs() []*Directory {
 	dirMap := d.WalkDs()
-	// convert to slice
 	var i int
 	dirs := make([]*Directory, len(dirMap))
 	for _, d := range dirMap {

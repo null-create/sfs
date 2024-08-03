@@ -121,18 +121,7 @@ func (c *Client) ShutDown() {
 //
 // NOTE: the shutDown parameter is used for programmatic
 // testing purposes. clients are normally shut down using ctrl-c.
-func (c *Client) start(shutDown chan os.Signal) error {
-	// NOTE: this check may be redundant since start is always called
-	// after LoadClient().
-	if !c.Drive.IsLoaded {
-		if err := c.LoadDrive(); err != nil {
-			return err
-		}
-	}
-	// save initial state
-	if err := c.SaveState(); err != nil {
-		return fmt.Errorf("failed to save initial state: %v", err)
-	}
+func (c *Client) start(shutDown chan os.Signal) {
 	// wait for signal (such as ctrl-c or some other syscall) to shutdown client.
 	// we want to make start a blocking process so all the goroutines
 	// that are monitoring files (and all their event listeners)
@@ -141,18 +130,16 @@ func (c *Client) start(shutDown chan os.Signal) error {
 
 	// "gracefully" shutdown when we receive a signal.
 	c.ShutDown()
-	return nil
 }
 
 // start sfs client service. creates a blocking process
 // to allow monitoring and synchronization services to run.
 // assumes that LoadClient(true) has already been called prior to being called.
 // sadness will follow if this is not the case.
-func (c *Client) Start() error {
+func (c *Client) Start() {
 	shutDown := make(chan os.Signal)
-	signal.Notify(shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	if err := c.start(shutDown); err != nil {
-		return err
-	}
-	return nil
+	signal.Notify(
+		shutDown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
+	)
+	c.start(shutDown)
 }

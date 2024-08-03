@@ -30,7 +30,7 @@ func refresh(cmd *cobra.Command, args []string) {
 		showerr(err)
 		return
 	}
-	if err := c.Refresh(); err != nil {
+	if err := c.RegisterItems(); err != nil {
 		showerr(err)
 	}
 }

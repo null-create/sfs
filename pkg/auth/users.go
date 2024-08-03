@@ -71,7 +71,7 @@ func (u *User) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
-func UnmarshalUser(userInfo string) (*User, error) {
+func UnmarshalUserStr(userInfo string) (*User, error) {
 	newUser := new(User)
 	if err := json.Unmarshal([]byte(userInfo), &newUser); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user data: %v", err)

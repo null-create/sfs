@@ -145,6 +145,11 @@ func (s *Service) cleanSfDir(sfDir string) error {
 	return nil
 }
 
+// get the total runtime of this server SFS instance
+func (s *Service) GetRunTime() time.Duration {
+	return time.Since(s.InitTime)
+}
+
 // --------- drives --------------------------------
 
 // check for whether a drive exists. does not check database.
@@ -613,8 +618,6 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// can differentiate between client and server upload/download locations.
 	// NOTE: client makes an additional call to retrieve this new path
 	if dir == nil {
-		// we're going to assign this file to root if the client side
-		// parent directory isn't registered server-side yet.
 		file.DirID = drive.Root.ID
 		file.ServerPath = s.buildServerRootPath(drive.OwnerName, file.Name)
 	} else {
@@ -625,12 +628,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// create the (empty) physical file on the server side
 	_, err = os.Create(file.ServerPath)
 	if err != nil {
-		return fmt.Errorf("failed to create empty file on server: %v", err)
-	}
-
-	// add any file contents to the server side
-	if err := os.WriteFile(file.ServerPath, file.Content, svc.PERMS); err != nil {
-		s.log.Error("failed to write file on server: " + err.Error())
+		return fmt.Errorf("failed to file on server: %v", err)
 	}
 
 	// mark this as a server back up so we can access it
@@ -724,7 +722,7 @@ func (s *Service) NewDir(driveID string, destDirID string, newDir *svc.Directory
 	// it's only concerned about keeping records of the directories used by the files
 	// being backed up.
 	// Files are kept in a "flat" server-side directory, so maintaining the original
-	// directory tree structure isn't necessary, since the serve is only about object storage
+	// directory tree structure isn't necessary since the server is only about object storage
 	newDir.Parent = drive.Root
 	newDir.ParentID = drive.Root.ID
 	newDir.ServerPath = s.buildServerRootPath(drive.OwnerName, newDir.Name)
@@ -761,6 +759,19 @@ func (s *Service) GetDir(driveID string, dirID string) (*svc.Directory, error) {
 			return nil, fmt.Errorf("directory (id=%s) not found", dirID)
 		}
 		return d, nil
+	}
+	return dir, nil
+}
+
+// Find a directory by ID.
+// Queries the database directly. Returns nil if not found.
+func (s *Service) GetDirByID(dirID string) (*svc.Directory, error) {
+	dir, err := s.Db.GetDirectoryByID(dirID)
+	if err != nil {
+		return nil, err
+	}
+	if dir == nil {
+		return nil, nil
 	}
 	return dir, nil
 }
@@ -856,32 +867,6 @@ func (s *Service) GetAllDirs(driveID string) ([]*svc.Directory, error) {
 		dirs = append(dirs, sd)
 	}
 	return dirs, nil
-}
-
-func (s *Service) MoveDir(driveID string, dirID string, destDirID string) error {
-	drive := s.GetDrive(driveID)
-	if drive == nil {
-		return fmt.Errorf("drive (id=%s) not found", driveID)
-	}
-
-	// directory to move
-	dir := drive.GetDir(dirID)
-	if dir == nil {
-		return fmt.Errorf("dir (id=%s) not found", dirID)
-	}
-	// parent of this directory
-	// parent := dir.Parent
-	// parent.RemoveSubDir(dir.ID)
-
-	// TODO: directory.Copy(destPath)
-
-	// directory to move to
-	destDir := drive.GetDir(destDirID)
-	if destDir == nil {
-		return fmt.Errorf("dest dir (id=%s) not found", destDirID)
-	}
-
-	return nil
 }
 
 // --------- sync --------------------------------

@@ -46,7 +46,7 @@ func showSetting(setting string, value string) {
 
 // see if local backup mode is enabled first
 // if so, thent he client won't have files stored on the sfs server
-func localBackupIsEnabled() bool {
+func localBackupEnabled() bool {
 	b, err := envCfgs.Get("CLIENT_LOCAL_BACKUP")
 	if err != nil {
 		showerr(err)

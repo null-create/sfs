@@ -341,7 +341,7 @@ func (c *Client) updateUserPassword(oldPw, newPw string) error {
 	user.Password = newPw
 	c.User.Password = newPw
 	// TODO: hashing of user passwords should occur before saving to DB.
-	// dont save them as plaintext!
+	// dont save them as plaintext! or not save the PW at all?
 	if err := c.Db.UpdateUser(user); err != nil {
 		return err
 	}
@@ -365,6 +365,33 @@ func (c *Client) updateClientPort(pvalue string) error {
 	}
 	c.Conf.Port = port
 	return envCfgs.Set("CLIENT_PORT", pvalue)
+}
+
+// ------ misc --------------------------------
+
+func (c *Client) GetServerRuntime() (float64, error) {
+	req, err := c.NewRuntimeRequest()
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to create runtime request: %v", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to execute runtime request: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return 0.0, fmt.Errorf("failed to get server runtime: %v", resp)
+	}
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to retrieve data from response body: %v", err)
+	}
+	resp.Body.Close()
+	runtime, err := strconv.ParseFloat(strings.TrimSuffix(buf.String(), "s"), 32)
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to parse runtime response string: %v", err)
+	}
+	return runtime, nil
 }
 
 // ----- files --------------------------------------
@@ -483,7 +510,6 @@ in the SFS server, or locally to a designated directory, depending
 on the service configurations.
 */
 func (c *Client) AddFile(filePath string) error {
-	// see if we already have this file in the system
 	file, err := c.Db.GetFileByPath(filePath)
 	if err != nil {
 		return err

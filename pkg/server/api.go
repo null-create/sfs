@@ -77,6 +77,15 @@ func (a *API) serverError(w http.ResponseWriter, err string) {
 	http.Error(w, err, http.StatusInternalServerError)
 }
 
+func (a *API) GetRunTime(w http.ResponseWriter, r *http.Request) {
+	runTime := a.Svc.GetRunTime().String()
+	if runTime == "" {
+		a.serverError(w, "failed to get run time")
+		return
+	}
+	w.Write([]byte(runTime))
+}
+
 // -------- users (admin only) -----------------------------------------
 
 // returns a user struct for a new or existing user, assuming it exists in the server database.
@@ -390,7 +399,7 @@ func (a *API) getDirFromRequest(r *http.Request) (*svc.Directory, error) {
 	if dirID == "" {
 		return nil, fmt.Errorf("no directory specified")
 	}
-	dir, err := a.Svc.Db.GetDirectoryByID(dirID) // TODO: Svc should only deal with DB calls, not API
+	dir, err := a.Svc.GetDirByID(dirID)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +427,7 @@ func (a *API) GetAllDirsInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) GetUsersDirs(w http.ResponseWriter, r *http.Request) {
-	user, err := a.getNewUserFromRequest(r)
+	user, err := a.getUserFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return

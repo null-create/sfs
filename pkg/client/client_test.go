@@ -128,9 +128,7 @@ func TestLoadAndStartClient(t *testing.T) {
 
 	// start client
 	go func() {
-		if err := tmpClient.Start(); err != nil {
-			Fail(t, tmpDir, err)
-		}
+		tmpClient.Start()
 	}()
 
 	log.Print("client started...")

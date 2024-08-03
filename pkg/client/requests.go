@@ -128,6 +128,17 @@ func (c *Client) GetUserReq(user *auth.User, reqType string) (*http.Request, err
 	}
 }
 
+// ------- misc requests ----------------------------------------------------
+
+func (c *Client) NewRuntimeRequest() (*http.Request, error) {
+	var buf bytes.Buffer
+	req, err := http.NewRequest(http.MethodGet, c.Endpoints["runtime"], &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	return req, nil
+}
+
 // ------ new item requests ----------------------------------------------
 
 func (c *Client) NewUserRequest(newUser *auth.User) (*http.Request, error) {
