@@ -233,7 +233,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	// base file name for easier output reading
 	baseName := filepath.Base(filePath)
 
-	// event channel used by the event handler goroutine
+	// event channel used by the event handler
 	evt := make(chan Event)
 
 	// dedicated watcher function
@@ -322,10 +322,10 @@ func watchFile(filePath string, stop chan bool) chan Event {
 			}
 		}
 	}
+
 	// start watcher
-	go func() {
-		watcher()
-	}()
+	go watcher()
+
 	return evt
 }
 
@@ -409,9 +409,7 @@ func watchDir(dirPath string, stop chan bool) chan Event {
 	}
 
 	// start watcher
-	go func() {
-		watcher()
-	}()
+	go watcher()
 
 	return evt
 }
