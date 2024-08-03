@@ -26,7 +26,6 @@ type EItem struct {
 func (e *EItem) Name() string { return e.name }
 func (e *EItem) Path() string { return e.path }
 func (e *EItem) Kind() string { return e.itype }
-func (e *EItem) IsDir() bool  { return e.itype == "directory" }
 
 type Event struct {
 	ID    string    // UUID of the event
@@ -35,9 +34,6 @@ type Event struct {
 	Path  string    // location of the file event (path to the file itself)
 	Items []EItem   // list of event items (files or directories)
 }
-
-// whether this event is a directory event
-func (e *Event) IsDir() bool { return e.Kind == "Directory" }
 
 // Elist is a buffer for monitoring events.
 type EList []Event
