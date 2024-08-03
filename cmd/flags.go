@@ -13,9 +13,9 @@ type FlagPole struct {
 	cleanBin bool // empty recycle bin
 
 	// ----- drive command flags
-	register   bool // register a new drive with the sfs server
-	list_files bool // list all files
-	list_dirs  bool // list all directories
+	register  bool // register a new drive with the sfs server
+	listFiles bool // list all files
+	listDirs  bool // list all directories
 
 	// discover command flags
 	daemon bool // run in daemon mode
@@ -43,6 +43,10 @@ type FlagPole struct {
 	// remove cmd
 	delete bool // true to delete. false to just stop monitoring the item.
 
-	auto_sync  bool // flag to set auto sync mode
-	local_sync bool // flag to set local sync mode (local backups only)
+	autoSync  bool // flag to set auto sync mode
+	localSync bool // flag to set local sync mode (local backups only)
+
+	// remote server flags
+	isUp  bool // flag to whether to see if the remote server is up
+	stats bool // flag to check the stats of the remote server
 }

@@ -1,12 +1,16 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -95,6 +99,31 @@ func (c *Client) SaveState() error {
 	}
 	fn := fmt.Sprintf("client-state-%s.json", time.Now().UTC().Format("2006-01-02T15-04-05Z"))
 	return os.WriteFile(filepath.Join(c.SfDir, fn), data, svc.PERMS)
+}
+
+func (c *Client) GetServerRuntime() (float64, error) {
+	req, err := c.NewRuntimeRequest()
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to create runtime request: %v", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to execute runtime request: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return 0.0, fmt.Errorf("failed to get server runtime: %v", resp)
+	}
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to retrieve data from response body: %v", err)
+	}
+	resp.Body.Close()
+	runtime, err := strconv.ParseFloat(strings.TrimSuffix(buf.String(), "s"), 32)
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to parse runtime response string: %v", err)
+	}
+	return runtime, nil
 }
 
 // shutdown client side services

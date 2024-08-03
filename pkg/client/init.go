@@ -293,6 +293,7 @@ func (c *Client) setEndpoints() {
 	c.Endpoints["user"] = EndpointRootWithPort + "/v1/users/" + c.UserID
 	c.Endpoints["new user"] = EndpointRootWithPort + "/v1/users/new"
 	c.Endpoints["all users"] = EndpointRootWithPort + "/v1/users/all"
+	c.Endpoints["runtime"] = EndpointRootWithPort + "/v1/runtime"
 }
 
 // creates a new client object. does not create actual service directories or

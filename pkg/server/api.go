@@ -77,6 +77,15 @@ func (a *API) serverError(w http.ResponseWriter, err string) {
 	http.Error(w, err, http.StatusInternalServerError)
 }
 
+func (a *API) GetRunTime(w http.ResponseWriter, r *http.Request) {
+	runTime := a.Svc.GetRunTime().String()
+	if runTime == "" {
+		a.serverError(w, "failed to get run time")
+		return
+	}
+	w.Write([]byte(runTime))
+}
+
 // -------- users (admin only) -----------------------------------------
 
 // returns a user struct for a new or existing user, assuming it exists in the server database.

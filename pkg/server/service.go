@@ -145,6 +145,11 @@ func (s *Service) cleanSfDir(sfDir string) error {
 	return nil
 }
 
+// get the total runtime of this server SFS instance
+func (s *Service) GetRunTime() time.Duration {
+	return time.Since(s.InitTime)
+}
+
 // --------- drives --------------------------------
 
 // check for whether a drive exists. does not check database.
