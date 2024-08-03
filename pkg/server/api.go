@@ -118,7 +118,7 @@ func (a *API) getUserFromRequest(r *http.Request) (*auth.User, error) {
 func (a *API) AddNewUser(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getNewUserFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		a.clientError(w, err.Error())
 		return
 	}
 	if err := a.Svc.AddUser(user); err != nil {
