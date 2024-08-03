@@ -21,14 +21,14 @@ func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener
 		for {
 			select {
 			case evt := <-fileChan:
-				switch evt.Type {
+				switch evt.Etype {
 				case Change:
 					log.Print("[TEST] file change event received")
-					assert.Equal(t, Change, evt.Type)
+					assert.Equal(t, Change, evt.Etype)
 					assert.Equal(t, path, evt.Path)
 				case Delete:
 					log.Print("[TEST] file delete event received")
-					assert.Equal(t, Delete, evt.Type)
+					assert.Equal(t, Delete, evt.Etype)
 					assert.Equal(t, path, evt.Path)
 				}
 			case <-stopListener:

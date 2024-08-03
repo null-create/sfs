@@ -16,7 +16,7 @@ const (
 	Error   EventType = "error"
 )
 
-// an associated item (file or directory) for a given event
+// an event item (file or directory)
 type EItem struct {
 	name  string // item name
 	path  string // item path
@@ -29,9 +29,9 @@ func (e *EItem) Kind() string { return e.itype }
 
 type Event struct {
 	ID    string    // UUID of the event
-	Kind  string    // Kind of the event (file or directory)
-	Type  EventType // type of file event, i.e. create, edit, or delete
+	IType string    // Item type (file or directory)
 	Path  string    // location of the file event (path to the file itself)
+	Etype EventType // Event type, i.e. create, edit, or delete
 	Items []EItem   // list of event items (files or directories)
 }
 
@@ -40,7 +40,7 @@ type EList []Event
 
 type Events struct {
 	threshold int   // buffer limit
-	Buffered  bool  // whether this event list is buffered
+	buffered  bool  // whether this event list is buffered
 	Total     int   // current total events
 	atcap     bool  // flag to indicate whether we've reached the buffer limit
 	Events    EList // event buffer
@@ -58,7 +58,7 @@ func NewEvents(buffered bool) *Events {
 	}
 	return &Events{
 		threshold: threshold,
-		Buffered:  buffered,
+		buffered:  buffered,
 		Events:    make(EList, 0),
 	}
 }
