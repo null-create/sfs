@@ -288,8 +288,8 @@ func (c *Client) setEndpoints() {
 	c.Endpoints["new drive"] = EndpointRootWithPort + "/v1/drive/new"
 	c.Endpoints["sync"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID
 	c.Endpoints["get index"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID
-	c.Endpoints["gen index"] = EndpointRootWithPort + "/v1/sync/index/" + c.DriveID + "/index"
-	c.Endpoints["gen updates"] = EndpointRootWithPort + "/v1/sync/update/" + c.DriveID + "/update"
+	c.Endpoints["gen index"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID + "/index"
+	c.Endpoints["gen updates"] = EndpointRootWithPort + "/v1/sync/" + c.DriveID + "/update"
 	c.Endpoints["user"] = EndpointRootWithPort + "/v1/users/" + c.UserID
 	c.Endpoints["new user"] = EndpointRootWithPort + "/v1/users/new"
 	c.Endpoints["all users"] = EndpointRootWithPort + "/v1/users/all"

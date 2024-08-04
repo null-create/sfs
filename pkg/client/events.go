@@ -247,7 +247,7 @@ func (c *Client) handler(itemPath string, stop chan bool) error {
 			c.log.Log(logger.INFO, fmt.Sprintf("stopping handler for '%s'...", filepath.Base(itemPath)))
 			return nil
 		case evt := <-evtChan:
-			switch evt.Type {
+			switch evt.Etype {
 			// NOTE: this is no longer supported, but may be used in the future versions.
 			//
 			// new files or directories were added to a monitored directory

@@ -89,27 +89,7 @@ func NewService(svcRoot string) *Service {
 	}
 }
 
-/*
-SaveState is meant to capture the current value of
-the following fields when saving service state to disk:
-
-	InitTime time.Time `json:"init_time"`
-
-	SvcRoot string `json:"service_root"`  // directory path for sfs service on the server
-	StateFile string `json:"state_file"`  // path to state file directory
-
-	UserDir string `json:"user_dir"` // path to user drives directory
-	DbDir string `json:"db_dir"`     // path to data directory
-
-	// admin mode. allows for expanded permissions when working with
-	// the internal sfs file systems.
-	AdminMode bool   `json:"admin_mode"`
-	Admin     string `json:"admin"`
-	AdminKey  string `json:"admin_key"`
-
-all information about user file metadata  are saved in the database.
-the above fields are saved as a json file.
-*/
+// export service state to
 func (s *Service) SaveState() error {
 	sfDir := filepath.Join(s.SvcRoot, "state")
 
@@ -554,10 +534,7 @@ func (s *Service) UpdateUser(user *auth.User) error {
 
 // find a file in the drive instance and return.
 func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
-	drive, err := s.LoadDrive(driveID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load drive: %v", err)
-	}
+	drive := s.GetDrive(driveID)
 	if drive == nil {
 		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
@@ -570,10 +547,7 @@ func (s *Service) GetFile(driveID string, fileID string) (*svc.File, error) {
 
 // get all file objects for this user.
 func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
-	drive, err := s.LoadDrive(driveID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load drive: %v", err)
-	}
+	drive := s.GetDrive(driveID)
 	if drive == nil {
 		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
@@ -598,10 +572,7 @@ func (s *Service) buildServerDirPath(parentServerPath string, itemName string) s
 // add a new file to the service. creates the physical file,
 // and updates internal service state.
 func (s *Service) AddFile(dirID string, file *svc.File) error {
-	drive, err := s.LoadDrive(file.DriveID)
-	if err != nil {
-		return fmt.Errorf("failed to load drive: %v", err)
-	}
+	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
@@ -651,10 +622,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 
 // update a file in the service.
 func (s *Service) UpdateFile(file *svc.File, data []byte) error {
-	drive, err := s.LoadDrive(file.DriveID)
-	if err != nil {
-		return fmt.Errorf("failed to load drive: %v", err)
-	}
+	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}
@@ -677,10 +645,7 @@ func (s *Service) UpdateFile(file *svc.File, data []byte) error {
 
 // deletes a file and updates the database.
 func (s *Service) DeleteFile(file *svc.File) error {
-	drive, err := s.LoadDrive(file.DriveID)
-	if err != nil {
-		return fmt.Errorf("failed to load drive: %v", err)
-	}
+	drive := s.GetDrive(file.DriveID)
 	if drive == nil {
 		return fmt.Errorf("drive (id=%s) not found", file.DriveID)
 	}

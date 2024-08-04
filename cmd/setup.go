@@ -67,46 +67,70 @@ func runSetupCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
+func setDefaults(newEnv map[string]string) map[string]string {
+	newEnv["ADMIN_MODE"] = "false"
+	newEnv["BUFFERED_EVENTS"] = "true"
+	newEnv["EVENT_BUFFER_SIZE"] = "2"
+	newEnv["JWT_SECRET"] = auth.GenSecret(64)
+	newEnv["NEW_SERVICE"] = "true"
+
+	newEnv["CLIENT_ROOT"] = filepath.Join(Root, "pkg", "client", "run")
+	newEnv["CLIENT_ID"] = auth.NewUUID()
+	newEnv["CLIENT_ADDRESS"] = client.EndpointRoot + ":" + "8080"
+	newEnv["CLIENT_LOCAL_BACKUP"] = "true"
+	newEnv["CLIENT_AUTO_SYNC"] = "true"
+	newEnv["CLIENT_BACKUP_DIR"] = filepath.Join(Root, "pkg", "client", "run", "backups")
+	newEnv["CLIENT_LOG_DIR"] = filepath.Join(Root, "pkg", "client", "logs")
+	newEnv["CLIENT_PORT"] = "8080"
+	newEnv["CLIENT_NEW_SERVICE"] = "true"
+	newEnv["CLIENT_TESTING"] = filepath.Join(Root, "pkg", "client", "testing")
+
+	newEnv["SERVER_ADDR"] = client.EndpointRoot + ":" + "8080"
+	newEnv["SERVER_ADMIN"] = "admin"
+	newEnv["SERVER_ADMIN_KEY"] = auth.GenSecret(64)
+	newEnv["SERVER_LOG_DIR"] = filepath.Join(Root, "pkg", "server", "logs")
+	newEnv["SERVER_PORT"] = "8080"
+	newEnv["SERVER_TIMEOUT_IDLE"] = "900s"
+	newEnv["SERVER_TIMEOUT_READ"] = "5s"
+	newEnv["SERVER_TIMEOUT_WRITE"] = "10s"
+
+	newEnv["SERVICE_LOG_DIR"] = filepath.Join(Root, "pkg", "service", "logs")
+	newEnv["SERVICE_ROOT"] = filepath.Join(Root, "pkg", "server", "run")
+	newEnv["SERVICE_TEST_ROOT"] = filepath.Join(Root, "pkg", "server", "testing")
+	return newEnv
+}
+
 // set configs and create .env files for each package
 // populate baseEnv with default values for all fields
 // get users input for client name, username, email
 func setUpEnv() error {
-	newEnv := env.BaseEnv
+	// set default values
+	newEnv := setDefaults(env.BaseEnv)
+
+	// manual settings set by the user
 	for setting, value := range newEnv {
-		// client settings
 		if strings.Contains(setting, "CLIENT") && value == "" {
-			if setting == "CLIENT_ROOT" {
-				newEnv[setting] = filepath.Join(Root, "pkg", "client", "run")
-			} else if setting == "CLIENT_TESTING" {
-				newEnv[setting] = filepath.Join(Root, "pkg", "client", "testing")
-			} else if setting == "CLIENT_ID" {
-				newEnv[setting] = auth.NewUUID()
+			var value string
+			if setting == "CLIENT_NAME" {
+				fmt.Print("Enter your name: ")
+			} else if setting == "CLIENT_USERNAME" {
+				fmt.Print("Enter your username: ")
+			} else if setting == "CLIENT_EMAIL" {
+				fmt.Print("Enter your email: ")
 			} else if setting == "CLIENT_PASSWORD" {
-				newEnv[setting] = auth.GenSecret(64)
-			} else { // get the users inputs for specific settings
-				var value string
-				if setting == "CLIENT" {
-					fmt.Print("Enter your name: ")
-				} else if setting == "CLIENT_USERNAME" {
-					fmt.Print("Enter your username: ")
-				} else if setting == "CLIENT_EMAIL" {
-					fmt.Print("Enter your email: ")
-				}
-				fmt.Scanln(&value)
-				newEnv[setting] = value
+				fmt.Print("Enter your password: ")
 			}
-			// server and service settings
-		} else if setting == "SERVER_ADMIN_KEY" {
-			newEnv[setting] = auth.GenSecret(64)
-		} else if setting == "SERVICE_ROOT" {
-			newEnv[setting] = filepath.Join(Root, "pkg", "server", "run")
-		} else if setting == "SERVICE_TEST_ROOT" {
-			newEnv[setting] = filepath.Join(Root, "pkg", "server", "testing")
-		} else if setting == "JWT_SECRET" {
-			newEnv[setting] = auth.GenSecret(64)
+			fmt.Scanln(&value)
+			newEnv[setting] = value
 		}
 	}
-	// Write out .env files to each package
+
+	// add .env file to root
+	if err := env.NewEnvFile(filepath.Join(Root, ".env"), newEnv); err != nil {
+		return err
+	}
+	// write out .env files to each package since they each need a copy
+	// to execute their respective tests
 	entries, err := os.ReadDir(filepath.Join(Root, "pkg"))
 	if err != nil {
 		return err
