@@ -280,20 +280,6 @@ func (d *Directory) GetSize() (int64, error) {
 	return size, nil
 }
 
-/*
-get the parent directory for this directory.
-
-only root directories can have a nil parent pointer
-since they will have a valid *drive pointer to
-point to the parent drive
-*/
-func (d *Directory) GetParent() *Directory {
-	if !d.HasParent() && !d.IsRoot() {
-		log.Fatal("no parent for non-root directory!")
-	}
-	return d.Parent
-}
-
 // -------- password protection and other simple security stuff
 
 func (d *Directory) SetPassword(password string, newPassword string) error {
@@ -329,10 +315,10 @@ func (d *Directory) Unlock(password string) bool {
 func (d *Directory) addFile(file *File) {
 	file.DirID = d.ID
 	file.DriveID = d.DriveID
-	file.LastSync = time.Now().UTC()
 	file.BackupPath = filepath.Join(d.BackupPath, file.Name)
 	d.Size += file.GetSize()
 	d.Files[file.ID] = file
+	d.Files[file.ID].LastSync = time.Now().UTC()
 	d.LastSync = time.Now().UTC()
 }
 
@@ -477,9 +463,9 @@ func (d *Directory) addSubDir(dir *Directory) error {
 		dir.ParentID = d.ID
 		dir.DriveID = d.DriveID
 		dir.BackupPath = filepath.Join(d.BackupPath, dir.Name)
-		dir.LastSync = time.Now().UTC()
 		d.Dirs[dir.ID] = dir
 		d.Dirs[dir.ID].LastSync = time.Now().UTC()
+		d.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("dir %s (id=%s) already exists", dir.Name, dir.ID)
 	}
