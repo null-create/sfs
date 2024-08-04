@@ -297,17 +297,23 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 // add a new drive to the service instance.
 // saves the drives root directory and the drive itself to the server's databases.
 func (s *Service) AddDrive(drv *svc.Drive) error {
-	// create a server-side user root directory for this drive.
 	// check if this drive is already registered first.
+	d, err := s.Db.GetDrive(drv.ID)
+	if err != nil {
+		return err
+	}
+	if d != nil {
+		return fmt.Errorf("drive (id=%s) already registered", drv.ID)
+	}
+	// create a server-side user root directory for this drive.
 	root, err := s.Db.GetDirectoryByID(drv.RootID)
 	if err != nil {
 		return err
 	}
 	if root != nil {
-		return fmt.Errorf("drive for '%s' (drv-id=%s) is already registered", drv.OwnerName, drv.ID)
+		return fmt.Errorf("root directory for '%s' (drv-id=%s) is already created", drv.OwnerName, drv.ID)
 	}
-	// create root from existing client-side drive
-	// info so we can register this new drive
+	// create root from existing client-side drive info so we can register this new drive
 	root = svc.NewRootDirectory("root", drv.OwnerID, drv.ID, drv.RootPath)
 	root.ServerPath = filepath.Join(s.SvcRoot, "users", drv.OwnerName)
 	drv.Root = root

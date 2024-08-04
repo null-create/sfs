@@ -369,7 +369,7 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 
 // delete a file from the server
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	file, err := a.getNewFileFromRequest(r)
+	file, err := a.getFileFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
@@ -615,6 +615,14 @@ func (a *API) getDriveIDFromRequest(r *http.Request) (string, error) {
 	return driveID, nil
 }
 
+func (a *API) getNewDriveFromRequest(r *http.Request) (*svc.Drive, error) {
+	drive := r.Context().Value(Drive).(*svc.Drive)
+	if drive == nil {
+		return nil, fmt.Errorf("no drive object found in request")
+	}
+	return drive, nil
+}
+
 func (a *API) getDriveFromRequest(r *http.Request) (*svc.Drive, error) {
 	driveID, err := a.getDriveIDFromRequest(r)
 	if err != nil {
@@ -649,7 +657,7 @@ func (a *API) GetDrive(w http.ResponseWriter, r *http.Request) {
 
 // add a new drive to the server. used as part of a separate registration process.
 func (a *API) NewDrive(w http.ResponseWriter, r *http.Request) {
-	newDrive, err := a.getDriveFromRequest(r)
+	newDrive, err := a.getNewDriveFromRequest(r)
 	if err != nil {
 		a.serverError(w, err.Error())
 		return
