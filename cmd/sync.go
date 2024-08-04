@@ -54,7 +54,7 @@ func getFlags(cmd *cobra.Command) FlagPole {
 }
 
 func runSyncCmd(cmd *cobra.Command, args []string) {
-	c, err := client.LoadClient(true)
+	c, err := client.LoadClient(false)
 	if err != nil {
 		showerr(err)
 	}
