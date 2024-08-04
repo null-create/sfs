@@ -9,6 +9,7 @@ import (
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/db"
+	"github.com/sfs/pkg/logger"
 	logs "github.com/sfs/pkg/logger"
 	svc "github.com/sfs/pkg/service"
 )
@@ -266,6 +267,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("no root directory found for drive %s", driveID)
 	}
 	drive.Root = root
+	drive.Log = logger.NewLogger("Drive", drive.ID)
 
 	// add all users directories
 	dirs, err := s.Db.GetDirsByDriveID(driveID)
@@ -669,8 +671,14 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	// finally, remove the physical file on the server.
 	// dont want users files to be left on the server after removing them
 	// from the service.
+	//
+	// TODO: add checks to make sure this isn't actually something vital,
+	// or in any way a security threat! We need to verify API calls
+	// before we start deleting things willy nilly.
+	// maybe check file.ServerPath against known paths before calling
+	// os.Remove()?
 	if err := os.Remove(file.ServerPath); err != nil {
-		s.log.Error(fmt.Sprintf("failed to remove physical on the server: %v", err))
+		s.log.Error(fmt.Sprintf("failed to remove physical file on the server: %v", err))
 	}
 	return nil
 }

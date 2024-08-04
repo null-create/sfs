@@ -830,7 +830,7 @@ func (c *Client) AddDir(dirPath string) error {
 		return err
 	}
 	if dir != nil {
-		return fmt.Errorf("%s already exists in sfs system", filepath.Base(dirPath))
+		return fmt.Errorf("'%s' already exists in sfs system", filepath.Base(dirPath))
 	}
 
 	// create new directory object. (parent is not set)
@@ -1061,6 +1061,9 @@ func (c *Client) LoadDrive() error {
 	drive.Root = root
 	c.Drive = drive
 	c.Drive.IsLoaded = true
+
+	// add logger to drive
+	c.Drive.Log = logger.NewLogger("Drive", drive.ID)
 
 	// add users monitored directories
 	dirs, err := c.Db.GetUsersDirectories(c.UserID)
