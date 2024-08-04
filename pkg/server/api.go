@@ -616,9 +616,13 @@ func (a *API) getDriveIDFromRequest(r *http.Request) (string, error) {
 }
 
 func (a *API) getDriveFromRequest(r *http.Request) (*svc.Drive, error) {
-	drive := r.Context().Value(Drive).(*svc.Drive)
+	driveID, err := a.getDriveIDFromRequest(r)
+	if err != nil {
+		return nil, err
+	}
+	drive := a.Svc.GetDrive(driveID)
 	if drive == nil {
-		return nil, fmt.Errorf("no drive found in request")
+		return nil, fmt.Errorf("no drive found with id=%s", driveID)
 	}
 	return drive, nil
 }
