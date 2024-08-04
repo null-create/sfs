@@ -257,14 +257,14 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, err
 	}
 	if drive == nil {
-		return nil, fmt.Errorf("drive %s not found", driveID)
+		return nil, fmt.Errorf("drive (id=%s) not found", driveID)
 	}
 	root, err := s.Db.GetDirectoryByID(drive.RootID)
 	if err != nil {
 		return nil, err
 	}
 	if root == nil {
-		return nil, fmt.Errorf("no root directory found for drive %s", driveID)
+		return nil, fmt.Errorf("no root directory found for drive (id=%s)", driveID)
 	}
 	drive.Root = root
 	drive.Log = logger.NewLogger("Drive", drive.ID)
@@ -275,7 +275,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("failed to load users directories: %v", err)
 	}
 	drive.Root.AddSubDirs(dirs)
-	s.log.Log(logs.INFO, fmt.Sprintf("added %d directories to drive id=%s", len(dirs), driveID))
+	s.log.Log(logs.INFO, fmt.Sprintf("added %d directories to drive (id=%s)", len(dirs), driveID))
 
 	// add all users files
 	files, err := s.Db.GetFilesByDriveID(driveID)
@@ -283,7 +283,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 		return nil, fmt.Errorf("failed to load users files: %v", err)
 	}
 	drive.Root.AddFiles(files)
-	s.log.Log(logs.INFO, fmt.Sprintf("added %d files to drive id=%s", len(files), driveID))
+	s.log.Log(logs.INFO, fmt.Sprintf("added %d files to drive (id=%s)", len(files), driveID))
 
 	// generate a new sync index
 	drive.SyncIndex = svc.BuildRootSyncIndex(drive.Root)
@@ -291,7 +291,7 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 	// save to service instance
 	s.Drives[drive.ID] = drive
 	if err := s.SaveState(); err != nil {
-		return nil, fmt.Errorf("[ERROR] failed to save service state while updating drive map: %v", err)
+		return nil, fmt.Errorf("failed to save service state while updating drive map: %v", err)
 	}
 	return drive, nil
 }
@@ -299,7 +299,6 @@ func (s *Service) LoadDrive(driveID string) (*svc.Drive, error) {
 // add a new drive to the service instance.
 // saves the drives root directory and the drive itself to the server's databases.
 func (s *Service) AddDrive(drv *svc.Drive) error {
-	// check if this drive is already registered first.
 	d, err := s.Db.GetDrive(drv.ID)
 	if err != nil {
 		return err
@@ -332,14 +331,11 @@ func (s *Service) AddDrive(drv *svc.Drive) error {
 
 	// allocate new physical drive directories
 	if err := svc.AllocateDrive(drv.OwnerName, s.SvcRoot); err != nil {
-		s.log.Error(fmt.Sprintf(
-			"failed to allocate new drive for %s (id=%s): %v",
-			drv.OwnerName, drv.OwnerID, err),
-		)
-		return fmt.Errorf(
-			"failed to allocate new drive for %s (id=%s): %v",
+		msg := fmt.Sprintf(
+			"failed to allocate new drive for '%s' (id=%s): %v",
 			drv.OwnerName, drv.OwnerID, err,
 		)
+		return fmt.Errorf(msg)
 	}
 
 	// initalize sync index and save to service instance
