@@ -830,7 +830,7 @@ func (c *Client) AddDir(dirPath string) error {
 		return err
 	}
 	if dir != nil {
-		return fmt.Errorf("'%s' already exists in sfs system", filepath.Base(dirPath))
+		return fmt.Errorf("'%s' is already registered", filepath.Base(dirPath))
 	}
 
 	// create new directory object. (parent is not set)
@@ -863,7 +863,7 @@ func (c *Client) AddDir(dirPath string) error {
 	// if err := c.WatchItem(dirPath); err != nil {
 	// 	return err
 	// }
-	// push metadata to server if autosync is enabled
+	// push metadata to server if localBackup is disabled
 	if !c.localBackup() {
 		req, err := c.NewDirectoryRequest(newDir)
 		if err != nil {
@@ -924,7 +924,7 @@ func (c *Client) RemoveDir(dirToRemove *svc.Directory) error {
 func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	oldDir := c.Drive.GetDir(updatedDir.ID)
 	if oldDir == nil {
-		return fmt.Errorf("no such dir: %v", updatedDir.Name)
+		return fmt.Errorf("dir '%s' (id=%s) not found", updatedDir.Name, updatedDir.ID)
 	}
 	if err := c.Drive.UpdateDir(oldDir.ID, updatedDir); err != nil {
 		return fmt.Errorf("failed to update directory in drive: %v", err)
