@@ -378,6 +378,10 @@ func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, "failed to delete file: "+err.Error())
 		return
 	}
+	if err := os.Remove(file.ServerPath); err != nil {
+		a.serverError(w, "failed to remove file: "+err.Error())
+		return
+	}
 	a.write(w, fmt.Sprintf("%s (id=%s) deleted from server", file.Name, file.ID))
 }
 
