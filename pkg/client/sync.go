@@ -147,9 +147,9 @@ func (c *Client) ServerSync() error {
 }
 
 // take a given sync index, build a queue of files to be pushed to the
-// server, then upload each in their own goroutines. Each file is assumed to be
-// already registered with the server, otherwise this will receive a 404 response
-// and the upload will fail.
+// server, then upload each in their own goroutines one batch at a time.
+// each file is assumed to be already registered with the server, otherwise
+// this will receive a 404 response and the upload will fail.
 func (c *Client) Push() error {
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		c.log.Warn("no files marked for uploading. sync index update map is empty")
