@@ -86,8 +86,7 @@ type SyncItems struct {
 // TODO: handle when a server has a file/directory the client doesn't have,
 // and handle when the client has a file/directory the server doesn't have.
 func (c *Client) ServerSync() error {
-	// get latest server sync index
-	svrIdx, err := c.GetServerIdx(true)
+	svrIdx, err := c.GetServerIdx(true) // get latest server sync index
 	if err != nil {
 		return err
 	}
