@@ -80,11 +80,8 @@ type SyncItems struct {
 // sync items between the client and the server.
 //
 // NOTE: this assumes that both the client and the server have
-// a record of the files. if the server has a file the client doesn't
+// a record of the objects to sync. if the server has a file the client doesn't
 // know about, then this doesn't handle it, and vice-versa
-//
-// TODO: handle when a server has a file/directory the client doesn't have,
-// and handle when the client has a file/directory the server doesn't have.
 func (c *Client) ServerSync() error {
 	svrIdx, err := c.GetServerIdx(true) // get latest server sync index
 	if err != nil {
