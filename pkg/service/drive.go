@@ -527,13 +527,21 @@ func (d *Drive) UpdateDir(dirID string, updatedDir *Directory) error {
 		if !d.HasRoot() {
 			return fmt.Errorf("no root directory")
 		}
-		// get the parent of the updated directory & add
-		parent := d.Root.WalkD(dirID)
-		if parent == nil {
-			return fmt.Errorf("dir %s not found", dirID)
-		}
-		if err := parent.PutSubDir(updatedDir); err != nil {
-			return fmt.Errorf("failed to update dir %s: %v", parent.Name, err)
+		if dirID == d.Root.ID {
+			if err := d.Root.PutSubDir(updatedDir); err != nil {
+				return err
+			}
+		} else {
+			parentDir := d.Root.WalkD(dirID)
+			if parentDir == nil {
+				return fmt.Errorf(
+					"parent dir (id=%s) for dir '%s' (id=%s) not found",
+					dirID, updatedDir.Name, updatedDir.ID,
+				)
+			}
+			if err := parentDir.PutSubDir(updatedDir); err != nil {
+				return fmt.Errorf("failed to update dir %s: %v", updatedDir.Name, err)
+			}
 		}
 	} else {
 		d.Log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))

@@ -922,11 +922,11 @@ func (c *Client) RemoveDir(dirToRemove *svc.Directory) error {
 }
 
 func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
-	oldDir := c.Drive.GetDir(updatedDir.ID)
+	oldDir := c.Drive.GetDir(updatedDir.ID) // see if this directory already exists
 	if oldDir == nil {
 		return fmt.Errorf("dir '%s' (id=%s) not found", updatedDir.Name, updatedDir.ID)
 	}
-	if err := c.Drive.UpdateDir(oldDir.ID, updatedDir); err != nil {
+	if err := c.Drive.UpdateDir(updatedDir.ParentID, updatedDir); err != nil {
 		return fmt.Errorf("failed to update directory in drive: %v", err)
 	}
 	if err := c.Db.UpdateDir(updatedDir); err != nil {

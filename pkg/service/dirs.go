@@ -701,6 +701,9 @@ attempting to find the desired sub directory with the given directory ID.
 Returns nil if the directory is not found
 */
 func (d *Directory) WalkD(dirID string) *Directory {
+	if d.ID == dirID {
+		return d
+	}
 	return walkD(d, dirID)
 }
 
