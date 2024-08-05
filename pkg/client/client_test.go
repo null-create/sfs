@@ -394,6 +394,37 @@ func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 	}
 }
 
+func TestAddAndUpdateDir(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	tmpClient.SetLocalBackup("true")
+
+	td, err := MakeTmpDir(t, filepath.Join(tmpDir, "tmp"))
+	if err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.Drive.Root.AddSubDir(td); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	td.Name = "test-dir"
+
+	if err := tmpClient.UpdateDirectory(td); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TestClientRemoveDir(t *testing.T) {
 	env.SetEnv(false)
 	tmpDir, err := envCfgs.Get("CLIENT_TESTING")

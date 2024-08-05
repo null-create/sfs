@@ -371,14 +371,19 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	file, err := a.getFileFromRequest(r)
 	if err != nil {
-		a.serverError(w, err.Error())
+		if strings.Contains(err.Error(), "not found") {
+			a.clientError(w, err.Error())
+		} else {
+			a.serverError(w, err.Error())
+		}
 		return
 	}
+	// remove file from SFS server service instance
 	if err := a.Svc.DeleteFile(file); err != nil {
 		a.serverError(w, "failed to delete file: "+err.Error())
 		return
 	}
-	a.write(w, fmt.Sprintf("%s (id=%s) deleted from server", file.Name, file.ID))
+	a.write(w, fmt.Sprintf("'%s' (id=%s) deleted", file.Name, file.ID))
 }
 
 // ------- directories --------------------------------
