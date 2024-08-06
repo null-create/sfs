@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/sfs/pkg/env"
@@ -43,13 +42,6 @@ func GetClientConfigs() *Conf {
 
 // client env, user, and service configurations
 var cfgs = GetClientConfigs()
-
-func (c *Conf) ShowConfigs() {
-	cfg := structToMap(c)
-	for k, v := range cfg {
-		fmt.Printf("%s: %v", k, v)
-	}
-}
 
 // Environment configs
 var envCfgs = env.NewE()
