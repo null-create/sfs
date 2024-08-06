@@ -89,8 +89,12 @@ func (c *Client) NewHandler(path string) error {
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
-	offSwitch := make(chan bool)
-	handler := func() {
+	var offSwitch = make(chan bool)
+	// this is kind of hideous but necessary to be able to
+	// access the resources needed for the handler.
+	// TODO: look into how using a closure like this could
+	// create data race conditions
+	var handler = func() {
 		go func() {
 			if err := c.handler(path, offSwitch); err != nil {
 				c.log.Error(fmt.Sprintf("handler for %s failed: %v", filepath.Base(path), err))
