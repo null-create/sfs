@@ -82,7 +82,6 @@ func NewRouter() *chi.Mux {
 			r.Get("/", api.GetRunTime)
 		})
 		r.Route("/users", func(r chi.Router) {
-			// TODO: add admin-only context here
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(UserCtx)
 				r.Get("/", api.GetUser)       // get info about a user
@@ -94,6 +93,7 @@ func NewRouter() *chi.Mux {
 				r.Post("/", api.AddNewUser) // add a new user
 			})
 			r.Route("/all", func(r chi.Router) {
+				// TODO: add admin-only context here
 				// get a list of all active users
 				r.Get("/", api.GetAllUsers)
 			})

@@ -726,21 +726,17 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	return nil
 }
 
-// see if this file is registered with the server (exists on servers DB)
+// see if this file is registered. checks local DB, does not query server
 func (c *Client) IsFileRegistered(file *svc.File) (bool, error) {
-	req, err := c.GetFileInfoRequest(file)
+	f, err := c.Db.GetFileByID(file.ID)
 	if err != nil {
-		return false, fmt.Errorf("failed to create file request: %v", err)
+		return false, err
 	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("failed to execute request: %v", err)
-	}
-	return resp.StatusCode == http.StatusOK, nil
+	return f.Registered, nil
 }
 
 // register new file with the server. does not send file contents,
-// only metadata
+// only metadata. updates DB once file is successfully registered.
 func (c *Client) RegisterFile(file *svc.File) error {
 	req, err := c.NewFileRequest(file)
 	if err != nil {
@@ -750,10 +746,14 @@ func (c *Client) RegisterFile(file *svc.File) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		c.dump(resp, true)
-	} else if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusOK {
+		file.Registered = true
+		if err := c.Db.UpdateFile(file); err != nil {
+			return err
+		}
 		c.log.Info(fmt.Sprintf("file '%s' registered", file.Name))
+	} else {
+		c.dump(resp, true)
 	}
 	return nil
 }
@@ -968,17 +968,13 @@ func (c *Client) GetDirIDFromPath(path string) (string, error) {
 	return dir.ID, nil
 }
 
-// see if this directory is registered with the server (exists on servers DB)
+// see if this directory is registered. checks DB, does not query server.
 func (c *Client) IsDirRegistered(dir *svc.Directory) (bool, error) {
-	req, err := c.GetDirInfoRequest(dir)
+	d, err := c.Db.GetDirectoryByID(dir.ID)
 	if err != nil {
-		return false, fmt.Errorf("failed to create directory request: " + err.Error())
+		return false, err
 	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("failed to execute request: " + err.Error())
-	}
-	return resp.StatusCode == http.StatusOK, nil
+	return d.Registered, nil
 }
 
 // send directory metadata to the server
@@ -992,6 +988,10 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 		return err
 	}
 	if resp.StatusCode == http.StatusOK {
+		dir.Registered = true
+		if err := c.Db.UpdateDir(dir); err != nil {
+			return err
+		}
 		c.log.Info(fmt.Sprintf("directory '%s' registered", dir.Name))
 	} else {
 		c.dump(resp, true)
@@ -1113,9 +1113,14 @@ func (c *Client) SaveDrive(drv *svc.Drive) error {
 // register a new drive with the server. if drive is already known to the server,
 // then the server response should reflect this.
 func (c *Client) RegisterClient() error {
-	if c.Drive == nil {
-		return fmt.Errorf("no drive available")
+	drv, err := c.Db.GetDrive(c.Drive.ID) // check DB if the drive is already registered
+	if err != nil {
+		return err
 	}
+	if drv.Registered {
+		return nil
+	}
+
 	// register the user
 	req, err := c.NewUserRequest(c.User)
 	if err != nil {
@@ -1145,7 +1150,10 @@ func (c *Client) RegisterClient() error {
 	}
 	if resp.StatusCode == http.StatusOK {
 		c.Drive.Registered = true
-	} else if resp.StatusCode == http.StatusBadRequest {
+		if err := c.Db.UpdateDrive(c.Drive); err != nil {
+			return err
+		}
+	} else {
 		c.log.Warn(fmt.Sprintf("failed to register new drive. server status: %v", resp.Status))
 		c.dump(resp, true)
 		return nil

@@ -30,6 +30,7 @@ type File struct {
 	Size         int64       `json:"size"`          // file size in bytes
 	ServerBackup bool        `json:"server_backup"` // flag for whether this is the server-side version of the file
 	LocalBackup  bool        `json:"local_backup"`  // flag for whether this is a local backup version of the file
+	Registered   bool        `json:"registered"`    // flag for whether the file has been registered with the server
 
 	// security stuff
 	Protected bool   `json:"protected"`
@@ -91,6 +92,7 @@ func NewFile(fileName string, driveID string, ownerID string, filePath string) *
 		ServerPath:   filePath,
 		ClientPath:   filePath,
 		BackupPath:   filePath,
+		Registered:   false,
 		Endpoint:     Endpoint + ":" + cfg.Port + "/v1/files/" + uuid,
 		CheckSum:     cs,
 		Algorithm:    "sha256",
