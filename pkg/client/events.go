@@ -91,7 +91,10 @@ func (c *Client) NewHandler(path string) error {
 func (c *Client) NewEHandler(path string) error {
 	var offSwitch = make(chan bool)
 	// this is kind of hideous but necessary to be able to
-	// access the resources needed for the handler.
+	// access the resources needed for the handler, as well as keep
+	// track of all the handler instances. turns out one can't add
+	// methods attached to types to map[string]func() maps, so creating a
+	// closure around the type method provided a way to do that.
 	// TODO: look into how using a closure like this could
 	// create data race conditions
 	var handler = func() {
