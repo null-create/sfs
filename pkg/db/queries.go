@@ -24,6 +24,7 @@ const (
 			server_path VARCHAR(255),
 			client_path VARCHAR(255),
 			backup_path VARCHAR(255),
+			registered BIT,
 			endpoint VARCHAR(255),
 			checksum VARCHAR(255),
 			algorithm VARCHAR(50),
@@ -41,6 +42,7 @@ const (
 			server_path VARCHAR(255),
 			client_path VARCHAR(255),
 			backup_path VARCHAR(255),
+			registered BIT,
 			protected BIT,
 			auth_type VARCHAR(50),
 			key VARCHAR(100),
@@ -110,11 +112,12 @@ const (
 			server_path,
 			client_path,
 			backup_path,
+			registered,
 			endpoint,
 			checksum,
 			algorithm
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDirQuery string = `
 		INSERT OR IGNORE INTO Directories (
@@ -127,6 +130,7 @@ const (
 			server_path,
 			client_path,
 			backup_path,
+			registered,
 			protected,
 			auth_type,
 			key,
@@ -137,7 +141,7 @@ const (
 			drive_root, 
 			root_path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	AddDriveQuery string = `
 		INSERT OR IGNORE INTO Drives (
@@ -193,7 +197,8 @@ const (
 				path = ?, 
 				server_path = ?, 
 				client_path = ?,
-				backup_path = ?, 
+				backup_path = ?,
+				registered = ?,  
 				endpoint = ?,  
 				checksum = ?, 
 				algorithm = ?
@@ -210,6 +215,7 @@ const (
 				server_path = ?,
 				client_path = ?,
 				backup_path = ?,
+				registered = ?,
 				protected = ?,
 				auth_type = ?,
 				key = ?,
@@ -314,20 +320,9 @@ const (
 	FindUsersDriveIDQuery        string = `SELECT drive_id FROM Users WHERE id = ?;`
 	FindUsersIDWithDriveIDQuery  string = `SELECT owner_id FROM Drives WHERE id = ?;`
 
-	// ---------- SELECT statements for confirming existance -------------------
+	// ---------- SELECT statements for confirming existance and registration  -------------------
 
-	ExistsQuery string = `SELECT EXISTS (SELECT 1 FROM ? WHERE id = '?');`
-
-	// ----------- SELECT statements for cross examing tables -------------------
-	DirOrFileQuery string = `
-		SELECT
-			id,
-			CASE
-					WHEN id IN (SELECT id FROM Files) THEN 'File'
-					WHEN id IN (SELECT id FROM Directories) THEN 'Directory'
-					ELSE 'Unknown'
-			END AS Type
-		FROM
-			(SELECT id FROM Files UNION SELECT id FROM Directories) AS AllIds;
-	`
+	ExistsQuery           string = `SELECT EXISTS (SELECT 1 FROM ? WHERE id = '?');`
+	IsFileRegisteredQuery string = `SELECT registered FROM Files WHERE id = ?;`
+	IsDirRegisteredQuery  string = `SELECT registered FROM Directories WHERE id = ?;`
 )

@@ -168,6 +168,7 @@ func (q *Query) GetFileByID(fileID string) (*svc.File, error) {
 		&file.ServerPath,
 		&file.ClientPath,
 		&file.BackupPath,
+		&file.Registered,
 		&file.Endpoint,
 		&file.CheckSum,
 		&file.Algorithm,
@@ -209,6 +210,7 @@ func (q *Query) GetFileByPath(filePath string) (*svc.File, error) {
 		&file.ServerPath,
 		&file.ClientPath,
 		&file.BackupPath,
+		&file.Registered,
 		&file.Endpoint,
 		&file.CheckSum,
 		&file.Algorithm,
@@ -249,6 +251,7 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 		&file.ServerPath,
 		&file.ClientPath,
 		&file.BackupPath,
+		&file.Registered,
 		&file.Endpoint,
 		&file.CheckSum,
 		&file.Algorithm,
@@ -280,6 +283,24 @@ func (q *Query) GetFileIDFromPath(filePath string) (string, error) {
 		return "", fmt.Errorf("failed to get file ID: %v", err)
 	}
 	return fileID, nil
+}
+
+func (q *Query) IsFileRegistered(fileID string) (bool, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	var isRegistered bool
+	if err := q.Conn.QueryRow(IsFileRegisteredQuery, fileID).Scan(&isRegistered); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return isRegistered, nil
 }
 
 // populate a slice of *svc.File structs from *all*
@@ -318,6 +339,7 @@ func (q *Query) GetFiles() ([]*svc.File, error) {
 			&file.ServerPath,
 			&file.ClientPath,
 			&file.BackupPath,
+			&file.Registered,
 			&file.Endpoint,
 			&file.CheckSum,
 			&file.Algorithm,
@@ -370,6 +392,7 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 			&file.ServerPath,
 			&file.ClientPath,
 			&file.BackupPath,
+			&file.Registered,
 			&file.Endpoint,
 			&file.CheckSum,
 			&file.Algorithm,
@@ -419,6 +442,7 @@ func (q *Query) GetFilesByDriveID(driveID string) ([]*svc.File, error) {
 			&file.ServerPath,
 			&file.ClientPath,
 			&file.BackupPath,
+			&file.Registered,
 			&file.Endpoint,
 			&file.CheckSum,
 			&file.Algorithm,
@@ -461,6 +485,7 @@ func (q *Query) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 		&dir.ServerPath,
 		&dir.ClientPath,
 		&dir.BackupPath,
+		&dir.Registered,
 		&dir.Protected,
 		&dir.AuthType,
 		&dir.Key,
@@ -503,6 +528,7 @@ func (q *Query) GetDirectoryByName(dirName string) (*svc.Directory, error) {
 		&dir.ServerPath,
 		&dir.ClientPath,
 		&dir.BackupPath,
+		&dir.Registered,
 		&dir.Protected,
 		&dir.AuthType,
 		&dir.Key,
@@ -545,6 +571,7 @@ func (q *Query) GetDirectoryByPath(dirPath string) (*svc.Directory, error) {
 		&dir.ServerPath,
 		&dir.ClientPath,
 		&dir.BackupPath,
+		&dir.Registered,
 		&dir.Protected,
 		&dir.AuthType,
 		&dir.Key,
@@ -615,6 +642,7 @@ func (q *Query) GetAllDirectories() ([]*svc.Directory, error) {
 			&dir.ServerPath,
 			&dir.ClientPath,
 			&dir.BackupPath,
+			&dir.Registered,
 			&dir.Protected,
 			&dir.Endpoint,
 			&dir.AuthType,
@@ -666,6 +694,7 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 			&dir.ServerPath,
 			&dir.ClientPath,
 			&dir.BackupPath,
+			&dir.Registered,
 			&dir.Protected,
 			&dir.AuthType,
 			&dir.Key,
@@ -716,6 +745,7 @@ func (q *Query) GetDirsByDriveID(driveID string) ([]*svc.Directory, error) {
 			&dir.ServerPath,
 			&dir.ClientPath,
 			&dir.BackupPath,
+			&dir.Registered,
 			&dir.Protected,
 			&dir.AuthType,
 			&dir.Key,
@@ -734,6 +764,24 @@ func (q *Query) GetDirsByDriveID(driveID string) ([]*svc.Directory, error) {
 		dirs = append(dirs, dir)
 	}
 	return dirs, nil
+}
+
+func (q *Query) IsDirRegistered(dirID string) (bool, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	var isRegistered bool
+	if err := q.Conn.QueryRow(IsDirRegisteredQuery, dirID).Scan(&isRegistered); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return isRegistered, nil
 }
 
 // ------ drives --------------------------------

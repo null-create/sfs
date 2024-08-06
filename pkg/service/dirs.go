@@ -50,6 +50,7 @@ type Directory struct {
 	BackupPath   string `json:"backup_path"`
 	ServerBackup bool   `json:"server_backup"` // flag for whether this is the server-side version of the file
 	LocalBackup  bool   `json:"local_backup"`  // flag for whether this is a local backup version of the file
+	Registered   bool   `json:"registered"`    // flag for whether the file is registered with the server
 
 	// security attributes
 	Protected bool   `json:"protected"`
@@ -108,6 +109,7 @@ func NewRootDirectory(dirName string, ownerID string, driveID string, rootPath s
 		ClientPath: rootPath,
 		BackupPath: rootPath,
 		RootPath:   rootPath,
+		Registered: false,
 	}
 }
 
@@ -138,6 +140,7 @@ func NewDirectory(dirName string, ownerID string, driveID string, path string) *
 		ClientPath: path,
 		BackupPath: path,
 		ServerPath: path,
+		Registered: false,
 	}
 }
 
