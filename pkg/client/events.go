@@ -52,7 +52,7 @@ func (c *Client) StopMonitoring() {
 }
 
 // initialize handlers and monitor off switch maps
-func (c *Client) InitHandlerMaps() {
+func (c *Client) InitHandlerMap() {
 	c.Handlers = make(map[string]Handler)
 }
 
@@ -90,18 +90,6 @@ func (c *Client) NewHandler(path string) error {
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
-	// this is kind of hideous but necessary to be able to
-	// access the resources needed for the handler, as well as keep
-	// track of all the handler instances while they're running in separate goroutines.
-	// TODO: look into how using a closure like this could
-	// create data race conditions
-	// var handler = func() {
-	// 	go func() {
-	// 		if err := c.handler(path); err != nil {
-	// 			c.log.Error(fmt.Sprintf("handler for '%s' failed: %v", filepath.Base(path), err))
-	// 		}
-	// 	}()
-	// }
 	if _, exists := c.Handlers[path]; !exists {
 		c.Handlers[path] = c.handler
 	}
@@ -214,10 +202,8 @@ func (c *Client) BuildHandlers() error {
 		return err
 	}
 	for _, file := range files {
-		if _, exists := c.Handlers[file.Path]; !exists {
-			if err := c.NewEHandler(file.Path); err != nil {
-				return err
-			}
+		if err := c.NewEHandler(file.Path); err != nil {
+			return err
 		}
 	}
 	// NOTE: monitoring directories is not supported, but may be in the future.
