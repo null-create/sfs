@@ -226,7 +226,7 @@ func LoadClient(persist bool) (*Client, error) {
 	client.Monitor = monitor.NewMonitor(client.Root)
 
 	// initialize event maps
-	client.InitHandlerMaps()
+	client.InitHandlerMap()
 
 	// load and start persistent services only when necessary.
 	// persist should only be set to true when followed by a
@@ -330,8 +330,7 @@ func NewClient(user *auth.User) (*Client, error) {
 		Db:             db.NewQuery(filepath.Join(svcRoot, "dbs"), true),
 		log:            logger.NewLogger("Client", user.ID),
 		Tok:            auth.NewT(),
-		Handlers:       make(map[string]func()),
-		OffSwitches:    make(map[string]chan bool),
+		Handlers:       make(map[string]Handler),
 		Transfer:       transfer.NewTransfer(),
 		Client:         newHttpClient(),
 	}

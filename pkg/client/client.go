@@ -54,11 +54,7 @@ type Client struct {
 	// being monitored by the client
 	//
 	// key == item path, value == event handler function
-	Handlers map[string]func() `json:"-"`
-
-	// Map of event handler off switches.
-	// key == filepath, value == chan bool
-	OffSwitches map[string]chan bool `json:"-"`
+	Handlers map[string]Handler `json:"-"`
 
 	// File transfer component. Handles file uploads and downloads.
 	Transfer *transfer.Transfer `json:"-"`
