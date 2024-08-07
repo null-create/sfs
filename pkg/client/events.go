@@ -53,8 +53,7 @@ func (c *Client) StopMonitoring() {
 
 // initialize handlers and monitor off switch maps
 func (c *Client) InitHandlerMaps() {
-	c.Handlers = make(map[string]func())
-	c.OffSwitches = make(map[string]chan bool)
+	c.Handlers = make(map[string]Handler)
 }
 
 // adds a file to monitor, then creates and starts
@@ -71,6 +70,8 @@ func (c *Client) WatchItem(path string) error {
 	}
 	return nil
 }
+
+type Handler func(path string) error
 
 // add a new event handler for the given file.
 // path to the given file must already have a monitoring
@@ -89,23 +90,21 @@ func (c *Client) NewHandler(path string) error {
 // build a new event handler for a given file. does not start the handler,
 // only adds it (and its offswitch) to the handlers map.
 func (c *Client) NewEHandler(path string) error {
-	var offSwitch = make(chan bool)
 	// this is kind of hideous but necessary to be able to
 	// access the resources needed for the handler, as well as keep
-	// track of all the handler instances. turns out one can't add
-	// methods attached to types to map[string]func() maps, so creating a
-	// closure around the type method provided a way to do that.
+	// track of all the handler instances while they're running in separate goroutines.
 	// TODO: look into how using a closure like this could
 	// create data race conditions
-	var handler = func() {
-		go func() {
-			if err := c.handler(path, offSwitch); err != nil {
-				c.log.Error(fmt.Sprintf("handler for %s failed: %v", filepath.Base(path), err))
-			}
-		}()
+	// var handler = func() {
+	// 	go func() {
+	// 		if err := c.handler(path); err != nil {
+	// 			c.log.Error(fmt.Sprintf("handler for '%s' failed: %v", filepath.Base(path), err))
+	// 		}
+	// 	}()
+	// }
+	if _, exists := c.Handlers[path]; !exists {
+		c.Handlers[path] = c.handler
 	}
-	c.Handlers[path] = handler
-	c.OffSwitches[path] = offSwitch
 	return nil
 }
 
@@ -156,15 +155,17 @@ func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Eve
 // will be a no-op if the handler does not exist.
 func (c *Client) StartHandler(path string) error {
 	if handler, exists := c.Handlers[path]; exists {
-		handler()
+		go func() {
+			if err := handler(path); err != nil {
+				c.log.Error(err.Error())
+			}
+		}()
 	}
 	return nil
 }
 
 // start all available listeners
 func (c *Client) StartHandlers() error {
-	// start file handlers
-	// files := c.Drive.GetFiles()
 	files, err := c.Db.GetUsersFiles(c.UserID)
 	if err != nil {
 		return err
@@ -241,18 +242,14 @@ func (c *Client) BuildHandlers() error {
 
 // dedicated handler for item events.
 // items can be either files or directories.
-func (c *Client) handler(itemPath string, stop chan bool) error {
-	// get all necessary params for the event handler.
-	evtChan, evtBuf, itemID, err := c.setupHandler(itemPath)
+func (c *Client) handler(itemPath string) error {
+	evtChan, evtBuf, itemID, err := c.setupHandler(itemPath) // get all necessary params for the event handler.
 	if err != nil {
 		return err
 	}
 	// main listening loop for events
 	for {
 		select {
-		case <-stop:
-			c.log.Log(logger.INFO, fmt.Sprintf("stopping handler for '%s'...", filepath.Base(itemPath)))
-			return nil
 		case evt := <-evtChan:
 			switch evt.Etype {
 			// NOTE: this is no longer supported, but may be used in the future versions.
