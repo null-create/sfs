@@ -23,10 +23,12 @@ func init() {
 	clientCmd.PersistentFlags().BoolVar(&flags.new, "new", false, "Initialize a new client service instance")
 	clientCmd.PersistentFlags().BoolVar(&flags.start, "start", false, "Start client services")
 	clientCmd.PersistentFlags().BoolVar(&flags.info, "info", false, "Get info about the local SFS client")
+	clientCmd.PersistentFlags().BoolVar(&flags.register, "register", false, "Register the client with the server")
 
 	viper.BindPFlag("start", clientCmd.PersistentFlags().Lookup("start"))
 	viper.BindPFlag("new", clientCmd.PersistentFlags().Lookup("new"))
 	viper.BindPFlag("info", clientCmd.PersistentFlags().Lookup("info"))
+	viper.BindPFlag("register", clientCmd.PersistentFlags().Lookup("register"))
 
 	rootCmd.AddCommand(clientCmd)
 }
@@ -35,11 +37,13 @@ func getClientFlags(cmd *cobra.Command) FlagPole {
 	new, _ := cmd.Flags().GetBool("new")
 	start, _ := cmd.Flags().GetBool("start")
 	info, _ := cmd.Flags().GetBool("info")
+	register, _ := cmd.Flags().GetBool("register")
 
 	return FlagPole{
-		new:   new,
-		start: start,
-		info:  info,
+		new:      new,
+		start:    start,
+		info:     info,
+		register: register,
 	}
 }
 
@@ -67,6 +71,14 @@ func runClientCmd(cmd *cobra.Command, args []string) {
 		_, err = client.Init(configs.NewService)
 		if err != nil {
 			showerr(fmt.Errorf("failed to initialize new service: %v", err))
+		}
+	case f.register:
+		c, err := client.LoadClient(false)
+		if err != nil {
+			showerr(fmt.Errorf("failed to initialize service: %v", err))
+		}
+		if err := c.RegisterClient(); err != nil {
+			showerr(err)
 		}
 	case f.start:
 		c, err := client.LoadClient(true)
