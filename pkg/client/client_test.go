@@ -210,7 +210,7 @@ func TestClientDeleteUser(t *testing.T) {
 
 	user := tmpClient.User
 
-	if err := tmpClient.RemoveUser(user.ID); err != nil {
+	if err := tmpClient.RemoveUser(); err != nil {
 		Fail(t, tmpDir, err)
 	}
 

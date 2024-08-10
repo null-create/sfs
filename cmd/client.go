@@ -91,6 +91,7 @@ func runClientCmd(cmd *cobra.Command, args []string) {
 		c, err := client.LoadClient(false)
 		if err != nil {
 			showerr(fmt.Errorf("failed to initialize service: %v", err))
+			return
 		}
 		fmt.Print(c.GetUserInfo())
 	}

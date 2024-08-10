@@ -82,21 +82,6 @@ func (s *SyncIndex) ToString() string {
 	return string(data)
 }
 
-// add a file to the sync index
-func (s *SyncIndex) AddFile(file *File) {
-	if !s.HasItem(file.ID) {
-		s.LastSync[file.ID] = file.LastSync
-	}
-}
-
-// add a file to the sync index update map.
-// must already be in the sync index first.
-func (s *SyncIndex) AddFileToUpdateMap(file *File) {
-	if !s.HasItem(file.ID) {
-		s.FilesToUpdate[file.ID] = file
-	}
-}
-
 // get a slice of files to sync from the index.ToUpdate map
 func (s *SyncIndex) GetFiles() []*File {
 	if len(s.FilesToUpdate) == 0 {
@@ -147,16 +132,18 @@ between the two, favoring the newer one for any last sync times.
 
 the map this returns will only contain the itemps that were matched and found to have a
 more recent time -- items that weren't matched will be ignored.
+
+TODO: indicate whether the latest sync time is from a server item or a client item
 */
 func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	// index containing most recent items
-	diff := NewSyncIndex(orig.UserID)
+	newest := NewSyncIndex(orig.UserID)
 
 	// compare last sync times
 	for itemId, lastSync := range new.LastSync {
 		if origTime, exists := orig.LastSync[itemId]; exists {
 			if lastSync.After(origTime) {
-				diff.LastSync[itemId] = lastSync
+				newest.LastSync[itemId] = lastSync
 			}
 		}
 	}
@@ -164,7 +151,7 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	for fileID, newFile := range new.FilesToUpdate {
 		if origFile, exists := orig.FilesToUpdate[fileID]; exists {
 			if newFile.LastSync.After(origFile.LastSync) {
-				diff.FilesToUpdate[fileID] = newFile
+				newest.FilesToUpdate[fileID] = newFile
 			}
 		}
 	}
@@ -176,7 +163,7 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 	// 		}
 	// 	}
 	// }
-	return diff
+	return newest
 }
 
 /*

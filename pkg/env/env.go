@@ -207,6 +207,26 @@ func (e *Env) Set(k, v string) error {
 	return nil
 }
 
+// Clears the environment configurations for both client and the server,
+// then sets as a new .env file. use with caution! creates a backup copy
+// after clearning, but the backup file is called 'env-backup.env', and will
+// not be read by the service when started again after clearing.
+func (e *Env) Clear() error {
+	if err := Copy(".env", "env-backup.env"); err != nil {
+		return err
+	}
+	e.env = BaseEnv
+	if err := godotenv.Write(e.env, ".env"); err != nil {
+		return err
+	}
+	for k, v := range e.env {
+		if err := os.Setenv(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (e *Env) List() {
 	for k, v := range e.env {
 		fmt.Printf("%v: %v\n", k, v)

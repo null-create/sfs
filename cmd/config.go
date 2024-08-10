@@ -78,6 +78,7 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 	f := getConfigFlags(cmd)
 
 	switch {
+	// list all settings
 	case f.list:
 		envCfgs.List()
 	// display a setting

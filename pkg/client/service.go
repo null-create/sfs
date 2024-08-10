@@ -171,6 +171,26 @@ func (c *Client) GetItemByPath(path string) (*Item, error) {
 	return item, nil
 }
 
+// removes ALL users files and directories from the SFS system.
+// does not remove physical files or directories!
+func (c *Client) ClearAllItems() error {
+	files := c.Drive.GetFiles()
+	if err := c.Db.RemoveFiles(files); err != nil {
+		return err
+	}
+	dirs := c.Drive.GetDirs()
+	if err := c.Db.RemoveDirectories(dirs); err != nil {
+		return nil
+	}
+	if err := c.Drive.ClearDrive(); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ------ configuration --------------------------------
 
 // update user-specific settings
@@ -178,10 +198,12 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 	switch setting {
 	case "CLIENT_NAME":
 		return c.updateClientName(value)
+	case "CLIENT_USERNAME": // TODO
+		return nil
 	case "CLIENT_EMAIL":
 		return c.updateClientEmail(value)
 	case "CLIENT_PASSWORD":
-		return c.updateUserPassword(value, c.User.Password)
+		return c.updateUserPassword(c.User.Password, value)
 	case "CLIENT_PORT":
 		return c.updateClientPort(value)
 	case "CLIENT_BACKUP_DIR":
@@ -193,7 +215,7 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 	case "NEW_SERVICE":
 		return envCfgs.Set(setting, value)
 	default:
-		return fmt.Errorf("unknown setting: '%s'", setting)
+		return fmt.Errorf("unsupported setting: '%s'", setting)
 	}
 }
 
@@ -295,7 +317,7 @@ func (c *Client) updateClientName(newName string) error {
 }
 
 // TODO: update all items owner name in the DB with the new user's new name
-func (c *Client) updateFileOwnerName(newName string) error {
+func (c *Client) updateFileOwnerName(oldName, newName string) error {
 	return nil
 }
 
@@ -764,6 +786,7 @@ func (c *Client) IsDir(path string) bool {
 	item, err := os.Stat(path)
 	if err != nil {
 		c.log.Error(fmt.Sprintf("failed to get stat for item: %v\n%v", path, err))
+		return false
 	}
 	return item.IsDir()
 }
@@ -833,7 +856,6 @@ func (c *Client) AddDir(dirPath string) error {
 		return fmt.Errorf("'%s' is already registered", filepath.Base(dirPath))
 	}
 
-	// create new directory object. (parent is not set)
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
 
 	// see if the parent directory for this directory is already known.

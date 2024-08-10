@@ -14,13 +14,7 @@ import (
 // ---- file monitoring operations
 
 // start monitoring files for changes.
-//
-// NOTE: we don't monitor files under sfs root because
-// that is a desigated backup directory.
 func (c *Client) StartMonitor() error {
-	// monitor all other registered items distributed
-	// in the users system
-	// files := c.Drive.GetFiles()
 	files, err := c.Db.GetUsersFiles(c.UserID)
 	if err != nil {
 		return err
@@ -32,7 +26,6 @@ func (c *Client) StartMonitor() error {
 	}
 	// NOTE: monitoring directories is currently not supported.
 	// leaving this for future implementation iterations.
-	// dirs := c.Drive.GetDirs()
 	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
 	// if err != nil {
 	// 	return err
@@ -97,50 +90,43 @@ func (c *Client) NewEHandler(path string) error {
 }
 
 // get alll the necessary things for the event handler to operate independently
-func (c *Client) setupHandler(itemPath string) (chan monitor.Event, *monitor.Events, string, error) {
+func (c *Client) setupHandler(itemPath string) (chan monitor.Event, string, error) {
 	thing, err := os.Stat(itemPath)
 	if err != nil {
-		return nil, nil, "", err
+		return nil, "", err
 	}
 	// item id is used in event objects
 	var id string
 	if thing.IsDir() {
-		itemID, err := c.Db.GetDirIDFromPath(itemPath)
-		if err != nil {
-			return nil, nil, "", err
-		}
-		if itemID == "" {
-			return nil, nil, "", fmt.Errorf("no id found for directory '%s'", itemPath)
-		}
-		id = itemID
+		// itemID, err := c.Db.GetDirIDFromPath(itemPath)
+		// if err != nil {
+		// 	return nil, "", err
+		// }
+		// if itemID == "" {
+		// 	return nil, "", fmt.Errorf("no id found for directory '%s'", itemPath)
+		// }
+		// id = itemID
+		return nil, "", fmt.Errorf("directory monitoring is not supported")
 	} else {
 		itemID, err := c.Db.GetFileIDFromPath(itemPath)
 		if err != nil {
-			return nil, nil, "", err
+			return nil, "", err
 		}
 		if itemID == "" {
-			return nil, nil, "", fmt.Errorf("no id found for file '%s'", itemPath)
+			return nil, "", fmt.Errorf("no id found for file '%s'", itemPath)
 		}
 		id = itemID
 	}
 
 	// get the monitoring event channel for this item
 	evtChan := c.Monitor.GetEventChan(itemPath)
-	if evtChan == nil || id == "" {
-		return nil, nil, "", fmt.Errorf(
-			"failed to get param: evt=%v id=%s",
-			evtChan, id,
-		)
+	if evtChan == nil {
+		return nil, "", fmt.Errorf("event channel for '%s' (id=%s) not found", filepath.Base(itemPath), id)
 	}
-	// events buffer.
-	// used for managing synchronization
-	// events between the client and the server.
-	evts := monitor.NewEvents(cfgs.BufferedEvents)
-	return evtChan, evts, id, nil
+	return evtChan, id, nil
 }
 
 // start an event handler for a given file.
-// will be a no-op if the handler does not exist.
 func (c *Client) StartHandler(path string) error {
 	if handler, exists := c.Handlers[path]; exists {
 		go func() {
@@ -148,8 +134,10 @@ func (c *Client) StartHandler(path string) error {
 				c.log.Error(err.Error())
 			}
 		}()
+		return nil
+	} else {
+		return fmt.Errorf("handler for '%s' not found", filepath.Base(path))
 	}
-	return nil
 }
 
 // start all available listeners
@@ -167,7 +155,6 @@ func (c *Client) StartHandlers() error {
 	// NOTE: directory monitoring is not supported, but may be
 	// in future versions, so this code will stay here for now.
 	// start directory handlers
-	// dirs := c.Drive.GetDirs()
 	// dirs, err := c.Db.GetUsersDirectories(c.UserID)
 	// if err != nil {
 	// 	return nil
@@ -189,10 +176,10 @@ func (c *Client) StopHandlers() {
 	}
 }
 
-// build a map of event handlers for client files and directories.
+// build a map of event handlers for client files.
 // each handler will listen for events from the users items and will
 // call synchronization operations accordingly, assuming auto sync is enabled.
-// if no files or directories are present during the build call then
+// if no files are present during the build call then
 // this will be a no-op.
 //
 // should ideally only be called once during initialization.
@@ -229,10 +216,15 @@ func (c *Client) BuildHandlers() error {
 // dedicated handler for item events.
 // items can be either files or directories.
 func (c *Client) handler(itemPath string) error {
-	evtChan, evtBuf, itemID, err := c.setupHandler(itemPath) // get all necessary params for the event handler.
+	evtChan, itemID, err := c.setupHandler(itemPath)
 	if err != nil {
 		return err
 	}
+	// events buffer.
+	// used for managing synchronization events between the client and the server.
+	// allows for variable delay times between synchronization event triggers.
+	evtBuf := monitor.NewEvents(cfgs.BufferedEvents)
+
 	// main listening loop for events
 	for {
 		select {
@@ -270,6 +262,7 @@ func (c *Client) handler(itemPath string) error {
 			// and if auto sync is enabled.
 			// evtBuf.AddEvent(evt)
 			// case monitor.Remove:
+			//
 			// TODO: handle for cases when items are removed from a directory
 			// and possibly moved to another location.
 			//
@@ -352,7 +345,7 @@ func (c *Client) handler(itemPath string) error {
 	}
 }
 
-// apply the given action
+// apply the given action to the given item and reset sync mechanisms
 func (c *Client) apply(itemPath string, action string) error {
 	item, err := os.Stat(itemPath)
 	if err != nil {

@@ -30,7 +30,7 @@ func (q *Query) UserExists(userID string) (bool, error) {
 	return exists, nil
 }
 
-// get user data from database
+// get user data from database. returns nil if user is not found.
 func (q *Query) GetUser(userID string) (*auth.User, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()

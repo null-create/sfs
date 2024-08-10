@@ -4,9 +4,9 @@ import (
 	"crypto/rand"
 	"log"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/sfs/pkg/env"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GetSecret() ([]byte, error) {
@@ -22,7 +22,7 @@ func GetSecret() ([]byte, error) {
 //
 // technique from: https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 func GenSecret(length int) string {
-	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
+	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-=+!@#$%^&*(),"
 	charLen := len(chars)
 	b := make([]byte, length)
 	_, err := rand.Read(b) // generates len(b) random bytes

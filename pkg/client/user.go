@@ -2,12 +2,50 @@ package client
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/sfs/pkg/auth"
 )
 
-// ------- user functions --------------------------------
+// Add a new user. Intended for use during first time set up.
+func (c *Client) AddNewUser() error {
+	if c.User != nil {
+		fmt.Printf("User '%s' already exists", c.User.Name)
+		return nil
+	}
+
+	var name, userName, password, email string
+	c.getInput("Name: ", name)
+	c.getInput("User name: ", userName)
+	c.getInput("Email: ", email)
+	c.getInput("Password (leave blank to auto-generate): ", password)
+	if password == "" {
+		password = auth.GenSecret(64)
+	}
+
+	newUser := auth.NewUser(name, userName, email, cfgs.Root, false)
+	newUser.Password = password
+	if err := c.Db.AddUser(newUser); err != nil {
+		return err
+	}
+
+	var newUserSettings = map[string]string{
+		"CLIENT_NAME":     newUser.Name,
+		"CLIENT_USERNAME": newUser.UserName,
+		"CLIENT_EMAIL":    newUser.Email,
+		"CLIENT_PASSWORD": newUser.Password,
+		"CLIENT_ID":       newUser.ID,
+	}
+	for setting, value := range newUserSettings {
+		if err := c.UpdateConfigSetting(setting, value); err != nil {
+			return err
+		}
+	}
+
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
 
 func (c *Client) LoadUser() error {
 	if c.User == nil {
@@ -21,48 +59,24 @@ func (c *Client) LoadUser() error {
 			return fmt.Errorf("user (id=%s) not found", c.UserID)
 		}
 		c.User = user
+		if err := c.SaveState(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (c *Client) GetUserInfo() string {
 	if c.User == nil {
-		log.Print("[ERROR] no user info available!")
+		c.log.Error("user not found")
 		return ""
 	}
 	data, err := c.User.ToJSON()
 	if err != nil {
-		log.Printf("error getting user info: %v", err)
+		c.log.Error(fmt.Sprintf("error getting user info: %v", err))
 		return ""
 	}
 	return string(data)
-}
-
-func (c *Client) AddUser(user *auth.User) error {
-	if c.User == nil {
-		c.User = user
-	} else {
-		return fmt.Errorf("cannot have more than one user: %v", c.User)
-	}
-	if err := c.SaveState(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) GetUser() (*auth.User, error) {
-	if c.User == nil {
-		log.Print("[WARNING] client instance has no user object. attempting to get user from the database...")
-		if c.Db == nil {
-			return nil, fmt.Errorf("failed to get user. database not initialized")
-		}
-		user, err := c.Db.GetUser(c.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user from database: %v", err)
-		}
-		return user, nil
-	}
-	return c.User, nil
 }
 
 func (c *Client) UpdateUser(user *auth.User) error {
@@ -80,25 +94,45 @@ func (c *Client) UpdateUser(user *auth.User) error {
 // remove a user and their drive from the client instance.
 // clears all users files and directores, as well as removes the
 // user from the client instance and db.
-func (c *Client) RemoveUser(userID string) error {
+func (c *Client) RemoveUser() error {
 	if c.User == nil {
-		return fmt.Errorf("no user (id=%s) found", userID)
-	} else if c.User.ID == userID {
-		// remove drive and users files
+		return fmt.Errorf("no user found")
+	}
+	if err := c.removeUser(c.User.ID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) removeUser(userID string) error {
+	fmt.Printf("user '%s' and all their monitored files and directories will be removed from SFS", c.User.Name)
+	if c.Continue() {
+		files := c.Drive.GetFiles()
+		if err := c.Db.RemoveFiles(files); err != nil {
+			return err
+		}
+		dirs := c.Drive.GetDirs()
+		if err := c.Db.RemoveDirectories(dirs); err != nil {
+			return err
+		}
 		if err := c.Drive.ClearDrive(); err != nil {
 			return err
 		}
-		// remove user and info from database
+		if err := c.Db.RemoveDrive(c.Drive.ID); err != nil {
+			return err
+		}
 		if err := c.Db.RemoveUser(c.UserID); err != nil {
 			return err
 		}
+		if err := envCfgs.Clear(); err != nil {
+			return err
+		}
+		name := c.User.Name
 		c.User = nil
-		log.Printf("[INFO] user %s removed", userID)
-	} else {
-		return fmt.Errorf("wrong user ID (id=%s)", userID)
-	}
-	if err := c.SaveState(); err != nil {
-		return err
+		c.log.Info(fmt.Sprintf("'%s' (id=%s) removed", name, userID))
+		if err := c.SaveState(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
