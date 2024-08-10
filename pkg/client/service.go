@@ -1048,14 +1048,12 @@ func (c *Client) AddDrive(drv *svc.Drive) error {
 	if err := c.Db.AddDirs(subDirs); err != nil {
 		return err
 	}
-	// add the root directory and the drive itself
 	if err := c.Db.AddDir(drv.Root); err != nil {
 		return err
 	}
 	if err := c.Db.AddDrive(drv); err != nil {
 		return err
 	}
-	// finally, add the drive to the client instance and save client state
 	c.Drive = drv
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state file: %v", err)
@@ -1084,10 +1082,9 @@ func (c *Client) LoadDrive() error {
 	c.Drive = drive
 	c.Drive.IsLoaded = true
 
-	// add logger to drive
 	c.Drive.Log = logger.NewLogger("Drive", drive.ID)
 
-	// add users monitored directories
+	// add users directories
 	dirs, err := c.Db.GetUsersDirectories(c.UserID)
 	if err != nil {
 		return err
@@ -1096,19 +1093,16 @@ func (c *Client) LoadDrive() error {
 		return err
 	}
 
-	// add all other distributed files and subdirectories monitored by sfs
+	// add all other distributed files monitored by sfs
 	files, err := c.Db.GetUsersFiles(c.UserID)
 	if err != nil {
 		return err
 	}
 	c.Drive.Root.AddFiles(files)
 
-	// build client sync index
 	c.BuildSyncIndex()
 
 	c.log.Log(logger.INFO, "drive loaded")
-
-	// update state file
 	if err := c.SaveState(); err != nil {
 		return err
 	}
@@ -1183,48 +1177,6 @@ func (c *Client) RegisterClient() error {
 	c.log.Info("client registered with the server")
 	if err := c.SaveState(); err != nil {
 		return fmt.Errorf("failed to save state: %v", err)
-	}
-	return nil
-}
-
-/*
-Iterate over ALL users files in the client side DBs and see if
-there are any that aren't registered with the server.
-
-If there's some that aren't, prompt the user whether they want
-to push them to the server. If yes, push non-registered files
-to the server.
-*/
-func (c *Client) Refresh() error {
-	files, err := c.Db.GetUsersFiles(c.UserID)
-	if err != nil {
-		return err
-	}
-	if len(files) == 0 {
-		c.log.Log(logger.INFO, "no files registered with client. nothing to refresh")
-		return nil
-	}
-
-	// see if any of these aren't registered with the server
-	var toRegister = make([]*svc.File, 0)
-	for _, file := range files {
-		reg, err := c.IsFileRegistered(file)
-		if err != nil {
-			c.log.Error(err.Error())
-		}
-		if !reg {
-			toRegister = append(toRegister, file)
-		}
-	}
-
-	c.log.Info(fmt.Sprintf("%d files need to be registered with the server", len(toRegister)))
-	if c.Continue() {
-		c.log.Log(logger.INFO, fmt.Sprintf("registering %d files with the server...", len(toRegister)))
-		for _, file := range toRegister {
-			if err := c.RegisterFile(file); err != nil {
-				c.log.Error("failed to register file: " + err.Error())
-			}
-		}
 	}
 	return nil
 }
