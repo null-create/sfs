@@ -39,6 +39,21 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Drive.Root.BackupPath = filepath.Join(tmpSvcPath, "backups")
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
+	// set to local backups by default. could be overridden by individual tests.
+	if err := tmpClient.SetLocalBackup("true"); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// save testing items to test dbs
+	if err := tmpClient.AddDir(tmpClient.Drive.Root.ClientPath); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.AddDrive(tmpClient.Drive); err != nil {
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.Db.AddUser(tmpClient.User); err != nil {
+		Fail(t, tmpDir, err)
+	}
 	return tmpClient
 }
 
@@ -302,6 +317,59 @@ func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 	}
 
 	assert.Equal(t, 0, len(tmpClient.Drive.Root.Files))
+}
+
+func TestAddAndRemoveFileFromClientAndServer(t *testing.T) {
+	env.SetEnv(false)
+	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// initialize a new testing client
+	tmpClient := newTestClient(t, tmpDir)
+	if err := tmpClient.SaveState(); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
+	// initialize and start a new server in a separate goroutine
+	stopServer := make(chan bool)
+	tmpServer := server.NewServer()
+	go func() {
+		tmpServer.Start(stopServer)
+	}()
+
+	// register the test client with the server
+	if err := tmpClient.SetLocalBackup("false"); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.RegisterClient(); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+
+	// make and add test file
+	testFile, err := MakeTmpTxtFile(filepath.Join(tmpClient.Root, "tmp.txt"), RandInt(1000))
+	if err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+	testFile.DirID = tmpClient.DriveID
+	if err := tmpClient.AddItem(testFile.ClientPath); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+	if err := tmpClient.RemoveFile(testFile); err != nil {
+		stopServer <- true
+		Fail(t, tmpDir, err)
+	}
+
+	stopServer <- true
+
+	if err := Clean(t, tmpDir); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestAddItemWithAFile(t *testing.T) {
