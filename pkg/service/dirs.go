@@ -399,7 +399,7 @@ func (d *Directory) removeFile(fileID string) error {
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 	} else {
-		return fmt.Errorf("file (id=%s) not found", file.ID)
+		return fmt.Errorf("file (id=%s) not found", fileID)
 	}
 	return nil
 }

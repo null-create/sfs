@@ -710,13 +710,12 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 // remove a file.
 // removes the file from the server if local backup is disabled.
 func (c *Client) RemoveFile(file *svc.File) error {
-	// make sure this file is actually registered with the service
-	// before mucking around.
 	if !c.KnownItem(file.ClientPath) {
 		return fmt.Errorf("file '%s' not registered", file.Name)
 	}
 	// stop monitoring the file
 	c.Monitor.StopWatching(file.ClientPath)
+
 	// move the file to the SFS recycle bin to help with recovery in case
 	// of an accidental deletion.
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
@@ -731,7 +730,6 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return err
 	}
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
-	// remove file from the server if local backup is disabled
 	if !c.localBackup() {
 		req, err := c.DeleteFileRequest(file)
 		if err != nil {
@@ -1132,6 +1130,9 @@ func (c *Client) RegisterClient() error {
 	drv, err := c.Db.GetDrive(c.Drive.ID) // check DB if the drive is already registered
 	if err != nil {
 		return err
+	}
+	if drv == nil {
+		return fmt.Errorf("no drive attached to client")
 	}
 	if drv.Registered {
 		return nil
