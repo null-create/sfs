@@ -1,0 +1,182 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  background-color: #f1f3f4;
+}
+
+header {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 0 20px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: 60px;
+  position: fixed;
+  top: 0;
+  z-index: 1000;
+}
+
+#search input {
+  width: 400px;
+  padding: 10px;
+}
+
+#profile {
+  width: 40px; /* Define a specific size for the profile container */
+  height: 40px; /* Match the height and width */
+  overflow: hidden; /* Ensure that the image stays within the bounds of the container */
+  border-radius: 50%; /* Makes the container circular */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-pic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures the image covers the container while maintaining aspect ratio */
+  border-radius: 50%; /* Makes the image itself circular */
+}
+
+
+/* Side Bar */
+
+#sidebar {
+  width: 250px;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  padding-top: 20px;
+}
+
+#server-status {
+  margin-top: 20px;
+  /* font-weight: bold; */
+}
+
+#status-text.online {
+  color: green;
+}
+
+#status-text.offline {
+  color: red;
+}
+
+#content {
+  margin-left: 250px;
+  padding: 80px 20px 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-link, .file-link {
+  text-decoration: none; /* Removes the underline from links */
+  color: inherit; /* Inherits the text color from the parent */
+  display: block; /* Makes the link take up the full block width */
+}
+
+.sidebar-item {
+  padding: 10px 20px;
+  color: #5f6368;
+  cursor: pointer;
+}
+
+.sidebar-item:hover {
+  background-color: #f1f3f4;
+}
+
+/* Tool Bar */
+
+.toolbar {
+  margin-bottom: 20px;
+}
+
+.toolbar-button {
+  padding: 10px 15px;
+  margin-right: 10px;
+  background-color: #e8f0fe;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.toolbar-button:hover {
+  background-color: #d2e3fc;
+}
+
+/* Grid Styles */
+
+.file-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+} 
+
+.folder-item, .file-item {
+  background-color: #ffffff;
+  padding: 15px;
+  width: 150px;
+  height: 150px;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.folder-icon, .file-link, .file-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
+}
+
+/* Table Styles */
+
+.file-table, .folder-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.file-table th, .file-table td {
+  padding: 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.file-table th {
+  background-color: #f1f3f4;
+  color: #5f6368;
+  font-weight: bold;
+}
+
+.file-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.file-table tr:hover {
+  background-color: #f1f3f4;
+}
+
+.file-name {
+  color: #1a73e8;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.file-name:hover {
+  text-decoration: underline;
+}
+

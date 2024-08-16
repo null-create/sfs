@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div class="folder-contents">
+        <h2 class="folder-name">Folder Name</h2>
+      </div>
+      <table class="folder-table">
+        <tr>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Type</th>
+          <th>Last Sync</th>
+          <th>Download</th>
+          <th>Checksum</th>
+        </tr>
+        {{range .Dirs}}
+        <tr>
+          <td>
+            <img src="assets/folder-small.png" alt="small folder icon" />
+          </td>
+          <td>{{.Name}}</td>
+          <td>{{.Size}}</td>
+          <td>{{.LastSync}}</td>
+          <td><div hx-get="{{.Endpoint}}">Link</div></td>
+          <td>n/a</td>
+        </tr>
+        {{end}} {{range .Files}}
+        <td>
+          <img src="assets/file-small.png" alt="small file icon" />
+        </td>
+        <td>{{.Name}}</td>
+        <td>{{.Size}}</td>
+        <td>{{.LastSync}}</td>
+        <td><div hx-get="{{.Endpoint}}">Link</div></td>
+        <td>{{.Checksum}}</td>
+        {{end}}
+      </table>
+    </div>
+  </body>
+</html>

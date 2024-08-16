@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <!-- View Selectors -->
+      <!-- <div class="view-selection">
+            <button class="toolbar-button" onclick="switchLayout('grid')">Grid View</button>
+            <button class="toolbar-button" onclick="switchLayout('table')">Table View</button>
+        </div> -->
+      <!-- Table View -->
+      <table class="file-table">
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Last Sync</th>
+          <th>Download</th>
+          <th>Checksum</th>
+        </tr>
+        {{range .Dirs}}
+        <tr>
+          <td>
+            <img src="assets/folder-small.png" alt="small folder icon" />
+          </td>
+          <td>{{.Name}}</td>
+          <td>{{.Size}}</td>
+          <td>{{.LastSync}}</td>
+          <td><div hx-get="{{.Endpoint}}">Link</div></td>
+          <td>n/a</td>
+        </tr>
+        {{end}} {{range .Files}}
+        <tr>
+          <td>
+            <img src="assets/file-small.png" alt="small file icon" />
+          </td>
+          <td>{{.Name}}</td>
+          <td>{{.Size}}</td>
+          <td>{{.LastSync}}</td>
+          <td><div hx-get="{{.Endpoint}}">Link</div></td>
+          <td>{{.Checksum}}></td>
+        </tr>
+        {{end}}
+      </table>
+    </div>
+    <script>
+      // Check if the server is up
+      function checkServerStatus(serverURL) {
+        if (!serverURL || serverURL === undefined) {
+          console.log("server url is undefined. no call made.");
+          return;
+        }
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+  </body>
+</html>

@@ -68,6 +68,7 @@ func NewRouter() *chi.Mux {
 	// custom middleware
 	// r.Use(AuthUserHandler)
 	r.Use(ContentTypeJson) // will be overridden by streaming API endpoints
+	r.Use(EnableCORS)      // used for working with the client web interface
 
 	// placeholder for sfs "homepage"
 	// this will eventually display a simple service index page

@@ -21,6 +21,27 @@ func ContentTypeJson(h http.Handler) http.Handler {
 	})
 }
 
+func ContentTypeText(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func ContentTypeCSS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "text/css")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func EnableCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		h.ServeHTTP(w, r)
+	})
+}
+
 /*
 TODO:
 Rethink what the middleware should actually do. There are several functions

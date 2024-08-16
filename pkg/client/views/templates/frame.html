@@ -1,0 +1,42 @@
+{{define "frame"}}
+<header>
+  <div id="logo">
+    <h1>My Drive</h1>
+  </div>
+  <div id="search">
+    <input
+      type="text"
+      placeholder="Search for files in your Drive"
+      style="width: 400px; padding: 10px"
+    />
+  </div>
+  <div id="profile">
+    <img
+      src="assets/default_profile_pic.jpg"
+      alt="profile picture"
+      style="width: 40px; border-radius: 50%"
+    />
+  </div>
+</header>
+
+<div id="sidebar">
+  <a href="my-drive.html" class="sidebar-link">
+    <div class="sidebar-item">My Drive</div>
+  </a>
+  <a href="shared-with-me.html" class="sidebar-link">
+    <div class="sidebar-item">Shared with me</div>
+  </a>
+  <a href="recent.html" class="sidebar-link">
+    <div class="sidebar-item">Recent</div>
+  </a>
+  <a href="starred.html" class="sidebar-link">
+    <div class="sidebar-item">Starred</div>
+  </a>
+  <a href="trash.html" class="sidebar-link">
+    <div class="sidebar-item">Trash</div>
+  </a>
+  <div id="server-status" class="sidebar-item">
+    Server status: <span id="status-text">checking...</span>
+  </div>
+</div>
+{{end}}

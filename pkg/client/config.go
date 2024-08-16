@@ -28,6 +28,7 @@ type Conf struct {
 	LogDir          string `env:"CLIENT_LOG_DIR,required"`      // location of log directory
 	LocalBackup     bool   `env:"CLIENT_LOCAL_BACKUP,required"` // whether we're backing up to a local file directory
 	BackupDir       string `env:"CLIENT_BACKUP_DIR,required"`   // location of backup directory
+	ServerAddr      string `env:"SERVER_ADDR,required"`         // server address
 }
 
 func GetClientConfigs() *Conf {

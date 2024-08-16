@@ -10,6 +10,7 @@ type FlagPole struct {
 	remote   bool // list all remote files and directories managed by SFS
 	info     bool // get information about the client
 	cleanBin bool // empty recycle bin
+	browser  bool // run using the browser interface
 
 	// drive command flags
 	register  bool // register a new drive with the sfs server

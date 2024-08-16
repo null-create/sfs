@@ -438,7 +438,7 @@ func (d *Drive) GetDir(dirID string) *Directory {
 	return nil
 }
 
-// get a slice of all directories in the drive. returns nil if not found,
+// get a slice of all directories in the drive. returns an empty slice if not found,
 // or if the drive is protected.
 func (d *Drive) GetDirs() []*Directory {
 	if !d.Protected {
@@ -452,8 +452,8 @@ func (d *Drive) GetDirs() []*Directory {
 		return dirs
 	} else {
 		d.Log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
+		return make([]*Directory, 0)
 	}
-	return nil
 }
 
 // get a map of all directories for this user. returns nil

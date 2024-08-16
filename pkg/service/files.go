@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -140,6 +141,11 @@ func (f *File) GetSize() int64 {
 		log.Fatalf("unable to determine file size: %v", err)
 	}
 	return info.Size()
+}
+
+// Get the size of a file as a string
+func (f *File) GetSizeStr() string {
+	return strconv.Itoa(int(f.GetSize()))
 }
 
 // confirms the physical file associated with this object actually exists.
