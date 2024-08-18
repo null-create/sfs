@@ -261,6 +261,11 @@ func LoadClient(persist bool) (*Client, error) {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
+		// parse templates
+		if err := client.ParseTemplates(); err != nil {
+			initLog.Log(logger.ERROR, fmt.Sprintf("failed to parse templates: %v", err))
+			return nil, fmt.Errorf("failed to parse templates: %v", err)
+		}
 		client.log.Info(fmt.Sprintf("monitor is running. watching %d local item(s)", len(client.Monitor.Events)))
 	}
 	client.StartTime = time.Now().UTC()

@@ -6,7 +6,7 @@
     <div id="content">
       {{template "toolbar"}}
       <div class="folder-contents">
-        <h2 class="folder-name">Folder Name</h2>
+        <h2 class="folder-name">{{.Name}}</h2>
       </div>
       <table class="folder-table">
         <tr>
@@ -19,23 +19,29 @@
         </tr>
         {{range .Dirs}}
         <tr>
-          <td>
+          <td
+            onclick="window.location.href='http://localhost:9090/dir/i/{{.ID}}';"
+            style="cursor: pointer"
+          >
             <img src="assets/folder-small.png" alt="small folder icon" />
           </td>
           <td>{{.Name}}</td>
           <td>{{.Size}}</td>
           <td>{{.LastSync}}</td>
-          <td><div hx-get="{{.Endpoint}}">Link</div></td>
+          <td><a href="{{.Endpoint}}">Link</a></td>
           <td>n/a</td>
         </tr>
         {{end}} {{range .Files}}
-        <td>
+        <td
+          onclick="window.location.href='http://localhost:9090/files/i/{{.ID}}';"
+          style="cursor: pointer"
+        >
           <img src="assets/file-small.png" alt="small file icon" />
         </td>
         <td>{{.Name}}</td>
         <td>{{.Size}}</td>
         <td>{{.LastSync}}</td>
-        <td><div hx-get="{{.Endpoint}}">Link</div></td>
+        <td><a href="{{.Endpoint}}">Link</a></td>
         <td>{{.Checksum}}</td>
         {{end}}
       </table>

@@ -1,21 +1,51 @@
 package client
 
-import "github.com/sfs/pkg/service"
+import (
+	"time"
 
-// structures for page data
+	svc "github.com/sfs/pkg/service"
+)
+
+// structures containing the data fields needed for various
+// pages in the client web interface
 
 type Index struct {
-	UserName string
-	Files    []*service.File
-	Dirs     []*service.Directory
+	UserName   string
+	Files      []*svc.File
+	Dirs       []*svc.Directory
+	ServerHost string
 }
 
 type FilePage struct {
-	UserName string
-	File     *service.File
+	Name     string
+	Size     int64
+	Type     string
+	Checksum string
+	Endpoint string
+	LastSync time.Time
 }
 
-type FolderPage struct {
-	UserName string
-	Dir      *service.Directory
+type DirPage struct {
+	Name         string
+	Size         int64
+	TotalFiles   int
+	TotalSubDirs int
+	Endpoint     string
+	LastSync     time.Time
+	SubDirs      []*svc.Directory
+	Files        []*svc.File
+}
+
+type ErrorPage struct {
+	StatusCode string
+	ErrMsg     string
+}
+
+type UserPage struct {
+	Name           string
+	UserName       string
+	Email          string
+	TotalFiles     int
+	TotalDirs      int
+	ProfilePicPath string
 }

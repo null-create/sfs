@@ -435,7 +435,7 @@ func (c *Client) ListLocalFiles() {
 	var output string
 	files := c.Drive.GetFilesMap()
 	for _, f := range files {
-		output += fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		output += fmt.Sprintf("\nid: %s\nname: %s\nloc: %s\nsha: %s\n", f.ID, f.Name, f.ClientPath, f.CheckSum)
 	}
 	fmt.Print(output)
 }
@@ -448,7 +448,7 @@ func (c *Client) ListLocalFilesDB() error {
 	}
 	var output string
 	for _, f := range files {
-		output += fmt.Sprintf("id: %s\nname: %s\nloc: %s\n\n", f.ID, f.Name, f.ClientPath)
+		output += fmt.Sprintf("\nid: %s\nname: %s\nloc: %s\nsha: %s\n", f.ID, f.Name, f.ClientPath, f.CheckSum)
 	}
 	fmt.Print(output)
 	return nil
@@ -956,7 +956,7 @@ func (c *Client) UpdateDirectory(updatedDir *svc.Directory) error {
 	return nil
 }
 
-// get a directory using its SFS ID
+// get a directory using its SFS ID. returns nil if it doesn't exist.
 func (c *Client) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 	dir := c.Drive.GetDir(dirID)
 	if dir == nil {

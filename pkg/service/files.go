@@ -2,6 +2,7 @@ package service
 
 import (
 	"crypto/sha256"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -319,8 +320,7 @@ func CalculateChecksum(filePath string) (string, error) {
 	if _, err := io.Copy(h, file); err != nil {
 		return "", err
 	}
-
-	checksum := string(h.Sum(nil))
+	checksum := base32.StdEncoding.EncodeToString(h.Sum(nil))
 	return checksum, nil
 }
 
