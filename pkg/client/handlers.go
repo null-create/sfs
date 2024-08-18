@@ -98,18 +98,12 @@ func (c *Client) UserPage(w http.ResponseWriter, r *http.Request) {
 
 func (c *Client) DirPage(w http.ResponseWriter, r *http.Request) {
 	dirID := r.Context().Value(server.Directory).(string)
-
-	fmt.Printf("DirPage recievd dirID: %s\n", dirID)
-
 	dir, err := c.GetDirectoryByID(dirID)
 	if dir == nil {
 		errCtx := context.WithValue(r.Context(), Error, fmt.Sprintf("dir id=%s not found", dirID))
 		c.Redirect(homePage+"/error", r.WithContext(errCtx))
 		return
 	}
-
-	fmt.Printf("found dir in database: %s\n", dir.Name)
-
 	if err != nil {
 		errCtx := context.WithValue(r.Context(), Error, err.Error())
 		c.Redirect(homePage+"/error", r.WithContext(errCtx))
@@ -124,9 +118,6 @@ func (c *Client) DirPage(w http.ResponseWriter, r *http.Request) {
 		Files:        dir.GetFiles(),
 		SubDirs:      dir.GetSubDirs(),
 	}
-
-	fmt.Print("attempting to render template...")
-
 	err = c.Templates.ExecuteTemplate(w, "folder.html", dirPageData)
 	if err != nil {
 		errCtx := context.WithValue(r.Context(), Error, err.Error())
