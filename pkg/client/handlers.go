@@ -128,6 +128,9 @@ func (c *Client) DirPage(w http.ResponseWriter, r *http.Request) {
 
 func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	fileID := r.Context().Value(server.File).(string)
+
+	fmt.Printf("FilePage received fileID: %v\n", fileID)
+
 	file, err := c.GetFileByID(fileID)
 	if file == nil {
 		errCtx := context.WithValue(r.Context(), Error, fmt.Sprintf("file id=%s not found", fileID))
@@ -139,6 +142,9 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 		c.Redirect(homePage+"/error", r.WithContext(errCtx))
 		return
 	}
+
+	fmt.Printf("FileID retrieved file: %s\n", file.Name)
+
 	filePageData := FilePage{
 		Name:     file.Name,
 		Size:     file.Size,
@@ -147,6 +153,9 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 		Endpoint: file.Endpoint,
 		LastSync: file.LastSync,
 	}
+
+	fmt.Print("executing template....")
+
 	err = c.Templates.ExecuteTemplate(w, "file.html", filePageData)
 	if err != nil {
 		errCtx := context.WithValue(r.Context(), Error, err.Error())
