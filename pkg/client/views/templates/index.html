@@ -17,8 +17,7 @@
           <th>Name</th>
           <th>Size</th>
           <th>Last Sync</th>
-          <th>Download</th>
-          <th>Checksum</th>
+          <th>Server Download</th>
         </tr>
         {{range .Dirs}}
         <tr>
@@ -29,10 +28,9 @@
             <img src="/assets/folder-small.png" alt="small folder icon" />
           </td>
           <td>{{.Name}}</td>
-          <td>{{.Size}}</td>
+          <td>{{.Size}} bytes</td>
           <td>{{.LastSync}}</td>
           <td><a href="{{.Endpoint}}">Link</a></td>
-          <td>n/a</td>
         </tr>
         {{end}} {{range .Files}}
         <tr>
@@ -43,10 +41,9 @@
             <img src="/assets/file-small.png" alt="small file icon" />
           </td>
           <td>{{.Name}}</td>
-          <td>{{.Size}}</td>
+          <td>{{.Size}} bytes</td>
           <td>{{.LastSync}}</td>
           <td><a href="{{.Endpoint}}">Link</a></td>
-          <td>TBD</td>
         </tr>
         {{end}}
       </table>

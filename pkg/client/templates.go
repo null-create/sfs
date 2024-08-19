@@ -31,7 +31,7 @@ func GetTemplatePaths() map[string]string {
 	return tmplPaths
 }
 
-func (c *Client) ParseTemplates() error { //
+func (c *Client) ParseTemplates() error {
 	var tmplPaths = GetTemplatePaths()
 	tmpl, err := template.ParseFiles(
 		tmplPaths["index.html"],
@@ -41,6 +41,9 @@ func (c *Client) ParseTemplates() error { //
 		tmplPaths["toolbar.html"],
 		tmplPaths["header.html"],
 		tmplPaths["trash.html"],
+		tmplPaths["recent.html"],
+		tmplPaths["error.html"],
+		tmplPaths["table.html"],
 	)
 	if err != nil {
 		return err

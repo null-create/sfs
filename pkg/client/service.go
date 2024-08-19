@@ -499,6 +499,15 @@ func (c *Client) GetFileByID(fileID string) (*svc.File, error) {
 	return file, nil
 }
 
+// find all files belonging to a specific directory
+func (c *Client) GetFilesByDirID(dirID string) ([]*svc.File, error) {
+	files, err := c.Db.GetFilesByDirID(dirID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get files by dir ID: %v", err)
+	}
+	return files, nil
+}
+
 // check db using a given file path. returns nil if not found.
 func (c *Client) GetFileByPath(path string) (*svc.File, error) {
 	file, err := c.Db.GetFileByPath(path)
@@ -963,6 +972,15 @@ func (c *Client) GetDirectoryByID(dirID string) (*svc.Directory, error) {
 		return nil, fmt.Errorf("directory %v not found", dirID)
 	}
 	return dir, nil
+}
+
+// get a slice of directories by searching for a common parent ID.
+func (c *Client) GetSubDirs(parentDirID string) ([]*svc.Directory, error) {
+	subdirs, err := c.Db.GetDirsByParentID(parentDirID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dirs by their parent ID: %v", err)
+	}
+	return subdirs, nil
 }
 
 // get a directory object from the database using its path

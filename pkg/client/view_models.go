@@ -11,18 +11,24 @@ import (
 
 type Index struct {
 	UserName   string
-	Files      []*svc.File
 	Dirs       []*svc.Directory
+	Files      []*svc.File
 	ServerHost string
+	ClientHost string
 }
 
 type FilePage struct {
-	Name     string
-	Size     int64
-	Type     string
-	Checksum string
-	Endpoint string
-	LastSync time.Time
+	Name       string
+	Size       int64
+	ID         string
+	OwnerID    string
+	Type       string
+	LastSync   time.Time
+	Location   string
+	Checksum   string
+	Endpoint   string
+	ServerHost string
+	ClientHost string
 }
 
 type DirPage struct {
@@ -32,13 +38,17 @@ type DirPage struct {
 	TotalSubDirs int
 	Endpoint     string
 	LastSync     time.Time
-	SubDirs      []*svc.Directory
+	Dirs         []*svc.Directory
 	Files        []*svc.File
+	ServerHost   string
+	ClientHost   string
 }
 
 type ErrorPage struct {
 	StatusCode string
 	ErrMsg     string
+	ServerHost string
+	ClientHost string
 }
 
 type UserPage struct {
@@ -48,4 +58,6 @@ type UserPage struct {
 	TotalFiles     int
 	TotalDirs      int
 	ProfilePicPath string
+	ServerHost     string
+	ClientHost     string
 }

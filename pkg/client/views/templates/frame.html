@@ -1,7 +1,7 @@
 {{define "frame"}}
 <header>
   <div id="logo">
-    <h1>My Drive</h1>
+    <h1 onclick="window.location.href='/'" style="cursor: pointer">My Drive</h1>
   </div>
   <div id="search">
     <input
@@ -22,12 +22,6 @@
 <div id="sidebar">
   <a href="/" class="sidebar-link">
     <div class="sidebar-item">My Drive</div>
-  </a>
-  <a href="shared.html" class="sidebar-link">
-    <div class="sidebar-item">Shared with me</div>
-  </a>
-  <a href="recent.html" class="sidebar-link">
-    <div class="sidebar-item">Recent</div>
   </a>
   <a href="starred.html" class="sidebar-link">
     <div class="sidebar-item">Starred</div>

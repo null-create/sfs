@@ -68,13 +68,17 @@ func newWcRouter(client *Client) *chi.Mux {
 
 	// error page
 	rtr.Route("/error", func(rtr chi.Router) {
-		rtr.Get("/", client.ErrorPage)
+		rtr.Route("/{errMsg}", func(rtr chi.Router) {
+			rtr.Use(server.ErrorCtx)
+			rtr.Get("/", client.ErrorPage)
+		})
 	})
 
 	// files
 	rtr.Route("/files", func(rtr chi.Router) {
 		rtr.Route("/d/{fileID}", func(rtr chi.Router) {
 			rtr.Use(server.FileCtx)
+			// TODO: download page
 			rtr.Get("/", client.ServeFile) // get a copy of the file from the local client
 
 		})
@@ -82,7 +86,13 @@ func newWcRouter(client *Client) *chi.Mux {
 			rtr.Use(server.FileCtx)
 			rtr.Get("/", client.FilePage) // get info about a file
 		})
-		rtr.Post("/new", client.NewFile) // add a new file to the service
+		rtr.Route("/new", func(rtr chi.Router) {
+			rtr.Route("/{filePath}", func(rtr chi.Router) {
+				rtr.Use(server.ClientNewFileCtx)
+				rtr.Post("/", client.NewFile) // add a new file to the service
+			})
+			// TODO: upload page
+		})
 	})
 
 	// dirs

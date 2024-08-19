@@ -1,44 +1,20 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"strings"
 
-	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/server"
 	svc "github.com/sfs/pkg/service"
 )
 
 // API handlers for the web client UI
-// Must use http/template user of tmpl.Execute() instead of
-// w.Write() whenever possible.
 
-// generic response. sends msg with 200 and logs message.
-func (c *Client) write(w http.ResponseWriter, msg string) {
-	c.log.Log(logger.INFO, msg)
-	w.Write([]byte(msg))
-}
+// enums mainly used for creating context keys
+type Contexts string
 
-// not found response. sends a 404 and logs message.
-func (c *Client) notFoundError(w http.ResponseWriter, err string) {
-	c.log.Warn(err)
-	http.Error(w, err, http.StatusNotFound)
-}
-
-// sends a bad request (400) with error message, and logs message
-func (c *Client) clientError(w http.ResponseWriter, err string) {
-	c.log.Warn(err)
-	http.Error(w, err, http.StatusBadRequest)
-}
-
-// sends an internal server error (500) with an error message, and logs the message
-func (c *Client) serverError(w http.ResponseWriter, err string) {
-	c.log.Error(err)
-	http.Error(w, err, http.StatusInternalServerError)
-}
+const Error Contexts = "error"
 
 // Redirect will peform an HTTP redirect to the given redirect Path.
 func (c *Client) Redirect(redirectPath string, req *http.Request) func(http.ResponseWriter, *http.Request) {
@@ -47,11 +23,6 @@ func (c *Client) Redirect(redirectPath string, req *http.Request) func(http.Resp
 	}
 }
 
-// enums mainly used for creating context keys
-type Contexts string
-
-const Error Contexts = "error"
-
 // -------- various pages -------------------------------------
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -59,16 +30,18 @@ func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
 		Files:      c.Drive.GetFiles(),
 		Dirs:       c.Drive.GetDirs(),
 		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
 	}
 	err := c.Templates.ExecuteTemplate(w, "index.html", indexData)
 	if err != nil {
-		c.log.Error(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
 func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
-	errMsg := r.Context().Value(Error).(string)
+	// errMsg := r.Context().Value(Error).(string)
+	errMsg := "oops"
 	errPageData := ErrorPage{
 		ErrMsg: fmt.Sprintf("Something went wrong :(\n\n%s", errMsg),
 	}
@@ -87,11 +60,12 @@ func (c *Client) UserPage(w http.ResponseWriter, r *http.Request) {
 		TotalFiles:     len(c.Drive.GetFiles()),
 		TotalDirs:      len(c.Drive.GetDirs()),
 		ProfilePicPath: "",
+		ServerHost:     c.Conf.ServerAddr,
+		ClientHost:     c.Conf.Addr,
 	}
 	err := c.Templates.ExecuteTemplate(w, "user.html", usrPageData)
 	if err != nil {
-		errCtx := context.WithValue(r.Context(), Error, err.Error())
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -100,28 +74,37 @@ func (c *Client) DirPage(w http.ResponseWriter, r *http.Request) {
 	dirID := r.Context().Value(server.Directory).(string)
 	dir, err := c.GetDirectoryByID(dirID)
 	if dir == nil {
-		errCtx := context.WithValue(r.Context(), Error, fmt.Sprintf("dir id=%s not found", dirID))
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		errCtx := context.WithValue(r.Context(), Error, err.Error())
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// get sub directories
+	subdirs, err := c.GetSubDirs(dirID)
+	if err != nil {
+		c.Redirect(homePage+"/error/"+err.Error(), r)
+		return
+	}
+	// get files
+	files, err := c.GetFilesByDirID(dirID)
+	if err != nil {
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	dirPageData := DirPage{
-		Name:         dir.Name,
-		Size:         dir.Size,
-		TotalFiles:   len(dir.Files),
-		TotalSubDirs: len(dir.Dirs),
-		LastSync:     dir.LastSync,
-		Files:        dir.GetFiles(),
-		SubDirs:      dir.GetSubDirs(),
+		Name:       dir.Name,
+		Size:       dir.Size,
+		LastSync:   dir.LastSync,
+		Dirs:       subdirs,
+		Files:      files,
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
 	}
 	err = c.Templates.ExecuteTemplate(w, "folder.html", dirPageData)
 	if err != nil {
-		errCtx := context.WithValue(r.Context(), Error, err.Error())
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -130,27 +113,29 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	fileID := r.Context().Value(server.File).(string)
 	file, err := c.GetFileByID(fileID)
 	if file == nil {
-		errCtx := context.WithValue(r.Context(), Error, fmt.Sprintf("file id=%s not found", fileID))
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		errCtx := context.WithValue(r.Context(), Error, err.Error())
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	filePageData := FilePage{
-		Name:     file.Name,
-		Size:     file.Size,
-		Type:     filepath.Ext(file.Name),
-		Checksum: file.CheckSum,
-		Endpoint: file.Endpoint,
-		LastSync: file.LastSync,
+		Name:       file.Name,
+		Size:       file.Size,
+		ID:         file.ID,
+		OwnerID:    file.OwnerID,
+		Type:       filepath.Ext(file.Name),
+		LastSync:   file.LastSync,
+		Location:   file.ClientPath,
+		Checksum:   file.CheckSum,
+		Endpoint:   file.Endpoint,
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
 	}
 	err = c.Templates.ExecuteTemplate(w, "file.html", filePageData)
 	if err != nil {
-		errCtx := context.WithValue(r.Context(), Error, err.Error())
-		c.Redirect(homePage+"/error", r.WithContext(errCtx))
+		c.Redirect(homePage+"/error/"+err.Error(), r)
 		return
 	}
 }
@@ -173,29 +158,20 @@ func (c *Client) getFileFromRequest(r *http.Request) (*svc.File, error) {
 	return file, nil
 }
 
+// add a new file to the SFS serverice using its absolute path
 func (c *Client) NewFile(w http.ResponseWriter, r *http.Request) {
 	newFilePath := r.Context().Value(server.File).(string)
 	if err := c.AddFile(newFilePath); err != nil {
-		errCtx := context.WithValue(r.Context(), Error, err.Error())
-		c.ErrorPage(w, r.WithContext(errCtx))
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-// retrieve a file from the server
+// retrieve a file from the local machine
 func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
-	f, err := c.getFileFromRequest(r)
+	file, err := c.getFileFromRequest(r)
 	if err != nil {
-		if strings.Contains(err.Error(), "file") { // not found or missing ID errors
-			c.clientError(w, err.Error())
-		} else {
-			c.serverError(w, err.Error())
-		}
-		return
-	}
-	file, err := c.GetFileByID(f.ID)
-	if err != nil {
-		c.serverError(w, err.Error())
+		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

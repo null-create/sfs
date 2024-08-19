@@ -17,4 +17,5 @@ const (
 	User        Context = "user"
 	Users       Context = "users"
 	Index       Context = "index"
+	Error       Context = "error"
 )
