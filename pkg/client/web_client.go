@@ -21,7 +21,10 @@ This file defines a simple web client to server to facilitate a web UI for inter
 in either a client or server management capacity
 */
 
-var homePage = "http://" + cfgs.Addr
+var (
+	homePage = "http://" + cfgs.Addr
+	userPage = homePage + "/user/" + cfgs.ID
+)
 
 // The web client is a local server that serves a web UI for
 // interacting witht he local SFS client service.
@@ -74,6 +77,19 @@ func newWcRouter(client *Client) *chi.Mux {
 		})
 	})
 
+	// // search page
+	// rtr.Route("/search", func(rtr chi.Router) {
+	// 	rtr.Route("/{fileName}", func(rtr chi.Router) {
+	// 		rtr.Use(server.SearchCtx)
+	// 		rtr.Get("/", client.SearchPage)
+	// 	})
+	// })
+
+	// user page
+	rtr.Route("/user", func(rtr chi.Router) {
+		rtr.Get("/", client.UserPage)
+	})
+
 	// files
 	rtr.Route("/files", func(rtr chi.Router) {
 		rtr.Route("/d/{fileID}", func(rtr chi.Router) {
@@ -93,6 +109,20 @@ func newWcRouter(client *Client) *chi.Mux {
 			})
 			// TODO: upload page
 		})
+	})
+
+	// add items to the service
+	rtr.Route("/add", func(rtr chi.Router) {
+		rtr.Get("/", client.AddPage)
+		// run discovery on a given directory
+		rtr.Route("/{folderPath}", func(rtr chi.Router) {
+			rtr.Use(server.DiscoverCtx)
+			// rtr.Post("/", client.AddAll) // add in bulk using discover
+		})
+		// rtr.Route("/{filePath}", func(rtr chi.Router) {
+		// 	// rtr.Use(server.ClientNewFileCtx)
+		// 	// rtr.Post("/", Client.AddFile)
+		// })
 	})
 
 	// dirs

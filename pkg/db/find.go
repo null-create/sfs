@@ -234,7 +234,7 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 	defer q.Close()
 
 	file := new(svc.File)
-	if err := q.Conn.QueryRow(FindFileByNameQuery, fileName).Scan(
+	if err := q.Conn.QueryRow(FindFilesByNameQuery, fileName).Scan(
 		&file.ID,
 		&file.Name,
 		&file.OwnerID,
@@ -263,6 +263,57 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 		return nil, fmt.Errorf("failed to get file metadata: %v", err)
 	}
 	return file, nil
+}
+
+// populate a slice of *svc.File objects that all have the same name
+func (q *Query) GetFilesByName(fileName string) ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindFilesByNameQuery)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	var fs []*svc.File
+	for rows.Next() {
+		file := new(svc.File)
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.LocalBackup,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Registered,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, "files found in database")
+				continue
+			}
+			return nil, fmt.Errorf("unable to scan rows: %v", err)
+		}
+		fs = append(fs, file)
+	}
+	return fs, nil
 }
 
 // retrieves a file ID using a given file path

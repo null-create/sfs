@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div id="file-upload-container">
+        <form action="/upload" method="post" enctype="multipart/form-data">
+          <label for="folder-input"
+            >Choose a folder and all its contents:</label
+          >
+          <input
+            type="file"
+            id="folder-input"
+            name="folder"
+            webkitdirectory
+            directory
+            style="display: none"
+          />
+          <button
+            type="button"
+            onclick="document.getElementById('folder-input').click();"
+          >
+            Choose Folder
+          </button>
+        </form>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+    <script type="text/javascript">
+      document
+        .getElementById("upload-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent the default form submission
+
+          const folderPathInput = document.getElementById("folder-path").value;
+
+          if (!folderPathInput) {
+            alert("Please select a folder.");
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append("folder-path", folderPathInput);
+
+          // Send the form data (folder path) to the server
+          fetch("/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Success:", data);
+              alert("Folder path submitted successfully");
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Failed to submit the folder path");
+            });
+        });
+    </script>
+  </body>
+</html>

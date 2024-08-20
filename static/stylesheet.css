@@ -235,3 +235,119 @@ header {
 #file-download:hover {
   border-bottom: 1px solid #1e88e5;
 } */
+
+/* User Page */
+
+.user-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.user-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.user-label {
+  font-weight: bold;
+  color: #555;
+  flex: 0 0 150px; /* Label takes up 150px width */
+}
+
+.user-info-item span {
+  flex: 1;
+  color: #333;
+  overflow: hidden; /* Ensure text doesn't overflow */
+  text-overflow: ellipsis; /* Add ellipsis if text overflows */
+}
+
+.user-info-photo {
+  display: flex;
+  justify-content: left;
+  margin-top: 20px;
+}
+
+.user-profile-pic {
+  border-radius: 50%;
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Add some hover effects for interactive feel */
+.user-info-item:hover {
+  background-color: #f9f9f9;
+}
+
+.user-profile-pic:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Add Folder/Run Discovery Page and Form Styling */
+/* General form styling */
+form {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 500px;
+  margin: 20px auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center; /* Aligning content to the center */
+}
+
+/* Label styling */
+form label {
+  font-size: 16px;
+  color: #333;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Input field styling */
+form input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* Button styling */
+form button {
+  background-color: #1e88e5;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 10px 0; /* Adjusted for both buttons */
+  transition: background-color 0.3s ease;
+}
+
+/* Button hover effect */
+form button:hover {
+  background-color: #1565c0;
+}
+
+/* Specific button for folder selection */
+form button[type="button"] {
+  margin-bottom: 20px;
+}
+
+/* Responsive design for larger screens */
+@media (min-width: 600px) {
+  form {
+    max-width: 400px;
+  }
+}

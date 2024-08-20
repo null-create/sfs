@@ -9,8 +9,15 @@ import (
 // structures containing the data fields needed for various
 // pages in the client web interface
 
+type Frame struct {
+	UserID         string
+	ProfilePicPath string
+}
+
 type Index struct {
+	Frame      Frame
 	UserName   string
+	UserID     string
 	Dirs       []*svc.Directory
 	Files      []*svc.File
 	ServerHost string
@@ -18,6 +25,7 @@ type Index struct {
 }
 
 type FilePage struct {
+	Frame      Frame
 	Name       string
 	Size       int64
 	ID         string
@@ -32,6 +40,7 @@ type FilePage struct {
 }
 
 type DirPage struct {
+	Frame        Frame
 	Name         string
 	Size         int64
 	TotalFiles   int
@@ -45,6 +54,7 @@ type DirPage struct {
 }
 
 type ErrorPage struct {
+	Frame      Frame
 	StatusCode string
 	ErrMsg     string
 	ServerHost string
@@ -52,7 +62,9 @@ type ErrorPage struct {
 }
 
 type UserPage struct {
+	Frame          Frame
 	Name           string
+	UserID         string
 	UserName       string
 	Email          string
 	TotalFiles     int
@@ -60,4 +72,19 @@ type UserPage struct {
 	ProfilePicPath string
 	ServerHost     string
 	ClientHost     string
+}
+
+type SearchPage struct {
+	Frame      Frame
+	UserID     string
+	Dirs       []*svc.Directory
+	Files      []*svc.File
+	ServerHost string
+	ClientHost string
+}
+
+type AddPage struct {
+	Frame      Frame
+	ServerHost string
+	ClientHost string
 }

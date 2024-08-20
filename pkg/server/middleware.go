@@ -81,6 +81,18 @@ func ClientNewFileCtx(h http.Handler) http.Handler {
 	})
 }
 
+func DiscoverCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		folderPath := chi.URLParam(r, "folderPath")
+		if folderPath == "" {
+			http.Error(w, "filePath not set", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Directory, folderPath)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // attempts to get filename, owner, and path from a requets
 // context, then create a new file object to use for downloading
 func NewFileCtx(h http.Handler) http.Handler {
