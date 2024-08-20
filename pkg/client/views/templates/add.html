@@ -6,9 +6,10 @@
     <div id="content">
       {{template "toolbar"}}
       <div id="file-upload-container">
-        <form action="/upload" method="post" enctype="multipart/form-data">
+        <form action="/add/discover" method="get" enctype="multipart/form-data">
           <label for="folder-input"
-            >Choose a folder and all its contents:</label
+            >Choose a folder and add it to the SFS drive with all its
+            contents:</label
           >
           <input
             type="file"
@@ -27,6 +28,7 @@
         </form>
       </div>
     </div>
+    <!-- check if the server is up -->
     <script type="text/javascript">
       function checkServerStatus() {
         let serverURL = "http://" + "{{.ServerHost}}";
@@ -51,37 +53,7 @@
       document.addEventListener("DOMContentLoaded", checkServerStatus);
       setInterval(checkServerStatus, 60000); // Check every 60 seconds
     </script>
-    <script type="text/javascript">
-      document
-        .getElementById("upload-form")
-        .addEventListener("submit", function (event) {
-          event.preventDefault(); // Prevent the default form submission
-
-          const folderPathInput = document.getElementById("folder-path").value;
-
-          if (!folderPathInput) {
-            alert("Please select a folder.");
-            return;
-          }
-
-          const formData = new FormData();
-          formData.append("folder-path", folderPathInput);
-
-          // Send the form data (folder path) to the server
-          fetch("/upload", {
-            method: "POST",
-            body: formData,
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              console.log("Success:", data);
-              alert("Folder path submitted successfully");
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              alert("Failed to submit the folder path");
-            });
-        });
-    </script>
+    <!-- receive the path to the folder to run discover on, and send to client server -->
+    <script type="text/javascript" src="/static/scripts/send-path.js"></script>
   </body>
 </html>

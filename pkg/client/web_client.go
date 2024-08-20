@@ -21,11 +21,6 @@ This file defines a simple web client to server to facilitate a web UI for inter
 in either a client or server management capacity
 */
 
-var (
-	homePage = "http://" + cfgs.Addr
-	userPage = homePage + "/user/" + cfgs.ID
-)
-
 // The web client is a local server that serves a web UI for
 // interacting witht he local SFS client service.
 type WebClient struct {
@@ -47,33 +42,33 @@ func newWebClient(client *Client) *WebClient {
 }
 
 func newWcRouter(client *Client) *chi.Mux {
-	rtr := chi.NewRouter()
+	r := chi.NewRouter()
 
 	// middlewares
-	rtr.Use(middleware.Logger)
-	rtr.Use(middleware.Recoverer)
-	rtr.Use(server.EnableCORS)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(server.EnableCORS)
 
 	// serve css and asset files
-	rtr.Route("/static", func(rtr chi.Router) {
+	r.Route("/static", func(r chi.Router) {
 		fs := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
-		rtr.Handle("/*", fs)
+		r.Handle("/*", fs)
 	})
-	rtr.Route("/assets", func(rtr chi.Router) {
+	r.Route("/assets", func(r chi.Router) {
 		fs := http.StripPrefix("/assets/", http.FileServer(http.Dir("assets")))
-		rtr.Handle("/*", fs)
+		r.Handle("/*", fs)
 	})
 
 	// home page w/all items
-	rtr.Route("/", func(rtr chi.Router) {
-		rtr.Get("/", client.HomePage)
+	r.Route("/", func(r chi.Router) {
+		r.Get("/", client.HomePage)
 	})
 
 	// error page
-	rtr.Route("/error", func(rtr chi.Router) {
-		rtr.Route("/{errMsg}", func(rtr chi.Router) {
-			rtr.Use(server.ErrorCtx)
-			rtr.Get("/", client.ErrorPage)
+	r.Route("/error", func(r chi.Router) {
+		r.Route("/{errMsg}", func(r chi.Router) {
+			r.Use(server.ErrorCtx)
+			r.Get("/", client.ErrorPage)
 		})
 	})
 
@@ -86,38 +81,28 @@ func newWcRouter(client *Client) *chi.Mux {
 	// })
 
 	// user page
-	rtr.Route("/user", func(rtr chi.Router) {
-		rtr.Get("/", client.UserPage)
-	})
-
-	// files
-	rtr.Route("/files", func(rtr chi.Router) {
-		rtr.Route("/d/{fileID}", func(rtr chi.Router) {
-			rtr.Use(server.FileCtx)
-			// TODO: download page
-			rtr.Get("/", client.ServeFile) // get a copy of the file from the local client
-
+	r.Route("/user", func(r chi.Router) {
+		r.Get("/", client.UserPage)
+		r.Route("/edit", func(r chi.Router) {
+			r.Get("/", client.EditInfo)
 		})
-		rtr.Route("/i/{fileID}", func(rtr chi.Router) {
-			rtr.Use(server.FileCtx)
-			rtr.Get("/", client.FilePage) // get info about a file
-		})
-		rtr.Route("/new", func(rtr chi.Router) {
-			rtr.Route("/{filePath}", func(rtr chi.Router) {
-				rtr.Use(server.ClientNewFileCtx)
-				rtr.Post("/", client.NewFile) // add a new file to the service
-			})
-			// TODO: upload page
+		r.Route("/upload-pfp", func(r chi.Router) {
+			r.Post("/", client.UpdateProfilePicture)
 		})
 	})
+
+	// update user info endpoint
+	// r.Route("/submit-edits", func(r chi.Router) {
+	// 	r.Use(server.UpdateInfoCtx)
+	// 	r.Post("/", client.UpdateUserInfo)
+	// })
 
 	// add items to the service
-	rtr.Route("/add", func(rtr chi.Router) {
-		rtr.Get("/", client.AddPage)
-		// run discovery on a given directory
-		rtr.Route("/{folderPath}", func(rtr chi.Router) {
-			rtr.Use(server.DiscoverCtx)
-			// rtr.Post("/", client.AddAll) // add in bulk using discover
+	r.Route("/add", func(r chi.Router) {
+		r.Get("/", client.AddPage)
+		r.Route("/discover/{folderPath}", func(r chi.Router) {
+			r.Use(server.DiscoverCtx)
+			r.Get("/", client.AddAll) // add in bulk using discover
 		})
 		// rtr.Route("/{filePath}", func(rtr chi.Router) {
 		// 	// rtr.Use(server.ClientNewFileCtx)
@@ -125,11 +110,32 @@ func newWcRouter(client *Client) *chi.Mux {
 		// })
 	})
 
+	// files
+	r.Route("/files", func(r chi.Router) {
+		r.Route("/d/{fileID}", func(r chi.Router) {
+			r.Use(server.FileCtx)
+			// TODO: download page
+			r.Get("/", client.ServeFile) // get a copy of the file from the local client
+
+		})
+		r.Route("/i/{fileID}", func(r chi.Router) {
+			r.Use(server.FileCtx)
+			r.Get("/", client.FilePage) // get info about a file
+		})
+		r.Route("/new", func(r chi.Router) {
+			r.Route("/{filePath}", func(r chi.Router) {
+				r.Use(server.ClientNewFileCtx)
+				r.Post("/", client.NewFile) // add a new file to the service
+			})
+			// TODO: upload page
+		})
+	})
+
 	// dirs
-	rtr.Route("/dirs", func(rtr chi.Router) {
-		rtr.Route("/i/{dirID}", func(rtr chi.Router) {
-			rtr.Use(server.DirCtx)
-			rtr.Get("/", client.DirPage)
+	r.Route("/dirs", func(r chi.Router) {
+		r.Route("/i/{dirID}", func(r chi.Router) {
+			r.Use(server.DirCtx)
+			r.Get("/", client.DirPage)
 		})
 		// rtr.Route("/d/{dirID}", func(rtr chi.Router) {
 		// 	rtr.Use(server.DirCtx)
@@ -137,14 +143,16 @@ func newWcRouter(client *Client) *chi.Mux {
 		// })
 	})
 
-	// // upload page
-	// rtr.Get("/upload", func(w http.ResponseWriter, r *http.Request) {
-
-	// })
+	// upload page
+	r.Route("/upload", func(r chi.Router) {
+		// r.Use(server.UploadCtx) // TODO
+		r.Get("/", client.UploadPage)
+		r.Post("/", client.UploadHandler)
+	})
 
 	// download pages
 
-	return rtr
+	return r
 }
 
 // run the web client and be able to shut it down with ctrl+c

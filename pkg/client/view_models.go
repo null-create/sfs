@@ -10,8 +10,8 @@ import (
 // pages in the client web interface
 
 type Frame struct {
-	UserID         string
-	ProfilePicPath string
+	UserID        string
+	ProfilePicURL string
 }
 
 type Index struct {
@@ -84,6 +84,22 @@ type SearchPage struct {
 }
 
 type AddPage struct {
+	Frame        Frame
+	DiscoverPath string
+	ServerHost   string
+	ClientHost   string
+}
+
+type EditPageUpdates struct {
+	Frame        Frame
+	NewUserName  string
+	NewUserAias  string
+	NewUserEmail string
+	ServerHost   string
+	ClientHost   string
+}
+
+type UploadPage struct {
 	Frame      Frame
 	ServerHost string
 	ClientHost string

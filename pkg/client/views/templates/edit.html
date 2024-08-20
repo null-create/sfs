@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div class="edit-info-container">
+        <form id="edit-info-form" action="/submit-edits" method="post"></form>
+      </div>
+    </div>
+    <script type="text/javascript">
+      // TODO send updates to client server
+    </script>
+  </body>
+</html>
