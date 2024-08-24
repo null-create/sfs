@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div id="upload-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              ></button>
+              <h4 class="modal-title">
+                <i class="fa fa-upload"></i> Upload file to backup server
+              </h4>
+            </div>
+            <div class="modal-body">
+              <form action="#" class="dropzone" id="upload-form"></form>
+              <div class="form-group">
+                <label for="destination-folder">Destination Folder</label>
+                <select
+                  id="destination-folder"
+                  name="destinationFolder"
+                  class="form-control"
+                >
+                  {{range .Dirs}}
+                  <option value="{{.Name}}">{{.Name}}</option>
+                  {{end}}
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-default"
+                @click="removeAllUploads"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                class="btn btn-default"
+                data-dismiss="modal"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="upload-button"
+                onclick="uploadFile()"
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="/static/scripts/dropzone.js"></script>
+    <script type="text/javascript">
+      let newFilesEndpoint = "{{.Endpoint}}";
+      function uploadFile() {
+        const fileInput = document.getElementById("upload-form");
+        fileInput.addEventListener("change", function () {
+          console.log("new files endpoint: " + newFilesEndpoint);
+          const file = this.files[0];
+          if (file) {
+            const formData = new FormData();
+            formData.append("newFile", file);
+
+            // get the destination folder and send to the client server
+            const destFolderName = getDestFolderName();
+            if (destFolderName === "") {
+              throw new Error("no destination folder specified");
+            }
+            formData.append("destDir", destFolderName);
+
+            fetch(newFilesEndpoint, {
+              method: "POST",
+              body: formData,
+              headers: {
+                folder: destFolderName,
+              },
+            })
+              .then((response) => {
+                if (response.ok) {
+                  console.log(response.json());
+                  return;
+                } else {
+                  throw new Error("Failed to upload profile picture");
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          } else {
+            console.error("no file data received");
+          }
+        });
+      }
+
+      function getDestFolderName() {
+        const folderSelect = document.getElementById("folder-selection");
+        const selectedFolder = folderSelect.value;
+        console.log("Selected folder: ", selectedFolder);
+        return selectedFolder;
+      }
+
+      document.addEventListener("DOMContentLoaded", uploadFile);
+    </script>
+    <script type="text/javascript">
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+  </body>
+</html>

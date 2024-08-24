@@ -7,22 +7,24 @@ import (
 )
 
 func GetTemplatePaths() map[string]string {
+	var templateFolder = "./static/templates"
 	var templates = []string{
-		"./pkg/client/views/templates/index.html",
-		"./pkg/client/views/templates/file.html",
-		"./pkg/client/views/templates/folder.html",
-		"./pkg/client/views/templates/frame.html",
-		"./pkg/client/views/templates/toolbar.html",
-		"./pkg/client/views/templates/header.html",
-		"./pkg/client/views/templates/trash.html",
-		"./pkg/client/views/templates/recent.html",
-		"./pkg/client/views/templates/starred.html",
-		"./pkg/client/views/templates/error.html",
-		"./pkg/client/views/templates/table.html",
-		"./pkg/client/views/templates/add.html",
-		"./pkg/client/views/templates/user.html",
-		"./pkg/client/views/templates/upload.html",
-		"./pkg/client/views/templates/edit.html",
+		templateFolder + "/index.html",
+		templateFolder + "/file.html",
+		templateFolder + "/folder.html",
+		templateFolder + "/frame.html",
+		templateFolder + "/toolbar.html",
+		templateFolder + "/header.html",
+		templateFolder + "/trash.html",
+		templateFolder + "/recent.html",
+		templateFolder + "/starred.html",
+		templateFolder + "/error.html",
+		templateFolder + "/table.html",
+		templateFolder + "/add.html",
+		templateFolder + "/user.html",
+		templateFolder + "/upload.html",
+		templateFolder + "/edit.html",
+		templateFolder + "/settings.html",
 	}
 	var tmplPaths = make(map[string]string)
 	for _, tpath := range templates {
@@ -52,6 +54,7 @@ func (c *Client) ParseTemplates() error {
 		tmplPaths["user.html"],
 		tmplPaths["upload.html"],
 		tmplPaths["edit.html"],
+		tmplPaths["settings.html"],
 	)
 	if err != nil {
 		return err
