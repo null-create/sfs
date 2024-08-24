@@ -19,16 +19,17 @@ type Conf struct {
 	ID              string `env:"CLIENT_ID,required"`           // this is generated at creation time. won't be in the initial .env file
 	Email           string `env:"CLIENT_EMAIL,required"`        // users email
 	Password        string `env:"CLIENT_PASSWORD,required"`     // users password for authentication
+	ProfilePic      string `env:"CLIENT_PROFILE_PIC,required"`  // path to users profile picture
 	Root            string `env:"CLIENT_ROOT,required"`         // client service root (ie. ../sfs/client/run/)
 	TestRoot        string `env:"CLIENT_TESTING,required"`      // testing root directory
-	Host            string `env:"CLIENT_HOST,required"`         // client host
-	Port            int    `env:"CLIENT_PORT,required"`         // port for http client
 	Addr            string `env:"CLIENT_ADDRESS,required"`      // address for http client
 	NewService      bool   `env:"CLIENT_NEW_SERVICE,required"`  // whether we need to initialize a new client service instance.
 	LogDir          string `env:"CLIENT_LOG_DIR,required"`      // location of log directory
 	LocalBackup     bool   `env:"CLIENT_LOCAL_BACKUP,required"` // whether we're backing up to a local file directory
 	BackupDir       string `env:"CLIENT_BACKUP_DIR,required"`   // location of backup directory
 	ServerAddr      string `env:"SERVER_ADDR,required"`         // server address
+	Host            string `env:"SERVER_HOST,required"`         // client host
+	Port            int    `env:"SERVER_PORT,required"`         // server port
 }
 
 func GetClientConfigs() *Conf {

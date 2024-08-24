@@ -210,6 +210,8 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 		return c.UpdateBackupPath(value)
 	case "CLIENT_LOCAL_BACKUP":
 		return c.SetLocalBackup(value)
+	case "CLIENT_PROFILE_PIC":
+		return c.updateClientIcon(value)
 	case "CLIENT_NEW_SERVICE":
 		return envCfgs.Set(setting, value)
 	case "NEW_SERVICE":
@@ -318,7 +320,21 @@ func (c *Client) updateClientName(newName string) error {
 
 // TODO: update all items owner name in the DB with the new user's new name
 func (c *Client) updateFileOwnerName(oldName, newName string) error {
+	if newName == "" {
+		return fmt.Errorf("no name provided")
+	}
+	if newName == oldName {
+		return nil
+	}
 	return nil
+}
+
+func (c *Client) updateClientIcon(fileName string) error {
+	if fileName == "" {
+		return fmt.Errorf("no path specified")
+	}
+	c.Conf.ProfilePic = fileName
+	return envCfgs.Set("CLIENT_PROFILE_PIC", fileName)
 }
 
 // update user's email

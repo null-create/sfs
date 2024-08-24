@@ -14,15 +14,25 @@
                 class="close"
                 data-dismiss="modal"
                 aria-label="Close"
-              >
-                <span aria-hidden="true">&times;</span>
-              </button>
+              ></button>
               <h4 class="modal-title">
                 <i class="fa fa-upload"></i> File upload
               </h4>
             </div>
             <div class="modal-body">
               <form action="#" class="dropzone" id="upload-form"></form>
+              <div class="form-group">
+                <label for="destination-folder">Destination Folder</label>
+                <select
+                  id="destination-folder"
+                  name="destinationFolder"
+                  class="form-control"
+                >
+                  {{range .Dirs}}
+                  <option value="{{.Name}}">{{.Name}}</option>
+                  {{end}}
+                </select>
+              </div>
             </div>
             <div class="modal-footer">
               <button
@@ -39,7 +49,12 @@
               >
                 Close
               </button>
-              <button type="button" class="btn btn-primary" id="upload-button">
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="upload-button"
+                onclick="uploadPfp()"
+              >
                 Upload
               </button>
             </div>
@@ -48,5 +63,6 @@
       </div>
     </div>
     <script type="text/javascript" src="/static/scripts/dropzone.js"></script>
+    <script type="text/javascript" src="/static/scripts/upload-pfp.js"></script>
   </body>
 </html>

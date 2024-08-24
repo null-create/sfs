@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,13 +20,14 @@ type Contexts string
 const Error Contexts = "error"
 
 var (
-	homePage = "http://" + cfgs.Addr         // web ui home page
-	userPage = homePage + "/user/" + cfgs.ID // users home page
+	homePage  = "http://" + cfgs.Addr // web ui home page
+	userPage  = homePage + "/user"    // users home page
+	errorPage = homePage + "/error"
 )
 
 // -------- various pages -------------------------------------
 
-func (c *Client) hasPfp() bool {
+func (c *Client) hasPfPics() bool {
 	path, err := filepath.Abs("../assets/pfp")
 	if err != nil {
 		c.log.Error(err.Error())
@@ -39,12 +41,15 @@ func (c *Client) hasPfp() bool {
 	return len(entires) != 0
 }
 
+func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
+	errCtx := context.WithValue(r.Context(), server.Error, msg)
+	http.Redirect(w, r.WithContext(errCtx), errorPage, http.StatusInternalServerError)
+}
+
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
 	indexData := Index{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
 		UserID:     c.User.ID,
 		Files:      c.Drive.GetFiles(),
 		Dirs:       c.Drive.GetDirs(),
@@ -53,34 +58,32 @@ func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
 	}
 	err := c.Templates.ExecuteTemplate(w, "index.html", indexData)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
-		return
+		c.error(w, r, err.Error())
 	}
 }
 
 func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
-	// errMsg := r.Context().Value(Error).(string)
-	errMsg := "oops"
+	errMsg := r.Context().Value(Error)
+	if errMsg == nil {
+		http.Error(w, "No error parsed from request", http.StatusInternalServerError)
+		return
+	}
+	errMsg = errMsg.(string)
 	errPageData := ErrorPage{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
-		ErrMsg: fmt.Sprintf("Something went wrong :(\n\n%s", errMsg),
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
+		ErrMsg:     fmt.Sprintf("Something went wrong :(\n\n%s", errMsg),
 	}
 	err := c.Templates.ExecuteTemplate(w, "error.html", errPageData)
 	if err != nil {
-		c.log.Error(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 	}
 }
 
 func (c *Client) UserPage(w http.ResponseWriter, r *http.Request) {
 	usrPageData := UserPage{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
+		UserPage:       userPage,
+		ProfilePic:     c.Conf.ProfilePic,
 		Name:           c.User.Name,
 		UserID:         c.User.ID,
 		UserName:       c.User.UserName,
@@ -93,8 +96,7 @@ func (c *Client) UserPage(w http.ResponseWriter, r *http.Request) {
 	}
 	err := c.Templates.ExecuteTemplate(w, "user.html", usrPageData)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
-		return
+		c.error(w, r, err.Error())
 	}
 }
 
@@ -102,30 +104,28 @@ func (c *Client) DirPage(w http.ResponseWriter, r *http.Request) {
 	dirID := r.Context().Value(server.Directory).(string)
 	dir, err := c.GetDirectoryByID(dirID)
 	if dir == nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusBadRequest)
+		c.error(w, r, err.Error())
 		return
 	}
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 	// get sub directories
 	subdirs, err := c.GetSubDirs(dirID)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 	// get files
 	files, err := c.GetFilesByDirID(dirID)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 	dirPageData := DirPage{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
 		Name:       dir.Name,
 		Size:       dir.Size,
 		LastSync:   dir.LastSync,
@@ -136,8 +136,7 @@ func (c *Client) DirPage(w http.ResponseWriter, r *http.Request) {
 	}
 	err = c.Templates.ExecuteTemplate(w, "folder.html", dirPageData)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
-		return
+		c.error(w, r, err.Error())
 	}
 }
 
@@ -145,18 +144,16 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	fileID := r.Context().Value(server.File).(string)
 	file, err := c.GetFileByID(fileID)
 	if file == nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusBadRequest)
+		c.error(w, r, err.Error())
 		return
 	}
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 	filePageData := FilePage{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
 		Name:       file.Name,
 		Size:       file.Size,
 		ID:         file.ID,
@@ -171,20 +168,16 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	}
 	err = c.Templates.ExecuteTemplate(w, "file.html", filePageData)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
-		return
+		c.error(w, r, err.Error())
 	}
 }
 
-// update client information received from the web ui
-func (c *Client) EditInfo(w http.ResponseWriter, r *http.Request) {
+func (c *Client) handleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
-	c.log.Info("form parsed")
-
 	// Extract form data (add more fields as needed)
 	// var updates = []string{
 	// 	r.FormValue("name"), r.FormValue("email"),
@@ -194,46 +187,71 @@ func (c *Client) EditInfo(w http.ResponseWriter, r *http.Request) {
 	// iterate through and if any are not empty and are different than
 	// the current configurations, update in db and .env files accordingly
 
+	// send back to the user's page once complete
 	http.Redirect(w, r, userPage, http.StatusSeeOther)
+}
+
+// update client information received from the web ui
+func (c *Client) EditInfo(w http.ResponseWriter, r *http.Request) {
+	editPage := EditPage{
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
+	}
+	err := c.Templates.ExecuteTemplate(w, "edit.html", editPage)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
 }
 
 func (c *Client) AddPage(w http.ResponseWriter, r *http.Request) {
 	addPageData := AddPage{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
+		UserPage:     userPage,
+		ProfilePic:   c.Conf.ProfilePic,
 		DiscoverPath: "CHANGEME",
 		ServerHost:   c.Conf.ServerAddr,
 		ClientHost:   c.Conf.Addr,
 	}
 	err := c.Templates.ExecuteTemplate(w, "add.html", addPageData)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
-		return
+		c.error(w, r, err.Error())
 	}
 }
 
-func (c *Client) AddAll(w http.ResponseWriter, r *http.Request) {
-	path := r.Context().Value(server.Path).(string)
-	newDir, err := c.Discover(path)
+func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(10 << 20)
+	_, handler, err := r.FormFile("folder-path")
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		fmt.Printf("\nerror: %v\n", err)
+		c.error(w, r, err.Error())
 		return
 	}
+
+	fmt.Printf("path received: %s\n", handler.Filename)
+
+	newDir, err := c.Discover(handler.Filename)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+
+	fmt.Printf("adding new directory: %s\n", newDir.Name)
+
 	if err = c.AddDir(newDir.Path); err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
+
+	fmt.Print("redirecting...")
+
 	// Redirect to the page for the newly mapped out directory
-	http.Redirect(w, r, homePage+"/"+newDir.Endpoint, http.StatusOK)
+	http.Redirect(w, r, homePage+"/dirs/i/"+newDir.ID, http.StatusOK)
 }
 
 func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 	defer file.Close()
@@ -244,52 +262,64 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "MIME Header: %+v\n", handler.Header)
 }
 
-func (c *Client) UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 << 20)
+func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(10 << 20) // limit file size to 10mb
 	file, handler, err := r.FormFile("profilePic")
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 	defer file.Close()
 
 	// Save the file to the client
-	destPath, err := filepath.Abs("../assets/pfp")
+	destPath, err := filepath.Abs("./assets/profile-pics")
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
-	dst, err := os.Create(filepath.Join(destPath, handler.Filename))
+	filePath := filepath.Join(destPath, handler.Filename)
+	dst, err := os.Create(filePath)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		fmt.Printf("error: %v", err)
+		c.error(w, r, err.Error())
 		return
 	}
 	defer dst.Close()
 
-	// Copy the uploaded file to the destination
+	// Copy the uploaded file to the destination and update client config accordingly
 	if _, err := io.Copy(dst, file); err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
+		return
+	}
+	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", filepath.Base(filePath)); err != nil {
+		c.error(w, r, err.Error())
 		return
 	}
 
 	// Redirect or respond with a success message
-	http.Redirect(w, r, "/user", http.StatusSeeOther)
+	http.Redirect(w, r, "/user", http.StatusOK)
+}
+
+func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
+	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", "default_profile_pic.jpg"); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	// Redirect or respond with a success message
+	http.Redirect(w, r, "/user", http.StatusNoContent)
 }
 
 // render upload page template
 func (c *Client) UploadPage(w http.ResponseWriter, r *http.Request) {
 	uploadPageData := UploadPage{
-		Frame: Frame{
-			UserID:        c.User.ID,
-			ProfilePicURL: "CHANGEME",
-		},
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
 		ServerHost: c.Conf.ServerAddr,
 		ClientHost: c.Conf.Addr,
 	}
 	err := c.Templates.ExecuteTemplate(w, "upload.html", uploadPageData)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
-		return
+		c.error(w, r, err.Error())
 	}
 }
 
@@ -315,7 +345,7 @@ func (c *Client) getFileFromRequest(r *http.Request) (*svc.File, error) {
 func (c *Client) NewFile(w http.ResponseWriter, r *http.Request) {
 	newFilePath := r.Context().Value(server.File).(string)
 	if err := c.AddFile(newFilePath); err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 }
@@ -324,7 +354,7 @@ func (c *Client) NewFile(w http.ResponseWriter, r *http.Request) {
 func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 	file, err := c.getFileFromRequest(r)
 	if err != nil {
-		http.Redirect(w, r, homePage+"/error/"+err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error())
 		return
 	}
 

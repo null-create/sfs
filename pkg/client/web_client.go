@@ -87,7 +87,10 @@ func newWcRouter(client *Client) *chi.Mux {
 			r.Get("/", client.EditInfo)
 		})
 		r.Route("/upload-pfp", func(r chi.Router) {
-			r.Post("/", client.UpdateProfilePicture)
+			r.Post("/", client.UpdatePfpHandler)
+		})
+		r.Route("/clear-pfp", func(r chi.Router) {
+			r.Post("/", client.ClearPfpHandler)
 		})
 	})
 
@@ -97,20 +100,22 @@ func newWcRouter(client *Client) *chi.Mux {
 	// 	r.Post("/", client.UpdateUserInfo)
 	// })
 
-	// add items to the service
+	// add items to the service.
+	// provides handlers for the upload page.
 	r.Route("/add", func(r chi.Router) {
 		r.Get("/", client.AddPage)
-		r.Route("/discover/{folderPath}", func(r chi.Router) {
-			r.Use(server.DiscoverCtx)
-			r.Get("/", client.AddAll) // add in bulk using discover
+		// add in bulk using discover
+		r.Route("/discover", func(r chi.Router) {
+			r.Post("/", client.AddItems)
 		})
-		// rtr.Route("/{filePath}", func(rtr chi.Router) {
-		// 	// rtr.Use(server.ClientNewFileCtx)
-		// 	// rtr.Post("/", Client.AddFile)
-		// })
+		// add a new file to the service
+		r.Route("/{filePath}", func(r chi.Router) {
+			r.Use(server.ClientNewFileCtx)
+			r.Post("/", client.NewFile)
+		})
 	})
 
-	// files
+	// file pages
 	r.Route("/files", func(r chi.Router) {
 		r.Route("/d/{fileID}", func(r chi.Router) {
 			r.Use(server.FileCtx)
@@ -122,13 +127,6 @@ func newWcRouter(client *Client) *chi.Mux {
 			r.Use(server.FileCtx)
 			r.Get("/", client.FilePage) // get info about a file
 		})
-		r.Route("/new", func(r chi.Router) {
-			r.Route("/{filePath}", func(r chi.Router) {
-				r.Use(server.ClientNewFileCtx)
-				r.Post("/", client.NewFile) // add a new file to the service
-			})
-			// TODO: upload page
-		})
 	})
 
 	// dirs
@@ -137,9 +135,9 @@ func newWcRouter(client *Client) *chi.Mux {
 			r.Use(server.DirCtx)
 			r.Get("/", client.DirPage)
 		})
-		// rtr.Route("/d/{dirID}", func(rtr chi.Router) {
-		// 	rtr.Use(server.DirCtx)
-		// 	rtr.Get("/", client.DirPage)
+		// r.Route("/d/{dirID}", func(r chi.Router) {
+		// 	r.Use(server.DirCtx)
+		// 	r.Get("/", client.DirPage)
 		// })
 	})
 

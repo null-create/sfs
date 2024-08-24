@@ -6,29 +6,36 @@
     <div id="content">
       {{template "toolbar"}}
       <div id="file-upload-container">
-        <form action="/add/discover" method="get" enctype="multipart/form-data">
-          <label for="folder-input"
-            >Choose a folder and add it to the SFS drive with all its
-            contents:</label
-          >
+        <form
+          id="folder-form"
+          action="/add/discover"
+          method="post"
+          enctype="multipart/form-data"
+          style="width: 500px"
+        >
+          <label for="folder-path-input">
+            Enter the full path to a file or folder to add it to the local SFS
+            drive.
+          </label>
+          <p class="instructions">
+            Folders will automatically have all their files and subdirectories
+            added. Items will automatically sync with the server if local sync
+            is disabled.
+          </p>
           <input
-            type="file"
-            id="folder-input"
-            name="folder"
-            webkitdirectory
-            directory
-            style="display: none"
+            type="text"
+            id="folder-path-input"
+            name="folder-path-input"
+            placeholder="ex: c:/Users/Person/ProjectDir"
+            style="width: 500px"
           />
-          <button
-            type="button"
-            onclick="document.getElementById('folder-input').click();"
-          >
-            Choose Folder
-          </button>
+          <br />
+          <button type="button" id="submit-folder-path">Submit</button>
+          <div id="spinner" class="spinner"></div>
+          <div id="response"></div>
         </form>
       </div>
     </div>
-    <!-- check if the server is up -->
     <script type="text/javascript">
       function checkServerStatus() {
         let serverURL = "http://" + "{{.ServerHost}}";
@@ -53,7 +60,6 @@
       document.addEventListener("DOMContentLoaded", checkServerStatus);
       setInterval(checkServerStatus, 60000); // Check every 60 seconds
     </script>
-    <!-- receive the path to the folder to run discover on, and send to client server -->
     <script type="text/javascript" src="/static/scripts/send-path.js"></script>
   </body>
 </html>

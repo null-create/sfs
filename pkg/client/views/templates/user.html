@@ -12,14 +12,14 @@
             class="user-profile-pic"
             id="user-profile-pic"
             style="width: 300px; height: 300px"
-            src="/assets/default_profile_pic.jpg"
+            src="{{if .ProfilePic}} /assets/profile-pics/{{.ProfilePic}} {{else}} /assets/default_profile_pic.jpg {{end}}"
             alt="User Profile Picture"
           />
         </div>
         <form
           id="upload-form"
-          action="/user/upload-profile-pic"
-          method="post"
+          action="/user"
+          method="get"
           enctype="multipart/form-data"
         >
           <input
@@ -36,19 +36,15 @@
           >
             Upload Profile Picture
           </button>
+          <button type="button" id="clear-profile-pic-button">
+            Clear Profile Picture
+          </button>
           <button type="submit" id="submit-button" style="display: none">
             Submit
           </button>
-          <button
-            type="button"
-            id="edit-info-button"
-            onclick="redirectToPage('http://localhost:9090/user/edit');"
+          <a href="/user/edit">
+            <button type="button" id="edit-info-button">Edit Info</button></a
           >
-            Edit Info
-          </button>
-          <button type="submit" id="submit-button" style="display: none">
-            Submit
-          </button>
         </form>
         <div class="user-info-item">
           <label class="user-label">ID: </label>
@@ -82,6 +78,15 @@
       }
     </script>
     <script>
+      // Automatically submit the form when a file is selected
+      document
+        .getElementById("profile-pic-upload")
+        .addEventListener("change", function () {
+          document.getElementById("upload-form").submit();
+        });
+    </script>
+    <script>
+      // Check if the server is up
       function checkServerStatus() {
         let serverURL = "http://" + "{{.ServerHost}}";
         console.log("serverURL: " + serverURL);
@@ -106,5 +111,6 @@
       setInterval(checkServerStatus, 60000); // Check every 60 seconds
     </script>
     <script type="text/javascript" src="/static/scripts/upload-pfp.js"></script>
+    <script type="text/javascript" src="/static/scripts/clear-pfp.js"></script>
   </body>
 </html>

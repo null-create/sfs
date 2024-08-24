@@ -40,6 +40,7 @@ var BaseEnv = map[string]string{
 	"CLIENT_PORT":         "8080",
 	"CLIENT_ROOT":         "",
 	"CLIENT_TESTING":      "",
+	"CLIENT_PROFILE_PIC":  "",
 
 	// server settings
 	"SERVER_ADDR":          "localhost:8080",

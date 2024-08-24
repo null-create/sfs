@@ -11,9 +11,9 @@
     />
   </div>
   <div id="profile">
-    <a href="/user/{{.UserID}}">
+    <a href="/user">
       <img
-        src="/assets/default_profile_pic.jpg"
+        src="{{if .ProfilePic}} /assets/profile-pics/{{.ProfilePic}} {{else}} /assets/default_profile_pic.jpg {{end}}"
         alt="profile picture"
         style="width: 40px; border-radius: 50%; cursor: pointer"
       />

@@ -22,6 +22,7 @@ func GetTemplatePaths() map[string]string {
 		"./pkg/client/views/templates/add.html",
 		"./pkg/client/views/templates/user.html",
 		"./pkg/client/views/templates/upload.html",
+		"./pkg/client/views/templates/edit.html",
 	}
 	var tmplPaths = make(map[string]string)
 	for _, tpath := range templates {
@@ -50,6 +51,7 @@ func (c *Client) ParseTemplates() error {
 		tmplPaths["add.html"],
 		tmplPaths["user.html"],
 		tmplPaths["upload.html"],
+		tmplPaths["edit.html"],
 	)
 	if err != nil {
 		return err
