@@ -75,13 +75,19 @@ type UserPage struct {
 }
 
 type SearchPage struct {
-	UserPage   string
-	ProfilePic string
-	UserID     string
-	Dirs       []*svc.Directory
-	Files      []*svc.File
-	ServerHost string
-	ClientHost string
+	UserPage     string
+	ProfilePic   string
+	UserID       string
+	ServerHost   string
+	ClientHost   string
+	NoResultsMsg string
+	Dirs         []*svc.Directory
+	Files        []*svc.File
+}
+
+type SearchResults struct {
+	Files []*svc.File      `json:"files"`
+	Dirs  []*svc.Directory `json:"dirs"`
 }
 
 type AddPage struct {
@@ -90,6 +96,7 @@ type AddPage struct {
 	DiscoverPath string
 	ServerHost   string
 	ClientHost   string
+	Endpoint     string
 }
 
 type EditPage struct {
@@ -102,6 +109,22 @@ type EditPage struct {
 type UploadPage struct {
 	UserPage   string
 	ProfilePic string
+	Dirs       []*svc.Directory
 	ServerHost string
 	ClientHost string
+	Endpoint   string
+}
+
+type SettingsPage struct {
+	UserPage   string
+	ProfilePic string
+	ServerHost string
+	ClientHost string
+
+	// Alterable settings
+	UserName     string
+	UserAlias    string
+	UserEmail    string
+	UserPassword string
+	LocalSync    bool
 }

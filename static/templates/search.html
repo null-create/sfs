@@ -5,12 +5,6 @@
     {{template "frame"}}
     <div id="content">
       {{template "toolbar"}}
-      <!-- View Selectors -->
-      <!-- <div class="view-selection">
-            <button class="toolbar-button" onclick="switchLayout('grid')">Grid View</button>
-            <button class="toolbar-button" onclick="switchLayout('table')">Table View</button>
-        </div> -->
-      <!-- Table View -->
       <table class="file-table">
         <tr>
           <th></th>
@@ -48,7 +42,6 @@
         {{end}}
       </table>
     </div>
-    <script type="text/javascript" src="/static/scripts/search.js"></script>
     <script>
       function checkServerStatus() {
         let serverURL = "http://" + "{{.ServerHost}}";

@@ -65,20 +65,16 @@ func newWcRouter(client *Client) *chi.Mux {
 	})
 
 	// error page
-	r.Route("/error", func(r chi.Router) {
-		r.Route("/{errMsg}", func(r chi.Router) {
-			r.Use(server.ErrorCtx)
-			r.Get("/", client.ErrorPage)
-		})
+	r.Route("/error/{errMsg}", func(r chi.Router) {
+		r.Use(server.ErrorCtx)
+		r.Get("/", client.ErrorPage)
 	})
 
-	// // search page
-	// rtr.Route("/search", func(rtr chi.Router) {
-	// 	rtr.Route("/{fileName}", func(rtr chi.Router) {
-	// 		rtr.Use(server.SearchCtx)
-	// 		rtr.Get("/", client.SearchPage)
-	// 	})
-	// })
+	// search page
+	r.Route("/search", func(r chi.Router) {
+		r.Get("/", client.SearchPage)
+		r.Post("/", client.SearchPage)
+	})
 
 	// user page
 	r.Route("/user", func(r chi.Router) {
@@ -104,15 +100,21 @@ func newWcRouter(client *Client) *chi.Mux {
 	// provides handlers for the upload page.
 	r.Route("/add", func(r chi.Router) {
 		r.Get("/", client.AddPage)
-		// add in bulk using discover
-		r.Route("/discover", func(r chi.Router) {
+		r.Route("/new", func(r chi.Router) { // add in bulk using discover
 			r.Post("/", client.AddItems)
 		})
-		// add a new file to the service
-		r.Route("/{filePath}", func(r chi.Router) {
-			r.Use(server.ClientNewFileCtx)
-			r.Post("/", client.NewFile)
-		})
+	})
+
+	// upload files to server page
+	r.Route("/upload", func(r chi.Router) {
+		r.Get("/", client.UploadPage)
+		r.Post("/", client.UploadHandler)
+	})
+
+	// settings page
+	r.Route("/settings", func(r chi.Router) {
+		r.Get("/", client.SettingsPage)
+		r.Post("/", client.SettingsHandler)
 	})
 
 	// file pages
@@ -139,13 +141,6 @@ func newWcRouter(client *Client) *chi.Mux {
 		// 	r.Use(server.DirCtx)
 		// 	r.Get("/", client.DirPage)
 		// })
-	})
-
-	// upload page
-	r.Route("/upload", func(r chi.Router) {
-		// r.Use(server.UploadCtx) // TODO
-		r.Get("/", client.UploadPage)
-		r.Post("/", client.UploadHandler)
 	})
 
 	// download pages

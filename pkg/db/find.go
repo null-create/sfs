@@ -265,7 +265,8 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 	return file, nil
 }
 
-// populate a slice of *svc.File objects that all have the same name
+// populate a slice of *svc.File objects that all have the same name.
+// returns an empty slice if none are found.
 func (q *Query) GetFilesByName(fileName string) ([]*svc.File, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -274,7 +275,7 @@ func (q *Query) GetFilesByName(fileName string) ([]*svc.File, error) {
 	q.Connect()
 	defer q.Close()
 
-	rows, err := q.Conn.Query(FindFilesByNameQuery)
+	rows, err := q.Conn.Query(FindFilesByNameQuery, fileName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query: %v", err)
 	}
@@ -797,6 +798,58 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 			&dir.BackupPath,
 			&dir.Registered,
 			&dir.Protected,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.ParentID,
+			&dir.Root,
+			&dir.RootPath,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, "no rows returned")
+				continue
+			}
+		}
+		dirs = append(dirs, dir)
+	}
+	return dirs, nil
+}
+
+// geta a slice of directories that have the same name. returns an empty slice if none are found.
+func (q *Query) GetDirsByName(dirName string) ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindDirsByNameQuery, dirName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	dirs := make([]*svc.Directory, 0)
+	for rows.Next() {
+		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
+		if err := rows.Scan(
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Registered,
+			&dir.Protected,
+			&dir.Endpoint,
 			&dir.AuthType,
 			&dir.Key,
 			&dir.Overwrite,

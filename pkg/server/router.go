@@ -114,6 +114,7 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
 				r.Use(NewFileCtx)
+				r.Options("/", api.PutFile) // for fetch()'s initial "preflighted" requests. this helps with CORS.
 				r.Post("/", api.PutFile)
 			})
 			r.Route("/i/{fileID}", func(r chi.Router) {

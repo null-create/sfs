@@ -345,6 +345,11 @@ form button[type="button"] {
   margin-bottom: 20px;
 }
 
+/* Search bar doesn't need to inherit the standard form styles */
+form#search-form {
+  all: unset;
+}
+
 /* Responsive design for larger screens */
 @media (min-width: 300px) {
   form {
@@ -463,4 +468,25 @@ form button[type="button"] {
 
 .hidden {
   display: none;
+}
+
+/* Settings Page */
+
+.settings-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.setting-item {
+  margin-bottom: 15px;
+}
+
+select,
+input[type="checkbox"] {
+  padding: 8px;
+  font-size: 14px;
 }

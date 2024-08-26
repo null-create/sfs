@@ -36,7 +36,7 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Drive.Root.Path = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ServerPath = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ClientPath = filepath.Join(tmpSvcPath, "root")
-	tmpClient.Drive.Root.BackupPath = filepath.Join(tmpSvcPath, "backups")
+	tmpClient.Drive.Root.BackupPath = filepath.Join(filepath.Dir(tmpSvcPath), "backups")
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
 	// set to local backups by default. could be overridden by individual tests.

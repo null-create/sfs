@@ -1,7 +1,9 @@
 package client
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,23 +29,10 @@ var (
 
 // -------- various pages -------------------------------------
 
-func (c *Client) hasPfPics() bool {
-	path, err := filepath.Abs("../assets/pfp")
-	if err != nil {
-		c.log.Error(err.Error())
-		return false
-	}
-	entires, err := os.ReadDir(path)
-	if err != nil {
-		c.log.Error(err.Error())
-		return false
-	}
-	return len(entires) != 0
-}
-
 func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
+	c.log.Error(msg)
 	errCtx := context.WithValue(r.Context(), server.Error, msg)
-	http.Redirect(w, r.WithContext(errCtx), errorPage, http.StatusInternalServerError)
+	http.Redirect(w, r.WithContext(errCtx), errorPage+"/"+msg, http.StatusInternalServerError)
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -210,6 +199,7 @@ func (c *Client) AddPage(w http.ResponseWriter, r *http.Request) {
 		DiscoverPath: "CHANGEME",
 		ServerHost:   c.Conf.ServerAddr,
 		ClientHost:   c.Conf.Addr,
+		Endpoint:     c.Endpoints["new-file"],
 	}
 	err := c.Templates.ExecuteTemplate(w, "add.html", addPageData)
 	if err != nil {
@@ -217,39 +207,47 @@ func (c *Client) AddPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// add a file or directory to the SFS service
 func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 << 20)
-	_, handler, err := r.FormFile("folder-path")
-	if err != nil {
-		fmt.Printf("\nerror: %v\n", err)
-		c.error(w, r, err.Error())
-		return
-	}
-
-	fmt.Printf("path received: %s\n", handler.Filename)
-
-	newDir, err := c.Discover(handler.Filename)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
+	r.Body.Close()
 
-	fmt.Printf("adding new directory: %s\n", newDir.Name)
-
-	if err = c.AddDir(newDir.Path); err != nil {
+	var path = buf.String()
+	item, err := os.Stat(path)
+	if err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
-
-	fmt.Print("redirecting...")
+	if item.IsDir() {
+		_, err = c.Discover(path)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+	} else {
+		if err := c.AddFile(path); err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+	}
 
 	// Redirect to the page for the newly mapped out directory
-	http.Redirect(w, r, homePage+"/dirs/i/"+newDir.ID, http.StatusOK)
+	http.Redirect(w, r, homePage, http.StatusSeeOther)
 }
 
 func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
-	file, handler, err := r.FormFile("file")
+	fmt.Printf("upload handler: request: %s\n", r.Form)
+
+	if err := r.ParseMultipartForm(100 << 20); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	file, handler, err := r.FormFile("newFile")
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
@@ -260,16 +258,35 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Uploaded File: %+v\n", handler.Filename)
 	fmt.Fprintf(w, "File Size: %+v\n", handler.Size)
 	fmt.Fprintf(w, "MIME Header: %+v\n", handler.Header)
+
+	// retrieve destination directory from request
+	destDirName := r.Form.Get("destDir")
+	if destDirName == "" {
+		c.error(w, r, "no destination directory specified")
+		return
+	}
+	if err := c.AddFile("CHANGEME"); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+
+	// redirect back to the home page
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("pfp form: %+v\n", r.Form)
+
 	r.ParseMultipartForm(10 << 20) // limit file size to 10mb
 	file, handler, err := r.FormFile("profilePic")
 	if err != nil {
+		fmt.Printf("error parsing form: %v", err)
 		c.error(w, r, err.Error())
 		return
 	}
 	defer file.Close()
+
+	fmt.Printf("uploaded File: %v\n", handler.Filename)
 
 	// Save the file to the client
 	destPath, err := filepath.Abs("./assets/profile-pics")
@@ -277,6 +294,9 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 		c.error(w, r, err.Error())
 		return
 	}
+
+	fmt.Printf("saving file to: %v\n", destPath)
+
 	filePath := filepath.Join(destPath, handler.Filename)
 	dst, err := os.Create(filePath)
 	if err != nil {
@@ -285,6 +305,8 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer dst.Close()
+
+	fmt.Printf("copying...\n")
 
 	// Copy the uploaded file to the destination and update client config accordingly
 	if _, err := io.Copy(dst, file); err != nil {
@@ -296,8 +318,10 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Printf("redirecting...\n")
+
 	// Redirect or respond with a success message
-	http.Redirect(w, r, "/user", http.StatusOK)
+	http.Redirect(w, r, "/user", http.StatusSeeOther)
 }
 
 func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
@@ -311,15 +335,108 @@ func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
 
 // render upload page template
 func (c *Client) UploadPage(w http.ResponseWriter, r *http.Request) {
+	usersDirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
 	uploadPageData := UploadPage{
 		UserPage:   userPage,
+		Dirs:       usersDirs,
 		ProfilePic: c.Conf.ProfilePic,
 		ServerHost: c.Conf.ServerAddr,
 		ClientHost: c.Conf.Addr,
+		Endpoint:   c.Endpoints["new file"],
 	}
-	err := c.Templates.ExecuteTemplate(w, "upload.html", uploadPageData)
+	err = c.Templates.ExecuteTemplate(w, "upload.html", uploadPageData)
 	if err != nil {
 		c.error(w, r, err.Error())
+	}
+}
+
+func (c *Client) SettingsPage(w http.ResponseWriter, r *http.Request) {
+	settingsPageData := SettingsPage{
+		UserPage:   userPage,
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
+		// alterable settings
+		UserName:  c.Conf.User,
+		UserAlias: c.Conf.UserAlias,
+		UserEmail: c.User.Email,
+		LocalSync: c.Conf.LocalBackup,
+	}
+	err := c.Templates.ExecuteTemplate(w, "settings.html", settingsPageData)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+}
+
+func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
+	// get updated settings and modify accordingly
+
+	http.Redirect(w, r, userPage, http.StatusSeeOther)
+}
+
+var resultsFile = "search-results.json"
+
+// search for items
+func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var buf bytes.Buffer
+		_, err := io.Copy(&buf, r.Body)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		r.Body.Close()
+
+		var searchItem = buf.String()
+		files, dirs, err := c.SearchForItems(searchItem)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		results := SearchResults{
+			Files: files,
+			Dirs:  dirs,
+		}
+		// save to temp json file so the search page
+		// can display results when called with a GET request
+		data, err := json.Marshal(results)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		if err := os.WriteFile(resultsFile, data, 0644); err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+
+	} else if r.Method == http.MethodGet {
+		data, err := os.ReadFile(resultsFile)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		var results = SearchResults{}
+		if err := json.Unmarshal(data, &results); err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		_ = os.Remove(resultsFile)
+
+		searchPageData := SearchPage{
+			UserID:     c.UserID,
+			UserPage:   userPage,
+			ServerHost: c.Conf.ServerAddr,
+			ClientHost: c.Conf.Addr,
+			Files:      results.Files,
+			Dirs:       results.Dirs,
+		}
+		err = c.Templates.ExecuteTemplate(w, "search.html", searchPageData)
+		if err != nil {
+			c.error(w, r, err.Error())
+		}
 	}
 }
 

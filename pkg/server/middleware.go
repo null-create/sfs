@@ -298,6 +298,19 @@ func ErrorCtx(h http.Handler) http.Handler {
 	})
 }
 
+func SearchCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		searchQuery := r.URL.Query().Get("searchQuery")
+		if searchQuery == "" {
+			fmt.Print("No search query received")
+			http.Error(w, "no items provided", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Search, searchQuery)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // ------ admin stuff --------------------------------
 
 func AdminOnly(h http.Handler) http.Handler {

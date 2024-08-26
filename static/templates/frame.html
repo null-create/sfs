@@ -4,11 +4,16 @@
     <h1 onclick="window.location.href='/'" style="cursor: pointer">My Drive</h1>
   </div>
   <div id="search">
-    <input
-      type="text"
-      placeholder="Search for files in your Drive"
-      style="width: 400px; padding: 10px"
-    />
+    <form id="search-form" onsubmit="submitSearch(event)">
+      <input
+        type="text"
+        id="search-input"
+        name="searchQuery"
+        placeholder="Search for files and directories in your Drive"
+        style="width: 400px; padding: 10px"
+      />
+      <button type="submit">Search</button>
+    </form>
   </div>
   <div id="profile">
     <a href="/user">

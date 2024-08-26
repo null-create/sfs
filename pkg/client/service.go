@@ -191,6 +191,19 @@ func (c *Client) ClearAllItems() error {
 	return nil
 }
 
+// find files and/or directories that have the same name. returns empty slices if none are found.
+func (c *Client) SearchForItems(itemName string) ([]*svc.File, []*svc.Directory, error) {
+	files, err := c.Db.GetFilesByName(itemName)
+	if err != nil {
+		return nil, nil, err
+	}
+	dirs, err := c.Db.GetDirsByName(itemName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return files, dirs, nil
+}
+
 // ------ configuration --------------------------------
 
 // update user-specific settings
@@ -570,12 +583,14 @@ func (c *Client) AddFile(filePath string) error {
 
 	// see if we already have the file's parent directory in the file system
 	dir, err := c.GetDirByPath(filepath.Dir(filePath))
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
-		// if the parent directory to this file doesn't exist in the file system,
-		// then add it to the SFS root.
-		newFile.DirID = c.Drive.Root.ID
-	} else if err != nil {
-		return err
+	if err != nil {
+		if strings.Contains(err.Error(), "does not exist") {
+			// if the parent directory to this file doesn't exist in the file system,
+			// then add it to the SFS root.
+			newFile.DirID = c.Drive.Root.ID
+		} else {
+			return err
+		}
 	} else {
 		newFile.DirID = dir.ID
 	}
@@ -999,13 +1014,27 @@ func (c *Client) GetSubDirs(parentDirID string) ([]*svc.Directory, error) {
 	return subdirs, nil
 }
 
-// get a directory object from the database using its path
+// get a directory object from the database using its path.
+// returns an error if the directory is not found.
 func (c *Client) GetDirByPath(path string) (*svc.Directory, error) {
 	dir, err := c.Db.GetDirectoryByPath(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get directory: %v", err)
 	} else if dir == nil {
 		return nil, fmt.Errorf("directory does not exist: %s", path)
+	}
+	return dir, nil
+}
+
+// returns a directory object from the database using its name.
+// returns an error if the directory does not exist.
+func (c *Client) GetDirByName(name string) (*svc.Directory, error) {
+	dir, err := c.Db.GetDirectoryByName(name)
+	if err != nil {
+		return nil, err
+	}
+	if dir == nil {
+		return nil, fmt.Errorf("dir '%s' not found", name)
 	}
 	return dir, nil
 }
@@ -1042,7 +1071,12 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 		return err
 	}
 	if resp.StatusCode == http.StatusOK {
+		serverPath, err := c.getDirServerPath(dir)
+		if err != nil {
+			return err
+		}
 		dir.Registered = true
+		dir.ServerPath = serverPath
 		if err := c.Db.UpdateDir(dir); err != nil {
 			return err
 		}

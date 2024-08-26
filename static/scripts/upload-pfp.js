@@ -1,18 +1,20 @@
 function uploadPfp() {
-  document
-    .getElementById("profile-pic-upload")
-    .addEventListener("change", function () {
+  const profilePicInput = document.getElementById("profile-pic-upload");
+  if (profilePicInput) {
+    profilePicInput.addEventListener("change", function () {
       const file = this.files[0];
       if (file) {
         const formData = new FormData();
-        formData.append("profilePic", file); // Append the file to FormData
-        fetch("/upload-profile-pic", {
+        formData.append("profilePic", file);
+        // Send to the client server
+        fetch("/user/upload-pfp", {
           method: "POST",
           body: formData,
         })
           .then((response) => {
             if (response.ok) {
-              return response.json();
+              console.log(response.json());
+              return;
             } else {
               throw new Error("Failed to upload profile picture");
             }
@@ -25,6 +27,15 @@ function uploadPfp() {
           .catch((error) => {
             console.error("Error:", error);
           });
+      }      
+      else {
+        console.error("no file data received:");
+        return;
       }
     });
+  } else {
+    console.error("profile-pic-upload element not found.");
+  }
 }
+
+document.addEventListener("DOMContentLoaded", uploadPfp);

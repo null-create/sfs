@@ -16,11 +16,16 @@
                 aria-label="Close"
               ></button>
               <h4 class="modal-title">
-                <i class="fa fa-upload"></i> Upload file to backup server
+                <i class="fa fa-upload">Upload file to backup server</i>
               </h4>
             </div>
             <div class="modal-body">
-              <form action="#" class="dropzone" id="upload-form"></form>
+              <form
+                action="{{.Endpoint}}"
+                method="post"
+                class="dropzone"
+                id="upload-form"
+              ></form>
               <div class="form-group">
                 <label for="destination-folder">Destination Folder</label>
                 <select
@@ -44,16 +49,9 @@
               </button>
               <button
                 type="button"
-                class="btn btn-default"
-                data-dismiss="modal"
-              >
-                Close
-              </button>
-              <button
-                type="button"
                 class="btn btn-primary"
                 id="upload-button"
-                onclick="uploadFile()"
+                onclick="uploadFile(`{{.Endpoint}}`)"
               >
                 Upload
               </button>
@@ -64,19 +62,18 @@
     </div>
     <script type="text/javascript" src="/static/scripts/dropzone.js"></script>
     <script type="text/javascript">
-      let newFilesEndpoint = "{{.Endpoint}}";
       function uploadFile() {
+        let newFilesEndpoint = "{{.Endpoint}}";
+        console.log("new files endpoint: " + newFilesEndpoint);
+
         const fileInput = document.getElementById("upload-form");
-        fileInput.addEventListener("change", function () {
-          console.log("new files endpoint: " + newFilesEndpoint);
+        fileInput.addEventListener("change", () => {
           const file = this.files[0];
           if (file) {
             const formData = new FormData();
             formData.append("newFile", file);
-
-            // get the destination folder and send to the client server
             const destFolderName = getDestFolderName();
-            if (destFolderName === "") {
+            if (!destFolderName) {
               throw new Error("no destination folder specified");
             }
             formData.append("destDir", destFolderName);
@@ -85,6 +82,7 @@
               method: "POST",
               body: formData,
               headers: {
+                // add data type multipart/form-data
                 folder: destFolderName,
               },
             })
@@ -106,13 +104,13 @@
       }
 
       function getDestFolderName() {
-        const folderSelect = document.getElementById("folder-selection");
-        const selectedFolder = folderSelect.value;
+        const selectedFolder =
+          document.getElementById("folder-selection").value;
         console.log("Selected folder: ", selectedFolder);
         return selectedFolder;
       }
 
-      document.addEventListener("DOMContentLoaded", uploadFile);
+      // document.addEventListener("DOMContentLoaded", uploadFile);
     </script>
     <script type="text/javascript">
       function checkServerStatus() {

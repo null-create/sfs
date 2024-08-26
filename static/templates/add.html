@@ -7,8 +7,8 @@
       {{template "toolbar"}}
       <div id="file-upload-container">
         <form
-          id="folder-form"
-          action="/add/discover"
+          class="standard-form"
+          action="/add/new"
           method="post"
           enctype="multipart/form-data"
           style="width: 500px"
@@ -26,7 +26,7 @@
             type="text"
             id="folder-path-input"
             name="folder-path-input"
-            placeholder="ex: c:/Users/Person/ProjectDir"
+            placeholder="ex: c:/Users/Person/ProjectDir or c:/Users/Person/Project/file.txt"
             style="width: 500px"
           />
           <br />
@@ -60,6 +60,6 @@
       document.addEventListener("DOMContentLoaded", checkServerStatus);
       setInterval(checkServerStatus, 60000); // Check every 60 seconds
     </script>
-    <script type="text/javascript" src="/static/scripts/send-path.js"></script>
+    <script type="text/javascript" src="/static/scripts/add-items.js"></script>
   </body>
 </html>

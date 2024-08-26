@@ -3,6 +3,40 @@
   {{template "header"}}
   <body>
     {{template "frame"}}
-    <div id="content">{{template "toolbar"}}</div>
+    <div id="content">
+      {{template "toolbar"}}
+      <div class="settings-container">
+        <h2>Application Settings</h2>
+        <form id="settings-form" style="width: 500px">
+          <div class="setting-item">
+            <label for="theme">Theme:</label>
+            <select id="theme" name="theme">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <br />
+          <div class="setting-item">
+            <label for="notifications" style="align-items: left"
+              >Enable Notifications:</label
+            >
+            <input type="checkbox" id="notifications" name="notifications" />
+          </div>
+          <br />
+          <div class="setting-item">
+            <label for="server-sync">Sync With Server</label>
+            <input type="checkbox" id="server-sync" name="server-sync" />
+          </div>
+          <br />
+          <button type="button" id="save-settings" onclick="submitSettings()">
+            Save Settings
+          </button>
+        </form>
+        <div id="loading-spinner" class="spinner" style="display: none">
+          <i class="fa fa-spinner fa-spin"></i>
+        </div>
+      </div>
+      <script src="/static/scripts/settings.js"></script>
+    </div>
   </body>
 </html>
