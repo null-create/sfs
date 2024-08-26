@@ -413,18 +413,24 @@ func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else if r.Method == http.MethodGet {
-		data, err := os.ReadFile(resultsFile)
-		if err != nil {
-			c.error(w, r, err.Error())
-			return
-		}
 		var results = SearchResults{}
-		if err := json.Unmarshal(data, &results); err != nil {
-			c.error(w, r, err.Error())
-			return
+		// if this page was called with a GET request before a POST, then
+		// we need to have an empty results struct with everything initalized
+		if !FileExists(resultsFile) {
+			results.Files = make([]*svc.File, 0)
+			results.Dirs = make([]*svc.Directory, 0)
+		} else {
+			data, err := os.ReadFile(resultsFile)
+			if err != nil {
+				c.error(w, r, err.Error())
+				return
+			}
+			if err := json.Unmarshal(data, &results); err != nil {
+				c.error(w, r, err.Error())
+				return
+			}
+			_ = os.Remove(resultsFile)
 		}
-		_ = os.Remove(resultsFile)
-
 		searchPageData := SearchPage{
 			UserID:     c.UserID,
 			UserPage:   userPage,
@@ -433,7 +439,7 @@ func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
 			Files:      results.Files,
 			Dirs:       results.Dirs,
 		}
-		err = c.Templates.ExecuteTemplate(w, "search.html", searchPageData)
+		err := c.Templates.ExecuteTemplate(w, "search.html", searchPageData)
 		if err != nil {
 			c.error(w, r, err.Error())
 		}
