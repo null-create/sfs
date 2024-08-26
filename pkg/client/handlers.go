@@ -413,13 +413,8 @@ func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else if r.Method == http.MethodGet {
-		var results = SearchResults{}
-		// if this page was called with a GET request before a POST, then
-		// we need to have an empty results struct with everything initalized
-		if !FileExists(resultsFile) {
-			results.Files = make([]*svc.File, 0)
-			results.Dirs = make([]*svc.Directory, 0)
-		} else {
+		var results = NewSearchResults()
+		if FileExists(resultsFile) {
 			data, err := os.ReadFile(resultsFile)
 			if err != nil {
 				c.error(w, r, err.Error())

@@ -90,6 +90,13 @@ type SearchResults struct {
 	Dirs  []*svc.Directory `json:"dirs"`
 }
 
+func NewSearchResults() *SearchResults {
+	return &SearchResults{
+		Files: make([]*svc.File, 0),
+		Dirs:  make([]*svc.Directory, 0),
+	}
+}
+
 type AddPage struct {
 	UserPage     string
 	ProfilePic   string
