@@ -302,7 +302,6 @@ func SearchCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		searchQuery := r.URL.Query().Get("searchQuery")
 		if searchQuery == "" {
-			fmt.Print("No search query received")
 			http.Error(w, "no items provided", http.StatusBadRequest)
 			return
 		}
