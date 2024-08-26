@@ -377,10 +377,10 @@ func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, userPage, http.StatusSeeOther)
 }
 
-var resultsFile = "search-results.json"
-
 // search for items
 func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
+	var resultsFile = "search-results.json"
+
 	if r.Method == http.MethodPost {
 		var buf bytes.Buffer
 		_, err := io.Copy(&buf, r.Body)
@@ -390,7 +390,7 @@ func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
 		}
 		r.Body.Close()
 
-		var searchItem = buf.String()
+		searchItem := buf.String()
 		files, dirs, err := c.SearchForItems(searchItem)
 		if err != nil {
 			c.error(w, r, err.Error())
