@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <h3>Recycled Items</h3>
+      <p class="recycle-bin-instructions">
+        Items listed here were removed from the SFS service, but still have
+        backup copies available for download. If you wish to remove a file
+        perminantly, then select the "delete" check box and click the red delete
+        button.
+      </p>
+      <table class="file-table">
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Server Download</th>
+          <th>Delete Perminantely from SFS</th>
+        </tr>
+        {{range .Dirs}}
+        <tr>
+          <td>
+            <img src="/assets/folder-small.png" alt="small folder icon" />
+          </td>
+          <td>{{.Name}}</td>
+          <td>{{.Size}} bytes</td>
+          <td><a href="{{.Endpoint}}">Link</a></td>
+        </tr>
+        {{end}} {{range .Files}}
+        <tr>
+          <td>
+            <img src="/assets/file-small.png" alt="small file icon" />
+          </td>
+          <td>{{.Name}}</td>
+          <td>{{.Size}} bytes</td>
+          <td><a href="{{.Endpoint}}">Link</a></td>
+        </tr>
+        {{end}}
+      </table>
+    </div>
+    <script>
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+  </body>
+</html>

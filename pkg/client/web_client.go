@@ -143,6 +143,11 @@ func newWcRouter(client *Client) *chi.Mux {
 		// })
 	})
 
+	// recycle bin page
+	r.Route("/recycled", func(r chi.Router) {
+		r.Get("/", client.RecycleBinPage)
+	})
+
 	// download pages
 
 	return r

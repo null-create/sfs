@@ -2,9 +2,11 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 )
 
@@ -38,4 +40,24 @@ func FileExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+// ShowFileInExplorer opens the file explorer window and highlights the specified file
+func ShowFileInExplorer(filePath string) error {
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return fmt.Errorf("could not get absolute path: %v", err)
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		return exec.Command("explorer", "/select,", absPath).Run() // Use explorer.exe to open the file location and highlight the file
+	case "darwin":
+		return exec.Command("open", "-R", absPath).Run() // Use the 'open' command on macOS to reveal the file in Finder
+	case "linux":
+		dir := filepath.Dir(absPath)
+		return exec.Command("xdg-open", dir).Run() // Use 'xdg-open' to open the file's parent directory (does not highlight the file)
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
 }

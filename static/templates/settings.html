@@ -17,17 +17,48 @@
           </div>
           <br />
           <div class="setting-item">
-            <label for="notifications" style="align-items: left"
-              >Enable Notifications:</label
-            >
-            <input type="checkbox" id="notifications" name="notifications" />
-          </div>
-          <br />
-          <div class="setting-item">
             <label for="server-sync">Sync With Server</label>
+            <p id="sync-with-server-instructions">
+              Whether to automatically sync with the remote server. Disabling
+              this will create local backups only, and will not attempt to sync
+              with the remote server.
+            </p>
             <input type="checkbox" id="server-sync" name="server-sync" />
           </div>
           <br />
+          <div class="setting-item">
+            <label for="local-backup-dir">Local Backup Directory</label>
+            <input
+              type="text"
+              id="local-backup-dir"
+              name="local-backip-dir"
+              placeholder="current: {{.BackupDir}}"
+            />
+          </div>
+          <div class="setting-item">
+            <label for="client-port">Client Port</label>
+            <input
+              type="number"
+              id="client-port"
+              name="client-port"
+              placeholder="current: {{.ClientPort}}"
+            />
+          </div>
+          <div class="setting-item">
+            <label for="sync-delay">Sync Delay</label>
+            <p id="sync-delay-instructions">
+              This affects how ofter the client will attempt to synchronize with
+              the server. The current default is one sync event per 2 detected
+              events for a given item. Increasing this number will increase the
+              time between syncronization events.
+            </p>
+            <input
+              type="number"
+              id="sync-delay"
+              name="sync-delay"
+              placeholder="current (default): 2"
+            />
+          </div>
           <button type="button" id="save-settings" onclick="submitSettings()">
             Save Settings
           </button>

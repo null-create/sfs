@@ -1,6 +1,7 @@
 package client
 
 import (
+	"os"
 	"time"
 
 	svc "github.com/sfs/pkg/service"
@@ -61,17 +62,37 @@ type ErrorPage struct {
 }
 
 type UserPage struct {
-	UserPage       string
-	ProfilePic     string
-	Name           string
-	UserID         string
-	UserName       string
-	Email          string
-	TotalFiles     int
-	TotalDirs      int
-	ProfilePicPath string
-	ServerHost     string
-	ClientHost     string
+	UserPage   string
+	ProfilePic string
+	Name       string
+	UserID     string
+	UserName   string
+	Email      string
+	TotalFiles int
+	TotalDirs  int
+	ServerHost string
+	ClientHost string
+}
+
+type RecycleBinItems struct {
+	Dirs  []os.DirEntry
+	Files []os.DirEntry
+}
+
+func newRecycleBinItems() RecycleBinItems {
+	return RecycleBinItems{
+		Dirs:  make([]os.DirEntry, 0),
+		Files: make([]os.DirEntry, 0),
+	}
+}
+
+type RecyclePage struct {
+	UserPage   string
+	ProfilePic string
+	Dirs       []os.DirEntry
+	Files      []os.DirEntry
+	ServerHost string
+	ClientHost string
 }
 
 type SearchPage struct {
@@ -134,4 +155,6 @@ type SettingsPage struct {
 	UserEmail    string
 	UserPassword string
 	LocalSync    bool
+	BackupDir    string
+	ClientPort   int
 }

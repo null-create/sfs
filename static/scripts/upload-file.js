@@ -1,10 +1,14 @@
 function uploadFile(newFilesEndpoint) {
   console.log("new files endpoint: " + newFilesEndpoint);
   
+  const msgElement = document.getElementById("response");
+  msgElement.style.display = "none";
+
   const fileInput = document.getElementById("upload-form");
   fileInput.addEventListener("change",  () => {
     const file = this.files[0];
     if (file) {
+      console.log("uploading file: " + file);
       const formData = new FormData();
       formData.append("newFile", file);
       const destFolderName = getDestFolderName();
@@ -12,7 +16,8 @@ function uploadFile(newFilesEndpoint) {
         throw new Error("no destination folder specified");
       }
       formData.append("destDir", destFolderName);
-
+      
+      // upload the file
       fetch(newFilesEndpoint, {
         method: "POST",
         body: formData,
@@ -20,17 +25,21 @@ function uploadFile(newFilesEndpoint) {
           folder: destFolderName,
         },
       })
-        .then((response) => {
-          if (response.ok) {
-            console.log(response.json());
-            return;
-          } else {
-            throw new Error("Failed to upload profile picture");
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
+      .then((response) => {
+        if (response.ok) {
+          msgElement.style.display = "block";
+          msgElement.textContent = `${file} uploaded successfully`;
+          msgElement.classList.add("success"); 
+          console.log(response.json());
+          return;
+        }
+      })
+      .catch((error) => {
+        msgElement.style.display = "block";
+        msgElement.textContent = error.message;
+        msgElement.classList.add("error"); 
+        console.error("Error:", error);
+      });
     } else {
       console.error("no file data received");
     }
@@ -42,5 +51,3 @@ function getDestFolderName() {
   console.log("Selected folder: ", selectedFolder);
   return selectedFolder;
 }
-
-document.addEventListener("DOMContentLoaded", uploadFile);

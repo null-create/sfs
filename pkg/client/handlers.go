@@ -71,19 +71,47 @@ func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
 
 func (c *Client) UserPage(w http.ResponseWriter, r *http.Request) {
 	usrPageData := UserPage{
-		UserPage:       userPage,
-		ProfilePic:     c.Conf.ProfilePic,
-		Name:           c.User.Name,
-		UserID:         c.User.ID,
-		UserName:       c.User.UserName,
-		Email:          c.User.Email,
-		TotalFiles:     len(c.Drive.GetFiles()),
-		TotalDirs:      len(c.Drive.GetDirs()),
-		ProfilePicPath: "",
-		ServerHost:     c.Conf.ServerAddr,
-		ClientHost:     c.Conf.Addr,
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
+		Name:       c.User.Name,
+		UserID:     c.User.ID,
+		UserName:   c.User.UserName,
+		Email:      c.User.Email,
+		TotalFiles: len(c.Drive.GetFiles()),
+		TotalDirs:  len(c.Drive.GetDirs()),
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
 	}
 	err := c.Templates.ExecuteTemplate(w, "user.html", usrPageData)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+}
+
+func (c *Client) RecycleBinPage(w http.ResponseWriter, r *http.Request) {
+	entries, err := os.ReadDir(c.RecycleBin)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+
+	recycleBinItems := newRecycleBinItems()
+	for _, entry := range entries {
+		if entry.IsDir() {
+			recycleBinItems.Dirs = append(recycleBinItems.Dirs, entry)
+		} else {
+			recycleBinItems.Files = append(recycleBinItems.Files, entry)
+		}
+	}
+
+	recyclePageData := RecyclePage{
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
+		Files:      recycleBinItems.Files,
+		Dirs:       recycleBinItems.Dirs,
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
+	}
+	err = c.Templates.ExecuteTemplate(w, "recycled.html", recyclePageData)
 	if err != nil {
 		c.error(w, r, err.Error())
 	}
@@ -360,10 +388,12 @@ func (c *Client) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		ServerHost: c.Conf.ServerAddr,
 		ClientHost: c.Conf.Addr,
 		// alterable settings
-		UserName:  c.Conf.User,
-		UserAlias: c.Conf.UserAlias,
-		UserEmail: c.User.Email,
-		LocalSync: c.Conf.LocalBackup,
+		UserName:   c.Conf.User,
+		UserAlias:  c.Conf.UserAlias,
+		UserEmail:  c.User.Email,
+		LocalSync:  c.Conf.LocalBackup,
+		BackupDir:  c.Conf.BackupDir,
+		ClientPort: c.Conf.Port,
 	}
 	err := c.Templates.ExecuteTemplate(w, "settings.html", settingsPageData)
 	if err != nil {
