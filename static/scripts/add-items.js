@@ -18,16 +18,16 @@ function addItems() {
     .then((response) => {
       spinner.style.display = "none";
       if (!response.ok) {
-        console.error("response status: " + response.status)
+        console.error("response status: " + response.status);
       }
       msgElement.style.display = "block";
-      msgElement.textContent = "Item added successfully";
-      msgElement.classList.add("Item added successfully");
+      msgElement.textContent = "Item(s) added successfully";
+      msgElement.classList.add("success"); 
     })
     .catch((error) => {
       msgElement.style.display = "block";
-      msgElement.textContent = "Error: " + error.message
-      msgElement.classList.add("Error: " + error.message)
+      msgElement.textContent = error.message;
+      msgElement.classList.add("error"); 
       console.error("error:", error);
     });
   });
