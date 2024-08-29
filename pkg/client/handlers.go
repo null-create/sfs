@@ -323,49 +323,12 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
-	// r.ParseMultipartForm(10 << 20) // limit file size to 10mb
-	// file, handler, err := r.FormFile("profilePic")
-	// if err != nil {
-	// 	fmt.Printf("error parsing form: %v", err)
-	// 	c.error(w, r, err.Error())
-	// 	return
-	// }
-	// defer file.Close()
-
-	// fmt.Printf("uploaded File: %v\n", handler.Filename)
-
-	// Save the file to the client
-	// destPath, err := filepath.Abs("./assets/profile-pics")
-	// if err != nil {
-	// 	c.error(w, r, err.Error())
-	// 	return
-	// }
-
-	// fmt.Printf("saving file to: %v\n", destPath)
-
-	// filePath := filepath.Join(destPath, handler.Filename)
-	// dst, err := os.Create(filePath)
-	// if err != nil {
-	// 	fmt.Printf("error: %v", err)
-	// 	c.error(w, r, err.Error())
-	// 	return
-	// }
-	// defer dst.Close()
-
-	// fmt.Printf("copying...\n")
-
-	// // Copy the uploaded file to the destination and update client config accordingly
-	// if _, err := io.Copy(dst, file); err != nil {
-	// 	c.error(w, r, err.Error())
-	// 	return
-	// }
 	err := r.ParseMultipartForm(10 << 20) // Limit file size to 10MB
 	if err != nil {
 		http.Error(w, "Unable to parse form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Retrieve the file from the form data
 	file, header, err := r.FormFile("profile-pic")
 	if err != nil {
 		http.Error(w, "Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
@@ -373,7 +336,6 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Create a destination file on the server
 	fileName := filepath.Base(header.Filename)
 	dst, err := os.Create(fmt.Sprintf("./assets/profile-pics/%s", fileName))
 	if err != nil {
@@ -382,7 +344,6 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dst.Close()
 
-	// Copy the uploaded file's contents to the destination file
 	if _, err := io.Copy(dst, file); err != nil {
 		http.Error(w, "Unable to save the file: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -398,6 +359,7 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Update client configurations
 	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", fileName); err != nil {
 		c.error(w, r, err.Error())
 		return
