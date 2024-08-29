@@ -1,41 +1,33 @@
-function uploadPfp() {
-  const profilePicInput = document.getElementById("profile-pic-upload");
-  if (profilePicInput) {
-    profilePicInput.addEventListener("change", function () {
-      const file = this.files[0];
-      if (file) {
-        const formData = new FormData();
-        formData.append("profilePic", file);
-        // Send to the client server
-        fetch("/user/upload-pfp", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => {
-            if (response.ok) {
-              console.log(response.json());
-              return;
-            } else {
-              throw new Error("Failed to upload profile picture");
-            }
-          })
-          .then((data) => {
-            // Assuming the server responds with the image URL
-            document.getElementById("user-profile-pic").src = data.imageUrl;
-            console.log("Profile picture uploaded successfully");
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          });
-      }      
-      else {
-        console.error("no file data received:");
-        return;
-      }
-    });
-  } else {
-    console.error("profile-pic-upload element not found.");
-  }
-}
+const fileInput = document.getElementById("profile-pic-upload");
+fileInput.addEventListener("change", (event) => {
+  const form = document.getElementById("upload-form");
+  const formData = new FormData(form);
+  const searchParams = new URLSearchParams(formData);
+  const fetchOptions = {
+    method: form.method,
+  };
 
-document.addEventListener("DOMContentLoaded", uploadPfp);
+  if (form.method.toLowerCase() === 'post') {
+    if (form.enctype === 'multipart/form-data') {
+      fetchOptions.body = formData;
+    } else {
+      fetchOptions.body = searchParams;
+    }
+  } else {
+    url.search = searchParams;
+  }
+
+  console.log("fetching...");
+  fetch("/user/upload-pfp", fetchOptions)
+  .then((response) => {
+    if (response.ok) {
+      console.log("picture updated successfully")
+      window.location.href = "/user"
+    }
+  })
+  .catch((error) => {
+    console.error("picture update failed: ", error)
+  });
+
+  event.preventDefault();
+});

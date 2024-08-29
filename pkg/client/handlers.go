@@ -32,7 +32,7 @@ var (
 func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
 	c.log.Error(msg)
 	errCtx := context.WithValue(r.Context(), server.Error, msg)
-	http.Redirect(w, r.WithContext(errCtx), errorPage+"/"+msg, http.StatusInternalServerError)
+	c.ErrorPage(w, r.WithContext(errCtx))
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +189,26 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (c *Client) RemoveFileHandler(w http.ResponseWriter, r *http.Request) {
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r.Body)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+
+	fileID := buf.String()
+	file, err := c.GetFileByID(fileID)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	if err := c.RemoveFile(file); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+}
+
 func (c *Client) handleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -303,45 +323,82 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("pfp form: %+v\n", r.Form)
+	// r.ParseMultipartForm(10 << 20) // limit file size to 10mb
+	// file, handler, err := r.FormFile("profilePic")
+	// if err != nil {
+	// 	fmt.Printf("error parsing form: %v", err)
+	// 	c.error(w, r, err.Error())
+	// 	return
+	// }
+	// defer file.Close()
 
-	r.ParseMultipartForm(10 << 20) // limit file size to 10mb
-	file, handler, err := r.FormFile("profilePic")
+	// fmt.Printf("uploaded File: %v\n", handler.Filename)
+
+	// Save the file to the client
+	// destPath, err := filepath.Abs("./assets/profile-pics")
+	// if err != nil {
+	// 	c.error(w, r, err.Error())
+	// 	return
+	// }
+
+	// fmt.Printf("saving file to: %v\n", destPath)
+
+	// filePath := filepath.Join(destPath, handler.Filename)
+	// dst, err := os.Create(filePath)
+	// if err != nil {
+	// 	fmt.Printf("error: %v", err)
+	// 	c.error(w, r, err.Error())
+	// 	return
+	// }
+	// defer dst.Close()
+
+	// fmt.Printf("copying...\n")
+
+	// // Copy the uploaded file to the destination and update client config accordingly
+	// if _, err := io.Copy(dst, file); err != nil {
+	// 	c.error(w, r, err.Error())
+	// 	return
+	// }
+	err := r.ParseMultipartForm(10 << 20) // Limit file size to 10MB
 	if err != nil {
-		fmt.Printf("error parsing form: %v", err)
-		c.error(w, r, err.Error())
+		http.Error(w, "Unable to parse form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Retrieve the file from the form data
+	file, header, err := r.FormFile("profile-pic")
+	if err != nil {
+		http.Error(w, "Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	fmt.Printf("uploaded File: %v\n", handler.Filename)
-
-	// Save the file to the client
-	destPath, err := filepath.Abs("./assets/profile-pics")
+	// Create a destination file on the server
+	fileName := filepath.Base(header.Filename)
+	dst, err := os.Create(fmt.Sprintf("./assets/profile-pics/%s", fileName))
 	if err != nil {
-		c.error(w, r, err.Error())
-		return
-	}
-
-	fmt.Printf("saving file to: %v\n", destPath)
-
-	filePath := filepath.Join(destPath, handler.Filename)
-	dst, err := os.Create(filePath)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		c.error(w, r, err.Error())
+		http.Error(w, "Unable to create the file on server: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
 
-	fmt.Printf("copying...\n")
-
-	// Copy the uploaded file to the destination and update client config accordingly
+	// Copy the uploaded file's contents to the destination file
 	if _, err := io.Copy(dst, file); err != nil {
-		c.error(w, r, err.Error())
+		http.Error(w, "Unable to save the file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", filepath.Base(filePath)); err != nil {
+
+	// Send back a JSON response with the new profile picture URL
+	newProfilePicURL := fmt.Sprintf("/assets/profile-pics/%s", fileName)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = fmt.Fprintf(w, `{"newProfilePicURL": "%s"}`, newProfilePicURL)
+	if err != nil {
+		http.Error(w, "Failed to format response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", fileName); err != nil {
 		c.error(w, r, err.Error())
 		return
 	}

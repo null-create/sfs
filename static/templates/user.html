@@ -18,8 +18,8 @@
         </div>
         <form
           id="upload-form"
-          action="/user"
-          method="get"
+          action="/user/upload-pfp"
+          method="post"
           enctype="multipart/form-data"
         >
           <input
@@ -36,7 +36,11 @@
           >
             Upload Profile Picture
           </button>
-          <button type="button" id="clear-profile-pic-button">
+          <button
+            type="button"
+            id="clear-profile-pic-button"
+            onclick="clearPfp();"
+          >
             Clear Profile Picture
           </button>
           <button type="submit" id="submit-button" style="display: none">
@@ -72,11 +76,6 @@
         </div>
       </div>
     </div>
-    <script>
-      function redirectToPage(url) {
-        window.location.href = url;
-      }
-    </script>
     <script>
       // Automatically submit the form when a file is selected
       document
