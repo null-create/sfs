@@ -81,6 +81,7 @@ func newWcRouter(client *Client) *chi.Mux {
 		r.Get("/", client.UserPage)
 		r.Route("/edit", func(r chi.Router) {
 			r.Get("/", client.EditInfo)
+			r.Post("/", client.HandleNewUserInfo)
 		})
 		r.Route("/upload-pfp", func(r chi.Router) {
 			r.Post("/", client.UpdatePfpHandler)

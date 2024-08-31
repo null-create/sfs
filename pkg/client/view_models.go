@@ -130,6 +130,9 @@ type AddPage struct {
 type EditPage struct {
 	UserPage   string
 	ProfilePic string
+	Name       string
+	UserName   string
+	Email      string
 	ServerHost string
 	ClientHost string
 }
