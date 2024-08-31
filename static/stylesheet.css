@@ -231,6 +231,26 @@ header {
   transition: border-bottom 0.2s ease-in-out;
 }
 
+#remove-button {
+  margin-top: 20px; /* Add space above the button */
+  align-self: flex-start; /* Align button to the start of the container */
+  background-color: #e90f0f;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#remove-button:hover {
+  background-color: #ad0707;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 /* 
 #file-download:hover {
   border-bottom: 1px solid #1e88e5;

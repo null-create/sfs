@@ -108,7 +108,7 @@ func newWcRouter(client *Client) *chi.Mux {
 	// upload files to server page
 	r.Route("/upload", func(r chi.Router) {
 		r.Get("/", client.UploadPage)
-		r.Post("/", client.UploadHandler)
+		r.Post("/", client.UploadFile)
 	})
 
 	// settings page

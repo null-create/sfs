@@ -656,7 +656,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	// remove file from the service.
 	// NOTE: client side will have the original file moved to the client's recycle bin.
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
-		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
+		return fmt.Errorf("failed to remove %s (id=%s) from drive: %v", file.Name, file.ID, err)
 	}
 	if err := s.Db.RemoveFile(file.ID); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s) from database: %v", file.Name, file.ID, err)

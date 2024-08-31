@@ -26,17 +26,18 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	// override some defaults so our test client doesn't interact
 	// with the client's resources defined in .env configs
 	var tmpSvcPath = filepath.Join(tmpDir, tmpClient.User.Name)
+	var tmpBackupDir = filepath.Join(tmpSvcPath, "backups")
 
 	tmpClient.Root = filepath.Join(tmpSvcPath, "root")
 	tmpClient.SfDir = filepath.Join(tmpSvcPath, "state")
 	tmpClient.Db.DBPath = filepath.Join(tmpSvcPath, "dbs")
-	tmpClient.Conf.BackupDir = filepath.Join(tmpSvcPath, "backups")
-	tmpClient.LocalBackupDir = filepath.Join(tmpSvcPath, "backups")
+	tmpClient.Conf.BackupDir = tmpBackupDir
+	tmpClient.LocalBackupDir = tmpBackupDir
 	tmpClient.RecycleBin = filepath.Join(tmpSvcPath, "recycle")
 	tmpClient.Drive.Root.Path = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ServerPath = filepath.Join(tmpSvcPath, "root")
 	tmpClient.Drive.Root.ClientPath = filepath.Join(tmpSvcPath, "root")
-	tmpClient.Drive.Root.BackupPath = filepath.Join(filepath.Dir(tmpSvcPath), "backups")
+	tmpClient.Drive.Root.BackupPath = tmpBackupDir
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
 	// set to local backups by default. could be overridden by individual tests.
@@ -54,6 +55,12 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	if err := tmpClient.Db.AddUser(tmpClient.User); err != nil {
 		Fail(t, tmpDir, err)
 	}
+
+	// make a root directory in our backup directory for testing purposes
+	if err := os.MkdirAll(filepath.Join(tmpClient.LocalBackupDir, "root"), svc.PERMS); err != nil {
+		Fail(t, tmpDir, err)
+	}
+
 	return tmpClient
 }
 
@@ -305,7 +312,7 @@ func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 		Fail(t, tmpDir, fmt.Errorf("test file not found in service"))
 	}
 
-	// remove test file and close DB connections
+	// remove test file
 	if err := tmpClient.RemoveFile(tf); err != nil {
 		Fail(t, tmpDir, err)
 	}

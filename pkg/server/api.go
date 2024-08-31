@@ -369,6 +369,9 @@ func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.newFile(w, r, file)
+	} else if r.Method == http.MethodOptions {
+		a.log.Info("pre-flight CORS request received")
+		return
 	}
 }
 

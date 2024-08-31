@@ -39,8 +39,19 @@
           <label class="file-label">Server Download: </label>
           <a id="file-download" href="{{.Endpoint}}"> Link</a>
         </div>
+        <button
+          type="button"
+          id="remove-button"
+          onclick="removeFile('{{.ID}}')"
+        >
+          Remove
+        </button>
       </div>
     </div>
+    <script
+      type="text/javascript"
+      src="/static/scripts/remove-file.js"
+    ></script>
     <script>
       function checkServerStatus() {
         let serverURL = "http://" + "{{.ServerHost}}";

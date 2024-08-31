@@ -255,7 +255,7 @@ func (c *Client) AddPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// add a file or directory to the SFS service
+// add a file or directory to the SFS service using its local path.
 func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
@@ -288,38 +288,93 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, homePage, http.StatusSeeOther)
 }
 
-func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("upload handler: request: %s\n", r.Form)
-
-	if err := r.ParseMultipartForm(100 << 20); err != nil {
-		c.error(w, r, err.Error())
-		return
-	}
-	file, handler, err := r.FormFile("newFile")
+func (c *Client) getPathFromRequest(r *http.Request) (string, error) {
+	fmt.Printf("getting path from request...\n")
+	var buf []byte
+	_, err := r.Body.Read(buf)
 	if err != nil {
-		c.error(w, r, err.Error())
-		return
+		return "", err
 	}
-	defer file.Close()
+	var path = string(buf)
+	return path, nil
+}
 
-	// You can save the file on the server or process it as needed
-	fmt.Fprintf(w, "Uploaded File: %+v\n", handler.Filename)
-	fmt.Fprintf(w, "File Size: %+v\n", handler.Size)
-	fmt.Fprintf(w, "MIME Header: %+v\n", handler.Header)
-
-	// retrieve destination directory from request
-	destDirName := r.Form.Get("destDir")
-	if destDirName == "" {
-		c.error(w, r, "no destination directory specified")
-		return
-	}
-	if err := c.AddFile("CHANGEME"); err != nil {
-		c.error(w, r, err.Error())
+func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// redirect back to the home page
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	formFile, handler, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer formFile.Close()
+
+	destFolder := r.FormValue("destFolder")
+	if destFolder == "" {
+		fmt.Printf("destFolder not found\n")
+		http.Error(w, "Destination folder is required", http.StatusBadRequest)
+		return
+	}
+
+	// see if this file is registered already
+	file, err := c.Db.GetFileByName(handler.Filename)
+	if err != nil {
+		fmt.Printf("failed to get file from db: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if file != nil {
+		w.Write([]byte(fmt.Sprintf("file '%s' already registered", handler.Filename)))
+		return
+	}
+
+	// try to find the destination folder
+	dir, err := c.Db.GetDirectoryByName(destFolder)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if dir == nil {
+		destFolder = c.Drive.Root.Path
+	} else {
+		destFolder = dir.Path
+	}
+
+	savePath := filepath.Join(destFolder, handler.Filename)
+	fmt.Printf("saving file to: %s\n", savePath)
+
+	localFile, err := os.Create(savePath)
+	if err != nil {
+		fmt.Printf("failed to create file: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer localFile.Close()
+
+	_, err = io.Copy(localFile, formFile)
+	if err != nil {
+		fmt.Printf("failed to copy file data: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// add uploaded file to service
+	if err := c.AddFile(savePath); err != nil {
+		fmt.Printf("failed to add file: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//success response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "File uploaded successfully",
+	})
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {

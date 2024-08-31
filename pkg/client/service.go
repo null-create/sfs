@@ -575,7 +575,8 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	if file != nil {
-		return fmt.Errorf("'%s' is already registered", filepath.Base(filePath))
+		c.log.Info(fmt.Sprintf("'%s' is already registered", filepath.Base(filePath)))
+		return nil
 	}
 
 	// create new file object
@@ -610,7 +611,7 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
-	if !c.localBackup() {
+	if !c.LocalSyncOnly() {
 		// push metadata to server if autosync is enabled
 		// and we don't default to using local storage for backup purposes.
 		//
@@ -700,7 +701,7 @@ func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
 	if err := c.WatchItem(newFile.ClientPath); err != nil {
 		return err
 	}
-	if !c.localBackup() {
+	if !c.LocalSyncOnly() {
 		// push metadata to server
 		req, err := c.NewFileRequest(newFile)
 		if err != nil {
@@ -770,7 +771,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return err
 	}
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
-	if !c.localBackup() {
+	if !c.LocalSyncOnly() {
 		req, err := c.DeleteFileRequest(file)
 		if err != nil {
 			c.log.Error("failed to create request: " + err.Error())
@@ -891,7 +892,8 @@ func (c *Client) AddDir(dirPath string) error {
 		return err
 	}
 	if dir != nil {
-		return fmt.Errorf("'%s' is already registered", filepath.Base(dirPath))
+		c.log.Info(fmt.Sprintf("'%s' is already registered", filepath.Base(dirPath)))
+		return nil
 	}
 
 	newDir := svc.NewDirectory(filepath.Base(dirPath), c.UserID, c.DriveID, dirPath)
@@ -924,7 +926,7 @@ func (c *Client) AddDir(dirPath string) error {
 	// 	return err
 	// }
 	// push metadata to server if localBackup is disabled
-	if !c.localBackup() {
+	if !c.LocalSyncOnly() {
 		req, err := c.NewDirectoryRequest(newDir)
 		if err != nil {
 			return err
@@ -949,7 +951,7 @@ func (c *Client) AddDir(dirPath string) error {
 			return err
 		}
 	}
-	c.log.Info(fmt.Sprintf("directory (%s) added to client", newDir.Name))
+	c.log.Info(fmt.Sprintf("directory '%s' added to client", newDir.Name))
 	return nil
 }
 
@@ -1146,8 +1148,8 @@ func (c *Client) LoadDrive() error {
 	}
 	drive.Root = root
 	c.Drive = drive
-	c.Drive.IsLoaded = true
 
+	// initialize drive logger
 	c.Drive.Log = logger.NewLogger("Drive", drive.ID)
 
 	// add users directories
@@ -1166,7 +1168,9 @@ func (c *Client) LoadDrive() error {
 	}
 	c.Drive.Root.AddFiles(files)
 
+	// buiild sync index and set IsLoaded flag
 	c.BuildSyncIndex()
+	c.Drive.IsLoaded = true
 
 	c.log.Log(logger.INFO, "drive loaded")
 	if err := c.SaveState(); err != nil {
@@ -1303,7 +1307,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 		if err := c.WatchItem(file.Path); err != nil {
 			return nil, err
 		}
-		if !c.localBackup() {
+		if !c.LocalSyncOnly() {
 			if err := c.RegisterFile(file); err != nil {
 				return nil, err
 			}
@@ -1321,7 +1325,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 		// if err := c.WatchItem(subDir.Path); err != nil {
 		// 	return err
 		// }
-		if !c.localBackup() {
+		if !c.LocalSyncOnly() {
 			if err := c.RegisterDirectory(subDir); err != nil {
 				return nil, err
 			}
@@ -1339,7 +1343,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 	if err := c.Drive.AddSubDir(c.Drive.RootID, newDir); err != nil {
 		return nil, fmt.Errorf("failed to add root to drive instance: %v", err)
 	}
-	if !c.localBackup() {
+	if !c.LocalSyncOnly() {
 		if err := c.RegisterDirectory(newDir); err != nil {
 			return nil, err
 		}

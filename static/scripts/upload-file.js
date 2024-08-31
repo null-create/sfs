@@ -1,53 +1,62 @@
-function uploadFile(newFilesEndpoint) {
-  console.log("new files endpoint: " + newFilesEndpoint);
-  
-  const msgElement = document.getElementById("response");
-  msgElement.style.display = "none";
+document.addEventListener("DOMContentLoaded", (event) => {
+  event.preventDefault();
 
-  const fileInput = document.getElementById("upload-form");
-  fileInput.addEventListener("change",  () => {
-    const file = this.files[0];
-    if (file) {
-      console.log("uploading file: " + file);
-      const formData = new FormData();
-      formData.append("newFile", file);
-      const destFolderName = getDestFolderName();
-      if (!destFolderName) {
-        throw new Error("no destination folder specified");
+  const uploadButton = document.getElementById("upload-button");
+  const fileUploadInput = document.getElementById("file-upload");
+  const destinationFolderSelect = document.getElementById("destination-folder");
+  const responseDiv = document.getElementById("response");
+
+  uploadButton.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    const selectedFolder = destinationFolderSelect.value;
+    const file = fileUploadInput.files[0];
+    console.log("selectedFolder: " + selectedFolder);
+    console.log("file: " + file);
+
+    if (!file) {
+      alert("Please select a file to upload.");
+      return;
+    }
+    if (!selectedFolder) {
+      alert("Please select a destination folder.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("destFolder", selectedFolder);
+
+    fetch("/upload", {
+      method: "POST",
+      body: formData,
+    })
+    .then((response) => {
+      if (response.ok) {
+        responseDiv.textContent = "File uploaded successfully.";
+      } else {
+        responseDiv.textContent = "Error uploading file: " + response.message;
       }
-      formData.append("destDir", destFolderName);
-      
-      // upload the file
-      fetch(newFilesEndpoint, {
-        method: "POST",
-        body: formData,
-        headers: {
-          folder: destFolderName,
-        },
-      })
-      .then((response) => {
-        if (response.ok) {
-          msgElement.style.display = "block";
-          msgElement.textContent = `${file} uploaded successfully`;
-          msgElement.classList.add("success"); 
-          console.log(response.json());
-          return;
-        }
-      })
-      .catch((error) => {
-        msgElement.style.display = "block";
-        msgElement.textContent = error.message;
-        msgElement.classList.add("error"); 
-        console.error("Error:", error);
-      });
-    } else {
-      console.error("no file data received");
+    })
+    .catch((error) => {
+      responseDiv.textContent = `Error: ${error.message}`;
+      console.error("Upload error:", error);
+    });
+  });
+
+  // Handling drag and drop events on the dropzone
+  const dropzone = document.getElementById("upload-form");
+
+  dropzone.addEventListener("dragover", (event) => {
+    event.preventDefault(); 
+  });
+
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      fileUploadInput.files = files; 
+      alert("File ready to upload.");
     }
   });
-}
-
-function getDestFolderName() {
-  const selectedFolder = document.getElementById("folder-selection").value;
-  console.log("Selected folder: ", selectedFolder);
-  return selectedFolder;
-}
+});
