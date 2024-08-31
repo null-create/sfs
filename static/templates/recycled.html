@@ -12,13 +12,14 @@
         perminantly, then select the "delete" check box and click the red delete
         button.
       </p>
+      <button id="remove-button" onclick="emptyBin()">Empty Recycle Bin</button>
       <table class="file-table">
         <tr>
           <th></th>
           <th>Name</th>
-          <th>Size</th>
-          <th>Server Download</th>
-          <th>Delete Perminantely from SFS</th>
+          <th></th>
+          <th>Restore</th>
+          <th>Delete</th>
         </tr>
         {{range .Dirs}}
         <tr>
@@ -26,8 +27,13 @@
             <img src="/assets/folder-small.png" alt="small folder icon" />
           </td>
           <td>{{.Name}}</td>
-          <td>{{.Size}} bytes</td>
-          <td><a href="{{.Endpoint}}">Link</a></td>
+          <td></td>
+          <td>
+            <input id="restore-checkbox" type="checkbox" />
+          </td>
+          <td>
+            <intput id="delete-checkbox" type="checkbox" />
+          </td>
         </tr>
         {{end}} {{range .Files}}
         <tr>
@@ -35,12 +41,18 @@
             <img src="/assets/file-small.png" alt="small file icon" />
           </td>
           <td>{{.Name}}</td>
-          <td>{{.Size}} bytes</td>
-          <td><a href="{{.Endpoint}}">Link</a></td>
+          <td></td>
+          <td>
+            <input id="restore-checkbox" type="checkbox" />
+          </td>
+          <td>
+            <input id="delete-checkbox" type="checkbox" />
+          </td>
         </tr>
         {{end}}
       </table>
     </div>
+    <script type="text/javascript" src="/static/scripts/empty-recyclebin.js" />
     <script>
       function checkServerStatus() {
         let serverURL = "http://" + "{{.ServerHost}}";

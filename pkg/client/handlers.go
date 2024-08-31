@@ -30,9 +30,9 @@ var (
 // -------- various pages -------------------------------------
 
 func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
-	c.log.Error(msg)
+	c.log.Error("Error: " + msg)
 	errCtx := context.WithValue(r.Context(), server.Error, msg)
-	c.ErrorPage(w, r.WithContext(errCtx))
+	http.Redirect(w, r.WithContext(errCtx), errorPage, http.StatusInternalServerError)
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -288,17 +288,6 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, homePage, http.StatusSeeOther)
 }
 
-func (c *Client) getPathFromRequest(r *http.Request) (string, error) {
-	fmt.Printf("getting path from request...\n")
-	var buf []byte
-	_, err := r.Body.Read(buf)
-	if err != nil {
-		return "", err
-	}
-	var path = string(buf)
-	return path, nil
-}
-
 func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
 	if err != nil {
@@ -414,11 +403,6 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 		c.error(w, r, err.Error())
 		return
 	}
-
-	fmt.Printf("redirecting...\n")
-
-	// Redirect or respond with a success message
-	http.Redirect(w, r, "/user", http.StatusSeeOther)
 }
 
 func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
@@ -428,6 +412,14 @@ func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Redirect or respond with a success message
 	http.Redirect(w, r, "/user", http.StatusNoContent)
+}
+
+// empty the clients sfs recycle bin
+func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) {
+	if err := c.EmptyRecycleBin(); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
 }
 
 // render upload page template

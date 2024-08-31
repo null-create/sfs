@@ -1096,7 +1096,7 @@ func (c *Client) EmptyRecycleBin() error {
 		return err
 	}
 	for _, entry := range entries {
-		if err := os.RemoveAll(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
+		if err := os.Remove(filepath.Join(c.RecycleBin, entry.Name())); err != nil {
 			c.log.Error(err.Error())
 		}
 	}

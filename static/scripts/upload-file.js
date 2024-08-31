@@ -1,6 +1,4 @@
-document.addEventListener("DOMContentLoaded", (event) => {
-  event.preventDefault();
-
+document.addEventListener("DOMContentLoaded", () => {
   const uploadButton = document.getElementById("upload-button");
   const fileUploadInput = document.getElementById("file-upload");
   const destinationFolderSelect = document.getElementById("destination-folder");
@@ -33,9 +31,9 @@ document.addEventListener("DOMContentLoaded", (event) => {
     })
     .then((response) => {
       if (response.ok) {
-        responseDiv.textContent = "File uploaded successfully.";
+        responseDiv.textContent = "File(s) uploaded successfully.";
       } else {
-        responseDiv.textContent = "Error uploading file: " + response.message;
+        responseDiv.textContent = "Error uploading file: " + JSON.stringify(response);
       }
     })
     .catch((error) => {

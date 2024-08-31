@@ -105,6 +105,11 @@ func newWcRouter(client *Client) *chi.Mux {
 		})
 	})
 
+	// route for emptying the recyle bin
+	r.Route("/empty", func(r chi.Router) {
+		r.Delete("/", client.EmptyRecycleBinHandler)
+	})
+
 	// upload files to server page
 	r.Route("/upload", func(r chi.Router) {
 		r.Get("/", client.UploadPage)
