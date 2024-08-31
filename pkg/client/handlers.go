@@ -315,7 +315,6 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	destFolder := r.FormValue("destFolder")
 	if destFolder == "" {
-		fmt.Printf("destFolder not found\n")
 		http.Error(w, "Destination folder is required", http.StatusBadRequest)
 		return
 	}
@@ -323,7 +322,6 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	// see if this file is registered already
 	file, err := c.Db.GetFileByName(handler.Filename)
 	if err != nil {
-		fmt.Printf("failed to get file from db: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -345,11 +343,10 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	savePath := filepath.Join(destFolder, handler.Filename)
-	fmt.Printf("saving file to: %s\n", savePath)
+	c.log.Info(fmt.Sprintf("saving uploaded file to: %s", savePath))
 
 	localFile, err := os.Create(savePath)
 	if err != nil {
-		fmt.Printf("failed to create file: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -357,14 +354,12 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	_, err = io.Copy(localFile, formFile)
 	if err != nil {
-		fmt.Printf("failed to copy file data: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// add uploaded file to service
 	if err := c.AddFile(savePath); err != nil {
-		fmt.Printf("failed to add file: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
