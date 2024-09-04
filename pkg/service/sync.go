@@ -101,8 +101,6 @@ func (s *SyncIndex) GetFiles() []*File {
 build a new sync index starting with a given directory which
 is treated as the "root" of our inquiry. all subdirectories will be checked,
 but we assume this is the root, and that there is no parent directory!
-
-utilizes the directory's d.WalkS() function
 */
 func BuildRootSyncIndex(root *Directory) *SyncIndex {
 	idx := NewSyncIndex(root.OwnerID)
@@ -128,16 +126,15 @@ func BuildRootToUpdate(root *Directory, idx *SyncIndex) *SyncIndex {
 
 /*
 compares a given syncindex against a newly generated one and returns the differnece
-between the two, favoring the newer one for any last sync times.
+between the two, favoring the newer one for any lastest sync times.
 
-the map this returns will only contain the itemps that were matched and found to have a
+the map this returns will only contain the items that were matched and found to have a
 more recent time -- items that weren't matched will be ignored.
 
 TODO: indicate whether the latest sync time is from a server item or a client item
 */
 func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
-	// index containing most recent items
-	newest := NewSyncIndex(orig.UserID)
+	newest := NewSyncIndex(orig.UserID) // index containing most recent items
 
 	// compare last sync times
 	for itemId, lastSync := range new.LastSync {
@@ -147,6 +144,7 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 			}
 		}
 	}
+
 	// compare files marked for updating
 	for fileID, newFile := range new.FilesToUpdate {
 		if origFile, exists := orig.FilesToUpdate[fileID]; exists {
@@ -155,6 +153,7 @@ func Compare(orig *SyncIndex, new *SyncIndex) *SyncIndex {
 			}
 		}
 	}
+
 	// compare directories marked for updating
 	// for dirID, newDir := range new.DirsToUpdate {
 	// 	if origDir, exists := orig.DirsToUpdate[dirID]; exists {
@@ -202,6 +201,10 @@ assumes the supplied index's LastSync map is instantiated and populated, otherwi
 will fail or give inaccurate results.
 
 if item is not known to the index, then it will be ignored.
+
+NOTE:
+the dirs argument is set to nil by default as directory monitoring is not supported,
+but is kept available for future implementation iterations.
 */
 func BuildToUpdate(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex {
 	for _, file := range files {
@@ -211,7 +214,6 @@ func BuildToUpdate(files []*File, dirs []*Directory, idx *SyncIndex) *SyncIndex 
 			}
 		}
 	}
-	// NOTE: for future implementation iterations
 	// for _, d := range dirs {
 	// 	if idx.HasItem(d.ID) {
 	// 		if d.LastSync.After(idx.LastSync[d.ID]) {
@@ -303,7 +305,6 @@ func BuildQ(idx *SyncIndex) *Queue {
 	// be added to the standard batch queue and we like to avoid infinite loops,
 	// so we'll need to just create a large file queue instead.
 	if wontFit(files, MAX) {
-		log.Print("[WARNING] all files exceeded b.MAX. creating large file queue")
 		return LargeFileQ(files)
 	}
 	return buildQ(files, NewBatch(), NewQ())

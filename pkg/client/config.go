@@ -30,6 +30,7 @@ type Conf struct {
 	ServerAddr      string `env:"SERVER_ADDR,required"`         // server address
 	Host            string `env:"SERVER_HOST,required"`         // client host
 	Port            int    `env:"SERVER_PORT,required"`         // server port
+	EnvFile         string `env:"SERVICE_ENV,required"`         // absoloute path to the dedicated .env file
 }
 
 func GetClientConfigs() *Conf {

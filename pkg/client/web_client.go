@@ -127,7 +127,6 @@ func newWcRouter(client *Client) *chi.Mux {
 	r.Route("/files", func(r chi.Router) {
 		r.Route("/d/{fileID}", func(r chi.Router) {
 			r.Use(server.FileCtx)
-			// TODO: download page
 			r.Get("/", client.ServeFile) // get a copy of the file from the local client
 
 		})

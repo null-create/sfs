@@ -212,7 +212,7 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 	case "CLIENT_NAME":
 		return c.updateClientName(value)
 	case "CLIENT_USERNAME": // TODO
-		return nil
+		return c.updateUserAlias(value)
 	case "CLIENT_EMAIL":
 		return c.updateClientEmail(value)
 	case "CLIENT_PASSWORD":
@@ -331,6 +331,24 @@ func (c *Client) updateClientName(newName string) error {
 	return nil
 }
 
+func (c *Client) updateUserAlias(newAlias string) error {
+	if newAlias == c.User.UserName || newAlias == "" {
+		return nil
+	}
+	c.User.UserName = newAlias
+	c.Conf.UserAlias = newAlias
+	if err := c.Db.UpdateUser(c.User); err != nil {
+		return err
+	}
+	if err := envCfgs.Set("CLIENT_USERNAME", newAlias); err != nil {
+		return err
+	}
+	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // TODO: update all items owner name in the DB with the new user's new name
 func (c *Client) updateFileOwnerName(oldName, newName string) error {
 	if newName == "" {
@@ -342,6 +360,7 @@ func (c *Client) updateFileOwnerName(oldName, newName string) error {
 	return nil
 }
 
+// update the value for CLIENT_PROFILE_PIC. ususally a file name.
 func (c *Client) updateClientIcon(fileName string) error {
 	if fileName == "" {
 		return fmt.Errorf("no path specified")

@@ -14,23 +14,20 @@
           style="width: 500px"
         >
           <label for="folder-path-input">
-            Enter the full path to a file or folder to add it to the local SFS
-            drive.
-          </label>
-          <p class="instructions">
+            Enter the full path to a folder to add it to the local SFS drive.
             Folders will automatically have all their files and subdirectories
             added. Items will automatically sync with the server if local sync
             is disabled.
-          </p>
+          </label>
           <input
             type="text"
             id="folder-path-input"
             name="folder-path-input"
-            placeholder="ex: c:/Users/Person/ProjectDir or c:/Users/Person/Project/file.txt"
+            placeholder="ex: c:/Users/Person/ProjectDir"
             style="width: 500px"
           />
           <br />
-          <button type="button" id="submit-folder-path">Submit</button>
+          <button type="button" id="submit-folder-path">Add</button>
           <div id="spinner" class="spinner"></div>
           <div id="response"></div>
         </form>

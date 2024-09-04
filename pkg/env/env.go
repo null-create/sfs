@@ -30,14 +30,14 @@ var BaseEnv = map[string]string{
 	"CLIENT_USERNAME":     "",
 	"CLIENT_EMAIL":        "",
 	"CLIENT_PASSWORD":     "",
-	"CLIENT_ADDRESS":      "localhost:8080",
+	"CLIENT_ADDRESS":      "localhost:9090",
 	"CLIENT_AUTO_SYNC":    "true",
 	"CLIENT_ID":           "",
 	"CLIENT_LOCAL_BACKUP": "true",
 	"CLIENT_BACKUP_DIR":   "",
 	"CLIENT_LOG_DIR":      "",
 	"CLIENT_NEW_SERVICE":  "true",
-	"CLIENT_PORT":         "8080",
+	"CLIENT_PORT":         "9090",
 	"CLIENT_ROOT":         "",
 	"CLIENT_TESTING":      "",
 	"CLIENT_PROFILE_PIC":  "",
@@ -56,6 +56,7 @@ var BaseEnv = map[string]string{
 	"SERVICE_LOG_DIR":   "",
 	"SERVICE_ROOT":      "",
 	"SERVICE_TEST_ROOT": "",
+	"SERVICE_ENV":       "",
 }
 
 // new env object.

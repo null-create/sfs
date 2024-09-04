@@ -600,7 +600,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		file.ServerPath = s.buildServerDirPath(dir.ServerPath, file.Name)
 	}
 
-	// create the (empty) physical file on the server side
+	// create the intial (empty) physical file on the server side
 	_, err = os.Create(file.ServerPath)
 	if err != nil {
 		return fmt.Errorf("failed to file on server: %v", err)

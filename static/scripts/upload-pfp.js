@@ -2,26 +2,17 @@ const fileInput = document.getElementById("profile-pic-upload");
 fileInput.addEventListener("change", (event) => {
   const form = document.getElementById("upload-form");
   const formData = new FormData(form);
-  const searchParams = new URLSearchParams(formData);
-  const fetchOptions = {
-    method: form.method,
-  };
 
-  if (form.method.toLowerCase() === 'post') {
-    if (form.enctype === 'multipart/form-data') {
-      fetchOptions.body = formData;
-    } else {
-      fetchOptions.body = searchParams;
-    }
-  } else {
-    url.search = searchParams;
-  }
-
-  console.log("fetching...");
-  fetch("/user/upload-pfp", fetchOptions)
+  fetch("/user/upload-pfp", {
+    method: "POST",
+    body: formData
+  })
   .then((response) => {
     if (response.ok) {
       console.log("picture updated successfully")
+      window.location.href = "/user"
+    } else {
+      console.error("error uploading picture: " + response);
       window.location.href = "/user"
     }
   })
@@ -31,3 +22,10 @@ fileInput.addEventListener("change", (event) => {
 
   event.preventDefault();
 });
+
+// Automatically submit the form when a file is selected
+document
+  .getElementById("profile-pic-upload")
+  .addEventListener("change", () => {
+    document.getElementById("upload-form").submit();
+  });

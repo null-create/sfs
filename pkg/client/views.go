@@ -1,8 +1,11 @@
 package client
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,7 +24,7 @@ var (
 func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
 	c.log.Error("Error: " + msg)
 	errCtx := context.WithValue(r.Context(), server.Error, msg)
-	http.Redirect(w, r.WithContext(errCtx), errorPage, http.StatusInternalServerError)
+	c.ErrorPage(w, r.WithContext(errCtx))
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -207,5 +210,108 @@ func (c *Client) AddPage(w http.ResponseWriter, r *http.Request) {
 	err := c.Templates.ExecuteTemplate(w, "add.html", addPageData)
 	if err != nil {
 		c.error(w, r, err.Error())
+	}
+}
+
+// render upload page template
+func (c *Client) UploadPage(w http.ResponseWriter, r *http.Request) {
+	usersDirs, err := c.Db.GetUsersDirectories(c.UserID)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	uploadPageData := UploadPage{
+		UserPage:   userPage,
+		Dirs:       usersDirs,
+		ProfilePic: c.Conf.ProfilePic,
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
+		Endpoint:   c.Endpoints["new file"],
+	}
+	err = c.Templates.ExecuteTemplate(w, "upload.html", uploadPageData)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+}
+
+func (c *Client) SettingsPage(w http.ResponseWriter, r *http.Request) {
+	settingsPageData := SettingsPage{
+		UserPage:   userPage,
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
+		// alterable settings
+		UserName:   c.Conf.User,
+		UserAlias:  c.Conf.UserAlias,
+		UserEmail:  c.User.Email,
+		LocalSync:  c.Conf.LocalBackup,
+		BackupDir:  c.Conf.BackupDir,
+		ClientPort: c.Conf.Port,
+	}
+	err := c.Templates.ExecuteTemplate(w, "settings.html", settingsPageData)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+}
+
+// search for items
+func (c *Client) SearchPage(w http.ResponseWriter, r *http.Request) {
+	var resultsFile = "search-results.json"
+	if r.Method == http.MethodPost {
+		var buf bytes.Buffer
+		_, err := io.Copy(&buf, r.Body)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		r.Body.Close()
+
+		searchItem := buf.String()
+		files, dirs, err := c.SearchForItems(searchItem)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		results := SearchResults{
+			Files: files,
+			Dirs:  dirs,
+		}
+		// save to temp json file so the search page
+		// can display results when called with a GET request
+		data, err := json.Marshal(results)
+		if err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+		if err := os.WriteFile(resultsFile, data, 0644); err != nil {
+			c.error(w, r, err.Error())
+			return
+		}
+
+	} else if r.Method == http.MethodGet {
+		var results = NewSearchResults()
+		if FileExists(resultsFile) {
+			data, err := os.ReadFile(resultsFile)
+			if err != nil {
+				c.error(w, r, err.Error())
+				return
+			}
+			if err := json.Unmarshal(data, &results); err != nil {
+				c.error(w, r, err.Error())
+				return
+			}
+			_ = os.Remove(resultsFile)
+		}
+		searchPageData := SearchPage{
+			UserID:     c.UserID,
+			UserPage:   userPage,
+			ServerHost: c.Conf.ServerAddr,
+			ClientHost: c.Conf.Addr,
+			Files:      results.Files,
+			Dirs:       results.Dirs,
+		}
+		err := c.Templates.ExecuteTemplate(w, "search.html", searchPageData)
+		if err != nil {
+			c.error(w, r, err.Error())
+		}
 	}
 }

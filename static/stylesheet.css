@@ -101,7 +101,7 @@ header {
 .toolbar-button {
   padding: 10px 15px;
   margin-right: 10px;
-  background-color: #e8f0fe;
+  background-color: rgb(175, 203, 252);
   border: none;
   border-radius: 4px;
   cursor: pointer;
