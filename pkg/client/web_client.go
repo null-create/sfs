@@ -91,12 +91,6 @@ func newWcRouter(client *Client) *chi.Mux {
 		})
 	})
 
-	// update user info endpoint
-	// r.Route("/submit-edits", func(r chi.Router) {
-	// 	r.Use(server.UpdateInfoCtx)
-	// 	r.Post("/", client.UpdateUserInfo)
-	// })
-
 	// add items to the service.
 	// provides handlers for the upload page.
 	r.Route("/add", func(r chi.Router) {
