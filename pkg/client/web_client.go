@@ -36,7 +36,8 @@ func newWebClient(client *Client) *WebClient {
 			Handler:      newWcRouter(client),
 			ReadTimeout:  30 * time.Second,
 			WriteTimeout: 30 * time.Second,
-		}}
+		},
+	}
 }
 
 func newWcRouter(client *Client) *chi.Mux {
