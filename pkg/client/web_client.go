@@ -24,15 +24,13 @@ in either a client or server management capacity
 // The web client is a local server that serves a web UI for
 // interacting witht he local SFS client service.
 type WebClient struct {
-	client *Client
-	log    *logger.Logger
-	svr    *http.Server
+	log *logger.Logger
+	svr *http.Server
 }
 
 func newWebClient(client *Client) *WebClient {
 	return &WebClient{
-		log:    logger.NewLogger("Web Client", "None"),
-		client: client,
+		log: logger.NewLogger("Web Client", "None"),
 		svr: &http.Server{
 			Addr:         cfgs.Addr,
 			Handler:      newWcRouter(client),
