@@ -25,6 +25,7 @@
         let serverURL = "http://" + "{{.ServerHost}}";
         console.log("serverURL: " + serverURL);
         const statusText = document.getElementById("status-text");
+
         fetch(serverURL)
           .then((response) => {
             if (response.ok) {

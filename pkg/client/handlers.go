@@ -26,7 +26,7 @@ func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 // ------ users --------------------------------
 
 func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
@@ -40,9 +40,9 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 
 	// iterate through and if any are not empty and are different than
 	// the current configurations, update in db and .env files accordingly
-	for setting, update := range updates {
-		if update != "" {
-			if err := c.UpdateConfigSetting(setting, update); err != nil {
+	for setting, newValue := range updates {
+		if newValue != "" {
+			if err := c.UpdateConfigSetting(setting, newValue); err != nil {
 				c.error(w, r, err.Error())
 				return
 			}

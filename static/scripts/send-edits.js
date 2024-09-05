@@ -5,6 +5,10 @@ function submitEdits() {
     const newUsername = document.getElementById("username-edit").value;
     const newEmail = document.getElementById("email-edit").value;
 
+    console.log("name: ", newName);
+    console.log("username: ", newUsername);
+    console.log("emmail: ", newEmail);
+
     const formData = new FormData();
     formData.append("name", newName);
     formData.append("username", newUsername);
@@ -12,11 +16,11 @@ function submitEdits() {
 
     fetch("/user/edit", {
       method: "POST",
-      body: formData
+      body: formData,
     })
     .then((response) => {
       if (response.ok) {
-        alert("Information has been updated successfully");
+        console.log("Success")
         window.location.href = "/user"
       }
     })

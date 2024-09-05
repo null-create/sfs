@@ -310,8 +310,8 @@ header {
   transition: transform 0.3s ease-in-out;
 }
 
-/* Add Folder/Run Discovery Page and Form Styling */
 /* General form styling */
+
 form {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
