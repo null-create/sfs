@@ -325,6 +325,7 @@ func (c *Client) updateClientName(newName string) error {
 	if err := envCfgs.Set("CLIENT_NAME", newName); err != nil {
 		return err
 	}
+	// TODO: sync with remote server, if necessary
 	if err := c.SaveState(); err != nil {
 		return err
 	}
@@ -343,6 +344,7 @@ func (c *Client) updateUserAlias(newAlias string) error {
 	if err := envCfgs.Set("CLIENT_USERNAME", newAlias); err != nil {
 		return err
 	}
+	// TODO: sync with remote server, if necessary
 	if err := c.SaveState(); err != nil {
 		return err
 	}
@@ -386,6 +388,7 @@ func (c *Client) updateClientEmail(newEmail string) error {
 	if err := envCfgs.Set("CLIENT_EMAIL", newEmail); err != nil {
 		return err
 	}
+	// TODO: sync with remote server, if necessary
 	if err := c.SaveState(); err != nil {
 		return err
 	}
@@ -430,10 +433,10 @@ func (c *Client) updateClientPort(pvalue string) error {
 	if err != nil {
 		return err
 	}
-	if c.Conf.Port == port {
+	if c.Conf.ClientPort == port {
 		return nil // nothing to do here
 	}
-	c.Conf.Port = port
+	c.Conf.ClientPort = port
 	return envCfgs.Set("CLIENT_PORT", pvalue)
 }
 
@@ -675,7 +678,7 @@ func (c *Client) AddFile(filePath string) error {
 }
 
 // retrieve the updated server path for the file after a successful
-// registration with the server.//
+// registration with the server.
 // returns an empty string if the client failed to make contact with the server.
 func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 	req, err := c.GetFileInfoRequest(file)
