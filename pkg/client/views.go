@@ -236,16 +236,13 @@ func (c *Client) UploadPage(w http.ResponseWriter, r *http.Request) {
 
 func (c *Client) SettingsPage(w http.ResponseWriter, r *http.Request) {
 	settingsPageData := SettingsPage{
-		UserPage:   userPage,
-		ServerHost: c.Conf.ServerAddr,
-		ClientHost: c.Conf.Addr,
-		// alterable settings
-		UserName:   c.Conf.User,
-		UserAlias:  c.Conf.UserAlias,
-		UserEmail:  c.User.Email,
-		LocalSync:  c.Conf.LocalBackup,
-		BackupDir:  c.Conf.BackupDir,
-		ClientPort: c.Conf.Port,
+		UserPage:        userPage,
+		ServerHost:      c.Conf.ServerAddr,
+		ClientHost:      c.Conf.Addr,
+		ServerSync:      c.Conf.LocalBackup == false, // if local backup is disabed, we're syncing with the server
+		BackupDir:       c.Conf.BackupDir,
+		ClientPort:      c.Conf.ClientPort,
+		EventBufferSize: c.Conf.EventBufferSize,
 	}
 	err := c.Templates.ExecuteTemplate(w, "settings.html", settingsPageData)
 	if err != nil {

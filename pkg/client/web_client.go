@@ -48,7 +48,7 @@ func newWcRouter(client *Client) *chi.Mux {
 	r.Use(middleware.Recoverer)
 	r.Use(server.EnableCORS)
 
-	// serve css and asset files
+	// serve js, css, and asset files
 	r.Route("/static", func(r chi.Router) {
 		fs := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
 		r.Handle("/*", fs)
@@ -58,7 +58,7 @@ func newWcRouter(client *Client) *chi.Mux {
 		r.Handle("/*", fs)
 	})
 
-	// home page w/all items
+	// home page
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", client.HomePage)
 	})
@@ -91,7 +91,6 @@ func newWcRouter(client *Client) *chi.Mux {
 	})
 
 	// add items to the service.
-	// provides handlers for the upload page.
 	r.Route("/add", func(r chi.Router) {
 		r.Get("/", client.AddPage)
 		r.Route("/new", func(r chi.Router) { // add in bulk using discover
@@ -99,7 +98,7 @@ func newWcRouter(client *Client) *chi.Mux {
 		})
 	})
 
-	// route for emptying the recyle bin
+	// emptying the recyle bin
 	r.Route("/empty", func(r chi.Router) {
 		r.Delete("/", client.EmptyRecycleBinHandler)
 	})
@@ -148,8 +147,6 @@ func newWcRouter(client *Client) *chi.Mux {
 	r.Route("/recycled", func(r chi.Router) {
 		r.Get("/", client.RecycleBinPage)
 	})
-
-	// download pages
 
 	return r
 }

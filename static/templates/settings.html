@@ -23,7 +23,12 @@
               this will create local backups only, and will not attempt to sync
               with the remote server.
             </p>
-            <input type="checkbox" id="server-sync" name="server-sync" />
+            <input
+              type="checkbox"
+              id="server-sync"
+              name="server-sync"
+              checked="{{.ServerSync}}"
+            />
           </div>
           <br />
           <div class="setting-item">
@@ -48,15 +53,15 @@
             <label for="sync-delay">Sync Delay</label>
             <p id="sync-delay-instructions">
               This affects how ofter the client will attempt to synchronize with
-              the server. The current default is one sync event per 2 detected
-              events for a given item. Increasing this number will increase the
-              time between syncronization events.
+              the server. The current default is one sync event per
+              {{.EventBufferSize}} detected events for a given item. Increasing
+              this number will increase the time between syncronization events.
             </p>
             <input
               type="number"
               id="sync-delay"
               name="sync-delay"
-              placeholder="current (default): 2"
+              placeholder="current (default): {{.EventBufferSize}}"
             />
           </div>
           <button type="button" id="save-settings" onclick="submitSettings()">

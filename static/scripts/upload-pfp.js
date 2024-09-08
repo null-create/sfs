@@ -1,5 +1,7 @@
 const fileInput = document.getElementById("profile-pic-upload");
 fileInput.addEventListener("change", (event) => {
+  event.preventDefault();
+
   const form = document.getElementById("upload-form");
   const formData = new FormData(form);
 
@@ -17,15 +19,7 @@ fileInput.addEventListener("change", (event) => {
     }
   })
   .catch((error) => {
+    alert("error uploading picture: " + error)
     console.error("picture update failed: ", error)
   });
-
-  event.preventDefault();
 });
-
-// Automatically submit the form when a file is selected
-document
-  .getElementById("profile-pic-upload")
-  .addEventListener("change", () => {
-    document.getElementById("upload-form").submit();
-  });

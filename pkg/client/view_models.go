@@ -153,11 +153,12 @@ type SettingsPage struct {
 	ClientHost string
 
 	// Alterable settings
-	UserName     string
-	UserAlias    string
-	UserEmail    string
-	UserPassword string
-	LocalSync    bool
-	BackupDir    string
-	ClientPort   int
+	UserName        string
+	UserAlias       string
+	UserEmail       string
+	UserPassword    string
+	ServerSync      bool
+	BackupDir       string
+	ClientPort      int
+	EventBufferSize int
 }
