@@ -204,7 +204,7 @@ func (d *Directory) GetPath() string {
 
 // Remove all *internal data structure representations* of files and directories
 // *Does not* remove actual files or sub directories themselves!
-func (d *Directory) clear() {
+func (d *Directory) Clear() {
 	d.Files = nil
 	d.Dirs = nil
 	d.Files = make(map[string]*File, 0)
@@ -240,7 +240,7 @@ func (d *Directory) Clean(dirPath string) error {
 		if err := clean(dirPath); err != nil {
 			return err
 		}
-		d.clear()
+		d.Clear()
 		return nil
 	} else {
 		log.Printf("drive is protected.")
@@ -399,7 +399,7 @@ func (d *Directory) removeFile(fileID string) error {
 		delete(d.Files, file.ID)
 		d.LastSync = time.Now().UTC()
 	} else {
-		return fmt.Errorf("file (id=%s) not found", file.ID)
+		return fmt.Errorf("file (id=%s) not found", fileID)
 	}
 	return nil
 }

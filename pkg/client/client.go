@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
@@ -44,6 +45,12 @@ type Client struct {
 	// general operation endpoints like sync operations.
 	// key == file or dir uuid, val == associated server API endpoint
 	Endpoints map[string]string `json:"endpoints"`
+
+	// map of filepaths to each html template file
+	TemplatePaths map[string]string `json:"templates"`
+
+	// html/template object for the web UI
+	Templates *template.Template `json:"-"`
 
 	// Monitoring component. monitor actively watches for changes
 	// to files and sends events to their respective event handler.

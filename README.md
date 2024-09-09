@@ -1,15 +1,11 @@
 # Simple File Sync
 
-### NOTE: Under active development! Not all components are fully functional yet.
-
-[![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://github.com/JayDerderian/sfs/tree/main)
-
 Automatically back up your project files and sync file states across multiple devices.
 
 ## Features
 
 - Synchronize file states across devices upon save.
-- Comes with a robust CLI tool to manage files and directories.
+- Comes with a simple CLI tool to manage files and directories.
 - Intended for home LAN use but built with scaling capabilities.
 
 ## Tech
@@ -19,6 +15,7 @@ Automatically back up your project files and sync file states across multiple de
 - [Chi] - Chi is a small, idiomatic and composable router for building HTTP services.
 - [SQLite3] - A sqlite3 driver that conforms to the built-in database/sql interface.
 - [envdecode] - envdecode is a Go package for populating structs from environment variables.
+- [templ] - A language for writing HTML user interfaces in Go. 
 
 
 ## Installation
@@ -63,3 +60,4 @@ MIT
    [SQLite3]: <https://pkg.go.dev/github.com/mattn/go-sqlite3>
    [envdecode]: <github.com/joeshaw/envdecode>
    [gotdotenv]: <github.com/joho/godotenv>
+   [templ]: <https://github.com/a-h/templ>

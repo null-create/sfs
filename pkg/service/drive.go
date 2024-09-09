@@ -438,7 +438,7 @@ func (d *Drive) GetDir(dirID string) *Directory {
 	return nil
 }
 
-// get a slice of all directories in the drive. returns nil if not found,
+// get a slice of all directories in the drive. returns an empty slice if not found,
 // or if the drive is protected.
 func (d *Drive) GetDirs() []*Directory {
 	if !d.Protected {
@@ -452,8 +452,8 @@ func (d *Drive) GetDirs() []*Directory {
 		return dirs
 	} else {
 		d.Log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
+		return make([]*Directory, 0)
 	}
-	return nil
 }
 
 // get a map of all directories for this user. returns nil
@@ -551,15 +551,15 @@ func (d *Drive) UpdateDir(dirID string, updatedDir *Directory) error {
 
 // ----- cleanup --------------------------------
 
-// removes all users files and directories from their drive
+// removes all users files and directories from their drive.
+// clears internal data structures, does not remove physical
+// files from the backup directory.
 func (d *Drive) ClearDrive() error {
 	if !d.Protected {
 		if !d.HasRoot() {
 			return fmt.Errorf("no root directory")
 		}
-		if err := d.Root.Clean(d.Root.Path); err != nil {
-			return err
-		}
+		d.Root.Clear()
 	} else {
 		d.Log.Info(fmt.Sprintf("drive (id=%s) is protected", d.ID))
 	}
@@ -573,6 +573,10 @@ func (d *Drive) BuildSyncIdx() {
 	d.SyncIndex = BuildSyncIndex(files, nil, d.SyncIndex)
 }
 
+// Builds the ToUpdate map for the sync index. If the index is not set (ie nil),
+// then a new index will be instantiated, but the update map won't be populated since
+// BuildToUpdate() checks for the existance of the file before checking for its last
+// sync time.
 func (d *Drive) BuildToUpdate() {
 	if d.SyncIndex == nil {
 		d.SyncIndex = NewSyncIndex(d.OwnerID)

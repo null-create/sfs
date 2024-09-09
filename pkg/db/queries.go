@@ -305,14 +305,17 @@ const (
 	FindAllUsersFilesQuery       string = `SELECT * FROM Files WHERE owner_id = ?;`
 	FindFileIDWithPathQuery      string = `SELECT id FROM Files WHERE path = ?;`
 	FindFileQuery                string = `SELECT * FROM Files WHERE id = ?;`
-	FindFileByNameQuery          string = `SELECT * FROM Files WHERE name = ?;`
+	FindFilesByNameQuery         string = `SELECT * FROM Files WHERE name = ?;`
 	FindFileByPathQuery          string = `SELECT * FROM Files WHERE path = ?;`
+	FindFilesByDirIDQuery        string = `SELECT * FROM Files WHERE directory_id =?;`
 	FindFilesByDriveIDQuery      string = `SELECT * FROM Files WHERE drive_id = ?;`
 	FindAllBackedUpFilesQuery    string = `SELECT * FROM Files WHERE backup = 1;`
 	FindDirQuery                 string = `SELECT * FROM Directories WHERE id = ?;`
 	FindAllUsersDirectoriesQuery string = `SELECT * FROM Directories WHERE owner_id = ?;`
+	FindDirsByNameQuery          string = `SELECT * FROM Directories WHERE name = ?`
 	FindDirsByDriveIDQuery       string = `SELECT * FROM Directories WHERE drive_id = ?;`
 	FindDirByPathQuery           string = `SELECT * FROM Directories WHERE path = ?;`
+	FindDirsByParentIDQuery      string = `SELECT * FROM Directories WHERE parent_id = ?;`
 	FindDirIDByPathQuery         string = `SELECT id FROM Directories WHERE path = ?;`
 	FindDriveQuery               string = `SELECT * FROM Drives WHERE id = ?;`
 	FindDriveByUserID            string = `SELECT * FROM Drives WHERE owner_id = ?;`

@@ -565,7 +565,7 @@ func (s *Service) GetAllFiles(driveID string) (map[string]*svc.File, error) {
 // generate a server-side path for a file or directory.
 // path points the new item to the 'root' directory on the server
 func (s *Service) buildServerRootPath(userName string, itemName string) string {
-	return filepath.Join(s.svcCfgs.SvcRoot, "users", userName, "root", itemName)
+	return filepath.Join(s.svcCfgs.SvcRoot, "users", userName, itemName)
 }
 
 // generate a server-side path for a file that has a server-side directory
@@ -600,7 +600,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 		file.ServerPath = s.buildServerDirPath(dir.ServerPath, file.Name)
 	}
 
-	// create the (empty) physical file on the server side
+	// create the intial (empty) physical file on the server side
 	_, err = os.Create(file.ServerPath)
 	if err != nil {
 		return fmt.Errorf("failed to file on server: %v", err)
@@ -656,7 +656,7 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	// remove file from the service.
 	// NOTE: client side will have the original file moved to the client's recycle bin.
 	if err := drive.RemoveFile(file.DirID, file); err != nil {
-		return fmt.Errorf("failed to remove %s (id=%s)s from drive: %v", file.Name, file.ID, err)
+		return fmt.Errorf("failed to remove %s (id=%s) from drive: %v", file.Name, file.ID, err)
 	}
 	if err := s.Db.RemoveFile(file.ID); err != nil {
 		return fmt.Errorf("failed to remove %s (id=%s) from database: %v", file.Name, file.ID, err)

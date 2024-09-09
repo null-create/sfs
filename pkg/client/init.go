@@ -237,7 +237,7 @@ func LoadClient(persist bool) (*Client, error) {
 		// if synchronization with the server is enabled. If so, make sure
 		// any local items that have been added since our last sync are also
 		// registered with the server.
-		if !client.localBackup() {
+		if !client.LocalSyncOnly() {
 			if err := client.RegisterClient(); err != nil {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register client: %v", err))
 			}
@@ -260,6 +260,11 @@ func LoadClient(persist bool) (*Client, error) {
 		if err := client.StartHandlers(); err != nil {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
+		}
+		// parse templates
+		if err := client.ParseTemplates(); err != nil {
+			initLog.Log(logger.ERROR, fmt.Sprintf("failed to parse templates: %v", err))
+			return nil, fmt.Errorf("failed to parse templates: %v", err)
 		}
 		client.log.Info(fmt.Sprintf("monitor is running. watching %d local item(s)", len(client.Monitor.Events)))
 	}
@@ -357,7 +362,7 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// register drive with the server if autosync is enabled, if not defaulting
 	// to using local storage.
-	if !client.localBackup() {
+	if !client.LocalSyncOnly() {
 		if err := client.RegisterClient(); err != nil {
 			client.log.Warn("failed to register client with server: " + err.Error())
 		}

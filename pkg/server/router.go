@@ -68,6 +68,7 @@ func NewRouter() *chi.Mux {
 	// custom middleware
 	// r.Use(AuthUserHandler)
 	r.Use(ContentTypeJson) // will be overridden by streaming API endpoints
+	r.Use(EnableCORS)      // used for working with the client web interface
 
 	// placeholder for sfs "homepage"
 	// this will eventually display a simple service index page
@@ -113,6 +114,7 @@ func NewRouter() *chi.Mux {
 			})
 			r.Route("/new", func(r chi.Router) { // add a new file on the server
 				r.Use(NewFileCtx)
+				r.Options("/", api.PutFile) // for fetch()'s initial "preflighted" requests. this helps with CORS.
 				r.Post("/", api.PutFile)
 			})
 			r.Route("/i/{fileID}", func(r chi.Router) {

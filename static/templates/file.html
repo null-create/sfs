@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div class="file-info-container">
+        <h2>File Information</h2>
+        <div class="file-info-item">
+          <label class="file-label">Name: </label>
+          <span id="file-name">{{.Name}}</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Size: </label>
+          <span id="file-size">{{.Size}} bytes</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">ID: </label>
+          <span id="file-id">{{.ID}}</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Owner ID: </label>
+          <span id="file-owner">{{.OwnerID}}</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Type: </label>
+          <span id="file-type">{{.Type}}</span>
+        </div>
+        <div class="file-info-item">
+          <label>Location: </label>
+          <span id="file-location">{{.Location}}</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Checksum: </label>
+          <span id="file-checkusm"> {{.Checksum}}</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Server Download: </label>
+          <a id="file-download" href="{{.Endpoint}}"> Link</a>
+        </div>
+        <button
+          type="button"
+          id="remove-button"
+          onclick="removeFile('{{.ID}}')"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+    <script
+      type="text/javascript"
+      src="/static/scripts/remove-file.js"
+    ></script>
+    <script>
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+  </body>
+</html>

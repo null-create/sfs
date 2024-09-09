@@ -23,7 +23,7 @@ func TestEnvGet(t *testing.T) {
 	SetEnv(false)
 	e := NewE()
 
-	client, err := e.Get("CLIENT")
+	client, err := e.Get("CLIENT_NAME")
 	if err != nil {
 		t.Fail()
 	}
@@ -36,11 +36,11 @@ func TestEnvSet(t *testing.T) {
 	SetEnv(false)
 	e := NewE()
 
-	if err := e.Set("CLIENT", "wienermann nugget"); err != nil {
+	if err := e.Set("CLIENT_NAME", "wienermann nugget"); err != nil {
 		t.Fail()
 	}
 
-	test, err := e.Get("CLIENT")
+	test, err := e.Get("CLIENT_NAME")
 	if err != nil {
 		t.Fail()
 	}

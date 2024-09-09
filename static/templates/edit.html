@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div class="edit-info-container">
+        <form id="edit-info-form" action="/user/edit" method="post">
+          <label for="edit-info">Name</label>
+          <input type="text" id="name-edit" placeholder="{{.Name}}" />
+          <label for="edit-info">User Name</label>
+          <input type="text" id="username-edit" placeholder="{{.UserName}}" />
+          <label for="edit-info">Email</label>
+          <input type="text" id="email-edit" placeholder="{{.Email}}" />
+          <button type="submit" id="update-button" onclick="submitEdits()">
+            Submit Changes
+          </button>
+        </form>
+      </div>
+    </div>
+    <script type="text/javascript" src="/static/scripts/send-edits.js"></script>
+    <script>
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+  </body>
+</html>

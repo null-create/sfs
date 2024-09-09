@@ -3,10 +3,11 @@ package auth
 import (
 	"crypto/rand"
 	"log"
-
-	"golang.org/x/crypto/bcrypt"
+	"math/big"
 
 	"github.com/sfs/pkg/env"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GetSecret() ([]byte, error) {
@@ -18,11 +19,12 @@ func GetSecret() ([]byte, error) {
 	}
 }
 
+var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
+
 // generate a random string of n length to use as a secret
 //
 // technique from: https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 func GenSecret(length int) string {
-	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 	charLen := len(chars)
 	b := make([]byte, length)
 	_, err := rand.Read(b) // generates len(b) random bytes
@@ -48,4 +50,17 @@ func HashPassword(password string) (string, error) {
 func CheckPasswordHash(pwPlainText, hashedPw string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPw), []byte(pwPlainText))
 	return err == nil
+}
+
+// technique from: https://github.com/a-h/templ/blob/main/examples/content-security-policy/main.go
+func GenNonce(size int) (string, error) {
+	ret := make([]byte, size)
+	for i := 0; i < size; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			return "", err
+		}
+		ret[i] = chars[num.Int64()]
+	}
+	return string(ret), nil
 }

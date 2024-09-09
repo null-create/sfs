@@ -1,116 +1,63 @@
 package client
 
 import (
-	"encoding/json"
-	"io"
-	"log"
+	"errors"
+	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"reflect"
-	"strconv"
-
-	"github.com/sfs/pkg/env"
+	"runtime"
 )
 
-func GetWd() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return wd
-}
-
 // Generate a pseudo-random integer in the range [0, n)
+// Used in tests.
 func RandInt(limit int) int {
 	return rand.Intn(limit)
 }
 
-// parse the NEW_SERVICE env var to see if we are instantiating a new sfs service
-func isMode(k string) bool {
-	env := env.NewE()
-	v, err := env.Get(k)
-	if err != nil {
-		log.Fatalf("failed to get %s env var: %v", k, err)
-	}
-	isMode, err := strconv.ParseBool(v)
-	if err != nil {
-		log.Fatalf("failed to parse env var string to bool: %v", err)
-	}
-	return isMode
-}
+// open the web client home page in a new browser window
+func Openbrowser(url string) {
+	var cmd string
+	var args []string
 
-func isEmpty(path string) bool {
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
 	}
-	if len(entries) == 0 {
-		return true
-	}
-	return false
-}
-
-// write out as a json file
-func saveJSON(dir, filename string, data map[string]interface{}) {
-	jsonData, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		log.Fatalf("[ERROR] failed marshalling JSON data: %s\n", err)
-	}
-
-	if err = os.WriteFile(filepath.Join(dir, filename), jsonData, 0666); err != nil {
-		log.Fatalf("[ERROR] unable to write JSON file %s: %s\n", filename, err)
-	}
-}
-
-// copy a file
-func Copy(src, dst string) error {
-	s, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer s.Close()
-
-	d, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-
-	_, err = io.Copy(d, s)
-	if err != nil {
-		return err
-	}
-	return nil
+	args = append(args, url)
+	exec.Command(cmd, args...).Start()
 }
 
 // check if a file exists
-func Exists(filename string) bool {
-	if _, err := os.Stat(filename); err != nil && err == os.ErrNotExist {
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return false
-	} else if err != nil && err != os.ErrNotExist {
-		log.Fatalf("unable to get file status: %v", err)
 	}
 	return true
 }
 
-// converts a struct to a map.
-// mainly so we can make a struct iterable.
-func structToMap(s interface{}) map[string]interface{} {
-	m := make(map[string]interface{})
-	v := reflect.ValueOf(s)
-	t := reflect.TypeOf(s)
-
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-		v = v.Elem()
+// ShowFileInExplorer opens the file explorer window and highlights the specified file
+func ShowFileInExplorer(filePath string) error {
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return fmt.Errorf("could not get absolute path: %v", err)
 	}
 
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		value := v.Field(i).Interface()
-		m[field.Name] = value
+	switch runtime.GOOS {
+	case "windows":
+		return exec.Command("explorer", "/select,", absPath).Run() // Use explorer.exe to open the file location and highlight the file
+	case "darwin":
+		return exec.Command("open", "-R", absPath).Run() // Use the 'open' command on macOS to reveal the file in Finder
+	case "linux":
+		dir := filepath.Dir(absPath)
+		return exec.Command("xdg-open", dir).Run() // Use 'xdg-open' to open the file's parent directory (does not highlight the file)
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-
-	return m
 }

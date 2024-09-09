@@ -355,15 +355,23 @@ func (a *API) putFile(w http.ResponseWriter, r *http.Request, file *svc.File) {
 
 // upload or update a file on/to the server
 func (a *API) PutFile(w http.ResponseWriter, r *http.Request) {
-	file, err := a.getNewFileFromRequest(r)
-	if err != nil {
-		a.serverError(w, err.Error())
-		return
-	}
 	if r.Method == http.MethodPut { // update the file
+		file, err := a.getFileFromRequest(r)
+		if err != nil {
+			a.serverError(w, err.Error())
+			return
+		}
 		a.putFile(w, r, file)
 	} else if r.Method == http.MethodPost { // create a new file.
+		file, err := a.getNewFileFromRequest(r)
+		if err != nil {
+			a.serverError(w, err.Error())
+			return
+		}
 		a.newFile(w, r, file)
+	} else if r.Method == http.MethodOptions {
+		a.log.Info("pre-flight CORS request received")
+		return
 	}
 }
 

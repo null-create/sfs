@@ -30,7 +30,7 @@ func (q *Query) UserExists(userID string) (bool, error) {
 	return exists, nil
 }
 
-// get user data from database
+// get user data from database. returns nil if user is not found.
 func (q *Query) GetUser(userID string) (*auth.User, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -234,7 +234,7 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 	defer q.Close()
 
 	file := new(svc.File)
-	if err := q.Conn.QueryRow(FindFileByNameQuery, fileName).Scan(
+	if err := q.Conn.QueryRow(FindFilesByNameQuery, fileName).Scan(
 		&file.ID,
 		&file.Name,
 		&file.OwnerID,
@@ -263,6 +263,58 @@ func (q *Query) GetFileByName(fileName string) (*svc.File, error) {
 		return nil, fmt.Errorf("failed to get file metadata: %v", err)
 	}
 	return file, nil
+}
+
+// populate a slice of *svc.File objects that all have the same name.
+// returns an empty slice if none are found.
+func (q *Query) GetFilesByName(fileName string) ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindFilesByNameQuery, fileName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	var fs []*svc.File
+	for rows.Next() {
+		file := new(svc.File)
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.LocalBackup,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Registered,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, "files found in database")
+				continue
+			}
+			return nil, fmt.Errorf("unable to scan rows: %v", err)
+		}
+		fs = append(fs, file)
+	}
+	return fs, nil
 }
 
 // retrieves a file ID using a given file path
@@ -399,6 +451,56 @@ func (q *Query) GetUsersFiles(userID string) ([]*svc.File, error) {
 		); err != nil {
 			if err == sql.ErrNoRows {
 				q.log.Log(logger.INFO, fmt.Sprintf("files found for user (id=%s)", userID))
+				continue
+			}
+			return nil, fmt.Errorf("unable to scan rows: %v", err)
+		}
+		fs = append(fs, file)
+	}
+	return fs, nil
+}
+
+func (q *Query) GetFilesByDirID(dirID string) ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindFilesByDirIDQuery, dirID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	var fs []*svc.File
+	for rows.Next() {
+		file := new(svc.File)
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.LocalBackup,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Registered,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, fmt.Sprintf("files found with parent dir '%s'", dirID))
 				continue
 			}
 			return nil, fmt.Errorf("unable to scan rows: %v", err)
@@ -715,6 +817,58 @@ func (q *Query) GetUsersDirectories(userID string) ([]*svc.Directory, error) {
 	return dirs, nil
 }
 
+// geta a slice of directories that have the same name. returns an empty slice if none are found.
+func (q *Query) GetDirsByName(dirName string) ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindDirsByNameQuery, dirName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	dirs := make([]*svc.Directory, 0)
+	for rows.Next() {
+		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
+		if err := rows.Scan(
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Registered,
+			&dir.Protected,
+			&dir.Endpoint,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.ParentID,
+			&dir.Root,
+			&dir.RootPath,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, "no rows returned")
+				continue
+			}
+		}
+		dirs = append(dirs, dir)
+	}
+	return dirs, nil
+}
+
 // get all the directories for this user.
 func (q *Query) GetDirsByDriveID(driveID string) ([]*svc.Directory, error) {
 	q.mu.Lock()
@@ -725,6 +879,57 @@ func (q *Query) GetDirsByDriveID(driveID string) ([]*svc.Directory, error) {
 	defer q.Close()
 
 	rows, err := q.Conn.Query(FindDirsByDriveIDQuery, driveID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	dirs := make([]*svc.Directory, 0)
+	for rows.Next() {
+		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
+		if err := rows.Scan(
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Registered,
+			&dir.Protected,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.ParentID,
+			&dir.Root,
+			&dir.RootPath,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, "no rows returned")
+				continue
+			}
+		}
+		dirs = append(dirs, dir)
+	}
+	return dirs, nil
+}
+
+// get all the directories with this parent id. returns an empty slice if none are found.
+func (q *Query) GetDirsByParentID(parentID string) ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindDirsByParentIDQuery, parentID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query: %v", err)
 	}

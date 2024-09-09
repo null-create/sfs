@@ -85,7 +85,6 @@ func createLogDir(logDirPath string) error {
 
 // create a log file if it doesn't exist
 func createLogFile(lfpath string) error {
-	// create the log file if it doesn't exist.
 	if _, err := os.Stat(lfpath); errors.Is(err, os.ErrNotExist) {
 		csvFile, err := os.Create(lfpath)
 		if err != nil {

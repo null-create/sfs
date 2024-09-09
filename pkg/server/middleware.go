@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -17,6 +18,27 @@ import (
 func ContentTypeJson(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json;charset=utf8")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func ContentTypeText(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func ContentTypeCSS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "text/css")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func EnableCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		h.ServeHTTP(w, r)
 	})
 }
@@ -46,6 +68,30 @@ func AllUsersFilesCtx(h http.Handler) http.Handler {
 }
 
 // -------- new item/user context --------------------------------
+
+func ClientNewFileCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fileID := chi.URLParam(r, "filePath")
+		if fileID == "" {
+			http.Error(w, "filePath not set", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), File, fileID)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func DiscoverCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		folderPath := chi.URLParam(r, "folderPath")
+		if folderPath == "" {
+			http.Error(w, "filePath not set", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Directory, folderPath)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
 
 // attempts to get filename, owner, and path from a requets
 // context, then create a new file object to use for downloading
@@ -236,6 +282,30 @@ func UserCtx(h http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), User, userID)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ErrorCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errMsg := chi.URLParam(r, "errMsg")
+		if errMsg == "" {
+			log.Print("errMsg is not set. will default to standard messaging")
+			errMsg = "something's borked"
+		}
+		ctx := context.WithValue(r.Context(), Error, errMsg)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func SearchCtx(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		searchQuery := r.URL.Query().Get("searchQuery")
+		if searchQuery == "" {
+			http.Error(w, "no items provided", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), Search, searchQuery)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

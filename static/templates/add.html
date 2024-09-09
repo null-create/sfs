@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div id="file-upload-container">
+        <form
+          class="standard-form"
+          action="/add/new"
+          method="post"
+          enctype="multipart/form-data"
+          style="width: 500px"
+        >
+          <label for="folder-path-input">
+            Enter the full path to a folder to add it to the local SFS drive.
+            Folders will automatically have all their files and subdirectories
+            added. Items will automatically sync with the server if local sync
+            is disabled.
+          </label>
+          <input
+            type="text"
+            id="folder-path-input"
+            name="folder-path-input"
+            placeholder="ex: c:/Users/Person/ProjectDir"
+            style="width: 500px"
+          />
+          <br />
+          <button type="button" id="submit-folder-path">Add</button>
+          <div id="spinner" class="spinner"></div>
+          <div id="response"></div>
+        </form>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+    <script type="text/javascript" src="/static/scripts/add-items.js"></script>
+  </body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  {{template "header"}}
+  <body>
+    {{template "frame"}}
+    <div id="content">
+      {{template "toolbar"}}
+      <div class="user-info-container">
+        <h2>{{.Name}}</h2>
+        <div class="user-info-photo">
+          <img
+            class="user-profile-pic"
+            id="user-profile-pic"
+            style="width: 300px; height: 300px"
+            src="{{if .ProfilePic}} /assets/profile-pics/{{.ProfilePic}} {{else}} /assets/default_profile_pic.jpg {{end}}"
+            alt="User Profile Picture"
+          />
+        </div>
+        <form
+          id="upload-form"
+          action="/user/upload-pfp"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <input
+            type="file"
+            id="profile-pic-upload"
+            name="profile-pic"
+            style="display: none"
+            accept="image/*"
+          />
+          <button
+            type="button"
+            id="upload-button"
+            onclick="document.getElementById('profile-pic-upload').click();"
+          >
+            Upload Profile Picture
+          </button>
+          <button
+            type="button"
+            id="clear-profile-pic-button"
+            onclick="clearPfp();"
+          >
+            Clear Profile Picture
+          </button>
+          <button type="submit" id="submit-button" style="display: none">
+            Submit
+          </button>
+          <a href="/user/edit">
+            <button type="button" id="edit-info-button">Edit Info</button></a
+          >
+        </form>
+        <div class="user-info-item">
+          <label class="user-label">ID: </label>
+          <span id="user-id">{{.UserID}}</span>
+        </div>
+        <div class="user-info-item">
+          <label class="user-label">Name: </label>
+          <span id="user-username">{{.Name}}</span>
+        </div>
+        <div class="user-info-item">
+          <label class="user-label">User Name: </label>
+          <span id="user-username">{{.UserName}}</span>
+        </div>
+        <div class="user-info-item">
+          <label class="user-label">Email: </label>
+          <span id="user-email">{{.Email}}</span>
+        </div>
+        <div class="user-info-item">
+          <label class="user-label">Total Directories: </label>
+          <span id="user-total-dirs">{{.TotalDirs}}</span>
+        </div>
+        <div class="user-info-item">
+          <label class="user-label">Total Files: </label>
+          <span id="user-total-files">{{.TotalFiles}}</span>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Check if the server is up
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    </script>
+    <script type="text/javascript" src="/static/scripts/upload-pfp.js"></script>
+    <script type="text/javascript" src="/static/scripts/clear-pfp.js"></script>
+  </body>
+</html>

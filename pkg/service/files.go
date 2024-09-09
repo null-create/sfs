@@ -2,6 +2,7 @@ package service
 
 import (
 	"crypto/sha256"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -140,6 +142,11 @@ func (f *File) GetSize() int64 {
 		log.Fatalf("unable to determine file size: %v", err)
 	}
 	return info.Size()
+}
+
+// Get the size of a file as a string
+func (f *File) GetSizeStr() string {
+	return strconv.Itoa(int(f.GetSize()))
 }
 
 // confirms the physical file associated with this object actually exists.
@@ -313,8 +320,7 @@ func CalculateChecksum(filePath string) (string, error) {
 	if _, err := io.Copy(h, file); err != nil {
 		return "", err
 	}
-
-	checksum := string(h.Sum(nil))
+	checksum := base32.StdEncoding.EncodeToString(h.Sum(nil))
 	return checksum, nil
 }
 

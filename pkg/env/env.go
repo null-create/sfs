@@ -30,16 +30,17 @@ var BaseEnv = map[string]string{
 	"CLIENT_USERNAME":     "",
 	"CLIENT_EMAIL":        "",
 	"CLIENT_PASSWORD":     "",
-	"CLIENT_ADDRESS":      "localhost:8080",
+	"CLIENT_ADDRESS":      "localhost:9090",
 	"CLIENT_AUTO_SYNC":    "true",
 	"CLIENT_ID":           "",
 	"CLIENT_LOCAL_BACKUP": "true",
 	"CLIENT_BACKUP_DIR":   "",
 	"CLIENT_LOG_DIR":      "",
 	"CLIENT_NEW_SERVICE":  "true",
-	"CLIENT_PORT":         "8080",
+	"CLIENT_PORT":         "9090",
 	"CLIENT_ROOT":         "",
 	"CLIENT_TESTING":      "",
+	"CLIENT_PROFILE_PIC":  "",
 
 	// server settings
 	"SERVER_ADDR":          "localhost:8080",
@@ -55,6 +56,7 @@ var BaseEnv = map[string]string{
 	"SERVICE_LOG_DIR":   "",
 	"SERVICE_ROOT":      "",
 	"SERVICE_TEST_ROOT": "",
+	"SERVICE_ENV":       "",
 }
 
 // new env object.
@@ -194,15 +196,33 @@ func (e *Env) Set(k, v string) error {
 	if err != nil {
 		return err
 	}
-	if val, exists := env[k]; exists {
-		if val != v {
-			env[k] = v
-			if err := set(k, v, env); err != nil {
-				return err
-			}
+	if val, exists := env[k]; exists && val != v {
+		env[k] = v
+		if err := set(k, v, env); err != nil {
+			return err
 		}
 	} else {
 		fmt.Printf("env var %v does not exist", k)
+	}
+	return nil
+}
+
+// Clears the environment configurations for both client and the server,
+// then sets as a new .env file. use with caution! creates a backup copy
+// after clearning, but the backup file is called 'env-backup.env', and will
+// not be read by the service when started again after clearing.
+func (e *Env) Clear() error {
+	if err := Copy(".env", "env-backup.env"); err != nil {
+		return err
+	}
+	e.env = BaseEnv
+	if err := godotenv.Write(e.env, ".env"); err != nil {
+		return err
+	}
+	for k, v := range e.env {
+		if err := os.Setenv(k, v); err != nil {
+			return err
+		}
 	}
 	return nil
 }

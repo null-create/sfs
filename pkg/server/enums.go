@@ -2,7 +2,7 @@ package server
 
 type Context string
 
-// context enums/keys for requests
+// context enums/keys for request context objects
 const (
 	Name        Context = "name"
 	File        Context = "file"
@@ -17,4 +17,6 @@ const (
 	User        Context = "user"
 	Users       Context = "users"
 	Index       Context = "index"
+	Error       Context = "error"
+	Search      Context = "search"
 )
