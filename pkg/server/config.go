@@ -32,6 +32,7 @@ func ServerConfig() *SvrCnf {
 var svrCfg = ServerConfig()
 
 type SvcCfg struct {
+	EnvFile    string `env:"SERVICE_ENV,required"` // absoloute path to the dedicated .env file
 	SvcRoot    string `env:"SERVICE_ROOT,required"`
 	NewService bool   `env:"NEW_SERVICE,required"`
 	IsAdmin    bool   `env:"ADMIN_MODE,required"`

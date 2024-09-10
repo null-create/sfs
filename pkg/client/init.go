@@ -261,7 +261,7 @@ func LoadClient(persist bool) (*Client, error) {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start event handlers: %v", err))
 			return nil, fmt.Errorf("failed to start event handlers: %v", err)
 		}
-		// parse templates
+		// parse html templates for the web ui
 		if err := client.ParseTemplates(); err != nil {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to parse templates: %v", err))
 			return nil, fmt.Errorf("failed to parse templates: %v", err)

@@ -239,7 +239,7 @@ func (c *Client) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		UserPage:        userPage,
 		ServerHost:      c.Conf.ServerAddr,
 		ClientHost:      c.Conf.Addr,
-		ServerSync:      c.Conf.LocalBackup == false, // if local backup is disabed, we're syncing with the server
+		ServerSync:      !c.Conf.LocalBackup, // if local backup is disabed, we're syncing with the server
 		BackupDir:       c.Conf.BackupDir,
 		ClientPort:      c.Conf.ClientPort,
 		EventBufferSize: c.Conf.EventBufferSize,

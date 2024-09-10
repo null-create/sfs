@@ -15,7 +15,11 @@ import (
 
 // API handlers for the web client UI
 
+// 10 mb file size limit for certain files (mostly profile pics)
+const SizeLimit = 10 << 20
+
 func (c *Client) successMsg(w http.ResponseWriter, msg string) {
+	c.log.Info(msg)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -26,13 +30,13 @@ func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 // ------ users --------------------------------
 
 func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20)
+	err := r.ParseMultipartForm(SizeLimit)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
 	// Extract form data (add more fields as needed)
-	var updates = map[string]string{
+	updates := map[string]string{
 		"CLIENT_NAME":     r.FormValue("name"),
 		"CLIENT_USERNAME": r.FormValue("username"),
 		"CLIENT_EMAIL":    r.FormValue("email"),
@@ -54,7 +58,7 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // Limit file size to 10MB
+	err := r.ParseMultipartForm(SizeLimit) // Limit file size to 10MB
 	if err != nil {
 		http.Error(w, "Unable to parse form: "+err.Error(), http.StatusBadRequest)
 		return
@@ -113,10 +117,40 @@ func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) 
 	c.successMsg(w, "success")
 }
 
+// update client application settings from the web UI
 func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
-	// get updated settings and modify accordingly
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r.Body)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	r.Body.Close()
 
-	http.Redirect(w, r, userPage, http.StatusSeeOther)
+	var newSettings map[string]string
+	err = json.Unmarshal(buf.Bytes(), &newSettings)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+
+	fmt.Printf("new settings received:\n")
+	for setting, value := range newSettings {
+		fmt.Printf("	%s: %s\n", setting, value)
+	}
+
+	// update settings
+	for setting, value := range newSettings {
+		if setting != "" && value != "" {
+			if err := c.UpdateConfigSetting(setting, value); err != nil {
+				c.log.Error("error updating settings: " + err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+
+	c.successMsg(w, "settings updated successfully")
 }
 
 // -------- files -----------------------------------------
@@ -146,6 +180,19 @@ func (c *Client) NewFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// open a file explorer window at the requested path
+func (c *Client) OpenFileLocHandler(w http.ResponseWriter, r *http.Request) {
+	file, err := c.getFileFromRequest(r)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	if err := ShowFileInExplorer(file.ClientPath); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+}
+
 // retrieve a file from the local machine
 func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 	file, err := c.getFileFromRequest(r)
@@ -162,7 +209,7 @@ func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
+	err := r.ParseMultipartForm(SizeLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
