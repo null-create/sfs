@@ -208,7 +208,7 @@ func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 	c.log.Info(fmt.Sprintf("served file %s: %s", file.Name, file.ClientPath))
 }
 
-func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
+func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(SizeLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -252,7 +252,7 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	savePath := filepath.Join(destFolder, handler.Filename)
-	c.log.Info(fmt.Sprintf("saving uploaded file to: %s", savePath))
+	c.log.Info(fmt.Sprintf("saving file to: %s", savePath))
 
 	localFile, err := os.Create(savePath)
 	if err != nil {
@@ -274,7 +274,7 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//success response
-	c.successMsg(w, "file uploaded successfully")
+	c.successMsg(w, "file added successfully")
 }
 
 func (c *Client) RemoveFileHandler(w http.ResponseWriter, r *http.Request) {
@@ -312,7 +312,7 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	var path = buf.String()
+	path := buf.String()
 	item, err := os.Stat(path)
 	if err != nil {
 		c.error(w, r, err.Error())

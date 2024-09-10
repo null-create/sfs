@@ -16,6 +16,14 @@ func RandInt(limit int) int {
 	return rand.Intn(limit)
 }
 
+// check if a file exists
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
+}
+
 // open the web client home page in a new browser window
 func Openbrowser(url string) {
 	var cmd string
@@ -32,14 +40,6 @@ func Openbrowser(url string) {
 	}
 	args = append(args, url)
 	exec.Command(cmd, args...).Start()
-}
-
-// check if a file exists
-func FileExists(path string) bool {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return false
-	}
-	return true
 }
 
 // ShowFileInExplorer opens the file explorer window and highlights the specified file

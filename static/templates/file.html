@@ -28,14 +28,14 @@
           <span id="file-type">{{.Type}}</span>
         </div>
         <div class="file-info-item">
-          <label>Open file in folder </label>
-          <a
-            id="file-download"
-            href="files/i/{{.ID}}"
+          <label>Location </label>
+          <button
+            type="button"
+            id="open-loc-button"
             onclick='openFileLoc("{{.ID}}")'
           >
-            Open</a
-          >
+            Open in folder
+          </button>
         </div>
         <div class="file-info-item">
           <label class="file-label">Checksum: </label>
@@ -59,9 +59,29 @@
       src="/static/scripts/remove-file.js"
     ></script>
     <script type="text/javascript" src="/static/scripts/open-loc.js"></script>
-    <script type="text/javascript" src="/static/scripts/server-status.js">
-      document.addEventListener('DOMContentLoaded', checkServerStatus("{{.ServerHost}}"));
-      setInterval(checkServerStatus("{{.ServerHost}}"), 60000); // Check every 60 seconds
+    <script type="text/javascript">
+      function checkServerStatus() {
+        let serverURL = "http://" + "{{.ServerHost}}";
+        console.log("serverURL: " + serverURL);
+        const statusText = document.getElementById("status-text");
+        fetch(serverURL)
+          .then((response) => {
+            if (response.ok) {
+              statusText.textContent = "online";
+              statusText.classList.remove("offline");
+              statusText.classList.add("online");
+            } else {
+              throw new Error("Server offline");
+            }
+          })
+          .catch((error) => {
+            statusText.textContent = "offline";
+            statusText.classList.remove("online");
+            statusText.classList.add("offline");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", checkServerStatus);
+      setInterval(checkServerStatus, 60000); // Check every 60 seconds
     </script>
   </body>
 </html>

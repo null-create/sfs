@@ -76,11 +76,11 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 	case "CLIENT_NOTIFICATIONS":
 		fmt.Print("no implemented yet") // TODO:
 	case "CLIENT_NEW_SERVICE":
-		return envCfgs.Set(setting, value)
+		return c.updateClientNewService(value)
+	case "NEW_SERVICE":
+		return c.updateNewService(value)
 	case "EVENT_BUFFER_SIZE":
 		return c.updateEventBufferSize(value)
-	case "NEW_SERVICE":
-		return envCfgs.Set(setting, value)
 	default:
 		return fmt.Errorf("unsupported setting: '%s'", setting)
 	}
@@ -306,6 +306,32 @@ func (c *Client) updateEventBufferSize(sizestr string) error {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) validServiceSetting(value string) bool {
+	return value == "true" || value == "false"
+}
+
+// resets new service to true for NEW_SERVICE and CLIENT_NEW_SERVICE env vars
+// the value param should be a string set to "true" or "false"
+func (c *Client) updateClientNewService(value string) error {
+	if !c.validServiceSetting(value) {
+		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)
+	}
+	if err := envCfgs.Set("CLIENT_NEW_SERVICE", value); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) updateNewService(value string) error {
+	if !c.validServiceSetting(value) {
+		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)
+	}
+	if err := envCfgs.Set("NEW_SERVICE", value); err != nil {
 		return err
 	}
 	return nil

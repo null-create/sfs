@@ -1,14 +1,12 @@
 function openFileLoc(fileID) {
-  const url = `/files/i/${fileID}/open-loc`
-  console.log("fetching: "+ url)
-  fetch(url)
+  fetch(`/files/i/${fileID}/open-loc`)
   .then((response) => {
     if (response.ok) {
-      window.location.href = `/files/i/${fileID}`
+      console.log("success")
     }
   })
   .catch((error) => {
-    console.error("Error:", error);
+    console.error("error:", error);
     alert(error.message);
   });
 }
