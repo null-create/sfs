@@ -2,7 +2,7 @@ function submitSettings() {
   document.getElementById("loading-spinner").style.display = "block";
   
   // const theme = document.getElementById("theme").value
-  const serverSync = document.getElementById("server-sync").value;
+  const serverSync = document.getElementById("server-sync").checked;
   const backupDir = document.getElementById("local-backup-dir").value;
   const clientPort = document.getElementById("client-port").value;
   const syncDelay = document.getElementById("sync-delay").value;
@@ -27,7 +27,7 @@ function submitSettings() {
   })
   .then((response) => {
     if (!response.ok) {
-      throw new Error("Error updating settings: " + JSON.stringify(response));
+      throw new Error(response.status + ": " + response.statusText);
     }
   })
   .then((data) => {

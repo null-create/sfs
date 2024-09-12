@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/sfs/pkg/server"
 	svc "github.com/sfs/pkg/service"
@@ -119,6 +120,20 @@ func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) 
 	c.successMsg(w, "success")
 }
 
+// update config setting
+func (c *Client) updateSetting(w http.ResponseWriter, setting string, value interface{}) {
+	var v string
+	if setting == "CLIENT_LOCAL_BACKUP" {
+		v = strconv.FormatBool(value.(bool))
+	} else {
+		v = value.(string)
+	}
+	if err := c.UpdateConfigSetting(setting, v); err != nil {
+		c.log.Error("error updating settings: " + err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // update client application settings from the web UI
 func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
@@ -129,7 +144,7 @@ func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	var newSettings map[string]string
+	var newSettings map[string]interface{}
 	err = json.Unmarshal(buf.Bytes(), &newSettings)
 	if err != nil {
 		c.error(w, r, err.Error())
@@ -144,11 +159,7 @@ func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 	// update settings
 	for setting, value := range newSettings {
 		if setting != "" && value != "" {
-			if err := c.UpdateConfigSetting(setting, value); err != nil {
-				c.log.Error("error updating settings: " + err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			c.updateSetting(w, setting, value)
 		}
 	}
 

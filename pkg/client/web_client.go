@@ -109,7 +109,7 @@ func newWcRouter(client *Client) *chi.Mux {
 		r.Post("/", client.DropZoneHandler)
 	})
 
-	// settings page
+	// settings page and handler
 	r.Route("/settings", func(r chi.Router) {
 		r.Get("/", client.SettingsPage)
 		r.Post("/", client.SettingsHandler)
