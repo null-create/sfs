@@ -15,8 +15,10 @@ import (
 
 // API handlers for the web client UI
 
-// 10 mb file size limit for certain files (mostly profile pics)
-const SizeLimit = 10 << 20
+const (
+	PhotoSizeLimit = 10 << 20  // 10 mb file size limit for certain files (mostly profile pics)
+	FileSizeLimit  = 200 << 30 // 200 gb file size limit (arbitrary size)
+)
 
 func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 	c.log.Info(msg)
@@ -30,7 +32,7 @@ func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 // ------ users --------------------------------
 
 func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(SizeLimit)
+	err := r.ParseMultipartForm(PhotoSizeLimit)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
@@ -58,7 +60,7 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(SizeLimit) // Limit file size to 10MB
+	err := r.ParseMultipartForm(PhotoSizeLimit) // Limit file size to 10MB
 	if err != nil {
 		http.Error(w, "Unable to parse form: "+err.Error(), http.StatusBadRequest)
 		return
@@ -209,7 +211,7 @@ func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(SizeLimit)
+	err := r.ParseMultipartForm(FileSizeLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

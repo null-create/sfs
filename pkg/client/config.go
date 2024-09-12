@@ -311,12 +311,12 @@ func (c *Client) updateEventBufferSize(sizestr string) error {
 	return nil
 }
 
+// new service settings are strings that should be "true" or "false"
 func (c *Client) validServiceSetting(value string) bool {
 	return value == "true" || value == "false"
 }
 
 // resets new service to true for NEW_SERVICE and CLIENT_NEW_SERVICE env vars
-// the value param should be a string set to "true" or "false"
 func (c *Client) updateClientNewService(value string) error {
 	if !c.validServiceSetting(value) {
 		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)

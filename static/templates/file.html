@@ -4,16 +4,11 @@
   <body>
     {{template "frame"}}
     <div id="content">
-      {{template "toolbar"}}
       <div class="file-info-container">
-        <h2>File Information</h2>
+        <h2>{{.Name}}</h2>
         <div class="file-info-item">
           <label class="file-label">Name: </label>
           <span id="file-name">{{.Name}}</span>
-        </div>
-        <div class="file-info-item">
-          <label class="file-label">Size: </label>
-          <span id="file-size">{{.Size}} bytes</span>
         </div>
         <div class="file-info-item">
           <label class="file-label">ID: </label>
@@ -28,14 +23,12 @@
           <span id="file-type">{{.Type}}</span>
         </div>
         <div class="file-info-item">
-          <label>Location </label>
-          <button
-            type="button"
-            id="open-loc-button"
-            onclick='openFileLoc("{{.ID}}")'
-          >
-            Open in folder
-          </button>
+          <label class="file-label">Size: </label>
+          <span id="file-size">{{.Size}} bytes</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Last Sync: </label>
+          <span id="file-last-sync">{{.LastSync}}</span>
         </div>
         <div class="file-info-item">
           <label class="file-label">Checksum: </label>
@@ -45,13 +38,34 @@
           <label class="file-label">Server Download: </label>
           <a id="file-download" href="{{.Endpoint}}"> Link</a>
         </div>
-        <button
-          type="button"
-          id="remove-button"
-          onclick="removeFile('{{.ID}}')"
-        >
-          Remove
-        </button>
+        <div class="file-info-item">
+          <label class="file-label">Location</label>
+          <span id="file-location">{{.Location}}</span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label"> Open</label>
+          <span id="file-open">
+            <button
+              type="button"
+              id="open-loc-button"
+              onclick='openFileLoc("{{.ID}}")'
+            >
+              Open in folder
+            </button>
+          </span>
+        </div>
+        <div class="file-info-item">
+          <label class="file-label">Remove</label>
+          <span id="file-remove">
+            <button
+              type="button"
+              id="remove-button"
+              onclick="removeFile('{{.ID}}')"
+            >
+              Remove
+            </button>
+          </span>
+        </div>
       </div>
     </div>
     <script
