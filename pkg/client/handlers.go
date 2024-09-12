@@ -151,11 +151,6 @@ func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("new settings received:\n")
-	for setting, value := range newSettings {
-		fmt.Printf("	%s: %s\n", setting, value)
-	}
-
 	// update settings
 	for setting, value := range newSettings {
 		if setting != "" && value != "" {
