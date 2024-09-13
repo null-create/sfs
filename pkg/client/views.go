@@ -24,7 +24,7 @@ var (
 func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
 	c.log.Error("Error: " + msg)
 	errCtx := context.WithValue(r.Context(), server.Error, msg)
-	c.ErrorPage(w, r.WithContext(errCtx))
+	http.Redirect(w, r.WithContext(errCtx), errorPage, http.StatusInternalServerError)
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
