@@ -190,7 +190,7 @@ header {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  width: 96%;
+  width: 95%;
 }
 
 .file-info-item {
@@ -208,7 +208,7 @@ header {
 
 .file-info-item label {
   color: #555;
-  flex: 0 0 30%; /* Label takes up 30% of the width */
+  flex: 0 0 15%; /* Label takes up 15% of the width */
   font-weight: bold;
   margin-right: 10px;
 }
@@ -339,6 +339,7 @@ header {
 /* General form styling */
 
 form {
+  max-width: 1200px;
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   padding: 20px;
@@ -398,7 +399,7 @@ form#search-form {
 /* Responsive design for larger screens */
 @media (min-width: 300px) {
   form {
-    max-width: 500px;
+    max-width: 750px;
   }
 }
 
@@ -516,11 +517,6 @@ form#search-form {
 }
 
 /* Settings Page */
-
-#settings-form {
-  width: 85%;
-  max-width: 1200px;
-}
 
 .setting-item {
   margin-bottom: 15px;

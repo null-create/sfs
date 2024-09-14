@@ -280,7 +280,7 @@ func (c *Client) ListRemoteFiles() error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		c.dump(resp, true)
+		c.dump(resp)
 		return nil
 	}
 	defer resp.Body.Close()
@@ -412,7 +412,7 @@ func (c *Client) AddFile(filePath string) error {
 		if err != nil {
 			return err
 		}
-		c.dump(resp, true)
+		c.dump(resp)
 		if resp.StatusCode == http.StatusOK {
 			// update client side info about the file to
 			// include the server path generated after a successful registration
@@ -508,7 +508,7 @@ func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
 				return err
 			}
 		}
-		c.dump(resp, true)
+		c.dump(resp)
 	} else {
 		if err := c.BackupFile(newFile); err != nil {
 			return err
@@ -568,7 +568,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 			c.log.Error("failed to execute HTTP request: " + err.Error())
 			return nil
 		}
-		c.dump(resp, true)
+		c.dump(resp)
 	}
 	return nil
 }
@@ -600,7 +600,7 @@ func (c *Client) RegisterFile(file *svc.File) error {
 		}
 		c.log.Info(fmt.Sprintf("file '%s' registered", file.Name))
 	} else {
-		c.dump(resp, true)
+		c.dump(resp)
 	}
 	return nil
 }
@@ -721,7 +721,7 @@ func (c *Client) AddDir(dirPath string) error {
 		if err != nil {
 			return err
 		}
-		c.dump(resp, true)
+		c.dump(resp)
 		if resp.StatusCode == http.StatusOK {
 			serverPath, err := c.getDirServerPath(newDir)
 			if err != nil {
@@ -870,7 +870,7 @@ func (c *Client) RegisterDirectory(dir *svc.Directory) error {
 		}
 		c.log.Info(fmt.Sprintf("directory '%s' registered", dir.Name))
 	} else {
-		c.dump(resp, true)
+		c.dump(resp)
 	}
 	return nil
 }
@@ -1008,7 +1008,7 @@ func (c *Client) RegisterClient() error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		c.log.Warn(fmt.Sprintf("failed to register new user. server status: %v", resp.Status))
-		c.dump(resp, true)
+		c.dump(resp)
 		return nil
 	}
 	// register the drive. this will create a
@@ -1030,7 +1030,7 @@ func (c *Client) RegisterClient() error {
 		}
 	} else {
 		c.log.Warn(fmt.Sprintf("failed to register new drive. server status: %v", resp.Status))
-		c.dump(resp, true)
+		c.dump(resp)
 		return nil
 	}
 	c.log.Info("client registered with the server")

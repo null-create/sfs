@@ -1,6 +1,4 @@
 function submitSettings() {
-  document.getElementById("loading-spinner").style.display = "block";
-  
   // const theme = document.getElementById("theme").value
   const serverSync = document.getElementById("server-sync").checked;
   const backupDir = document.getElementById("local-backup-dir").value;
@@ -32,12 +30,10 @@ function submitSettings() {
   })
   .then((data) => {
     console.log("Settings updated successfully");
-    document.getElementById("loading-spinner").style.display = "none";
     alert("Settings updated successfully")
   })
   .catch((error) => {
     console.error("Error:", error);
-    document.getElementById("loading-spinner").style.display = "none";
     alert(error)
   });
 }

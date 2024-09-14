@@ -124,7 +124,7 @@ func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) 
 func (c *Client) updateSetting(w http.ResponseWriter, setting string, value interface{}) {
 	var v string
 	if setting == "CLIENT_LOCAL_BACKUP" {
-		v = strconv.FormatBool(!value.(bool))
+		v = strconv.FormatBool(!value.(bool)) // (server sync = false) == (client_local_backup = true)
 	} else {
 		v = value.(string)
 	}
