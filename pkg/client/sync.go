@@ -45,8 +45,7 @@ func (c *Client) dump(resp *http.Response) {
 // build a new client sync index. re-initializes
 // client roots index if called.
 func (c *Client) BuildSyncIndex() {
-	// initialize sync index
-	c.Drive.SyncIndex = svc.NewSyncIndex(c.UserID)
+	c.Drive.SyncIndex = svc.NewSyncIndex(c.UserID) // initialize sync index
 
 	// get any files
 	files := c.Drive.GetFiles()

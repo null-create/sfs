@@ -598,6 +598,9 @@ func (c *Client) RegisterFile(file *svc.File) error {
 		if err := c.Db.UpdateFile(file); err != nil {
 			return err
 		}
+		if err := c.Drive.UpdateFile(file.DirID, file); err != nil {
+			return err
+		}
 		c.log.Info(fmt.Sprintf("file '%s' registered", file.Name))
 	} else {
 		c.dump(resp)

@@ -610,10 +610,6 @@ as it will generate new file and directory objects with their own ID's, and will
 to be treated as persistent items rather than ephemeral ones.
 */
 func (d *Directory) Walk() *Directory {
-	if d.Path == "" {
-		log.Print("can't traverse directory without a path")
-		return d
-	}
 	return walk(d)
 }
 

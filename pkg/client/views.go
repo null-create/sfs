@@ -44,16 +44,18 @@ func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
-	errMsg := r.Context().Value(server.Error)
-	if errMsg == nil {
-		http.Error(w, "No error parsed from request", http.StatusInternalServerError)
+	var errMsg string
+	emsg := r.Context().Value(server.Error)
+	if emsg == nil {
+		errMsg = "he's dead, jim"
 		return
+	} else {
+		errMsg = emsg.(string)
 	}
-	errMsg = errMsg.(string)
 	errPageData := ErrorPage{
 		UserPage:   userPage,
 		ProfilePic: c.Conf.ProfilePic,
-		ErrMsg:     fmt.Sprintf("Something went wrong :(\n\n%s", errMsg),
+		ErrMsg:     errMsg,
 	}
 	err := c.Templates.ExecuteTemplate(w, "error.html", errPageData)
 	if err != nil {
@@ -153,7 +155,7 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	fileID := r.Context().Value(server.File).(string)
 	file, err := c.GetFileByID(fileID)
 	if file == nil {
-		c.error(w, r, err.Error())
+		http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 		return
 	}
 	if err != nil {
