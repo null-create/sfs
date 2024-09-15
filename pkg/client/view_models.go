@@ -21,6 +21,17 @@ type Index struct {
 	ClientHost string
 }
 
+type DrivePage struct {
+	UserPage   string
+	ProfilePic string
+	UserName   string
+	UserID     string
+	Dirs       []*svc.Directory
+	Files      []*svc.File
+	ServerHost string
+	ClientHost string
+}
+
 type FilePage struct {
 	UserPage   string
 	ProfilePic string

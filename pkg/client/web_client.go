@@ -63,6 +63,11 @@ func newWcRouter(client *Client) *chi.Mux {
 		r.Get("/", client.HomePage)
 	})
 
+	// drive page
+	r.Route("/drive", func(r chi.Router) {
+		r.Get("/", client.DrivePage)
+	})
+
 	// error page
 	r.Route("/error/{errMsg}", func(r chi.Router) {
 		r.Use(server.ErrorCtx)

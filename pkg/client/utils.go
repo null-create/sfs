@@ -51,12 +51,12 @@ func ShowFileInExplorer(filePath string) error {
 
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("explorer", "/select,", absPath).Run() // Use explorer.exe to open the file location and highlight the file
+		return exec.Command("explorer", "/select,", absPath).Run()
 	case "darwin":
-		return exec.Command("open", "-R", absPath).Run() // Use the 'open' command on macOS to reveal the file in Finder
+		return exec.Command("open", "-R", absPath).Run()
 	case "linux":
 		dir := filepath.Dir(absPath)
-		return exec.Command("xdg-open", dir).Run() // Use 'xdg-open' to open the file's parent directory (does not highlight the file)
+		return exec.Command("xdg-open", dir).Run()
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}

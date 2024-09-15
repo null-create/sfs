@@ -43,12 +43,27 @@ func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (c *Client) DrivePage(w http.ResponseWriter, r *http.Request) {
+	drivePageData := DrivePage{
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
+		UserID:     c.User.ID,
+		Files:      c.Drive.GetFiles(),
+		Dirs:       c.Drive.GetDirs(),
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
+	}
+	err := c.Templates.ExecuteTemplate(w, "drive.html", drivePageData)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+}
+
 func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
 	var errMsg string
 	emsg := r.Context().Value(server.Error)
 	if emsg == nil {
 		errMsg = "he's dead, jim"
-		return
 	} else {
 		errMsg = emsg.(string)
 	}

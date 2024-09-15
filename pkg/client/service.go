@@ -371,10 +371,10 @@ func (c *Client) AddFile(filePath string) error {
 	// see if we already have the file's parent directory in the file system
 	dir, err := c.GetDirByPath(filepath.Dir(filePath))
 	if err != nil {
+		// if the parent directory to this file doesn't exist in the file system,
+		// then add it to the SFS root.
 		if strings.Contains(err.Error(), "does not exist") {
-			// if the parent directory to this file doesn't exist in the file system,
-			// then add it to the SFS root.
-			newFile.DirID = c.Drive.Root.ID
+			newFile.DirID = c.Drive.RootID
 		} else {
 			return err
 		}
@@ -475,49 +475,6 @@ func (c *Client) getFileServerPath(file *svc.File) (string, error) {
 	return f.ServerPath, nil
 }
 
-// add a new file to a specified directory using a directory ID.
-// adds file to database and monitoring services.
-func (c *Client) AddFileWithDirID(dirID string, newFile *svc.File) error {
-	if err := c.Drive.AddFile(dirID, newFile); err != nil {
-		return err
-	}
-	if err := c.Db.AddFile(newFile); err != nil {
-		return err
-	}
-	if err := c.WatchItem(newFile.ClientPath); err != nil {
-		return err
-	}
-	if !c.LocalSyncOnly() {
-		// push metadata to server
-		req, err := c.NewFileRequest(newFile)
-		if err != nil {
-			return err
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return err
-		}
-		// get newly generated server-side path for the file if successfully created
-		if resp.StatusCode == http.StatusOK {
-			svrpath, err := c.getFileServerPath(newFile)
-			if err != nil {
-				return err
-			}
-			newFile.ServerPath = svrpath
-			if err := c.UpdateFile(newFile); err != nil {
-				return err
-			}
-		}
-		c.dump(resp)
-	} else {
-		if err := c.BackupFile(newFile); err != nil {
-			return err
-		}
-	}
-	c.log.Info(fmt.Sprintf("added %s to client", newFile.Name))
-	return nil
-}
-
 // update file metadata in the service instance. does not
 // update file contents. use c.ModifyFile() instead.
 func (c *Client) UpdateFile(updatedFile *svc.File) error {
@@ -540,6 +497,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if !c.KnownItem(file.ClientPath) {
 		return fmt.Errorf("file '%s' not registered", file.Name)
 	}
+
 	// stop monitoring the file
 	c.Monitor.StopWatching(file.ClientPath)
 
@@ -548,8 +506,14 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	if err := file.Copy(filepath.Join(c.RecycleBin, file.Name)); err != nil {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
-	// remove file data from the service. does not remove physical file,
-	// only data used by the service.
+
+	// remove the backup file from root (or the subdir its located in)
+	if err := os.Remove(file.BackupPath); err != nil {
+		return fmt.Errorf("failed to remove backup copy of file: %v", err)
+	}
+
+	// remove file data from the service. does not remove *original* physical file,
+	// only meta-data used by the service.
 	if err := c.Drive.RemoveFile(file.DirID, file); err != nil {
 		return err
 	}
@@ -557,6 +521,8 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return err
 	}
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
+
+	// remove from backup server if necessary
 	if !c.LocalSyncOnly() {
 		req, err := c.DeleteFileRequest(file)
 		if err != nil {
@@ -568,7 +534,11 @@ func (c *Client) RemoveFile(file *svc.File) error {
 			c.log.Error("failed to execute HTTP request: " + err.Error())
 			return nil
 		}
-		c.dump(resp)
+		if resp.StatusCode != http.StatusOK {
+			c.dump(resp)
+		} else {
+			c.log.Info(fmt.Sprintf("file '%s' removed from backup server", file.Name))
+		}
 	}
 	return nil
 }
@@ -1093,7 +1063,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 		return nil, fmt.Errorf("failed to add files to database: %v", err)
 	}
 	for _, file := range files {
-		if err := c.WatchItem(file.Path); err != nil {
+		if err := c.WatchItem(file.ClientPath); err != nil {
 			return nil, err
 		}
 		if !c.LocalSyncOnly() {
@@ -1111,7 +1081,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 		return nil, err
 	}
 	for _, subDir := range dirs {
-		// if err := c.WatchItem(subDir.Path); err != nil {
+		// if err := c.WatchItem(subDir.ClientPath); err != nil {
 		// 	return err
 		// }
 		if !c.LocalSyncOnly() {

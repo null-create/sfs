@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -43,16 +42,6 @@ func EnableCORS(h http.Handler) http.Handler {
 	})
 }
 
-/*
-TODO:
-Rethink what the middleware should actually do. There are several functions
-that access the database and execute operations that could be handled directly
-by the SFS service.
-
-Middleware should probably just validate the JWT's coming in from clients,
-and not mucn else. Let the service deal with service objects like files and directories.
-*/
-
 // -------- all item contexts ------------------------------------
 
 func AllUsersFilesCtx(h http.Handler) http.Handler {
@@ -69,23 +58,11 @@ func AllUsersFilesCtx(h http.Handler) http.Handler {
 
 // -------- new item/user context --------------------------------
 
-func ClientNewFileCtx(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fileID := chi.URLParam(r, "filePath")
-		if fileID == "" {
-			http.Error(w, "filePath not set", http.StatusBadRequest)
-			return
-		}
-		ctx := context.WithValue(r.Context(), File, fileID)
-		h.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
 func DiscoverCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		folderPath := chi.URLParam(r, "folderPath")
 		if folderPath == "" {
-			http.Error(w, "filePath not set", http.StatusBadRequest)
+			http.Error(w, "folderPath not set", http.StatusBadRequest)
 			return
 		}
 		ctx := context.WithValue(r.Context(), Directory, folderPath)
@@ -290,8 +267,8 @@ func ErrorCtx(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errMsg := chi.URLParam(r, "errMsg")
 		if errMsg == "" {
-			log.Print("errMsg is not set. will default to standard messaging")
-			errMsg = "something's borked"
+			http.Error(w, "errMsg not set", http.StatusBadRequest)
+			return
 		}
 		ctx := context.WithValue(r.Context(), Error, errMsg)
 		h.ServeHTTP(w, r.WithContext(ctx))
