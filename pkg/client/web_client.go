@@ -129,8 +129,8 @@ func newWcRouter(client *Client) *chi.Mux {
 		})
 		r.Route("/i/{fileID}", func(r chi.Router) {
 			r.Use(server.FileCtx)
-			r.Get("/", client.FilePage) // get info about a file
-			r.Route("/open-loc", func(r chi.Router) {
+			r.Get("/", client.FilePage)               // get info about a file
+			r.Route("/open-loc", func(r chi.Router) { // open the file in the directory its located in
 				r.Get("/", client.OpenFileLocHandler)
 			})
 		})

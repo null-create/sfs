@@ -17,8 +17,9 @@ import (
 // API handlers for the web client UI
 
 const (
-	PhotoSizeLimit = 10 << 20  // 10 mb file size limit for certain files (mostly profile pics)
-	FileSizeLimit  = 200 << 30 // 200 gb file size limit (arbitrary size)
+	DefaultSizeLimit = 1 << 10   // 1 kb default size limit for form data
+	PhotoSizeLimit   = 10 << 20  // 10 mb file size limit for certain files (mostly profile pics)
+	FileSizeLimit    = 100 << 30 // 100 gb file size limit (arbitrary size)
 )
 
 func (c *Client) successMsg(w http.ResponseWriter, msg string) {
@@ -33,7 +34,7 @@ func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 // ------ users --------------------------------
 
 func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(PhotoSizeLimit)
+	err := r.ParseMultipartForm(DefaultSizeLimit)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
@@ -178,15 +179,6 @@ func (c *Client) getFileFromRequest(r *http.Request) (*svc.File, error) {
 	return file, nil
 }
 
-// add a new file to the SFS serverice using its absolute path
-func (c *Client) NewFile(w http.ResponseWriter, r *http.Request) {
-	newFilePath := r.Context().Value(server.File).(string)
-	if err := c.AddFile(newFilePath); err != nil {
-		c.error(w, r, err.Error())
-		return
-	}
-}
-
 // open a file explorer window at the requested path
 func (c *Client) OpenFileLocHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := c.getFileFromRequest(r)
@@ -303,6 +295,10 @@ func (c *Client) RemoveFileHandler(w http.ResponseWriter, r *http.Request) {
 		c.error(w, r, err.Error())
 		return
 	}
+	if file == nil {
+		c.error(w, r, "file not found")
+		return
+	}
 	if err := c.RemoveFile(file); err != nil {
 		c.error(w, r, err.Error())
 		return
@@ -320,11 +316,17 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	r.Body.Close()
 
 	path := buf.String()
+	if path == "" {
+		c.error(w, r, "no path provided")
+		return
+	}
+
 	item, err := os.Stat(path)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
+
 	if item.IsDir() {
 		_, err = c.Discover(path)
 		if err != nil {
