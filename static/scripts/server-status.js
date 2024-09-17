@@ -1,20 +1,24 @@
-// Check if the server is up
-function checkServerStatus(serverURL) {
+function checkServerStatus(serverHost) {
+  let serverURL = "http://" + serverHost;
   console.log("serverURL: " + serverURL);
-  const statusText = document.getElementById('status-text'); 
+  const statusText = document.getElementById("status-text");
+
   fetch(serverURL)
-  .then(response => {
+  .then((response) => {
     if (response.ok) {
-      statusText.textContent = 'online';
-      statusText.classList.remove('offline');
-      statusText.classList.add('online');
+      statusText.textContent = "online";
+      statusText.classList.remove("offline");
+      statusText.classList.add("online");
     } else {
-      throw new Error('Server offline');
+      throw new Error("Server offline");
     }
   })
-  .catch(error => {
-    statusText.textContent = 'offline';
-    statusText.classList.remove('online');
-    statusText.classList.add('offline');
+  .catch((error) => {
+    statusText.textContent = "offline";
+    statusText.classList.remove("online");
+    statusText.classList.add("offline");
   });
 }
+
+document.addEventListener("DOMContentLoaded", checkServerStatus);
+setInterval(checkServerStatus, 60000); // Check every 60 seconds

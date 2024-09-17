@@ -1,7 +1,11 @@
 {{define "header"}}
 <header>
   <div id="logo">
-    <h1 onclick="window.location.href='/'" style="cursor: pointer">My Drive</h1>
+    <div class="image-container">
+      <a href="/">
+        <img src="/assets/main-icon-with-text.png" alt="main icon with text" />
+      </a>
+    </div>
   </div>
   <div id="search">
     <form id="search-form" onsubmit="submitSearch(event)">

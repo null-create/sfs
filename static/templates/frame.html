@@ -3,7 +3,7 @@
   <div id="logo">
     <div class="image-container">
       <a href="/">
-        <img src="/assets/main-icon-with-text.png" alt="main icon with text" />
+        <img src="/assets/main-icon-small.png" alt="main icon with text" />
       </a>
     </div>
   </div>
@@ -13,13 +13,13 @@
         type="text"
         id="search-input"
         name="searchQuery"
-        placeholder="Search for files and directories in your Drive"
+        placeholder="Search in drive"
         style="width: 400px; padding: 10px"
       />
       <button type="submit">Search</button>
     </form>
   </div>
-  <div id="profile">
+  <div id="profile-pic" class="profile-pic">
     <a href="/user">
       <img
         src="{{if .ProfilePic}} /assets/profile-pics/{{.ProfilePic}} {{else}} /assets/profile-pics/default_profile_pic.jpg {{end}}"
@@ -31,7 +31,7 @@
 </header>
 <div id="sidebar">
   <div class="button-container">
-    <button class="add-button" id="dropdown-btn">New ➕</button>
+    <button class="add-button" id="dropdown-btn">➕ New</button>
     <div id="dropdown-menu" class="dropdown-content">
       <a id="new-file-link" href="/upload">New File</a>
       <a id="new-folder-link" href="/add">New Folder</a>

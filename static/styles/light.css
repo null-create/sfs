@@ -1,3 +1,5 @@
+/* Global */
+
 body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -20,16 +22,18 @@ header {
   z-index: 1000;
 }
 
+/* Top bar */
+
 #search input {
   width: 400px;
   padding: 10px;
 }
 
 #profile {
-  width: 40px; /* Define a specific size for the profile container */
-  height: 40px; /* Match the height and width */
+  width: 40px; 
+  height: 40px; 
   overflow: hidden; /* Ensure that the image stays within the bounds of the container */
-  border-radius: 50%; /* Makes the container circular */
+  border-radius: 50%; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -42,10 +46,15 @@ header {
   border-radius: 50%; /* Makes the image itself circular */
 }
 
+.image-container {
+  display: flex;
+  justify-content: left;
+}
 
 /* Side Bar */
 
 #sidebar {
+  align-items: center;
   width: 250px;
   background-color: #ffffff;
   border-right: 1px solid #e0e0e0;
@@ -57,7 +66,6 @@ header {
 
 #server-status {
   margin-top: 20px;
-  /* font-weight: bold; */
 }
 
 #status-text.online {
@@ -92,6 +100,57 @@ header {
   background-color: #f1f3f4;
 }
 
+.icon {
+  font-style: normal;
+  padding-right: 10px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  padding-left: 20px;
+  padding-bottom: 10px;
+}
+
+.add-button {
+  font-weight: bold;
+  font-size: medium;
+  background-color: rgb(232, 236, 243);
+  color: black;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.dropdown-content {
+  display: none; /* hidden by default */
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+/* Show dropdown content when it is active */
+.show {
+  display: block;
+}
+
 /* Tool Bar */
 
 .toolbar {
@@ -101,6 +160,7 @@ header {
 .toolbar-button {
   padding: 10px 15px;
   margin-right: 10px;
+  margin-left: 20px;
   background-color: rgb(175, 203, 252);
   border: none;
   border-radius: 4px;
@@ -190,7 +250,7 @@ header {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  width: 96%;
+  width: 95%;
 }
 
 .file-info-item {
@@ -202,9 +262,13 @@ header {
   overflow: visible;    /* Hide overflow if text is too long */
 }
 
+.file-info-container button {
+  order: 1; /* default */
+}
+
 .file-info-item label {
   color: #555;
-  flex: 0 0 30%; /* Label takes up 30% of the width */
+  flex: 0 0 15%; /* Label takes up 15% of the width */
   font-weight: bold;
   margin-right: 10px;
 }
@@ -231,8 +295,29 @@ header {
   transition: border-bottom 0.2s ease-in-out;
 }
 
+#open-loc-button {
+  align-self: flex-start; /* Align button to the start of the container */
+  text-decoration: none;
+  background-color: #1e88e5;
+  font-weight: bold;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  order: 0; /* Move to the left of remove-button */
+}
+
+#open-loc-button:hover {
+  background-color: #073bad;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 #remove-button {
-  margin-top: 20px; /* Add space above the button */
   align-self: flex-start; /* Align button to the start of the container */
   background-color: #e90f0f;
   border: none;
@@ -242,6 +327,7 @@ header {
   text-decoration: none;
   display: inline-block;
   font-size: 14px;
+  font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
 }
@@ -313,17 +399,16 @@ header {
 /* General form styling */
 
 form {
+  max-width: 1200px;
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   padding: 20px;
   border-radius: 5px;
-  max-width: 1000px;
   margin: 20px auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center; /* Aligning content to the center */
 }
 
-/* Label styling */
 form label {
   font-size: 16px;
   color: #333;
@@ -331,7 +416,6 @@ form label {
   margin-bottom: 8px;
 }
 
-/* Input field styling */
 form input[type="text"] {
   width: 100%;
   padding: 10px;
@@ -342,7 +426,6 @@ form input[type="text"] {
   font-size: 14px;
 }
 
-/* Button styling */
 form button {
   background-color: #1e88e5;
   color: white;
@@ -355,7 +438,6 @@ form button {
   transition: background-color 0.3s ease;
 }
 
-/* Button hover effect */
 form button:hover {
   background-color: #1565c0;
 }
@@ -373,7 +455,7 @@ form#search-form {
 /* Responsive design for larger screens */
 @media (min-width: 300px) {
   form {
-    max-width: 500px;
+    max-width: 750px;
   }
 }
 
@@ -480,6 +562,7 @@ form#search-form {
   margin: 20px auto;
 }
 
+/* Spinner animation */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -491,15 +574,6 @@ form#search-form {
 }
 
 /* Settings Page */
-
-.settings-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
 
 .setting-item {
   margin-bottom: 15px;
