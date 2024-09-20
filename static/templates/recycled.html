@@ -51,11 +51,18 @@
         {{end}}
       </table>
     </div>
+    <script type="text/javascript" src="/static/scripts/add-button.js"></script>
     <script type="text/javascript" src="/static/scripts/empty-recyclebin.js" />
     <script
       type="text/javascript"
       src="/static/scripts/server-status.js"
-      onload="checkServerStatus(`{{.ServerHost}}`)"
     ></script>
+    <script type="text/javascript">
+      document.addEventListener(
+        "DOMContentLoaded",
+        checkServerStatus("http://" + `{{.ServerHost}}`)
+      );
+      setInterval(checkServerStatus("http://" + `{{.ServerHost}}`), 60000); // Check every 60 seconds
+    </script>
   </body>
 </html>

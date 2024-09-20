@@ -5,30 +5,33 @@
     <th>Name</th>
     <th>Size</th>
     <th>Last Sync</th>
-    <th>Download</th>
-    <th>Checksum</th>
+    <th>Server Download</th>
   </tr>
   {{range .Dirs}}
   <tr>
-    <td onclick="window.location.href='{{.Endpoint}}';" style="cursor: pointer">
+    <td
+      onclick="window.location.href='/dirs/i/{{.ID}}'"
+      style="cursor: pointer"
+    >
       <img src="/assets/folder-small.png" alt="small folder icon" />
     </td>
     <td>{{.Name}}</td>
-    <td>{{.Size}}</td>
+    <td>{{.Size}} bytes</td>
     <td>{{.LastSync}}</td>
     <td><a href="{{.Endpoint}}">Link</a></td>
-    <td>n/a</td>
   </tr>
   {{end}} {{range .Files}}
   <tr>
-    <td onclick="window.location.href='{{.Endpoint}}';" style="cursor: pointer">
+    <td
+      onclick="window.location.href='/files/i/{{.ID}}'"
+      style="cursor: pointer"
+    >
       <img src="/assets/file-small.png" alt="small file icon" />
     </td>
     <td>{{.Name}}</td>
-    <td>{{.Size}}</td>
+    <td>{{.Size}} bytes</td>
     <td>{{.LastSync}}</td>
     <td><a href="{{.Endpoint}}">Link</a></td>
-    <td>{{.Checksum}}></td>
   </tr>
   {{end}}
 </table>

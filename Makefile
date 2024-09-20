@@ -1,7 +1,7 @@
 PROJECT_NAME := sfs
 BUILD_DIR := ./bin
 BIN_NAME := $(BUILD_DIR)/$(PROJECT_NAME)
-SRC_DIR := ./cmd/$(PROJECT_NAME)
+SRC_DIR := ./pkg
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 # Default target
