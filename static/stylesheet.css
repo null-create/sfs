@@ -1,11 +1,12 @@
 /* Global */
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: Google Sans;
+  font-weight: lighter;
   margin: 0;
   display: flex;
   height: 100vh;
-  background-color: rgb(241, 243, 244);
+  background-color: rgb(247, 247, 247);
 }
 
 header {
@@ -13,13 +14,30 @@ header {
   justify-content: space-evenly;
   align-items: center;
   padding: 0 20px;
-  background-color: rgb(241, 243, 244);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: rgb(247, 247, 247);
+  /* box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); */
   width: 100%;
   height: 60px;
   position: fixed;
   top: 0;
   /* z-index: 1000; */
+}
+
+/* Main content block */
+#content {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  margin-left: 250px;
+  padding: 60px 20px 20px;
+  flex-grow: 1;
+  border-radius: 25px;
+}
+
+.welcome-container {
+  padding-top: 10px;
+  font-size: larger;
+  text-align: center;
 }
 
 /* General form styling */
@@ -57,7 +75,7 @@ form button {
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 4px;
+  border-radius: 25px;
   cursor: pointer;
   font-size: 14px;
   margin: 10px 0; /* Adjusted for both buttons */
@@ -78,11 +96,81 @@ form#search-form {
   all: unset;
 }
 
+/* Index page search bar buttons */
+
+.search-params-container {
+  font-weight: lighter;
+  display: flex;
+  flex-direction: columns;
+  column-gap: 50px;
+  justify-content: center;
+  align-items:center;
+}
+
+.type-button {
+  display: flex;
+  align-self: center;
+  font-size: medium;
+  background-color: rgb(238, 238, 238);
+  color: black;
+  cursor: pointer;
+  border: 5px;
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.type-button:hover {
+  background-color:  rgb(201, 210, 226)
+}
+
+.modified-button {
+  display: flex;
+  align-self: center;
+  font-size: medium;
+  background-color: rgb(238, 238, 238);
+  color: black;
+  cursor: pointer;
+  border: 5px;
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.modified-button:hover {
+  background-color: rgb(201, 210, 226)
+}
+
+.location-button {
+  display: flex;
+  align-self: center;
+  font-size: medium;
+  background-color: rgb(238, 238, 238);
+  color: black;
+  cursor: pointer;
+  border: 5px;
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.location-button:hover {
+  background-color:  rgb(201, 210, 226)
+}
+
 /* Top bar */
 
 #search input {
   width: 400px;
   padding: 10px;
+}
+
+#main-search {
+  display: flex;
+  align-self: center;
+}
+
+#search-form input[type="text"] {
+  width: 400px;
+  padding: 10px;
+  border-radius: 25px;
 }
 
 #profile-pic {
@@ -106,7 +194,7 @@ form#search-form {
 
 #sidebar {
   width: 250px;
-  background-color: rgb(241, 243, 244);
+  background-color: rgb(247, 247, 247);
   border-right: 1px solid #e0e0e0;
   position: fixed;
   top: 60px;
@@ -125,16 +213,6 @@ form#search-form {
   color: red;
 }
 
-#content {
-  display: flex;
-  flex-direction: column;
-  background-color: white;
-  margin-left: 250px;
-  padding: 60px 20px 20px;
-  flex-grow: 1;
-  border-radius: 25px;
-}
-
 .sidebar-link, .file-link {
   text-decoration: none; /* Removes the underline from links */
   color: inherit; /* Inherits the text color from the parent */
@@ -149,7 +227,7 @@ form#search-form {
 
 .sidebar-item:hover {
   background-color: rgb(190, 228, 247);
-  border-radius: 15px;
+  border-radius: 25px;
 }
 
 .icon {
@@ -298,7 +376,7 @@ form#search-form {
   align-items: flex-start;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
   padding: 20px;
   width: 95%;
 }

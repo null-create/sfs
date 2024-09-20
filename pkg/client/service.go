@@ -482,6 +482,12 @@ func (c *Client) UpdateFile(updatedFile *svc.File) error {
 	if oldFile == nil {
 		return fmt.Errorf("file (id=%s) not found", updatedFile.ID)
 	}
+	if updatedFile.DirID != oldFile.DirID {
+		return fmt.Errorf(
+			"parent directory ID mismatch. orig parent id=%s, updated parent id=%s",
+			oldFile.DirID, updatedFile.DirID,
+		)
+	}
 	if err := c.Drive.UpdateFile(oldFile.DirID, updatedFile); err != nil {
 		return fmt.Errorf("failed to update file (id=%s): %v", updatedFile.ID, err)
 	}
