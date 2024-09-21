@@ -397,6 +397,10 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.WatchItem(filePath); err != nil {
 		return err
 	}
+	// make a local backup copy of the file
+	if err := c.BackupFile(newFile); err != nil {
+		return err
+	}
 	if !c.LocalSyncOnly() {
 		// push metadata to server if autosync is enabled
 		// and we don't default to using local storage for backup purposes.
@@ -412,7 +416,6 @@ func (c *Client) AddFile(filePath string) error {
 		if err != nil {
 			return err
 		}
-		c.dump(resp)
 		if resp.StatusCode == http.StatusOK {
 			// update client side info about the file to
 			// include the server path generated after a successful registration
@@ -425,12 +428,8 @@ func (c *Client) AddFile(filePath string) error {
 				return err
 			}
 		} else {
+			c.dump(resp)
 			c.log.Warn(fmt.Sprintf("failed to send metadata to server. server response code: %v", resp.Status))
-		}
-	} else {
-		// make a local backup copy of the file
-		if err := c.BackupFile(newFile); err != nil {
-			return err
 		}
 	}
 	// update service state
