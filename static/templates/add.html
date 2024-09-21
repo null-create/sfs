@@ -33,11 +33,9 @@
       </div>
     </div>
     <script type="text/javascript">
-      document.addEventListener(
-        "DOMContentLoaded",
-        checkServerStatus("http://" + `{{.ServerHost}}`)
-      );
-      setInterval(checkServerStatus("http://" + `{{.ServerHost}}`), 60000); // Check every 60 seconds
+      let url = "http://" + `{{.ServerHost}}`;
+      document.addEventListener("DOMContentLoaded", checkServerStatus(url));
+      setInterval(checkServerStatus(url), 60000); // Check every 60 seconds
     </script>
   </body>
 </html>

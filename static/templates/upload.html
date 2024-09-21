@@ -27,7 +27,7 @@
                 action="/upload"
                 method="post"
                 class="dropzone"
-                id="upload-form"
+                id="dropzone-form"
                 enctype="multipart/form-data"
               ></form>
               <input
@@ -66,11 +66,11 @@
         </div>
       </div>
     </div>
-    <!--
     <script
       type="text/javascript"
       src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"
     ></script>
+    <!--
     <script
       type="text/javascript"
       src="/static/scripts/upload-file.js"
@@ -86,11 +86,9 @@
       };
     </script>
     <script type="text/javascript">
-      document.addEventListener(
-        "DOMContentLoaded",
-        checkServerStatus("http://" + `{{.ServerHost}}`)
-      );
-      setInterval(checkServerStatus("http://" + `{{.ServerHost}}`), 60000); // Check every 60 seconds
+      let url = "http://" + `{{.ServerHost}}`;
+      document.addEventListener("DOMContentLoaded", checkServerStatus(url));
+      setInterval(checkServerStatus(url), 60000); // Check every 60 seconds
     </script>
   </body>
 </html>

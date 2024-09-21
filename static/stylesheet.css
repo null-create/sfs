@@ -536,9 +536,8 @@ form#search-form {
 /* Upload page - Drag-and-drop-zone */
 
 .modal-header {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-bottom: 1px solid #e9ecef;
+  background-color: white;
+  /* padding: 15px; */
 }
 
 .modal-header h4 {
@@ -563,13 +562,12 @@ form#search-form {
 
 .modal-body {
   padding: 20px;
-  background-color: #fff;
+  background-color: white;
 }
 
 .modal-footer {
   padding: 15px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #e9ecef;
+  background-color: white;
   text-align: right;
 }
 
@@ -601,11 +599,21 @@ form#search-form {
   background-color: #0056b3;
 }
 
+#dropzone-form{
+  background-color: rgb(247, 247, 247);
+}
+
+#upload-form {
+  background-color: white;
+  box-shadow: unset;
+  border-color: white;
+}
+
 #upload-button {
   background-color: #28a745;
   color: white;
   font-weight: bold;
-  border-radius: 4px;
+  border-radius: 20px;
   padding: 10px 20px;
   font-size: 14px;
   cursor: pointer;

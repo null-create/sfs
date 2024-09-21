@@ -72,7 +72,7 @@ const addItems = () => {
         return;
       }    
       console.log("path input: " + pathInput);
-      
+
       fetch("/add/new", {
         method: "POST",
         body: pathInput
@@ -105,6 +105,7 @@ const removeAllUploads = () => {
   dropzoneInstance.removeAllFiles(true);
 }
 
+// dropzone handling
 document.addEventListener("DOMContentLoaded", () => {
   const uploadButton = document.getElementById("upload-button");
   if (uploadButton) {
@@ -151,8 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   
     // Handling drag and drop events on the dropzone
-    const dropzone = document.getElementById("upload-form");
-  
+    const dropzone = document.getElementById("dropzone-form");
     dropzone.addEventListener("dragover", (event) => {
       event.preventDefault(); 
     });
