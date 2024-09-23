@@ -39,6 +39,7 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 		c.error(w, r, err.Error())
 		return
 	}
+
 	// Extract form data (add more fields as needed)
 	updates := map[string]string{
 		"CLIENT_NAME":     r.FormValue("name"),
@@ -94,14 +95,7 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send back a JSON response with the new profile picture URL
-	newProfilePicURL := fmt.Sprintf("/assets/profile-pics/%s", fileName)
-	w.Header().Set("Content-Type", "application/json")
-	_, err = fmt.Fprintf(w, `{"newProfilePicURL": "%s"}`, newProfilePicURL)
-	if err != nil {
-		http.Error(w, "Failed to format response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.successMsg(w, "profile picture updated successfully")
 }
 
 func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +103,7 @@ func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
 		c.error(w, r, err.Error())
 		return
 	}
-	c.successMsg(w, "profile pic updated successfully")
+	c.successMsg(w, "profile pic cleared")
 }
 
 // empty the clients sfs recycle bin
@@ -221,7 +215,7 @@ func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer formFile.Close()
 
-	destFolder := r.FormValue("destFolder")
+	destFolder := r.FormValue("destFolder") // folder name, no path provided
 	if destFolder == "" {
 		http.Error(w, "Destination folder is required", http.StatusBadRequest)
 		return
