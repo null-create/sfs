@@ -196,10 +196,12 @@ func (e *Env) Set(k, v string) error {
 	if err != nil {
 		return err
 	}
-	if val, exists := env[k]; exists && val != v {
-		env[k] = v
-		if err := set(k, v, env); err != nil {
-			return err
+	if val, exists := env[k]; exists {
+		if val != v {
+			env[k] = v
+			if err := set(k, v, env); err != nil {
+				return err
+			}
 		}
 	} else {
 		fmt.Printf("env var %v does not exist", k)

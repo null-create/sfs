@@ -1,7 +1,11 @@
 {{define "frame"}}
 <header>
   <div id="logo">
-    <h1 onclick="window.location.href='/'" style="cursor: pointer">My Drive</h1>
+    <div class="image-container">
+      <a href="/">
+        <img src="/assets/main-icon-small.png" alt="main icon with text" />
+      </a>
+    </div>
   </div>
   <div id="search">
     <form id="search-form" onsubmit="submitSearch(event)">
@@ -9,13 +13,13 @@
         type="text"
         id="search-input"
         name="searchQuery"
-        placeholder="Search for files and directories in your Drive"
+        placeholder="Search in drive"
         style="width: 400px; padding: 10px"
       />
       <button type="submit">Search</button>
     </form>
   </div>
-  <div id="profile">
+  <div id="profile-pic" class="profile-pic">
     <a href="/user">
       <img
         src="{{if .ProfilePic}} /assets/profile-pics/{{.ProfilePic}} {{else}} /assets/profile-pics/default_profile_pic.jpg {{end}}"
@@ -25,22 +29,31 @@
     </a>
   </div>
 </header>
-
 <div id="sidebar">
+  <div class="button-container">
+    <button class="add-button" id="dropdown-btn">➕ New</button>
+    <div id="dropdown-menu" class="dropdown-content">
+      <a id="new-file-link" href="/upload">New File</a>
+      <a id="new-folder-link" href="/add">New Folder</a>
+    </div>
+  </div>
   <a href="/" class="sidebar-link">
-    <div class="sidebar-item">My Drive</div>
+    <div class="sidebar-item"><i class="icon">🏠</i> Home</div>
+  </a>
+  <a href="/drive" class="sidebar-link">
+    <div class="sidebar-item"><i class="icon">📂</i>My Drive</div>
   </a>
   <a href="/user " class="sidebar-link">
-    <div class="sidebar-item">User</div>
+    <div class="sidebar-item"><i class="icon">👤</i> User</div>
   </a>
   <a href="/starred" class="sidebar-link">
-    <div class="sidebar-item">Starred</div>
+    <div class="sidebar-item"><i class="icon">⭐</i>Starred</div>
   </a>
   <a href="/recycled" class="sidebar-link">
-    <div class="sidebar-item">Recycle Bin</div>
+    <div class="sidebar-item"><i class="icon">🗑️</i>Recycle Bin</div>
   </a>
   <a href="/settings" class="sidebar-link">
-    <div class="sidebar-item">Settings</div>
+    <div class="sidebar-item"><i class="icon">⚙️</i>Settings</div>
   </a>
   <div id="server-status" class="sidebar-item">
     Server status: <span id="status-text">checking...</span>

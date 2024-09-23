@@ -23,12 +23,10 @@ var (
 func init() {
 	flags := FlagPole{}
 	clientCmd.PersistentFlags().BoolVar(&flags.new, "new", false, "Initialize a new client service instance")
-	clientCmd.PersistentFlags().BoolVar(&flags.start, "start", false, "Start client services")
 	clientCmd.PersistentFlags().BoolVar(&flags.info, "info", false, "Get info about the local SFS client")
 	clientCmd.PersistentFlags().BoolVar(&flags.register, "register", false, "Register the client with the server")
 	clientCmd.PersistentFlags().BoolVar(&flags.browser, "browser", false, "Launch the browser interface")
 
-	viper.BindPFlag("start", clientCmd.PersistentFlags().Lookup("start"))
 	viper.BindPFlag("new", clientCmd.PersistentFlags().Lookup("new"))
 	viper.BindPFlag("info", clientCmd.PersistentFlags().Lookup("info"))
 	viper.BindPFlag("register", clientCmd.PersistentFlags().Lookup("register"))
@@ -39,14 +37,12 @@ func init() {
 
 func getClientFlags(cmd *cobra.Command) FlagPole {
 	new, _ := cmd.Flags().GetBool("new")
-	start, _ := cmd.Flags().GetBool("start")
 	info, _ := cmd.Flags().GetBool("info")
 	register, _ := cmd.Flags().GetBool("register")
 	browser, _ := cmd.Flags().GetBool("browser")
 
 	return FlagPole{
 		new:      new,
-		start:    start,
 		info:     info,
 		register: register,
 		browser:  browser,
@@ -85,17 +81,6 @@ func runClientCmd(cmd *cobra.Command, args []string) {
 		}
 		if err := c.RegisterClient(); err != nil {
 			showerr(err)
-		}
-	case f.start:
-		c, err := client.LoadClient(true)
-		if err != nil {
-			showerr(fmt.Errorf("failed to initialize service: %v", err))
-			return
-		}
-		if f.browser {
-			c.StartWebClient()
-		} else {
-			c.Start() // run in the terminal
 		}
 
 	case f.info:

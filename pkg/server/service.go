@@ -582,7 +582,7 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	}
 	// make sure the files parent directory exists on the server
 	// first. if not, add to server-side sfs root.
-	dir, err := s.Db.GetDirectoryByID(dirID)
+	parentDir, err := s.Db.GetDirectoryByID(dirID)
 	if err != nil {
 		return err
 	}
@@ -592,12 +592,12 @@ func (s *Service) AddFile(dirID string, file *svc.File) error {
 	// uploaded to the server we need to set a unique server path so we
 	// can differentiate between client and server upload/download locations.
 	// NOTE: client makes an additional call to retrieve this new path
-	if dir == nil {
+	if parentDir == nil {
 		file.DirID = drive.Root.ID
 		file.ServerPath = s.buildServerRootPath(drive.OwnerName, file.Name)
 	} else {
-		file.DirID = dir.ID
-		file.ServerPath = s.buildServerDirPath(dir.ServerPath, file.Name)
+		file.DirID = parentDir.ID
+		file.ServerPath = s.buildServerDirPath(parentDir.ServerPath, file.Name)
 	}
 
 	// create the intial (empty) physical file on the server side
@@ -673,9 +673,9 @@ func (s *Service) DeleteFile(file *svc.File) error {
 	// before we start deleting things willy nilly.
 	// maybe check file.ServerPath against known paths before calling
 	// os.Remove()?
-	if err := os.Remove(file.ServerPath); err != nil {
-		s.log.Error(fmt.Sprintf("failed to remove physical file on the server: %v", err))
-	}
+	// if err := os.Remove(file.ServerPath); err != nil {
+	// 	s.log.Error(fmt.Sprintf("failed to remove physical file on the server: %v", err))
+	// }
 	return nil
 }
 

@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-  {{template "header"}}
+  {{template "head"}}
   <body>
     {{template "frame"}}
     <div id="content">
-      {{template "toolbar"}}
       <div id="upload-modal" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -15,20 +14,19 @@
                 data-dismiss="modal"
                 aria-label="Close"
               ></button>
-              <h4 class="modal-title">
-                <i class="fa fa-upload">Upload file</i>
-                <p class="upload-info" style="font-weight: 100">
-                  Items will be added to your drive and automatically uploaded
-                  to the server.
-                </p>
-              </h4>
+              <h4 class="modal-title">Upload file</h4>
+              <br />
+              <label for="file-upload">
+                Items will be added to your drive and automatically uploaded to
+                the server.
+              </label>
             </div>
             <div class="modal-body">
               <form
                 action="/upload"
                 method="post"
                 class="dropzone"
-                id="upload-form"
+                id="dropzone-form"
                 enctype="multipart/form-data"
               ></form>
               <input
@@ -53,6 +51,7 @@
             <div class="modal-footer">
               <button
                 type="button"
+                id="remove-uploads-button"
                 class="btn btn-default"
                 onclick="removeAllUploads()"
               >
@@ -67,7 +66,11 @@
         </div>
       </div>
     </div>
-    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"
+    ></script>
+    <!--
     <script
       type="text/javascript"
       src="/static/scripts/upload-file.js"
@@ -75,36 +78,16 @@
     <script
       type="text/javascript"
       src="/static/scripts/clear-uploads.js"
-    ></script>
+    ></script> -->
     <script>
-      // don't automatically upload files once dropped into the dropzone
       Dropzone.options.uploadForm = {
-        autoProcessQueue: false,
+        autoProcessQueue: false, // don't automatically upload files once dropped into the dropzone
       };
     </script>
     <script type="text/javascript">
-      function checkServerStatus() {
-        let serverURL = "http://" + "{{.ServerHost}}";
-        console.log("serverURL: " + serverURL);
-        const statusText = document.getElementById("status-text");
-        fetch(serverURL)
-          .then((response) => {
-            if (response.ok) {
-              statusText.textContent = "online";
-              statusText.classList.remove("offline");
-              statusText.classList.add("online");
-            } else {
-              throw new Error("Server offline");
-            }
-          })
-          .catch((error) => {
-            statusText.textContent = "offline";
-            statusText.classList.remove("online");
-            statusText.classList.add("offline");
-          });
-      }
-      document.addEventListener("DOMContentLoaded", checkServerStatus);
-      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+      let url = "http://" + `{{.ServerHost}}`;
+      document.addEventListener("DOMContentLoaded", checkServerStatus(url));
+      setInterval(checkServerStatus(url), 60000); // Check every 60 seconds
     </script>
   </body>
 </html>

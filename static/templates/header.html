@@ -1,24 +1,32 @@
 {{define "header"}}
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple File Sync</title>
-  <link rel="shortcut icon" href="/assets/favicon.ico" type="image/x-icon" />
-  <link
-    rel="stylesheet"
-    href="/static/stylesheet.css"
-    type="text/css"
-    media="screen"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
-    type="text/css"
-  />
-  <!-- <script
-    src="https://unpkg.com/htmx.org@1.9.10"
-    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
-    crossorigin="anonymous"
-  ></script> -->
-</head>
+<header>
+  <div id="logo">
+    <div class="image-container">
+      <a href="/">
+        <img src="/assets/main-icon-with-text.png" alt="main icon with text" />
+      </a>
+    </div>
+  </div>
+  <div id="search">
+    <form id="search-form" onsubmit="submitSearch(event)">
+      <input
+        type="text"
+        id="search-input"
+        name="searchQuery"
+        placeholder="Search for files and directories in your Drive"
+        style="width: 400px; padding: 10px"
+      />
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <div id="profile">
+    <a href="/user">
+      <img
+        src="{{if .ProfilePic}} /assets/profile-pics/{{.ProfilePic}} {{else}} /assets/profile-pics/default_profile_pic.jpg {{end}}"
+        alt="users profile picture"
+        style="width: 40px; border-radius: 50%; cursor: pointer"
+      />
+    </a>
+  </div>
+</header>
 {{end}}

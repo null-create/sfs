@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/sfs/pkg/server"
 	svc "github.com/sfs/pkg/service"
@@ -15,7 +16,14 @@ import (
 
 // API handlers for the web client UI
 
+const (
+	DefaultSizeLimit = 1 << 10   // 1 kb default size limit for form data
+	PhotoSizeLimit   = 10 << 20  // 10 mb file size limit for certain files (mostly profile pics)
+	FileSizeLimit    = 100 << 30 // 100 gb file size limit (arbitrary size)
+)
+
 func (c *Client) successMsg(w http.ResponseWriter, msg string) {
+	c.log.Info(msg)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -26,13 +34,13 @@ func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 // ------ users --------------------------------
 
 func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20)
+	err := r.ParseMultipartForm(DefaultSizeLimit)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
 	// Extract form data (add more fields as needed)
-	var updates = map[string]string{
+	updates := map[string]string{
 		"CLIENT_NAME":     r.FormValue("name"),
 		"CLIENT_USERNAME": r.FormValue("username"),
 		"CLIENT_EMAIL":    r.FormValue("email"),
@@ -54,7 +62,7 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // Limit file size to 10MB
+	err := r.ParseMultipartForm(PhotoSizeLimit) // Limit file size to 10MB
 	if err != nil {
 		http.Error(w, "Unable to parse form: "+err.Error(), http.StatusBadRequest)
 		return
@@ -113,10 +121,44 @@ func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) 
 	c.successMsg(w, "success")
 }
 
-func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
-	// get updated settings and modify accordingly
+// update config setting
+func (c *Client) updateSetting(w http.ResponseWriter, setting string, value interface{}) {
+	var v string
+	if setting == "CLIENT_LOCAL_BACKUP" {
+		v = strconv.FormatBool(!value.(bool)) // (server sync = false) == (client_local_backup = true)
+	} else {
+		v = value.(string)
+	}
+	if err := c.UpdateConfigSetting(setting, v); err != nil {
+		c.log.Error("error updating settings: " + err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
-	http.Redirect(w, r, userPage, http.StatusSeeOther)
+// update client application settings from the web UI
+func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r.Body)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	r.Body.Close()
+
+	var newSettings map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &newSettings); err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+
+	// update settings
+	for setting, value := range newSettings {
+		if setting != "" && value != "" {
+			c.updateSetting(w, setting, value)
+		}
+	}
+
+	c.successMsg(w, "settings updated successfully")
 }
 
 // -------- files -----------------------------------------
@@ -137,10 +179,14 @@ func (c *Client) getFileFromRequest(r *http.Request) (*svc.File, error) {
 	return file, nil
 }
 
-// add a new file to the SFS serverice using its absolute path
-func (c *Client) NewFile(w http.ResponseWriter, r *http.Request) {
-	newFilePath := r.Context().Value(server.File).(string)
-	if err := c.AddFile(newFilePath); err != nil {
+// open a file explorer window at the requested path
+func (c *Client) OpenFileLocHandler(w http.ResponseWriter, r *http.Request) {
+	file, err := c.getFileFromRequest(r)
+	if err != nil {
+		c.error(w, r, err.Error())
+		return
+	}
+	if err := ShowFileInExplorer(file.ClientPath); err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
@@ -161,8 +207,8 @@ func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 	c.log.Info(fmt.Sprintf("served file %s: %s", file.Name, file.ClientPath))
 }
 
-func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
+func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(FileSizeLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -205,7 +251,7 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	savePath := filepath.Join(destFolder, handler.Filename)
-	c.log.Info(fmt.Sprintf("saving uploaded file to: %s", savePath))
+	c.log.Info(fmt.Sprintf("saving file to: %s", savePath))
 
 	localFile, err := os.Create(savePath)
 	if err != nil {
@@ -227,7 +273,7 @@ func (c *Client) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//success response
-	c.successMsg(w, "file uploaded successfully")
+	c.successMsg(w, "file added successfully")
 }
 
 func (c *Client) RemoveFileHandler(w http.ResponseWriter, r *http.Request) {
@@ -249,6 +295,10 @@ func (c *Client) RemoveFileHandler(w http.ResponseWriter, r *http.Request) {
 		c.error(w, r, err.Error())
 		return
 	}
+	if file == nil {
+		c.error(w, r, "file not found")
+		return
+	}
 	if err := c.RemoveFile(file); err != nil {
 		c.error(w, r, err.Error())
 		return
@@ -265,12 +315,18 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	var path = buf.String()
+	path := buf.String()
+	if path == "" {
+		c.error(w, r, "no path provided")
+		return
+	}
+
 	item, err := os.Stat(path)
 	if err != nil {
 		c.error(w, r, err.Error())
 		return
 	}
+
 	if item.IsDir() {
 		_, err = c.Discover(path)
 		if err != nil {

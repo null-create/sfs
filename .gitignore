@@ -5,6 +5,7 @@ docs
 
 # internal stuff
 */*/run
+*/*/run/*
 */*/testing
 */*/logs/*.csv
 */*/.env
@@ -19,5 +20,7 @@ reset.sh
 *.pprof
 *.out
 
+old-files
 test_items
 notes.txt
+*/*/*/static/*

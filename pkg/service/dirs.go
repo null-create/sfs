@@ -395,8 +395,8 @@ func (d *Directory) PutFile(file *File) error {
 // does not remove the physical file.
 func (d *Directory) removeFile(fileID string) error {
 	if file, ok := d.Files[fileID]; ok {
-		d.Size -= file.GetSize()
 		delete(d.Files, file.ID)
+		d.Size -= file.GetSize()
 		d.LastSync = time.Now().UTC()
 	} else {
 		return fmt.Errorf("file (id=%s) not found", fileID)
@@ -610,10 +610,6 @@ as it will generate new file and directory objects with their own ID's, and will
 to be treated as persistent items rather than ephemeral ones.
 */
 func (d *Directory) Walk() *Directory {
-	if d.Path == "" {
-		log.Print("can't traverse directory without a path")
-		return d
-	}
 	return walk(d)
 }
 
@@ -660,11 +656,11 @@ func (d *Directory) WalkF(fileID string) *File {
 }
 
 func walkF(dir *Directory, fileID string) *File {
+	if len(dir.Files) == 0 {
+		return nil
+	}
 	if file, found := dir.Files[fileID]; found {
 		return file
-	}
-	if len(dir.Dirs) == 0 {
-		return nil
 	}
 	for _, subDir := range dir.Dirs {
 		if file := walkF(subDir, fileID); file != nil {

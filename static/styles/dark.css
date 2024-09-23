@@ -1,12 +1,9 @@
-/* Global */
-
 body {
-  font-family: Google Sans;
-  font-weight: lighter;
+  font-family: Arial, sans-serif;
   margin: 0;
   display: flex;
   height: 100vh;
-  background-color: rgb(247, 247, 247);
+  background-color: #f1f3f4;
 }
 
 header {
@@ -14,172 +11,13 @@ header {
   justify-content: space-evenly;
   align-items: center;
   padding: 0 20px;
-  background-color: rgb(247, 247, 247);
-  /* box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); */
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   width: 100%;
   height: 60px;
   position: fixed;
   top: 0;
-  /* z-index: 1000; */
-}
-
-/* Main content block */
-#content {
-  display: flex;
-  flex-direction: column;
-  background-color: white;
-  margin-left: 250px;
-  padding: 60px 20px 20px;
-  flex-grow: 1;
-  border-radius: 25px;
-}
-
-.welcome-container {
-  padding-top: 10px;
-  font-size: larger;
-  text-align: center;
-}
-
-/* General form styling */
-
-form {
-  max-width: 1200px;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  padding: 20px;
-  border-radius: 5px;
-  margin: 20px auto;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center; /* Aligning content to the center */
-}
-
-form label {
-  font-size: 16px;
-  color: #333;
-  display: block;
-  margin-bottom: 8px;
-}
-
-form input[type="text"] {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 14px;
-}
-
-form button {
-  background-color: #1e88e5;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 14px;
-  margin: 10px 0; /* Adjusted for both buttons */
-  transition: background-color 0.3s ease;
-}
-
-form button:hover {
-  background-color: #1565c0;
-}
-
-/* Specific button for folder selection */
-form button[type="button"] {
-  margin-bottom: 20px;
-}
-
-/* Index page search bar */
-
-/* Search bar doesn't need to inherit the standard form styles */
-form#search-form {
-  all: unset;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 40px 10px 20px; /* Space for the icon */
-  border: 1px solid #ccc;
-  border-radius: 25px;
-  font-size: 16px;
-  box-sizing: border-box;
-  outline: none;
-  background-color: grey;
-}
-
-.search-input:focus {
-  border-color: #1e88e5;
-}
-
-.search-icon {
-  color: #aaa; /* Icon color */
-  font-size: 18px;
-  pointer-events: none; /* Prevent the icon from blocking input interaction */
-}
-
-.search-params-container {
-  display: flex;
-  flex-direction: columns;
-  column-gap: 50px;
-  justify-content: center;
-  align-items:center;
-}
-
-.type-button {
-  display: flex;
-  align-self: center;
-  font-size: medium;
-  background-color: rgb(238, 238, 238);
-  color: black;
-  cursor: pointer;
-  border: 5px;
-  border-radius: 20px;
-  padding: 10px;
-}
-
-.type-button:hover {
-  background-color:  rgb(201, 210, 226)
-}
-
-.modified-button {
-  display: flex;
-  align-self: center;
-  font-size: medium;
-  background-color: rgb(238, 238, 238);
-  color: black;
-  cursor: pointer;
-  border: 5px;
-  border-radius: 20px;
-  padding: 10px;
-}
-
-.modified-button:hover {
-  background-color: rgb(201, 210, 226)
-}
-
-.location-button {
-  display: flex;
-  align-self: center;
-  font-size: medium;
-  background-color: rgb(238, 238, 238);
-  color: black;
-  cursor: pointer;
-  border: 5px;
-  border-radius: 20px;
-  padding: 10px;
-}
-
-.location-button:hover {
-  background-color:  rgb(201, 210, 226)
-}
-
-/* Top bar */
-
-#logo {
-  position: absolute;
-  left: 15px;
+  z-index: 1000;
 }
 
 #search input {
@@ -187,25 +25,12 @@ form#search-form {
   padding: 10px;
 }
 
-#main-search {
-  display: flex;
-  align-self: center;
-}
-
-#search-form input[type="text"] {
-  width: 400px;
-  padding: 10px;
-  border-radius: 25px;
-}
-
-#profile-pic {
-  position:absolute;
-  right: 60px;
-  display: flex;
-  width: 40px; 
-  height: 40px; 
+#profile {
+  width: 40px; /* Define a specific size for the profile container */
+  height: 40px; /* Match the height and width */
   overflow: hidden; /* Ensure that the image stays within the bounds of the container */
-  border-radius: 50%; 
+  border-radius: 50%; /* Makes the container circular */
+  display: flex;
   align-items: center;
   justify-content: center;
 }
@@ -217,19 +42,22 @@ form#search-form {
   border-radius: 50%; /* Makes the image itself circular */
 }
 
+
 /* Side Bar */
 
 #sidebar {
   width: 250px;
-  background-color: rgb(247, 247, 247);
+  background-color: #ffffff;
   border-right: 1px solid #e0e0e0;
   position: fixed;
   top: 60px;
   bottom: 0;
+  padding-top: 20px;
 }
 
 #server-status {
   margin-top: 20px;
+  /* font-weight: bold; */
 }
 
 #status-text.online {
@@ -238,6 +66,14 @@ form#search-form {
 
 #status-text.offline {
   color: red;
+}
+
+#content {
+  margin-left: 250px;
+  padding: 80px 20px 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-link, .file-link {
@@ -253,57 +89,7 @@ form#search-form {
 }
 
 .sidebar-item:hover {
-  background-color: rgb(190, 228, 247);
-  border-radius: 25px;
-}
-
-.icon {
-  font-style: normal;
-  padding-right: 10px;
-}
-
-.button-container {
-  display: flex;
-  padding-left: 20px;
-  padding-bottom: 10px;
-}
-
-.add-button {
-  font-weight: bold;
-  font-size: medium;
-  background-color: white;
-  color: black;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  padding: 20px;
-}
-
-.dropdown-content {
-  display: none; /* hidden by default */
-  position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 1;
-}
-
-.dropdown-content a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-}
-
-/* Change color of dropdown links on hover */
-.dropdown-content a:hover {
-  background-color: #ddd;
-}
-
-/* Show dropdown content when it is active */
-.show {
-  display: block;
+  background-color: #f1f3f4;
 }
 
 /* Tool Bar */
@@ -315,7 +101,6 @@ form#search-form {
 .toolbar-button {
   padding: 10px 15px;
   margin-right: 10px;
-  margin-left: 20px;
   background-color: rgb(175, 203, 252);
   border: none;
   border-radius: 4px;
@@ -367,7 +152,7 @@ form#search-form {
 }
 
 .file-table th, .file-table td, .folder-table th, .folder-table td{
-  padding: 10px;
+  padding: 15px;
   border-bottom: 1px solid #e0e0e0;
 }
 
@@ -403,9 +188,9 @@ form#search-form {
   align-items: flex-start;
   background-color: #fff;
   border-radius: 8px;
-  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  width: 95%;
+  width: 96%;
 }
 
 .file-info-item {
@@ -417,13 +202,9 @@ form#search-form {
   overflow: visible;    /* Hide overflow if text is too long */
 }
 
-.file-info-container button {
-  order: 1; /* default */
-}
-
 .file-info-item label {
   color: #555;
-  flex: 0 0 15%; /* Label takes up 15% of the width */
+  flex: 0 0 30%; /* Label takes up 30% of the width */
   font-weight: bold;
   margin-right: 10px;
 }
@@ -450,29 +231,8 @@ form#search-form {
   transition: border-bottom 0.2s ease-in-out;
 }
 
-#open-loc-button {
-  align-self: flex-start; /* Align button to the start of the container */
-  text-decoration: none;
-  background-color: #1e88e5;
-  font-weight: bold;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px;
-  border-radius: 25px;
-  cursor: pointer;
-  order: 0; /* Move to the left of remove-button */
-}
-
-#open-loc-button:hover {
-  background-color: #073bad;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 #remove-button {
+  margin-top: 20px; /* Add space above the button */
   align-self: flex-start; /* Align button to the start of the container */
   background-color: #e90f0f;
   border: none;
@@ -482,8 +242,7 @@ form#search-form {
   text-decoration: none;
   display: inline-block;
   font-size: 14px;
-  font-weight: bold;
-  border-radius: 25px;
+  border-radius: 5px;
   cursor: pointer;
 }
 
@@ -551,24 +310,85 @@ form#search-form {
   transition: transform 0.3s ease-in-out;
 }
 
+/* General form styling */
 
+form {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 1000px;
+  margin: 20px auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center; /* Aligning content to the center */
+}
+
+/* Label styling */
+form label {
+  font-size: 16px;
+  color: #333;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Input field styling */
+form input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* Button styling */
+form button {
+  background-color: #1e88e5;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 10px 0; /* Adjusted for both buttons */
+  transition: background-color 0.3s ease;
+}
+
+/* Button hover effect */
+form button:hover {
+  background-color: #1565c0;
+}
+
+/* Specific button for folder selection */
+form button[type="button"] {
+  margin-bottom: 20px;
+}
+
+/* Search bar doesn't need to inherit the standard form styles */
+form#search-form {
+  all: unset;
+}
 
 /* Responsive design for larger screens */
 @media (min-width: 300px) {
   form {
-    max-width: 750px;
+    max-width: 500px;
   }
 }
 
 /* Upload page - Drag-and-drop-zone */
 
 .modal-header {
-  background-color: white;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .modal-header h4 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .modal-header .close {
@@ -587,12 +407,13 @@ form#search-form {
 
 .modal-body {
   padding: 20px;
-  background-color: white;
+  background-color: #fff;
 }
 
 .modal-footer {
   padding: 15px;
-  background-color: white;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
   text-align: right;
 }
 
@@ -624,39 +445,11 @@ form#search-form {
   background-color: #0056b3;
 }
 
-#label-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-}
-
-#dropzone-form{
-  background-color: rgb(247, 247, 247);
-}
-
-#upload-form {
-  background-color: white;
-  box-shadow: unset;
-  border-color: white;
-}
-
 #upload-button {
   background-color: #28a745;
   color: white;
   font-weight: bold;
-  border-radius: 20px;
-  padding: 10px 20px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-#upload-pfp-button {
-  background-color: #28a745;
-  color: white;
-  font-weight: bold;
-  border-radius: 20px;
+  border-radius: 4px;
   padding: 10px 20px;
   font-size: 14px;
   cursor: pointer;
@@ -666,14 +459,6 @@ form#search-form {
 #upload-button:hover {
   background-color: #218838;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-#upload-info #upload-info {
-  font-weight: lighter;
-}
-
-#remove-uploads-button {
-  border-radius: 25px;
 }
 
 #destination-folder {
@@ -695,7 +480,6 @@ form#search-form {
   margin: 20px auto;
 }
 
-/* Spinner animation */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -707,6 +491,15 @@ form#search-form {
 }
 
 /* Settings Page */
+
+.settings-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
 .setting-item {
   margin-bottom: 15px;

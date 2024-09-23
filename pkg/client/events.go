@@ -310,27 +310,26 @@ func (c *Client) handler(itemPath string) error {
 			}
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap() {
-				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), nil, c.Drive.SyncIndex)
-				if c.LocalSyncOnly() {
-					if c.IsDir(evt.Path) {
-						d, err := c.GetDirByPath(evt.Path) // event paths are client side
-						if err != nil {
-							return err
-						}
-						if err := c.BackupDir(d); err != nil {
-							return err
-						}
-					} else {
-						f, err := c.GetFileByPath(evt.Path) // event paths are client side
-						if err != nil {
-							return err
-						}
-						if err := c.BackupFile(f); err != nil {
-							return err
-						}
+				c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.GetFiles(), c.Drive.GetDirs(), c.Drive.SyncIndex)
+				if c.IsDir(evt.Path) {
+					d, err := c.GetDirByPath(evt.Path) // event paths are client side
+					if err != nil {
+						return err
+					}
+					if err := c.BackupDir(d); err != nil {
+						return err
 					}
 				} else {
-					// push meta-data changes and files to remote server
+					f, err := c.GetFileByPath(evt.Path) // event paths are client side
+					if err != nil {
+						return err
+					}
+					if err := c.BackupFile(f); err != nil {
+						return err
+					}
+				}
+				// push meta-data changes to remote server if applicable
+				if !c.LocalSyncOnly() {
 					if err := c.Push(); err != nil {
 						return err
 					}

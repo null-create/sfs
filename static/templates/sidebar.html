@@ -1,0 +1,30 @@
+{{define "sidebar"}}
+<div id="sidebar">
+  <div class="toolbar">
+    <button class="toolbar-button" onclick="window.location.href='/upload'">
+      Add Files
+    </button>
+    <button class="toolbar-button" onclick="window.location.href='/add'">
+      Add Folders
+    </button>
+  </div>
+  <a href="/" class="sidebar-link">
+    <div class="sidebar-item">My Drive</div>
+  </a>
+  <a href="/user " class="sidebar-link">
+    <div class="sidebar-item">User</div>
+  </a>
+  <a href="/starred" class="sidebar-link">
+    <div class="sidebar-item">Starred</div>
+  </a>
+  <a href="/recycled" class="sidebar-link">
+    <div class="sidebar-item">Recycle Bin</div>
+  </a>
+  <a href="/settings" class="sidebar-link">
+    <div class="sidebar-item">Settings</div>
+  </a>
+  <div id="server-status" class="sidebar-item">
+    Server status: <span id="status-text">checking...</span>
+  </div>
+</div>
+{{end}}

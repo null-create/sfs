@@ -24,7 +24,7 @@ var (
 func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string) {
 	c.log.Error("Error: " + msg)
 	errCtx := context.WithValue(r.Context(), server.Error, msg)
-	c.ErrorPage(w, r.WithContext(errCtx))
+	http.Redirect(w, r.WithContext(errCtx), errorPage, http.StatusInternalServerError)
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -43,17 +43,34 @@ func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
-	errMsg := r.Context().Value(server.Error)
-	if errMsg == nil {
-		http.Error(w, "No error parsed from request", http.StatusInternalServerError)
-		return
+func (c *Client) DrivePage(w http.ResponseWriter, r *http.Request) {
+	drivePageData := DrivePage{
+		UserPage:   userPage,
+		ProfilePic: c.Conf.ProfilePic,
+		UserID:     c.User.ID,
+		Files:      c.Drive.GetFiles(),
+		Dirs:       c.Drive.GetDirs(),
+		ServerHost: c.Conf.ServerAddr,
+		ClientHost: c.Conf.Addr,
 	}
-	errMsg = errMsg.(string)
+	err := c.Templates.ExecuteTemplate(w, "drive.html", drivePageData)
+	if err != nil {
+		c.error(w, r, err.Error())
+	}
+}
+
+func (c *Client) ErrorPage(w http.ResponseWriter, r *http.Request) {
+	var errMsg string
+	emsg := r.Context().Value(server.Error)
+	if emsg == nil {
+		errMsg = "he's dead, jim"
+	} else {
+		errMsg = emsg.(string)
+	}
 	errPageData := ErrorPage{
 		UserPage:   userPage,
 		ProfilePic: c.Conf.ProfilePic,
-		ErrMsg:     fmt.Sprintf("Something went wrong :(\n\n%s", errMsg),
+		ErrMsg:     errMsg,
 	}
 	err := c.Templates.ExecuteTemplate(w, "error.html", errPageData)
 	if err != nil {
@@ -153,7 +170,7 @@ func (c *Client) FilePage(w http.ResponseWriter, r *http.Request) {
 	fileID := r.Context().Value(server.File).(string)
 	file, err := c.GetFileByID(fileID)
 	if file == nil {
-		c.error(w, r, err.Error())
+		http.Error(w, fmt.Sprintf("file (id=%s) not found", fileID), http.StatusNotFound)
 		return
 	}
 	if err != nil {
@@ -239,7 +256,7 @@ func (c *Client) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		UserPage:        userPage,
 		ServerHost:      c.Conf.ServerAddr,
 		ClientHost:      c.Conf.Addr,
-		ServerSync:      c.Conf.LocalBackup == false, // if local backup is disabed, we're syncing with the server
+		ServerSync:      !c.Conf.LocalBackup, // if local backup is disabed, we're syncing with the server
 		BackupDir:       c.Conf.BackupDir,
 		ClientPort:      c.Conf.ClientPort,
 		EventBufferSize: c.Conf.EventBufferSize,

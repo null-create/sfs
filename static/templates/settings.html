@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-  {{template "header"}}
+  {{template "head"}}
   <body>
     {{template "frame"}}
     <div id="content">
-      {{template "toolbar"}}
       <div class="settings-container">
-        <h2>Application Settings</h2>
-        <form id="settings-form" style="width: 500px">
+        <h2 style="text-align: center">Application Settings</h2>
+        <form id="settings-form">
           <div class="setting-item">
             <label for="theme">Theme:</label>
             <select id="theme" name="theme">
@@ -37,11 +36,15 @@
               type="text"
               id="local-backup-dir"
               name="local-backip-dir"
+              style="width: 500px"
               placeholder="current: {{.BackupDir}}"
             />
           </div>
           <div class="setting-item">
             <label for="client-port">Client Port</label>
+            <p id="client-port-notification">
+              NOTE: This will take effect next time the application is launched.
+            </p>
             <input
               type="number"
               id="client-port"
@@ -49,21 +52,24 @@
               placeholder="current: {{.ClientPort}}"
             />
           </div>
+          <br />
           <div class="setting-item">
             <label for="sync-delay">Sync Delay</label>
             <p id="sync-delay-instructions">
-              This affects how ofter the client will attempt to synchronize with
-              the server. The current default is one sync event per
-              {{.EventBufferSize}} detected events for a given item. Increasing
-              this number will increase the time between syncronization events.
+              This affects how often the client will attempt to synchronize with
+              the server. The current setting is one sync event per
+              {{.EventBufferSize}} detected events for a given item. Default is
+              2 detections per sync event. Increasing this number will increase
+              the time between syncronization events.
             </p>
             <input
               type="number"
               id="sync-delay"
               name="sync-delay"
-              placeholder="current (default): {{.EventBufferSize}}"
+              placeholder="current: {{.EventBufferSize}}"
             />
           </div>
+          <br />
           <button type="button" id="save-settings" onclick="submitSettings()">
             Save Settings
           </button>
@@ -72,7 +78,13 @@
           <i class="fa fa-spinner fa-spin"></i>
         </div>
       </div>
-      <script src="/static/scripts/settings.js"></script>
+      <script type="text/javascript">
+        document.addEventListener(
+          "DOMContentLoaded",
+          checkServerStatus("http://" + `{{.ServerHost}}`)
+        );
+        setInterval(checkServerStatus("http://" + `{{.ServerHost}}`), 60000); // Check every 60 seconds
+      </script>
     </div>
   </body>
 </html>

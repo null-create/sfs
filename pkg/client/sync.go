@@ -29,8 +29,8 @@ func (c *Client) reset() {
 }
 
 // display server response clearly
-func (c *Client) dump(resp *http.Response, body bool) {
-	b, err := httputil.DumpResponse(resp, body)
+func (c *Client) dump(resp *http.Response) {
+	b, err := httputil.DumpResponse(resp, true)
 	if err != nil {
 		c.log.Error("failed to dump http response: " + err.Error())
 	} else {
@@ -45,8 +45,7 @@ func (c *Client) dump(resp *http.Response, body bool) {
 // build a new client sync index. re-initializes
 // client roots index if called.
 func (c *Client) BuildSyncIndex() {
-	// initialize sync index
-	c.Drive.SyncIndex = svc.NewSyncIndex(c.UserID)
+	c.Drive.SyncIndex = svc.NewSyncIndex(c.UserID) // initialize sync index
 
 	// get any files
 	files := c.Drive.GetFiles()
@@ -235,7 +234,7 @@ func (c *Client) GetServerIdx(gen bool) (*svc.SyncIndex, error) {
 		return nil, fmt.Errorf("failed to contact server: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		c.dump(resp, true)
+		c.dump(resp)
 		return nil, fmt.Errorf("failed to get server sync index: %v", resp.StatusCode)
 	}
 	defer resp.Body.Close()

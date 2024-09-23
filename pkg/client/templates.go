@@ -10,10 +10,12 @@ func GetTemplatePaths() map[string]string {
 	var templateFolder = "./static/templates"
 	var templates = []string{
 		templateFolder + "/index.html",
+		templateFolder + "/drive.html",
 		templateFolder + "/file.html",
 		templateFolder + "/folder.html",
 		templateFolder + "/frame.html",
 		templateFolder + "/toolbar.html",
+		templateFolder + "/head.html",
 		templateFolder + "/header.html",
 		templateFolder + "/recycled.html",
 		templateFolder + "/recent.html",
@@ -42,10 +44,12 @@ func (c *Client) ParseTemplates() error {
 	var tmplPaths = GetTemplatePaths()
 	tmpl, err := template.ParseFiles(
 		tmplPaths["index.html"],
+		tmplPaths["drive.html"],
 		tmplPaths["file.html"],
 		tmplPaths["folder.html"],
 		tmplPaths["frame.html"],
 		tmplPaths["toolbar.html"],
+		tmplPaths["head.html"],
 		tmplPaths["header.html"],
 		tmplPaths["recycled.html"],
 		tmplPaths["recent.html"],

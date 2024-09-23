@@ -63,6 +63,11 @@ func newWcRouter(client *Client) *chi.Mux {
 		r.Get("/", client.HomePage)
 	})
 
+	// drive page
+	r.Route("/drive", func(r chi.Router) {
+		r.Get("/", client.DrivePage)
+	})
+
 	// error page
 	r.Route("/error/{errMsg}", func(r chi.Router) {
 		r.Use(server.ErrorCtx)
@@ -106,10 +111,10 @@ func newWcRouter(client *Client) *chi.Mux {
 	// upload files to server page
 	r.Route("/upload", func(r chi.Router) {
 		r.Get("/", client.UploadPage)
-		r.Post("/", client.UploadFile)
+		r.Post("/", client.DropZoneHandler)
 	})
 
-	// settings page
+	// settings page and handler
 	r.Route("/settings", func(r chi.Router) {
 		r.Get("/", client.SettingsPage)
 		r.Post("/", client.SettingsHandler)
@@ -124,7 +129,10 @@ func newWcRouter(client *Client) *chi.Mux {
 		})
 		r.Route("/i/{fileID}", func(r chi.Router) {
 			r.Use(server.FileCtx)
-			r.Get("/", client.FilePage) // get info about a file
+			r.Get("/", client.FilePage)               // get info about a file
+			r.Route("/open-loc", func(r chi.Router) { // open the file in the directory its located in
+				r.Get("/", client.OpenFileLocHandler)
+			})
 		})
 		r.Route("/delete", func(r chi.Router) {
 			r.Delete("/", client.RemoveFileHandler)

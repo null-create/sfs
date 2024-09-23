@@ -1,16 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
-  {{template "header"}}
+  {{template "head"}}
   <body>
     {{template "frame"}}
     <div id="content">
-      {{template "toolbar"}}
-      <!-- View Selectors -->
-      <!-- <div class="view-selection">
-            <button class="toolbar-button" onclick="switchLayout('grid')">Grid View</button>
-            <button class="toolbar-button" onclick="switchLayout('table')">Table View</button>
-        </div> -->
-      <!-- Table View -->
+      <div class="welcome-container">
+        <h2 id="welcome-text">Welcome to your Drive</h2>
+      </div>
+      <div id="main-search">
+        <form id="search-form" onchange="submitSearch(event)">
+          <span class="search-icon">
+            <i class="fa fa-search"></i>
+          </span>
+          <input
+            type="text"
+            id="search-input"
+            name="searchQuery"
+            placeholder="Search in drive"
+            style="width: 700px"
+          />
+        </form>
+      </div>
+      <div class="search-params-container">
+        <div class="type-menu-content">
+          <button class="type-button" id="type-button">Type</button>
+          <select id="type-menu" class="dropdown-content">
+            <option value="document">📄 Documents</option>
+            <option value="images">📷 Images</option>
+            <option value="audio">🎵 Audio</option>
+            <option value="video">🎥 Video</option>
+            <option value="archives">🗂️ Archive Files</option>
+          </select>
+        </div>
+        <div class="modified-menu-content">
+          <button class="modified-button" id="modified-btn">Modified</button>
+          <select id="modified-menu" class="dropdown-content">
+            <option value="today">Today</option>
+            <option value="this-week">This week</option>
+            <option value="last-2-weeks">Last 2 weeks</option>
+            <option value="last-month">Last Month</option>
+            <option value="last-6-months">Last 6 months</option>
+            <option value="last-year">Last Year</option>
+          </select>
+        </div>
+        <div class="location-menu-content">
+          <button class="location-button" id="location-btn">Location</button>
+          <select id="location-menu" class="dropdown-content">
+            {{range .Dirs}}
+            <option value="{{.Name}}">{{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+      </div>
+      <div class="table-header-container">
+        <h2 class="table-header">Your items</h2>
+      </div>
       <table class="file-table">
         <tr>
           <th></th>
@@ -22,7 +66,7 @@
         {{range .Dirs}}
         <tr>
           <td
-            onclick="window.location.href='http://localhost:9090/dirs/i/{{.ID}}'"
+            onclick="window.location.href='/dirs/i/{{.ID}}'"
             style="cursor: pointer"
           >
             <img src="/assets/folder-small.png" alt="small folder icon" />
@@ -35,7 +79,7 @@
         {{end}} {{range .Files}}
         <tr>
           <td
-            onclick="window.location.href='http://localhost:9090/files/i/{{.ID}}'"
+            onclick="window.location.href='/files/i/{{.ID}}'"
             style="cursor: pointer"
           >
             <img src="/assets/file-small.png" alt="small file icon" />
@@ -48,30 +92,16 @@
         {{end}}
       </table>
     </div>
-    <script type="text/javascript" src="/static/scripts/search.js"></script>
-    <script>
-      function checkServerStatus() {
-        let serverURL = "http://" + "{{.ServerHost}}";
-        console.log("serverURL: " + serverURL);
-        const statusText = document.getElementById("status-text");
-        fetch(serverURL)
-          .then((response) => {
-            if (response.ok) {
-              statusText.textContent = "online";
-              statusText.classList.remove("offline");
-              statusText.classList.add("online");
-            } else {
-              throw new Error("Server offline");
-            }
-          })
-          .catch((error) => {
-            statusText.textContent = "offline";
-            statusText.classList.remove("online");
-            statusText.classList.add("offline");
-          });
-      }
-      document.addEventListener("DOMContentLoaded", checkServerStatus);
-      setInterval(checkServerStatus, 60000); // Check every 60 seconds
+    <script type="text/javascript">
+      let url = "http://" + `{{.ServerHost}}`;
+      document.addEventListener("DOMContentLoaded", checkServerStatus(url));
+      setInterval(checkServerStatus(url), 60000); // Check every 60 seconds
+    </script>
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", () => {
+        const searchBar = document.getElementById("search");
+        searchBar.style.display = "none";
+      });
     </script>
   </body>
 </html>

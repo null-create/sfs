@@ -15,7 +15,7 @@
         {{range .Dirs}}
         <tr>
           <td
-            onclick="window.location.href='http://localhost:9090/dirs/i/{{.ID}}'"
+            onclick="window.location.href='/dirs/i/{{.ID}}'"
             style="cursor: pointer"
           >
             <img src="/assets/folder-small.png" alt="small folder icon" />
@@ -28,7 +28,7 @@
         {{end}} {{range .Files}}
         <tr>
           <td
-            onclick="window.location.href='http://localhost:9090/files/i/{{.ID}}'"
+            onclick="window.location.href='/files/i/{{.ID}}'"
             style="cursor: pointer"
           >
             <img src="/assets/file-small.png" alt="small file icon" />

@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-  {{template "header"}}
+  {{template "head"}}
   <body>
     {{template "frame"}}
     <div id="content">
-      {{template "toolbar"}}
       <div class="user-info-container">
-        <h2>{{.Name}}</h2>
+        <h2 style="text-align: center">{{.Name}}</h2>
         <div class="user-info-photo">
           <img
             class="user-profile-pic"
@@ -76,32 +75,17 @@
         </div>
       </div>
     </div>
-    <script>
-      // Check if the server is up
-      function checkServerStatus() {
-        let serverURL = "http://" + "{{.ServerHost}}";
-        console.log("serverURL: " + serverURL);
-        const statusText = document.getElementById("status-text");
-        fetch(serverURL)
-          .then((response) => {
-            if (response.ok) {
-              statusText.textContent = "online";
-              statusText.classList.remove("offline");
-              statusText.classList.add("online");
-            } else {
-              throw new Error("Server offline");
-            }
-          })
-          .catch((error) => {
-            statusText.textContent = "offline";
-            statusText.classList.remove("online");
-            statusText.classList.add("offline");
-          });
-      }
-      document.addEventListener("DOMContentLoaded", checkServerStatus);
-      setInterval(checkServerStatus, 60000); // Check every 60 seconds
-    </script>
+    <!-- <script type="text/javascript" src="/static/scripts/add-button.js"></script>
     <script type="text/javascript" src="/static/scripts/upload-pfp.js"></script>
     <script type="text/javascript" src="/static/scripts/clear-pfp.js"></script>
+    <script
+      type="text/javascript"
+      src="/static/scripts/server-status.js"
+    ></script> -->
+    <script type="text/javascript">
+      let url = "http://" + `{{.ServerHost}}`;
+      document.addEventListener("DOMContentLoaded", checkServerStatus(url));
+      setInterval(checkServerStatus(url), 60000); // Check every 60 seconds
+    </script>
   </body>
 </html>

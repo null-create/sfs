@@ -44,10 +44,6 @@ CYGWIN* | MINGW32* | MSYS* | MINGW*)
   ;;
 esac
 
-# set path varible for sfs CLI, then test
-# BINPATH="$($PWD)/${OUT_FILE}"
-# export PATH="$PATH:${BINPATH}"
-
 ./sfs -h
 if [[ $? -ne 0 ]]; then
   echo "failed to create executable"

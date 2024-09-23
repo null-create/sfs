@@ -1,16 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-  {{template "header"}}
+  {{template "head"}}
   <body>
     {{template "frame"}}
     <div id="content">
-      {{template "toolbar"}}
-      <p>{{.ErrMsg}}</p>
-      <img
-        src="/assets/hypnotoad.gif"
-        alt="ALL HAIL THE HYPNOTOAD"
-        style="width: 375px; height: 300px"
-      />
+      <h3>Something went wrong :(</h3>
+      <div class="message-container">
+        <p>{{.ErrMsg}}</p>
+        <img
+          src="/assets/hypnotoad.gif"
+          alt="ALL HAIL THE HYPNOTOAD"
+          style="width: 375px; height: 300px"
+        />
+      </div>
+      <script type="text/javascript">
+        let url = "http://" + `{{.ServerHost}}`;
+        document.addEventListener("DOMContentLoaded", checkServerStatus(url));
+        setInterval(checkServerStatus(url), 60000); // Check every 60 seconds
+      </script>
     </div>
   </body>
 </html>
