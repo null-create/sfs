@@ -91,15 +91,35 @@ form button[type="button"] {
   margin-bottom: 20px;
 }
 
+/* Index page search bar */
+
 /* Search bar doesn't need to inherit the standard form styles */
 form#search-form {
   all: unset;
 }
 
-/* Index page search bar buttons */
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 20px; /* Space for the icon */
+  border: 1px solid #ccc;
+  border-radius: 25px;
+  font-size: 16px;
+  box-sizing: border-box;
+  outline: none;
+  background-color: grey;
+}
+
+.search-input:focus {
+  border-color: #1e88e5;
+}
+
+.search-icon {
+  color: #aaa; /* Icon color */
+  font-size: 18px;
+  pointer-events: none; /* Prevent the icon from blocking input interaction */
+}
 
 .search-params-container {
-  font-weight: lighter;
   display: flex;
   flex-direction: columns;
   column-gap: 50px;
@@ -157,6 +177,11 @@ form#search-form {
 
 /* Top bar */
 
+#logo {
+  position: absolute;
+  left: 15px;
+}
+
 #search input {
   width: 400px;
   padding: 10px;
@@ -174,6 +199,8 @@ form#search-form {
 }
 
 #profile-pic {
+  position:absolute;
+  right: 60px;
   display: flex;
   width: 40px; 
   height: 40px; 
@@ -435,7 +462,7 @@ form#search-form {
   text-decoration: none;
   display: inline-block;
   font-size: 14px;
-  border-radius: 5px;
+  border-radius: 25px;
   cursor: pointer;
   order: 0; /* Move to the left of remove-button */
 }
@@ -456,7 +483,7 @@ form#search-form {
   display: inline-block;
   font-size: 14px;
   font-weight: bold;
-  border-radius: 5px;
+  border-radius: 25px;
   cursor: pointer;
 }
 
@@ -537,13 +564,11 @@ form#search-form {
 
 .modal-header {
   background-color: white;
-  /* padding: 15px; */
 }
 
 .modal-header h4 {
   margin: 0;
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;
 }
 
 .modal-header .close {
@@ -599,6 +624,13 @@ form#search-form {
   background-color: #0056b3;
 }
 
+#label-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+}
+
 #dropzone-form{
   background-color: rgb(247, 247, 247);
 }
@@ -620,9 +652,28 @@ form#search-form {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+#upload-pfp-button {
+  background-color: #28a745;
+  color: white;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
 #upload-button:hover {
   background-color: #218838;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#upload-info #upload-info {
+  font-weight: lighter;
+}
+
+#remove-uploads-button {
+  border-radius: 25px;
 }
 
 #destination-folder {

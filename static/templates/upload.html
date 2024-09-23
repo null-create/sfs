@@ -14,13 +14,12 @@
                 data-dismiss="modal"
                 aria-label="Close"
               ></button>
-              <h4 class="modal-title">
-                <i class="fa fa-upload">Upload file</i>
-                <p class="upload-info" style="font-weight: 100">
-                  Items will be added to your drive and automatically uploaded
-                  to the server.
-                </p>
-              </h4>
+              <h4 class="modal-title">Upload file</h4>
+              <br />
+              <label for="file-upload">
+                Items will be added to your drive and automatically uploaded to
+                the server.
+              </label>
             </div>
             <div class="modal-body">
               <form
@@ -52,6 +51,7 @@
             <div class="modal-footer">
               <button
                 type="button"
+                id="remove-uploads-button"
                 class="btn btn-default"
                 onclick="removeAllUploads()"
               >
@@ -80,9 +80,8 @@
       src="/static/scripts/clear-uploads.js"
     ></script> -->
     <script>
-      // don't automatically upload files once dropped into the dropzone
       Dropzone.options.uploadForm = {
-        autoProcessQueue: false,
+        autoProcessQueue: false, // don't automatically upload files once dropped into the dropzone
       };
     </script>
     <script type="text/javascript">

@@ -12,36 +12,45 @@ const redirectToPage = (url) => {
 
 // hide upper search bar when on home page
 const hideSearchBar = () => {
-  document.addEventListener("DOMContentLoaded", () => {
-    const searchBar = document.getElementById("search");
+  const searchBar = document.getElementById("search");
+  if (searchBar) {
     searchBar.style.display = "none";
-  });
-}
-
-const switchLayout = (view) => {
-  const gridView = document.getElementById('file-grid');
-  const tableView = document.getElementById('file-table');
-  if (view === 'grid') {
-      gridView.style.display = 'flex';
-      tableView.style.display = 'none';
-  } else if (view === 'table') {
-      gridView.style.display = 'none';
-      tableView.style.display = 'block';
   }
 }
 
-// add button
+// TODO: switch themes (dark or light)
+
+// ------- buttons ---------------------------------------
+
+// add button event listeners
 document.addEventListener("DOMContentLoaded", () => {
-  const dropDownBtn = document.getElementById("dropdown-btn");
-  if (dropDownBtn) {
-    dropDownBtn.addEventListener("click", () => {
+  const addBtn = document.getElementById("dropdown-btn");
+  if (addBtn) {
+    addBtn.addEventListener("click", () => {
       document.getElementById("dropdown-menu").classList.toggle("show");
     });
   }
-})
+  const typeBtn = document.getElementById("type-button")
+  if (typeBtn) {
+    typeBtn.addEventListener("click", () =>{
+      document.getElementById("type-menu").classList.toggle("show");
+    });
+  }
+  const modBtn = document.getElementById("modified-btn")
+  if (modBtn) {
+    modBtn.addEventListener("click", () => {
+      document.getElementById("modified-menu").classList.toggle("show");
+    });
+  }
+  const locBtn = document.getElementById("location-btn")
+  if (locBtn) {
+    locBtn.addEventListener("click", () => {
+      document.getElementById("location-menu").classList.toggle("show");
+    });
+  }
+});  
 
-
-// Close the dropdown if the user clicks outside of it
+// Close the add dropdown if the user clicks outside of it
 window.onclick = (event) => {
   if (!event.target.matches('.add-button')) {
     var dropdowns = document.getElementsByClassName("dropdown-content");
@@ -52,7 +61,60 @@ window.onclick = (event) => {
       }
     }
   }
+}
+
+const closeMenu = (event, buttonCn, menuCn) => {
+  if (event.target.matches(buttonCn)) {
+    let dropdowns = document.getElementsByClassName(menuCn);
+    dropdowns.forEach((e) => {
+      if (e.classList.contains('show')) {
+        e.classList.remove('show');
+      }
+    })
+  }
+}
+
+const buttonClasses = {
+  ".add-button": 'add-button', // key= button class, value=dropdown ID
+  ".remove-button": 'remove-button', 
+  ".type-button": 'type-button', 
+  ".modified-button": 'modified-button',
+  ".location-button": 'location-button',
 };
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   // gather a set of attributes about each of the buttons on the page
+
+//   // set event listeners for all buttons, including clearing them if the
+//   // user clicks elsewhere on the page that isn't part of the button or dropdown menu
+//   for (const [className, id] of Object.entries(buttonClasses)) {
+//     console.log(`${className}: ${id}`);
+//     const button = document.getElementsByClassName(className)
+//     if (!button) {
+//       console.error(`couldn't find button using class name: ${className}`)
+//     } else {
+//       button.addEventListener("click", () => {
+//         document.getElementById(id).classList.toggle("show");
+//       });
+//     }
+//   }
+// });
+
+// // clear all dropdown items if the user clicks somewhere on the page
+// window.onclick = (event) => {
+//   for (const [className, id] of Object.entries(buttonClasses)) {
+//     console.log(`${className}: ${id}`);
+//     if (!event.target.matches(className)) {
+//       var dropdowns = document.getElementsByClassName("dropdown-content"); 
+//       for (var i = 0; i < dropdowns.length; i++) {
+//         var openDropdown = dropdowns[i];
+//         if (openDropdown.classList.contains('show')) {
+//           openDropdown.classList.remove('show');
+//         }
+//       }
+//     }
+//   }
+// };
 
 // ------- uploads ---------------------------------------
 
@@ -101,11 +163,11 @@ const addItems = () => {
 document.addEventListener("DOMContentLoaded", addItems);
 
 const removeAllUploads = () => {
-  const dropzoneInstance = Dropzone.forElement("#upload-form");
+  const dropzoneInstance = Dropzone.forElement("#dropzone-form");
   dropzoneInstance.removeAllFiles(true);
 }
 
-// dropzone handling
+// dropzone upload handling
 document.addEventListener("DOMContentLoaded", () => {
   const uploadButton = document.getElementById("upload-button");
   if (uploadButton) {
@@ -153,18 +215,19 @@ document.addEventListener("DOMContentLoaded", () => {
   
     // Handling drag and drop events on the dropzone
     const dropzone = document.getElementById("dropzone-form");
-    dropzone.addEventListener("dragover", (event) => {
-      event.preventDefault(); 
-    });
-  
-    dropzone.addEventListener("drop", (event) => {
-      event.preventDefault();
-      const files = event.dataTransfer.files;
-      if (files.length > 0) {
-        fileUploadInput.files = files; 
-        alert("File ready to upload.");
-      }
-    });
+    if (dropzone) {
+      dropzone.addEventListener("dragover", (event) => {
+        event.preventDefault(); 
+      });
+      dropzone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+          fileUploadInput.files = files; 
+          alert("File ready to upload.");
+        }
+      });
+    }
   }
 });
 
@@ -211,32 +274,59 @@ const checkServerStatus = (serverURL) => {
 
 // --------- user page ---------------------------------------
 
-const uploadPfp = () => {
+// upload PFP
+document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("profile-pic-upload");
-  fileInput.addEventListener("change", (event) => {
-    event.preventDefault();
-    const form = document.getElementById("upload-form");
-    const formData = new FormData(form);
-  
-    fetch("/user/upload-pfp", {
-      method: "POST",
-      body: formData
-    })
-    .then((response) => {
-      if (response.ok) {
-        console.log("picture updated successfully")
-        window.location.href = "/user"
-      } else {
-        console.error("error uploading picture: " + response);
-        window.location.href = "/user"
-      }
-    })
-    .catch((error) => {
-      alert("error uploading picture: " + error)
-      console.error("picture update failed: ", error)
+  if (fileInput) {
+    fileInput.addEventListener("change", (event) => {
+      event.preventDefault();
+      const form = document.getElementById("upload-form");
+      const formData = new FormData(form);
+    
+      fetch("/user/upload-pfp", {
+        method: "POST",
+        body: formData
+      })
+      .then((response) => {
+        if (response.ok) {
+          console.log("picture updated successfully")
+        } else {
+          console.error("error uploading picture: " + response);
+        }
+        redirectToPage("/user");
+      })
+      .catch((error) => {
+        alert("error uploading picture: " + error)
+        console.error("picture update failed: ", error)
+      });
     });
-  });
+  }
+});
+
+
+const clearPfp = () => {
+  fetch("/user/clear-pfp", {
+    method: "POST",
+  })
+  .then((response) => {
+    if (response.ok) {
+      console.log("Profile picture cleared successfully");
+      redirectToPage("/user");
+    } else {
+      throw new Error("Failed to clear profile picture");
+    }
+  })
+  .catch((error) => {
+    console.error("Error:", error);
+    alert("Failed to clear profile picture: " + error.message);
+  }); 
 }
+
+const pfpButton = document.getElementById("clear-profile-pic-button")
+if (pfpButton) {
+  pfpButton.addEventListener("click", clearPfp);
+}
+
 
 // --------- recycle bin page --------------------------------
 

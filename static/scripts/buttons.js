@@ -29,7 +29,6 @@ window.onclick = (event) => {
   for (const [className, id] of Object.entries(buttonClasses)) {
     console.log(`${className}: ${id}`);
     if (!event.target.matches(className)) {
-      // TODO: investigate whether dropdown-content should be a universal class name
       var dropdowns = document.getElementsByClassName("dropdown-content"); 
       for (var i = 0; i < dropdowns.length; i++) {
         var openDropdown = dropdowns[i];
