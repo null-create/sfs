@@ -22,7 +22,6 @@ type Conf struct {
 	UserAlias       string `env:"CLIENT_USERNAME,required"`     // users alias (username)
 	ID              string `env:"CLIENT_ID,required"`           // this is generated at creation time. won't be in the initial .env file
 	Email           string `env:"CLIENT_EMAIL,required"`        // users email
-	Password        string `env:"CLIENT_PASSWORD,required"`     // users password for authentication
 	ProfilePic      string `env:"CLIENT_PROFILE_PIC,required"`  // path to users profile picture
 	Root            string `env:"CLIENT_ROOT,required"`         // client service root (ie. ../sfs/client/run/)
 	TestRoot        string `env:"CLIENT_TESTING,required"`      // testing root directory
