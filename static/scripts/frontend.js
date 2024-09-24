@@ -59,6 +59,7 @@ const closeMenu = (event, buttonCn, menuCn) => {
 
 // ------- uploads ---------------------------------------
 
+// add items in bulk via the /add page
 const addItems = () => {
   const folderPath = document.getElementById("submit-folder-path")
   if (folderPath) {

@@ -21,7 +21,7 @@ header {
   top: 0;
 }
 
-/* Main content block */
+/* ------------------------- Main content block --------------------------- */
 #content {
   display: flex;
   flex-direction: column;
@@ -38,7 +38,7 @@ header {
   text-align: center;
 }
 
-/* General form styling */
+/* --------------------- General form styling ------------------------- */
 
 form {
   max-width: 1200px;
@@ -89,12 +89,12 @@ form button[type="button"] {
   margin-bottom: 20px;
 }
 
-/* Index page search bar */
-
-/* Search bar doesn't need to inherit the standard form styles */
+/* Upper search bar doesn't need to inherit the standard form styles */
 form#search-form {
   all: unset;
 }
+
+/* ---------------------- Index page search bar ------------------------ */
 
 .search-input {
   width: 100%;
@@ -173,7 +173,7 @@ form#search-form {
   background-color:  rgb(201, 210, 226)
 }
 
-/* Top bar */
+/* -------------------- Top bar --------------------- */
 
 #logo {
   position: absolute;
@@ -198,7 +198,7 @@ form#search-form {
 
 #profile-pic {
   position:absolute;
-  right: 20px;
+  right: 55px;
   display: flex;
   width: 40px; 
   height: 40px; 
@@ -215,7 +215,7 @@ form#search-form {
   border-radius: 50%; /* Makes the image itself circular */
 }
 
-/* Side Bar */
+/* ------------------------- Side Bar ------------------------- */
 
 #sidebar {
   width: 250px;
@@ -303,7 +303,7 @@ form#search-form {
   display: block;
 }
 
-/* Tool Bar */
+/* ------------------------- Tool Bar ------------------------- */
 
 .toolbar {
   margin-bottom: 20px;
@@ -323,7 +323,7 @@ form#search-form {
   background-color: #d2e3fc;
 }
 
-/* Grid Styles */
+/* ---------------------- Grid Styles ------------------------ */
 
 .file-grid {
   display: flex;
@@ -351,7 +351,7 @@ form#search-form {
   margin-bottom: 10px;
 }
 
-/* Table Styles */
+/* --------------------- Table Styles ------------------------ */
 
 .file-table, .folder-table {
   width: 100%;
@@ -392,7 +392,7 @@ form#search-form {
   text-decoration: underline;
 }
 
-/* File Page */
+/* --------------------- File Page ----------------------- */
 
 .file-info-container {
   display: flex;
@@ -494,7 +494,7 @@ form#search-form {
   border-bottom: 1px solid #1e88e5;
 } */
 
-/* User Page */
+/* ------------------- User Page --------------------------- */
 
 .user-info-container {
   display: flex;
@@ -548,6 +548,16 @@ form#search-form {
   transition: transform 0.3s ease-in-out;
 }
 
+#upload-pfp-button {
+  background-color: #28a745;
+  color: white;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
 
 
 /* Responsive design for larger screens */
@@ -557,7 +567,7 @@ form#search-form {
   }
 }
 
-/* Upload page - Drag-and-drop-zone */
+/* --------------------- Upload and Add pages ---------------------------- */
 
 .modal-header {
   background-color: white;
@@ -621,12 +631,24 @@ form#search-form {
   background-color: #0056b3;
 }
 
+/* Add page ID's */
+
+#path-upload-form{
+  box-shadow: unset;
+}
+
+#add-instructions p.add-instructions-text {
+  padding-bottom: 20px;
+}
+
 #label-container {
   display: flex;
   align-items: center;
   justify-content: center;
   justify-self: center;
 }
+
+/* Drag-and-drop-zone */
 
 #dropzone-form{
   background-color: rgb(247, 247, 247);
@@ -649,25 +671,14 @@ form#search-form {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-#upload-pfp-button {
-  background-color: #28a745;
-  color: white;
-  font-weight: bold;
-  border-radius: 20px;
-  padding: 10px 20px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
 #upload-button:hover {
   background-color: #218838;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
+/* 
 #upload-info #upload-info {
   font-weight: lighter;
-}
+} */
 
 #remove-uploads-button {
   border-radius: 25px;
@@ -703,7 +714,7 @@ form#search-form {
   display: none;
 }
 
-/* Settings Page */
+/* -------------------------- Settings Page ---------------------------- */
 
 .setting-item {
   margin-bottom: 15px;
@@ -715,7 +726,13 @@ input[type="checkbox"] {
   font-size: 14px;
 }
 
-/* Recyle page */
+
+#upload-info #upload-info {
+  font-weight: lighter;
+} */
+
+
+/* ------------------------ Recyle Page --------------------- */
 
 #recycle-header {
   padding-top: 10px;
