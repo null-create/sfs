@@ -198,7 +198,7 @@ form#search-form {
 
 #profile-pic {
   position:absolute;
-  right: 60px;
+  right: 20px;
   display: flex;
   width: 40px; 
   height: 40px; 
@@ -713,4 +713,16 @@ select,
 input[type="checkbox"] {
   padding: 8px;
   font-size: 14px;
+}
+
+/* Recyle page */
+
+#recycle-header {
+  padding-top: 10px;
+}
+
+.recycle-bin-instructions {
+  display: flex;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }

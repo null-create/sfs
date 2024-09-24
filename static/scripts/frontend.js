@@ -278,7 +278,7 @@ const emptyBin = () => {
     })
     .then((response) => {
       if (response.ok) {
-        window.location.href = "/recycled"
+        redirectToPage("/recycled");
       }
     })
     .catch((error) => {
@@ -286,7 +286,7 @@ const emptyBin = () => {
       alert(error.message);
     });
   } else {
-    window.location.href = "/"
+    redirectToPage("/");
   }
 }
 

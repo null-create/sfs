@@ -26,43 +26,43 @@ var BaseEnv = map[string]string{
 	"NEW_SERVICE":       "true",
 
 	// client settings
-	"CLIENT_NAME":         "",
-	"CLIENT_USERNAME":     "",
-	"CLIENT_EMAIL":        "",
-	"CLIENT_PASSWORD":     "",
 	"CLIENT_ADDRESS":      "localhost:9090",
-	"CLIENT_AUTO_SYNC":    "true",
-	"CLIENT_ID":           "",
-	"CLIENT_LOCAL_BACKUP": "true",
 	"CLIENT_BACKUP_DIR":   "",
+	"CLIENT_EMAIL":        "",
+	"CLIENT_ID":           "",
+	"CLIENT_LOCAL_BACKUP": "false",
 	"CLIENT_LOG_DIR":      "",
+	"CLIENT_NAME":         "",
 	"CLIENT_NEW_SERVICE":  "true",
+	"CLIENT_PASSWORD":     "",
 	"CLIENT_PORT":         "9090",
+	"CLIENT_PROFILE_PIC":  "",
 	"CLIENT_ROOT":         "",
 	"CLIENT_TESTING":      "",
-	"CLIENT_PROFILE_PIC":  "",
+	"CLIENT_USERNAME":     "",
 
 	// server settings
 	"SERVER_ADDR":          "localhost:8080",
 	"SERVER_ADMIN":         "admin",
 	"SERVER_ADMIN_KEY":     "",
+	"SERVER_HOST":          "",
 	"SERVER_LOG_DIR":       "",
-	"SERVER_PORT":          "8080",
+	"SERVER_PORT":          "9191",
 	"SERVER_TIMEOUT_IDLE":  "900s",
 	"SERVER_TIMEOUT_READ":  "5s",
 	"SERVER_TIMEOUT_WRITE": "10s",
 
 	// service settings
+	"SERVICE_ENV":       "",
 	"SERVICE_LOG_DIR":   "",
 	"SERVICE_ROOT":      "",
 	"SERVICE_TEST_ROOT": "",
-	"SERVICE_ENV":       "",
 }
 
 // new env object.
 // checks the current directory for the .env file by default.
 func NewE() *Env {
-	if !HasDotEnv() {
+	if !hasEnvFile() {
 		log.Fatal("no .env file present")
 	}
 	env, err := godotenv.Read(".env")
@@ -79,7 +79,7 @@ func NewE() *Env {
 	}
 }
 
-func HasDotEnv() bool {
+func hasEnvFile() bool {
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("failed to get working directory: %v", err)
@@ -97,7 +97,7 @@ func HasDotEnv() bool {
 }
 
 // check for the presence of a .env file in the given directory
-func CheckForDotEnv(dirpath string) bool {
+func HasEnvFile(dirpath string) bool {
 	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		log.Fatalf("failed to read directory entires: %v", err)

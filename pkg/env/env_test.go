@@ -16,7 +16,7 @@ func TestEnvValidate(t *testing.T) {
 }
 
 func TestHasDotEnvFile(t *testing.T) {
-	assert.True(t, true, HasDotEnv())
+	assert.True(t, true, hasEnvFile())
 }
 
 func TestEnvGet(t *testing.T) {
