@@ -22,13 +22,19 @@ const hideSearchBar = () => {
 
 // ------- buttons ---------------------------------------
 
-// add button
+// add buttons
 document.addEventListener("DOMContentLoaded", () => {
-  const addBtn = document.getElementById("dropdown-btn");
-  if (addBtn) {
-    addBtn.addEventListener("click", () => {
+  const sidebarAddBtn = document.getElementById("add-dropdown-btn");
+  if (sidebarAddBtn) {
+    sidebarAddBtn.addEventListener("click", () => {
       document.getElementById("dropdown-menu").classList.toggle("show");
     });
+  }
+  const folderAddBtn = document.getElementById("folder-dropdown-btn");
+  if (folderAddBtn) {
+    folderAddBtn.addEventListener("click", () => {
+      document.getElementById("folder-dropdown-menu").classList.toggle("show");
+    })
   }
 });  
 

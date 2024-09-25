@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/sfs/pkg/server"
 )
@@ -28,16 +29,27 @@ func (c *Client) error(w http.ResponseWriter, r *http.Request, msg string, statu
 }
 
 func (c *Client) HomePage(w http.ResponseWriter, r *http.Request) {
+	recentDirs, err := c.Db.GetAllDirsAfter(time.Now().AddDate(0, 0, -7))
+	if err != nil {
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	recentFiles, err := c.Db.GetAllFilesAfter(time.Now().AddDate(0, 0, -7))
+	if err != nil {
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	indexData := Index{
 		UserPage:   userPage,
 		ProfilePic: c.Conf.ProfilePic,
 		UserID:     c.User.ID,
-		Files:      c.Drive.GetFiles(), // TODO: replace with "most recent" items
-		Dirs:       c.Drive.GetDirs(),  // TODO: replace with "most recent" items
+		Files:      recentFiles,
+		Dirs:       recentDirs,
 		ServerHost: c.Conf.ServerAddr,
 		ClientHost: c.Conf.Addr,
 	}
-	err := c.Templates.ExecuteTemplate(w, "index.html", indexData)
+	err = c.Templates.ExecuteTemplate(w, "index.html", indexData)
 	if err != nil {
 		c.error(w, r, err.Error(), http.StatusInternalServerError)
 	}

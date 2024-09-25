@@ -11,7 +11,7 @@ body {
 
 header {
   display: flex;
-  justify-content: space-evenly;
+  /* justify-content: space-evenly; */
   align-items: center;
   padding: 0 20px;
   background-color: rgb(247, 247, 247);
@@ -22,6 +22,7 @@ header {
 }
 
 /* ------------------------- Main content block --------------------------- */
+
 #content {
   display: flex;
   flex-direction: column;
@@ -180,6 +181,10 @@ form#search-form {
   left: 15px;
 }
 
+#search {
+  padding-left: 230px;
+}
+
 #search input {
   width: 400px;
   padding: 10px;
@@ -261,8 +266,25 @@ form#search-form {
 
 .button-container {
   display: flex;
-  padding-left: 20px;
+  text-align: center;
+  padding-left: 5px;
   padding-bottom: 10px;
+  padding-top: 20px;
+}
+
+#add-dropdown-btn {
+  padding: unset;
+  padding: 20px;
+}
+
+#folder-dropdown-btn:hover {
+  background-color: rgb(218, 218, 218);
+  box-shadow: unset;
+}
+
+#drive-page-button:hover {
+  background-color: rgb(218, 218, 218);
+  box-shadow: unset;
 }
 
 .add-button {
@@ -323,8 +345,10 @@ form#search-form {
   background-color: #d2e3fc;
 }
 
-/* ---------------------- Grid Styles ------------------------ */
+/* ----------------------- Folder Page ---------------------- */ 
 
+/* Grid Styles */
+/* 
 .file-grid {
   display: flex;
   flex-wrap: wrap;
@@ -349,9 +373,9 @@ form#search-form {
   width: 64px;
   height: 64px;
   margin-bottom: 10px;
-}
+} */
 
-/* --------------------- Table Styles ------------------------ */
+/* Table Styles */
 
 .file-table, .folder-table {
   width: 100%;
