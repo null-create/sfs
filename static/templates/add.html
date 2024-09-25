@@ -4,26 +4,27 @@
   <body>
     {{template "frame"}}
     <div id="content">
-      <div id="file-upload-container">
+      <div id="add-items-container">
         <form
           class="standard-form"
+          id="path-upload-form"
           action="/add/new"
           method="post"
           enctype="multipart/form-data"
-          style="width: 500px"
         >
-          <label for="folder-path-input">
-            Enter the full path to a folder to add it to the local SFS drive.
-            Folders will automatically have all their files and subdirectories
-            added. Items will automatically sync with the server if local sync
-            is disabled.
+          <label for="folder-path-input" id="add-instructions">
+            <p class="add-instructions-text">
+              Enter the full path to a folder to add it to the local SFS drive.
+              Folders will automatically have all their files and subdirectories
+              added. Items will automatically sync with the server if local sync
+              is disabled.
+            </p>
           </label>
           <input
             type="text"
             id="folder-path-input"
             name="folder-path-input"
             placeholder="ex: c:/Users/Person/ProjectDir"
-            style="width: 500px"
           />
           <br />
           <button type="button" id="submit-folder-path">Add</button>

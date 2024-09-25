@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/logger"
@@ -560,6 +561,56 @@ func (q *Query) GetFilesByDriveID(driveID string) ([]*svc.File, error) {
 	return fs, nil
 }
 
+func (q *Query) GetAllFilesAfter(date time.Time) ([]*svc.File, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("files")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindFilesAfterQuery, date)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	var fs []*svc.File
+	for rows.Next() {
+		file := new(svc.File)
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.OwnerID,
+			&file.DirID,
+			&file.DriveID,
+			&file.Mode,
+			&file.Size,
+			&file.LocalBackup,
+			&file.ServerBackup,
+			&file.Protected,
+			&file.Key,
+			&file.LastSync,
+			&file.Path,
+			&file.ServerPath,
+			&file.ClientPath,
+			&file.BackupPath,
+			&file.Registered,
+			&file.Endpoint,
+			&file.CheckSum,
+			&file.Algorithm,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, fmt.Sprintf("files found for after '%v'", date))
+				continue
+			}
+			return nil, fmt.Errorf("unable to scan rows: %v", err)
+		}
+		fs = append(fs, file)
+	}
+	return fs, nil
+}
+
 // ----------- directories --------------------------------
 
 // retrieve information about a users directory from the database
@@ -971,11 +1022,61 @@ func (q *Query) GetDirsByParentID(parentID string) ([]*svc.Directory, error) {
 	return dirs, nil
 }
 
+func (q *Query) GetAllDirsAfter(date time.Time) ([]*svc.Directory, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.WhichDB("directories")
+	q.Connect()
+	defer q.Close()
+
+	rows, err := q.Conn.Query(FindDirsAfterQuery, date)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v", err)
+	}
+	defer rows.Close()
+
+	dirs := make([]*svc.Directory, 0)
+	for rows.Next() {
+		dir := new(svc.Directory)
+		dir.Files = make(map[string]*svc.File, 0)
+		dir.Dirs = make(map[string]*svc.Directory, 0)
+		if err := rows.Scan(
+			&dir.ID,
+			&dir.Name,
+			&dir.OwnerID,
+			&dir.DriveID,
+			&dir.Size,
+			&dir.Path,
+			&dir.ServerPath,
+			&dir.ClientPath,
+			&dir.BackupPath,
+			&dir.Registered,
+			&dir.Protected,
+			&dir.AuthType,
+			&dir.Key,
+			&dir.Overwrite,
+			&dir.LastSync,
+			&dir.Endpoint,
+			&dir.ParentID,
+			&dir.Root,
+			&dir.RootPath,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				q.log.Log(logger.INFO, fmt.Sprintf("no directories found after %v", date))
+				continue
+			}
+		}
+		dirs = append(dirs, dir)
+	}
+	return dirs, nil
+}
+
 func (q *Query) IsDirRegistered(dirID string) (bool, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	q.WhichDB("files")
+	q.WhichDB("directories")
 	q.Connect()
 	defer q.Close()
 

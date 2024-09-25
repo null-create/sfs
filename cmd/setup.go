@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/sfs/pkg/auth"
@@ -13,6 +13,7 @@ import (
 	"github.com/sfs/pkg/server"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // command to execute a first time set up
@@ -22,36 +23,58 @@ var (
 		Use:   "setup",
 		Short: "First time set up.",
 		Long: `
-First time set up. Creates a new client and server, and 
-retrieves some basic information about the user to establish
-client side services.
+First time set up after building. 
+
+Creates necessary .env files based on the specifications
+defined in pkg/configs/configs.yaml
+
+Use the -a flag to automatically generate the .env files.
+Use the -d flag to specify where the SFS application binary should be located.
+
+CLIENT_NAME and CLIENT_USERNAME will be randomly generated.
 		`,
 		Run: runSetupCmd,
 	}
-	// technique from:
-	// https://stackoverflow.com/questions/31873396/is-it-possible-to-get-the-current-root-of-package-structure-as-a-string-in-golan
-	_, b, _, _ = runtime.Caller(0)
-	Root       = filepath.Join(filepath.Dir(b), "../..")
+	// flags
+	auto bool
+	dir  string
 )
 
 func init() {
+	setupCmd.Flags().BoolVarP(&auto, "auto", "a", false, "Whether to automate baseline environment configs (defaults to false)")
+	setupCmd.Flags().StringVarP(&dir, "directory", "d", "", "Where to setup SFS")
+
+	viper.BindPFlag("auto", setupCmd.Flags().Lookup("auto"))
+	viper.BindPFlag("directory", setupCmd.Flags().Lookup("directory"))
+
 	rootCmd.AddCommand(setupCmd)
 }
 
 func runSetupCmd(cmd *cobra.Command, args []string) {
+	auto, _ := cmd.Flags().GetBool("auto")
+	dir, _ := cmd.Flags().GetString("directory")
+	if dir == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		dir = cwd
+	}
+
 	// check for whether there are CLIENT configurations already.
 	// we need to check for the presence of at least an .env file
 	// at the root level, then parse it for CLIENT_ prefixes and
 	// see if there are any values associated with those keys
 	// if not, then we run the first time setup steps
-	if env.CheckForDotEnv(Root) {
+	if env.HasEnvFile(dir) {
 		// we only have an .env file if we've set up our configurations,
 		// so we don't need to run first time setup again.
 		cmdLogger.Info(".env file found. Setup has already been ran.")
+		envCfgs.List()
 		return
 	}
 	// set up environment configurations
-	if err := setUpEnv(); err != nil {
+	if err := setUpEnv(auto, dir); err != nil {
 		showerr(err)
 		return
 	}
@@ -67,76 +90,84 @@ func runSetupCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func setDefaults(newEnv map[string]string) map[string]string {
+func setDefaults(newEnv map[string]string, root string) map[string]string {
 	newEnv["ADMIN_MODE"] = "false"
 	newEnv["BUFFERED_EVENTS"] = "true"
 	newEnv["EVENT_BUFFER_SIZE"] = "2"
 	newEnv["JWT_SECRET"] = auth.GenSecret(64)
 	newEnv["NEW_SERVICE"] = "true"
-
-	newEnv["CLIENT_ROOT"] = filepath.Join(Root, "pkg", "client", "run")
+	newEnv["CLIENT_ADDRESS"] = client.EndpointRoot + ":" + "9090"
+	newEnv["CLIENT_BACKUP_DIR"] = filepath.Join(root, "pkg", "client", "run", "backups")
+	newEnv["CLIENT_ROOT"] = filepath.Join(root, "pkg", "client", "run")
 	newEnv["CLIENT_ID"] = auth.NewUUID()
-	newEnv["CLIENT_ADDRESS"] = client.EndpointRoot + ":" + "8080"
-	newEnv["CLIENT_LOCAL_BACKUP"] = "true"
-	newEnv["CLIENT_AUTO_SYNC"] = "true"
-	newEnv["CLIENT_BACKUP_DIR"] = filepath.Join(Root, "pkg", "client", "run", "backups")
-	newEnv["CLIENT_LOG_DIR"] = filepath.Join(Root, "pkg", "client", "logs")
-	newEnv["CLIENT_PORT"] = "8080"
 	newEnv["CLIENT_NEW_SERVICE"] = "true"
-	newEnv["CLIENT_TESTING"] = filepath.Join(Root, "pkg", "client", "testing")
-
+	newEnv["CLIENT_LOCAL_BACKUP"] = "false"
+	newEnv["CLIENT_LOG_DIR"] = filepath.Join(root, "pkg", "client", "logs")
+	newEnv["CLIENT_PASSWORD"] = auth.GenSecret(64)
+	newEnv["CLIENT_PORT"] = "9090"
+	newEnv["CLIENT_TESTING"] = filepath.Join(root, "pkg", "client", "testing")
 	newEnv["SERVER_ADDR"] = client.EndpointRoot + ":" + "8080"
 	newEnv["SERVER_ADMIN"] = "admin"
 	newEnv["SERVER_ADMIN_KEY"] = auth.GenSecret(64)
-	newEnv["SERVER_LOG_DIR"] = filepath.Join(Root, "pkg", "server", "logs")
-	newEnv["SERVER_PORT"] = "8080"
+	newEnv["SERVER_LOG_DIR"] = filepath.Join(root, "pkg", "server", "logs")
+	newEnv["SERVER_PORT"] = "9191"
 	newEnv["SERVER_TIMEOUT_IDLE"] = "900s"
 	newEnv["SERVER_TIMEOUT_READ"] = "5s"
 	newEnv["SERVER_TIMEOUT_WRITE"] = "10s"
-
-	newEnv["SERVICE_LOG_DIR"] = filepath.Join(Root, "pkg", "service", "logs")
-	newEnv["SERVICE_ROOT"] = filepath.Join(Root, "pkg", "server", "run")
-	newEnv["SERVICE_TEST_ROOT"] = filepath.Join(Root, "pkg", "server", "testing")
+	newEnv["SERVICE_ENV"] = filepath.Join(root, "pkg", "env", ".env")
+	newEnv["SERVICE_LOG_DIR"] = filepath.Join(root, "pkg", "service", "logs")
+	newEnv["SERVICE_ROOT"] = filepath.Join(root, "pkg", "server", "run")
+	newEnv["SERVICE_TEST_ROOT"] = filepath.Join(root, "pkg", "server", "testing")
 	return newEnv
 }
 
 // set configs and create .env files for each package
 // populate baseEnv with default values for all fields
 // get users input for client name, username, email
-func setUpEnv() error {
-	// set default values
-	newEnv := setDefaults(env.BaseEnv)
-
-	// manual settings set by the user
+func setUpEnv(auto bool, root string) error {
+	newEnv := setDefaults(env.BaseEnv, root)
 	for setting, value := range newEnv {
 		if strings.Contains(setting, "CLIENT") && value == "" {
-			var value string
-			if setting == "CLIENT_NAME" {
-				fmt.Print("Enter your name: ")
-			} else if setting == "CLIENT_USERNAME" {
-				fmt.Print("Enter your username: ")
-			} else if setting == "CLIENT_EMAIL" {
-				fmt.Print("Enter your email: ")
-			} else if setting == "CLIENT_PASSWORD" {
-				fmt.Print("Enter your password: ")
+			if !auto {
+				var value string
+				if setting == "CLIENT_NAME" {
+					fmt.Print("Enter your name: ")
+				} else if setting == "CLIENT_USERNAME" {
+					fmt.Print("Enter your username: ")
+				} else if setting == "CLIENT_EMAIL" {
+					fmt.Print("Enter your email: ")
+				} else if setting == "CLIENT_PASSWORD" {
+					fmt.Print("Enter your password: ")
+				}
+				_, err := fmt.Scanln(&value)
+				if err != nil {
+					return err
+				}
+				newEnv[setting] = value
+			} else {
+				if setting == "CLIENT_NAME" {
+					newEnv[setting] = "someone"
+				} else if setting == "CLIENT_USERNAME" {
+					newEnv[setting] = "a_username"
+				} else if setting == "CLIENT_EMAIL" {
+					newEnv[setting] = ""
+				}
 			}
-			fmt.Scanln(&value)
-			newEnv[setting] = value
 		}
 	}
 
 	// add .env file to root
-	if err := env.NewEnvFile(filepath.Join(Root, ".env"), newEnv); err != nil {
+	if err := env.NewEnvFile(filepath.Join(root, ".env"), newEnv); err != nil {
 		return err
 	}
 	// write out .env files to each package since they each need a copy
 	// to execute their respective tests
-	entries, err := os.ReadDir(filepath.Join(Root, "pkg"))
+	entries, err := os.ReadDir(filepath.Join(root, "pkg"))
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
-		if err := env.NewEnvFile(filepath.Join(Root, "pkg", entry.Name(), ".env"), newEnv); err != nil {
+		if err := env.NewEnvFile(filepath.Join(root, "pkg", entry.Name(), ".env"), newEnv); err != nil {
 			return err
 		}
 	}

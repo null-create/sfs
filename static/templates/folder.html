@@ -4,6 +4,19 @@
   <body>
     {{template "frame"}}
     <div id="content">
+      <div class="button-container" id="drive-page-buttons">
+        <div class="home-button" id="home-button">
+          <a href="/drive" id="drive-page-link">
+            <button class="add-button" id="drive-page-button">My Drive</button>
+          </a>
+        </div>
+        <div class="arrow-container" style="padding: 20px">🡲</div>
+        <button class="add-button" id="folder-dropdown-btn">{{.Name}}</button>
+        <div class="dropdown-content" id="folder-dropdown-menu">
+          <a id="new-file-link" href="/upload">New File</a>
+          <a id="new-folder-link" href="/add">New Folder</a>
+        </div>
+      </div>
       <table class="file-table">
         <tr>
           <th></th>
@@ -15,7 +28,7 @@
         {{range .Dirs}}
         <tr>
           <td
-            onclick="window.location.href='http://localhost:9090/dirs/i/{{.ID}}'"
+            onclick="redirectToPage('/dirs/i/{{.ID}}');"
             style="cursor: pointer"
           >
             <img src="/assets/folder-small.png" alt="small folder icon" />
@@ -28,7 +41,7 @@
         {{end}} {{range .Files}}
         <tr>
           <td
-            onclick="window.location.href='http://localhost:9090/files/i/{{.ID}}'"
+            onclick="redirectToPage('/files/i/{{.ID}}');"
             style="cursor: pointer"
           >
             <img src="/assets/file-small.png" alt="small file icon" />

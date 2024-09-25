@@ -191,7 +191,8 @@ func (c *Client) ClearAllItems() error {
 	return nil
 }
 
-// find files and/or directories that have the same name. returns empty slices if none are found.
+// find files and/or directories that have the same name.
+// returns empty slices if none are found.
 func (c *Client) SearchForItems(itemName string) ([]*svc.File, []*svc.Directory, error) {
 	files, err := c.Db.GetFilesByName(itemName)
 	if err != nil {
@@ -203,6 +204,8 @@ func (c *Client) SearchForItems(itemName string) ([]*svc.File, []*svc.Directory,
 	}
 	return files, dirs, nil
 }
+
+// TODO: func (c *Client) GetRecentItems() ([]*svc.File, []*svc.Directory, error)
 
 // ------ misc --------------------------------
 

@@ -1,16 +1,24 @@
+# Build
 FROM golang:1.21 as builder
-
 WORKDIR /app
 COPY go.mod go.sum ./
-
-RUN go mod download
+RUN go mod download && go mod verify && go mod tidy
 COPY . .
-RUN go build -o sfs
+RUN GOOS=linux go build -o sfs
+RUN chmod +x ./sfs 
+RUN ./sfs --help
+RUN ./sfs setup -a -d /app && ./sfs client --new && ./sfs server --new
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+# Prepare image
+FROM ubuntu:22.04
+RUN apt-get update -y && apt-get install -y \
+  ca-certificates \
+  sqlite3 \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /root/
-COPY --from=builder /app/sfs .
+COPY --from=builder /app .
+RUN echo "contents: " && ls -la
 EXPOSE 8080
 
-CMD ["./sfs"]
+CMD ["./sfs", "server", "--start"]

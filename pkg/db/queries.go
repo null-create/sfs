@@ -323,6 +323,10 @@ const (
 	FindUsersDriveIDQuery        string = `SELECT drive_id FROM Users WHERE id = ?;`
 	FindUsersIDWithDriveIDQuery  string = `SELECT owner_id FROM Drives WHERE id = ?;`
 
+	// find by date ranges
+	FindFilesAfterQuery string = `SELECT * FROM Files WHERE last_sync > ?;`
+	FindDirsAfterQuery  string = `SELECT * FROM Directories WHERE last_sync > ?;`
+
 	// ---------- SELECT statements for confirming existance and registration  -------------------
 
 	ExistsQuery           string = `SELECT EXISTS (SELECT 1 FROM ? WHERE id = '?');`

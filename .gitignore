@@ -1,6 +1,5 @@
 # development stuff
 .vscode
-docs
 .env
 
 # internal stuff
@@ -24,3 +23,4 @@ old-files
 test_items
 notes.txt
 */*/*/static/*
+docs/Basic-Cloud-Architecture.png

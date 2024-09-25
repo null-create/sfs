@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -22,8 +23,11 @@ func init() {
 func showVersion(cmd *cobra.Command, args []string) {
 	b, err := os.ReadFile("VERSION")
 	if err != nil {
-		showerr(err)
-		return
+		if os.IsNotExist(err) {
+			log.Fatal("VERSION file not found")
+		} else {
+			log.Fatal(err)
+		}
 	}
-	fmt.Print(string(b))
+	fmt.Print("Version: " + string(b))
 }

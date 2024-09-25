@@ -36,9 +36,10 @@ func (c *Client) successMsg(w http.ResponseWriter, msg string) {
 func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(DefaultSizeLimit)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	// Extract form data (add more fields as needed)
 	updates := map[string]string{
 		"CLIENT_NAME":     r.FormValue("name"),
@@ -51,7 +52,7 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 	for setting, newValue := range updates {
 		if newValue != "" {
 			if err := c.UpdateConfigSetting(setting, newValue); err != nil {
-				c.error(w, r, err.Error())
+				c.error(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -90,32 +91,25 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update client configurations
 	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", fileName); err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Send back a JSON response with the new profile picture URL
-	newProfilePicURL := fmt.Sprintf("/assets/profile-pics/%s", fileName)
-	w.Header().Set("Content-Type", "application/json")
-	_, err = fmt.Fprintf(w, `{"newProfilePicURL": "%s"}`, newProfilePicURL)
-	if err != nil {
-		http.Error(w, "Failed to format response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.successMsg(w, "profile picture updated successfully")
 }
 
 func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
 	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", "default_profile_pic.jpg"); err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.successMsg(w, "profile pic updated successfully")
+	c.successMsg(w, "profile pic cleared")
 }
 
 // empty the clients sfs recycle bin
 func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) {
 	if err := c.EmptyRecycleBin(); err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	c.successMsg(w, "success")
@@ -140,14 +134,14 @@ func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	r.Body.Close()
 
 	var newSettings map[string]interface{}
 	if err := json.Unmarshal(buf.Bytes(), &newSettings); err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -183,11 +177,11 @@ func (c *Client) getFileFromRequest(r *http.Request) (*svc.File, error) {
 func (c *Client) OpenFileLocHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := c.getFileFromRequest(r)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := ShowFileInExplorer(file.ClientPath); err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -196,7 +190,7 @@ func (c *Client) OpenFileLocHandler(w http.ResponseWriter, r *http.Request) {
 func (c *Client) ServeFile(w http.ResponseWriter, r *http.Request) {
 	file, err := c.getFileFromRequest(r)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -221,7 +215,7 @@ func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer formFile.Close()
 
-	destFolder := r.FormValue("destFolder")
+	destFolder := r.FormValue("destFolder") // folder name, no path provided
 	if destFolder == "" {
 		http.Error(w, "Destination folder is required", http.StatusBadRequest)
 		return
@@ -255,20 +249,20 @@ func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
 
 	localFile, err := os.Create(savePath)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer localFile.Close()
 
 	_, err = io.Copy(localFile, formFile)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// add uploaded file to service
 	if err := c.AddFile(savePath); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -280,27 +274,27 @@ func (c *Client) RemoveFileHandler(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	fileID := buf.String()
 	if fileID == "" {
-		http.Error(w, "no file ID provided", http.StatusBadRequest)
+		c.error(w, r, "no file ID provided", http.StatusBadRequest)
 		return
 	}
 
 	file, err := c.GetFileByID(fileID)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if file == nil {
-		c.error(w, r, "file not found")
+		c.error(w, r, "file not found", http.StatusNotFound)
 		return
 	}
 	if err := c.RemoveFile(file); err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -310,32 +304,32 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	_, err := io.Copy(&buf, r.Body)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	r.Body.Close()
 
 	path := buf.String()
 	if path == "" {
-		c.error(w, r, "no path provided")
+		c.error(w, r, "no path provided", http.StatusInternalServerError)
 		return
 	}
 
 	item, err := os.Stat(path)
 	if err != nil {
-		c.error(w, r, err.Error())
+		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if item.IsDir() {
 		_, err = c.Discover(path)
 		if err != nil {
-			c.error(w, r, err.Error())
+			c.error(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
 		if err := c.AddFile(path); err != nil {
-			c.error(w, r, err.Error())
+			c.error(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}

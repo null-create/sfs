@@ -1,53 +1,78 @@
 #!/usr/bin/env bash
 
-set -eu
+PROJECT_NAME="sfs"
 
-download_deps() {
-  go mod download
-  go mod tidy
-}
-
-build() {
-  echo "building SFS binary for $1 $2 ..."
-  GOOS=$1 GOARCH=$2 go build -o $3
-}
-
-# check if go is installed first
-if ! command -v go &>/dev/null; then
-  echo "golang is not installed"
-  echo "install before running the build script"
-  exit 1
-fi
-
-# download and install dependencies
-download_deps
-
-# build executable based on the host OS
-case "$(uname -s)" in
-Linux*)
-  # TODO: refactor this to call each of these depending
-  # on architecture
-  OUT_FILE="sfs"
-  build linux linux-amd64 $OUT_FILE
+# Determine architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+x86_64)
+  GOARCH="amd64"
   ;;
-Darwin*)
-  OUT_FILE="sfs"
-  build darwin mac-amd64 $OUT_FILE
+i386 | i686)
+  GOARCH="386"
   ;;
-CYGWIN* | MINGW32* | MSYS* | MINGW*)
-  OUT_FILE="sfs.exe"
-  build windows amd64 $OUT_FILE
+aarch64 | arm64)
+  GOARCH="arm64"
+  ;;
+armv7l)
+  GOARCH="arm"
+  ;;
+ppc64le)
+  GOARCH="ppc64le"
+  ;;
+s390x)
+  GOARCH="s390x"
   ;;
 *)
-  echo "Unsupported operating system."
+  echo "Unsupported architecture: $ARCH"
   exit 1
   ;;
 esac
 
-./sfs -h
-if [[ $? -ne 0 ]]; then
-  echo "failed to create executable"
+# Determine the OS
+OS=$(uname -s)
+case "$OS" in
+Linux*)
+  GOOS="linux"
+  ;;
+Darwin*)
+  GOOS="darwin"
+  ;;
+CYGWIN* | MINGW32* | MSYS* | MINGW*)
+  GOOS="windows"
+  ;;
+*)
+  echo "Unsupported OS: $OS"
   exit 1
+  ;;
+esac
+
+# Create the output directory
+BUILD_DIR="./bin"
+if [ -d BUILD_DIR ]; then
+  mkdir -p "$BUILD_DIR"
 fi
 
-exit 0
+# Output binary name based on OS
+if [ "$GOOS" == "windows" ]; then
+  OUTPUT_FILE="$PROJECT_NAME.exe"
+else
+  OUTPUT_FILE="$PROJECT_NAME"
+fi
+
+# Download dependencies
+echo "Downloading dependencies..."
+go mod download
+go mod tidy
+
+# Build the project
+echo "Building project for $GOOS/$GOARCH..."
+GOOS=$GOOS GOARCH=$GOARCH go build -o "$OUTPUT_FILE"
+
+cp $OUTPUT_FILE $BUILD_DIR/$OUTPUT_FILE
+rm $OUTPUT_FILE
+
+if ! ./bin/"$OUTPUT_FILE" -h; then
+  echo "Failed to build new binary for $GOOS/$GOARCH"
+  exit 1
+fi
