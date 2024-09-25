@@ -49,7 +49,7 @@ esac
 
 # Create the output directory
 BUILD_DIR="./bin"
-if [ -d BUILD_DIR ]; then
+if [ ! -d BUILD_DIR ]; then
   mkdir -p "$BUILD_DIR"
 fi
 
