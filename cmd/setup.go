@@ -59,23 +59,18 @@ func runSetupCmd(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 		dir = cwd
+		cmdLogger.Info(fmt.Sprintf("defaulting to current working directory: %s\n", dir))
 	}
-
 	// check for whether there are CLIENT configurations already.
 	// we need to check for the presence of at least an .env file
 	// at the root level, then parse it for CLIENT_ prefixes and
 	// see if there are any values associated with those keys
 	// if not, then we run the first time setup steps
-	if env.HasEnvFile(dir) {
-		// we only have an .env file if we've set up our configurations,
-		// so we don't need to run first time setup again.
-		cmdLogger.Info(".env file found. Setup has already been ran.")
-		envCfgs.List()
-		return
-	}
-	// set up environment configurations
-	if err := setUpEnv(auto, dir); err != nil {
-		showerr(err)
+	if !env.HasEnvFile(dir) {
+		if err := setUpEnv(auto, dir); err != nil {
+			showerr(err)
+			return
+		}
 		return
 	}
 	// set up server side service
@@ -106,7 +101,7 @@ func setDefaults(newEnv map[string]string, root string) map[string]string {
 	newEnv["CLIENT_PASSWORD"] = auth.GenSecret(64)
 	newEnv["CLIENT_PORT"] = "9090"
 	newEnv["CLIENT_TESTING"] = filepath.Join(root, "pkg", "client", "testing")
-	newEnv["SERVER_ADDR"] = client.EndpointRoot + ":" + "8080"
+	newEnv["SERVER_ADDR"] = client.EndpointRoot + ":" + "9191"
 	newEnv["SERVER_ADMIN"] = "admin"
 	newEnv["SERVER_ADMIN_KEY"] = auth.GenSecret(64)
 	newEnv["SERVER_LOG_DIR"] = filepath.Join(root, "pkg", "server", "logs")
@@ -150,7 +145,7 @@ func setUpEnv(auto bool, root string) error {
 				} else if setting == "CLIENT_USERNAME" {
 					newEnv[setting] = "a_username"
 				} else if setting == "CLIENT_EMAIL" {
-					newEnv[setting] = ""
+					newEnv[setting] = "anemail@example.com"
 				}
 			}
 		}
