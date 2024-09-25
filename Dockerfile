@@ -7,7 +7,8 @@ COPY . .
 RUN GOOS=linux go build -o sfs
 RUN chmod +x ./sfs 
 RUN ./sfs --help
-RUN ./sfs setup -a -d /app && ./sfs client --new && ./sfs server --new
+RUN ./sfs setup -a -d /app
+RUN ./sfs client --new && ./sfs server --new
 
 # Prepare image
 FROM ubuntu:22.04

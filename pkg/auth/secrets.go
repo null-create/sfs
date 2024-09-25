@@ -10,6 +10,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
+
 func GetSecret() ([]byte, error) {
 	envCfg := env.NewE()
 	if s, err := envCfg.Get("JWT_SECRET"); err == nil {
@@ -18,8 +20,6 @@ func GetSecret() ([]byte, error) {
 		return nil, err
 	}
 }
-
-var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 
 // generate a random string of n length to use as a secret
 //
@@ -39,11 +39,11 @@ func GenSecret(length int) string {
 
 // hash a given password
 func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	b, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
 		return "", err
 	}
-	return string(bytes), err
+	return string(b), err
 }
 
 // check if a given password is hashed correctly
