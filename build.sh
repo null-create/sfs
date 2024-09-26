@@ -47,17 +47,61 @@ CYGWIN* | MINGW32* | MSYS* | MINGW*)
   ;;
 esac
 
+# Create bin directory
 BUILD_DIR="./bin"
 if [ ! -d BUILD_DIR ]; then
   mkdir -p "$BUILD_DIR"
 fi
 
+# Create final executable name
 if [ "$GOOS" == "windows" ]; then
   OUTPUT_FILE="$PROJECT_NAME.exe"
 else
   OUTPUT_FILE="$PROJECT_NAME"
 fi
 
+# Add empty .env file to be populated during setup
+ENV_FILE=".env"
+
+if [ ! -f ".env" ]; then
+  echo '
+ADMIN_MODE=
+BUFFERED_EVENTS=""
+CLIENT_ADDRESS=""
+CLIENT_BACKUP_DIR=""
+CLIENT_EMAIL=""
+CLIENT_HOST=""
+CLIENT_ID=""
+CLIENT_LOCAL_BACKUP=""
+CLIENT_LOG_DIR=""
+CLIENT_NAME=""
+CLIENT_NEW_SERVICE=""
+CLIENT_PASSWORD=""
+CLIENT_PORT=
+CLIENT_PROFILE_PIC=""
+CLIENT_ROOT=""
+CLIENT_TESTING=""
+CLIENT_USERNAME=""
+EVENT_BUFFER_SIZE=""
+JWT_SECRET=""
+NEW_SERVICE=""
+SERVER_ADDR=""
+SERVER_ADMIN=""
+SERVER_ADMIN_KEY=""
+SERVER_HOST=""
+SERVER_LOG_DIR=""
+SERVER_PORT=""
+SERVER_TIMEOUT_IDLE=""
+SERVER_TIMEOUT_READ=""
+SERVER_TIMEOUT_WRITE=""
+SERVICE_ENV=""
+SERVICE_LOG_DIR=""
+SERVICE_ROOT=""
+SERVICE_TEST_ROOT=""' >>$ENV_FILE
+  echo ".env file has been generated at $PWD/$ENV_FILE"
+fi
+
+# Build the project
 echo "Downloading dependencies..."
 go mod download
 go mod tidy

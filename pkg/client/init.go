@@ -51,7 +51,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 
 	// make client service root directory
 	setupLog.Info("making SFS service directories...")
-	svcDir := filepath.Join(svcRoot, cfgs.User)
+	svcDir := filepath.Join(svcRoot, cCfgs.User)
 	if err := os.Mkdir(svcDir, svc.PERMS); err != nil {
 		return nil, err
 	}
@@ -119,15 +119,14 @@ var initLog = logger.NewLogger("CLIENT_INIT", "None")
 // pulls user info from a .env file for now.
 // will probably eventually need a way to input an actual new user from a UI
 func newUser() (*auth.User, error) {
-	envCfg := env.NewE()
 	newUser := auth.NewUser(
-		cfgs.User,
-		cfgs.UserAlias,
-		cfgs.Email,
-		cfgs.Root,
-		cfgs.IsAdmin,
+		cCfgs.User,
+		cCfgs.UserAlias,
+		cCfgs.Email,
+		cCfgs.Root,
+		cCfgs.IsAdmin,
 	)
-	if err := envCfg.Set("CLIENT_ID", newUser.ID); err != nil {
+	if err := svcCfgs.Set("CLIENT_ID", newUser.ID); err != nil {
 		initLog.Error("failed to set user ID as an env variable: " + err.Error())
 		return nil, err
 	}
@@ -149,7 +148,7 @@ func newHttpClient() *http.Client {
 }
 
 func loadStateFile() ([]byte, error) {
-	sfDir := filepath.Join(cfgs.Root, cfgs.User, "state")
+	sfDir := filepath.Join(cCfgs.Root, cCfgs.User, "state")
 	entries, err := os.ReadDir(sfDir)
 	if err != nil {
 		return nil, err
@@ -377,7 +376,7 @@ func NewClient(user *auth.User) (*Client, error) {
 // initialize client service
 func Init(newClient bool) (*Client, error) {
 	if newClient {
-		client, err := SetupClient(cfgs.Root)
+		client, err := SetupClient(cCfgs.Root)
 		if err != nil {
 			return nil, err
 		}

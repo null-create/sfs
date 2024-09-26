@@ -22,7 +22,7 @@ func (c *Client) AddNewUser() error {
 		password = auth.GenSecret(64)
 	}
 
-	newUser := auth.NewUser(name, userName, email, cfgs.Root, false)
+	newUser := auth.NewUser(name, userName, email, cCfgs.Root, false)
 	newUser.Password = password
 	if err := c.Db.AddUser(newUser); err != nil {
 		return err
