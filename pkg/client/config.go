@@ -12,7 +12,7 @@ import (
 	"github.com/joeshaw/envdecode"
 )
 
-var EndpointRoot = "http://" + cfgs.Host
+var EndpointRoot = "http://" + cCfgs.Host
 
 type Conf struct {
 	IsAdmin         bool   `env:"ADMIN_MODE"`                   // whether the service should be run in admin mode or not
@@ -49,7 +49,7 @@ func GetClientConfigs() *Conf {
 
 // client env, user, and service configurations
 var (
-	cfgs    = GetClientConfigs()
+	cCfgs   = GetClientConfigs()
 	svcCfgs = configs.NewSvcConfig()
 )
 

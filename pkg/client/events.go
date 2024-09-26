@@ -223,7 +223,7 @@ func (c *Client) handler(itemPath string) error {
 	// events buffer.
 	// used for managing synchronization events between the client and the server.
 	// allows for variable delay times between synchronization event triggers.
-	evtBuf := monitor.NewEvents(cfgs.BufferedEvents)
+	evtBuf := monitor.NewEvents(cCfgs.BufferedEvents)
 
 	// main listening loop for events
 	for {

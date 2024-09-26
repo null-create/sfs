@@ -42,7 +42,7 @@ var BaseEnv = map[string]string{
 	"CLIENT_USERNAME":     "",
 
 	// server settings
-	"SERVER_ADDR":          "localhost:8080",
+	"SERVER_ADDR":          "localhost:9191",
 	"SERVER_ADMIN":         "admin",
 	"SERVER_ADMIN_KEY":     "",
 	"SERVER_HOST":          "",

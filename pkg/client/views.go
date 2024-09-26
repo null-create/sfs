@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	homePage  = "http://" + cfgs.Addr // web ui home page
-	userPage  = homePage + "/user"    // users home page
+	homePage  = "http://" + cCfgs.Addr // web ui home page
+	userPage  = homePage + "/user"     // users home page
 	errorPage = homePage + "/error"
 )
 

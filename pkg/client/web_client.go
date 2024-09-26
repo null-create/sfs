@@ -32,7 +32,7 @@ func newWebClient(client *Client) *WebClient {
 	return &WebClient{
 		log: logger.NewLogger("Web Client", "None"),
 		svr: &http.Server{
-			Addr:         cfgs.Addr,
+			Addr:         cCfgs.Addr,
 			Handler:      newWcRouter(client),
 			ReadTimeout:  30 * time.Second,
 			WriteTimeout: 30 * time.Second,
