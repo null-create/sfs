@@ -67,7 +67,7 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 // create a new client without a user
 func TestNewClient(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestNewClient(t *testing.T) {
 
 	// check that .env was updated after initialization,
 	// specifically that CLIENT_NEW_SERVICE was set to "false"
-	v, err := envCfgs.Get("CLIENT_NEW_SERVICE")
+	v, err := svcCfgs.Get("CLIENT_NEW_SERVICE")
 	if err != nil {
 		Fail(t, tmpDir, err)
 	}
@@ -107,7 +107,7 @@ func TestNewClient(t *testing.T) {
 
 func TestLoadClientSaveState(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestLoadAndStartClient(t *testing.T) {
 	env.SetEnv(false)
 
 	// use testing directory for test services
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestLoadAndStartClient(t *testing.T) {
 func TestLoadClientAndRegisterWithServer(t *testing.T) {
 	env.SetEnv(false)
 
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestLoadClientAndRegisterWithServer(t *testing.T) {
 
 func TestClientUpdateUser(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,7 +220,7 @@ func TestClientUpdateUser(t *testing.T) {
 
 func TestClientDeleteUser(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func TestClientDeleteUser(t *testing.T) {
 
 func TestAddFileToClient(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,7 +282,7 @@ func TestAddFileToClient(t *testing.T) {
 
 func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -328,7 +328,7 @@ func TestAddAndRemoveLocalFileFromClient(t *testing.T) {
 
 func TestAddAndRemoveFileFromClientAndServer(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,7 +381,7 @@ func TestAddAndRemoveFileFromClientAndServer(t *testing.T) {
 
 func TestAddItemWithAFile(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,7 +420,7 @@ func TestAddItemWithAFile(t *testing.T) {
 
 func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -471,7 +471,7 @@ func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 
 func TestAddAndUpdateDir(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -502,7 +502,7 @@ func TestAddAndUpdateDir(t *testing.T) {
 
 func TestClientRemoveDir(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -543,7 +543,7 @@ func TestClientRemoveDir(t *testing.T) {
 
 func TestUpdateBackupDirs(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -645,7 +645,7 @@ func TestUpdateBackupDirs(t *testing.T) {
 
 func TestClientBuildSyncIndex(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -688,7 +688,7 @@ func TestClientBuildSyncIndex(t *testing.T) {
 // files with each run. might need to not make it so random.
 func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -732,7 +732,7 @@ func TestClientBuildAndUpdateSyncIndex(t *testing.T) {
 
 func TestClientDiscoverWithPath(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}

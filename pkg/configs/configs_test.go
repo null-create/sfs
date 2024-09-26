@@ -24,7 +24,7 @@ func NewTestSvcConfig() *SvcConfigs {
 func TestReadYamlFile(t *testing.T) {
 	testSvcCfgs := NewTestSvcConfig()
 
-	tcfgs, err := testSvcCfgs.parseYaml()
+	tcfgs, err := testSvcCfgs.load()
 	if err != nil {
 		t.Fail()
 	}

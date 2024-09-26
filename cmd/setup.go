@@ -71,16 +71,18 @@ func runSetupCmd(cmd *cobra.Command, args []string) {
 			showerr(err)
 			return
 		}
-		return
-	}
-	// set up server side service
-	if err := newService(); err != nil {
-		showerr(err)
-		return
-	}
-	// set up client side service
-	if err := newClient(); err != nil {
-		showerr(err)
+		// set up server side service
+		if err := newService(); err != nil {
+			showerr(err)
+			return
+		}
+		// set up client side service
+		if err := newClient(); err != nil {
+			showerr(err)
+			return
+		}
+	} else {
+		cmdLogger.Info("environment configuration files found. skipping setup.")
 		return
 	}
 }

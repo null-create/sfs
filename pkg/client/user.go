@@ -124,7 +124,7 @@ func (c *Client) removeUser(userID string) error {
 		if err := c.Db.RemoveUser(c.UserID); err != nil {
 			return err
 		}
-		if err := envCfgs.Clear(); err != nil {
+		if err := svcCfgs.Clear(); err != nil {
 			return err
 		}
 		name := c.User.Name

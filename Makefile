@@ -1,7 +1,7 @@
 PROJECT_NAME := sfs
 BUILD_DIR := ./bin
-BIN_NAME := $(BUILD_DIR)/$(PROJECT_NAME)
-SRC_DIR := ./pkg
+BIN_NAME := $(PROJECT_NAME)
+SRC_DIR := .
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 # Default target
@@ -10,13 +10,17 @@ all: build
 # Build the project
 build: $(GO_FILES) | $(BUILD_DIR)
 	@echo "Building project..."
-	go build -o $(BIN_NAME) $(SRC_DIR)
+	go build -o $(BIN_NAME)
+	cp $BIN_NAME $BUILD_DIR/$BIN_NAME
+	rm $BUILD_NAME
 	@echo "Build completed: $(BIN_NAME)"
 
 # Compile the project
 compile: clean build
 	@echo "Compiling project..."
 	go build -ldflags="-s -w" -o $(BIN_NAME) $(SRC_DIR)
+	cp $BIN_NAME $BUILD_DIR/$BIN_NAME
+	rm $BUILD_NAME
 	@echo "Compilation completed: $(BIN_NAME)"
 
 # Run tests

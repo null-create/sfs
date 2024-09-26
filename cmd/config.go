@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sfs/pkg/client"
-	"github.com/sfs/pkg/env"
+	cfgs "github.com/sfs/pkg/configs"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -15,7 +15,7 @@ Command for setting and getting client configurations
 */
 
 var (
-	envCfgs = env.NewE()
+	svcCfgs = cfgs.NewSvcConfig()
 
 	confCmd = &cobra.Command{
 		Use:   "conf",
@@ -47,7 +47,7 @@ func showSetting(setting string, value string) {
 // see if local backup mode is enabled first
 // if so, thent he client won't have files stored on the sfs server
 func localBackupEnabled() bool {
-	b, err := envCfgs.Get("CLIENT_LOCAL_BACKUP")
+	b, err := svcCfgs.Get("CLIENT_LOCAL_BACKUP")
 	if err != nil {
 		showerr(err)
 		return false
@@ -80,10 +80,10 @@ func runConfCmd(cmd *cobra.Command, args []string) {
 	switch {
 	// list all settings
 	case f.list:
-		envCfgs.List()
+		svcCfgs.List()
 	// display a setting
 	case f.get != "":
-		val, err := envCfgs.Get(f.get)
+		val, err := svcCfgs.Get(f.get)
 		if err != nil {
 			showerr(err)
 			return
