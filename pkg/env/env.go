@@ -62,9 +62,6 @@ var BaseEnv = map[string]string{
 // new env object.
 // checks the current directory for the .env file by default.
 func NewE() *Env {
-	if !hasEnvFile() {
-		log.Fatal("no .env file present")
-	}
 	env, err := godotenv.Read(".env")
 	if err != nil {
 		log.Fatal(err)
