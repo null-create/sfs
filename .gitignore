@@ -19,8 +19,11 @@ reset.sh
 *.pprof
 *.out
 
+# misc stuff
 old-files
 test_items
 notes.txt
-*/*/*/static/*
 docs/Basic-Cloud-Architecture.png
+
+*/*/*/static/*
+*/*/configs.yaml
