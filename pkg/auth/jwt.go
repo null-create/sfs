@@ -65,7 +65,7 @@ func (t *Token) Verify(tokenString string) (string, error) {
 
 // validate a request token from a given http request
 func (t *Token) Validate(r *http.Request) (string, error) {
-	var rawToken = r.Header.Get("Authorization")
+	rawToken := r.Header.Get("Authorization")
 	if rawToken == "" {
 		return "", fmt.Errorf("no token provided")
 	}
