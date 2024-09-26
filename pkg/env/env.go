@@ -102,12 +102,13 @@ func HasEnvFile(dirpath string) bool {
 	if err != nil {
 		log.Fatalf("failed to read directory entires: %v", err)
 	}
+	var found bool
 	for _, e := range entries {
 		if e.Name() == ".env" {
-			return true
+			found = true
 		}
 	}
-	return false
+	return found
 }
 
 // create a new baseline .env file using the provided configurations.

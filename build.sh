@@ -47,25 +47,21 @@ CYGWIN* | MINGW32* | MSYS* | MINGW*)
   ;;
 esac
 
-# Create the output directory
 BUILD_DIR="./bin"
 if [ ! -d BUILD_DIR ]; then
   mkdir -p "$BUILD_DIR"
 fi
 
-# Output binary name based on OS
 if [ "$GOOS" == "windows" ]; then
   OUTPUT_FILE="$PROJECT_NAME.exe"
 else
   OUTPUT_FILE="$PROJECT_NAME"
 fi
 
-# Download dependencies
 echo "Downloading dependencies..."
 go mod download
 go mod tidy
 
-# Build the project
 echo "Building project for $GOOS/$GOARCH..."
 GOOS=$GOOS GOARCH=$GOARCH go build -o "$OUTPUT_FILE"
 
