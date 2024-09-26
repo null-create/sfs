@@ -50,7 +50,7 @@ func getClientFlags(cmd *cobra.Command) FlagPole {
 }
 
 func isNewService() (bool, error) {
-	val, err := envCfgs.Get("CLIENT_NEW_SERVICE")
+	val, err := svcCfgs.Get("CLIENT_NEW_SERVICE")
 	if err != nil {
 		return false, err
 	}

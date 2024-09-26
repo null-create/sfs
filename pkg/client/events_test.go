@@ -10,7 +10,7 @@ import (
 
 func TestStartHandler(t *testing.T) {
 	env.SetEnv(false)
-	tmpDir, err := envCfgs.Get("CLIENT_TESTING")
+	tmpDir, err := svcCfgs.Get("CLIENT_TESTING")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestStartHandler(t *testing.T) {
 			t.Fatal(err2)
 		}
 		// reset our .env file for other tests
-		if err2 := envCfgs.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
+		if err2 := svcCfgs.Set("CLIENT_NEW_SERVICE", "true"); err2 != nil {
 			t.Fatal(err2)
 		}
 		t.Fatal(err)

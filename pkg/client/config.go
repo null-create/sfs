@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/configs"
 
 	"github.com/joeshaw/envdecode"
 )
@@ -38,7 +38,7 @@ type Conf struct {
 }
 
 func GetClientConfigs() *Conf {
-	env.SetEnv(false)
+	configs.SetEnv(false)
 
 	var c Conf
 	if err := envdecode.StrictDecode(&c); err != nil {
@@ -48,10 +48,10 @@ func GetClientConfigs() *Conf {
 }
 
 // client env, user, and service configurations
-var cfgs = GetClientConfigs()
-
-// Environment configs
-var envCfgs = env.NewE()
+var (
+	cfgs    = GetClientConfigs()
+	svcCfgs = configs.NewSvcConfig()
+)
 
 // update user and application configurations
 func (c *Client) UpdateConfigSetting(setting, value string) error {
@@ -94,7 +94,7 @@ func (c *Client) SetLocalBackup(modeStr string) error {
 		return err
 	}
 	c.Conf.LocalBackup = mode
-	if err := envCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
+	if err := svcCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
 		return err
 	}
 	if mode {
@@ -142,7 +142,7 @@ func (c *Client) updateBackupPaths(newPath string) error {
 		return err
 	}
 	c.Conf.BackupDir = newPath
-	if err := envCfgs.Set("CLIENT_BACKUP_DIR", newPath); err != nil {
+	if err := svcCfgs.Set("CLIENT_BACKUP_DIR", newPath); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -173,7 +173,7 @@ func (c *Client) updateClientName(newName string) error {
 	if err := c.Db.UpdateDrive(c.Drive); err != nil {
 		return err
 	}
-	if err := envCfgs.Set("CLIENT_NAME", newName); err != nil {
+	if err := svcCfgs.Set("CLIENT_NAME", newName); err != nil {
 		return err
 	}
 	// TODO: sync with remote server, if necessary
@@ -192,7 +192,7 @@ func (c *Client) updateUserAlias(newAlias string) error {
 	if err := c.Db.UpdateUser(c.User); err != nil {
 		return err
 	}
-	if err := envCfgs.Set("CLIENT_USERNAME", newAlias); err != nil {
+	if err := svcCfgs.Set("CLIENT_USERNAME", newAlias); err != nil {
 		return err
 	}
 	// TODO: sync with remote server, if necessary
@@ -208,7 +208,7 @@ func (c *Client) updateClientIcon(fileName string) error {
 		return fmt.Errorf("no path specified")
 	}
 	c.Conf.ProfilePic = fileName
-	if err := envCfgs.Set("CLIENT_PROFILE_PIC", fileName); err != nil {
+	if err := svcCfgs.Set("CLIENT_PROFILE_PIC", fileName); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -231,7 +231,7 @@ func (c *Client) updateClientEmail(newEmail string) error {
 	if err := c.Db.UpdateUser(user); err != nil {
 		return err
 	}
-	if err := envCfgs.Set("CLIENT_EMAIL", newEmail); err != nil {
+	if err := svcCfgs.Set("CLIENT_EMAIL", newEmail); err != nil {
 		return err
 	}
 	// TODO: sync with remote server, if necessary
@@ -264,7 +264,7 @@ func (c *Client) updateUserPassword(oldPw, newPw string) error {
 	if err := c.Db.UpdateUser(user); err != nil {
 		return err
 	}
-	if err := envCfgs.Set("CLIENT_PASSWORD", newPw); err != nil {
+	if err := svcCfgs.Set("CLIENT_PASSWORD", newPw); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -283,7 +283,7 @@ func (c *Client) updateClientPort(pvalue string) error {
 		return nil // nothing to do here
 	}
 	c.Conf.ClientPort = port
-	if err := envCfgs.Set("CLIENT_PORT", pvalue); err != nil {
+	if err := svcCfgs.Set("CLIENT_PORT", pvalue); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -301,7 +301,7 @@ func (c *Client) updateEventBufferSize(sizestr string) error {
 		return nil
 	}
 	c.Conf.EventBufferSize = size
-	if err := envCfgs.Set("EVENT_BUFFER_SIZE", sizestr); err != nil {
+	if err := svcCfgs.Set("EVENT_BUFFER_SIZE", sizestr); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -320,7 +320,7 @@ func (c *Client) updateClientNewService(value string) error {
 	if !c.validServiceSetting(value) {
 		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)
 	}
-	if err := envCfgs.Set("CLIENT_NEW_SERVICE", value); err != nil {
+	if err := svcCfgs.Set("CLIENT_NEW_SERVICE", value); err != nil {
 		return err
 	}
 	return nil
@@ -330,7 +330,7 @@ func (c *Client) updateNewService(value string) error {
 	if !c.validServiceSetting(value) {
 		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)
 	}
-	if err := envCfgs.Set("NEW_SERVICE", value); err != nil {
+	if err := svcCfgs.Set("NEW_SERVICE", value); err != nil {
 		return err
 	}
 	return nil

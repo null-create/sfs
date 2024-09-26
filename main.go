@@ -7,7 +7,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/sfs/cmd"
-	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/configs"
 )
 
 /*
@@ -52,6 +52,6 @@ func main() {
 	}
 
 	// main
-	env.SetEnv(false)
+	configs.SetEnv(false)
 	cmd.Execute()
 }

@@ -31,7 +31,7 @@ type SvcConfigs struct {
 }
 
 func NewSvcConfig() *SvcConfigs {
-	cfgsPath, err := filepath.Abs("./configs.yaml")
+	cfgsPath, err := filepath.Abs("./pkg/configs/configs.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func NewSvcConfig() *SvcConfigs {
 
 var svcCfgs = NewSvcConfig()
 
-func (s *SvcConfigs) parseYaml() (map[string]string, error) {
+func (s *SvcConfigs) load() (map[string]string, error) {
 	cfgsFile, err := os.Open(s.configs)
 	if err != nil {
 		return nil, err
@@ -52,8 +52,7 @@ func (s *SvcConfigs) parseYaml() (map[string]string, error) {
 	defer cfgsFile.Close()
 
 	cfgs := make(map[string]string)
-	decoder := yaml.NewDecoder(cfgsFile)
-	if err := decoder.Decode(&cfgs); err != nil {
+	if err := yaml.NewDecoder(cfgsFile).Decode(&cfgs); err != nil {
 		return nil, err
 	}
 	s.env = cfgs
@@ -61,18 +60,11 @@ func (s *SvcConfigs) parseYaml() (map[string]string, error) {
 }
 
 // used for setting environment configurations at runtime
-func SetEnv() error {
-	if svcCfgs.env == nil {
-		if _, err := svcCfgs.parseYaml(); err != nil {
-			return err
-		}
+func SetEnv(debug bool) error {
+	if _, err := svcCfgs.load(); err != nil {
+		return err
 	}
-	for k, v := range svcCfgs.env {
-		if err := svcCfgs.EnvCfgs.Set(k, v); err != nil {
-			return err
-		}
-	}
-	env.SetEnv(false)
+	env.SetEnv(debug)
 	return nil
 }
 
@@ -86,12 +78,9 @@ func (s *SvcConfigs) Validate(k string) error            { return s.EnvCfgs.Vali
 
 func (s *SvcConfigs) Set(k string, v string) error {
 	if _, ok := s.env[k]; ok {
-		// update .env file and environment variables
 		if err := s.EnvCfgs.Set(k, v); err != nil {
 			return err
 		}
-
-		// update yaml file
 		cfgsFile, err := os.Open(s.configs)
 		if err != nil {
 			return err
@@ -99,8 +88,7 @@ func (s *SvcConfigs) Set(k string, v string) error {
 		defer cfgsFile.Close()
 
 		s.env[k] = v
-		encoder := yaml.NewEncoder(cfgsFile)
-		return encoder.Encode(s.env)
+		return yaml.NewEncoder(cfgsFile).Encode(s.env)
 	} else {
 		return fmt.Errorf("key not found: %v", k)
 	}
