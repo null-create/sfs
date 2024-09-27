@@ -97,8 +97,6 @@ SERVICE_ENV=""
 SERVICE_LOG_DIR=""
 SERVICE_ROOT=""
 SERVICE_TEST_ROOT=""' >"$ENV_FILE"
-
-  echo ".env file has been generated at $PWD/$ENV_FILE"
 fi
 
 # Build the project
