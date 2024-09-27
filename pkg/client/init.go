@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/configs"
 	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
@@ -46,8 +46,8 @@ as well as elmininate the need for a dedicated "root" service directory.
 func SetupClient(svcRoot string) (*Client, error) {
 	var setupLog = logger.NewLogger("CLIENT_SETUP", "None")
 
-	// get environment variables and client envCfg
-	envCfg := env.NewE()
+	// get service configs
+	sfcCfg := configs.NewSvcConfig()
 
 	// make client service root directory
 	setupLog.Info("making SFS service directories...")
@@ -104,8 +104,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 	if err := client.Db.AddDrive(client.Drive); err != nil {
 		return nil, err
 	}
-	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
-	if err := envCfg.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
+	if err := sfcCfg.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
 		return nil, err
 	}
 
