@@ -64,7 +64,8 @@ fi
 ENV_FILE=".env"
 
 if [ ! -f "$ENV_FILE" ]; then
-  echo 'ADMIN_MODE=""
+  configs='
+ADMIN_MODE=""
 BUFFERED_EVENTS=""
 CLIENT_ADDRESS=""
 CLIENT_BACKUP_DIR=""
@@ -96,7 +97,10 @@ SERVER_TIMEOUT_WRITE=""
 SERVICE_ENV=""
 SERVICE_LOG_DIR=""
 SERVICE_ROOT=""
-SERVICE_TEST_ROOT=""' >"$ENV_FILE"
+SERVICE_TEST_ROOT=""
+'
+  echo $configs >"$ENV_FILE"
+  echo $configs >"$PWD/pkg/configs/configs.yaml"
 fi
 
 # Build the project
