@@ -42,32 +42,20 @@ CLIENT_NAME and CLIENT_USERNAME will be randomly generated.
 
 func init() {
 	setupCmd.Flags().BoolVarP(&auto, "auto", "a", false, "Whether to automate baseline environment configs (defaults to false)")
-	setupCmd.Flags().StringVarP(&dir, "directory", "d", "", "Where to setup SFS")
 
 	viper.BindPFlag("auto", setupCmd.Flags().Lookup("auto"))
-	viper.BindPFlag("directory", setupCmd.Flags().Lookup("directory"))
 
 	rootCmd.AddCommand(setupCmd)
 }
 
 func runSetupCmd(cmd *cobra.Command, args []string) {
 	auto, _ := cmd.Flags().GetBool("auto")
-	dir, _ := cmd.Flags().GetString("directory")
-	if dir == "" {
-		cwd, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-		dir = cwd
-		cmdLogger.Info(fmt.Sprintf("defaulting to current working directory: %s\n", dir))
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
 	}
-	// check for whether there are CLIENT configurations already.
-	// we need to check for the presence of at least an .env file
-	// at the root level, then parse it for CLIENT_ prefixes and
-	// see if there are any values associated with those keys
-	// if not, then we run the first time setup steps
-	if !env.HasEnvFile(dir) {
-		if err := setUpEnv(auto, dir); err != nil {
+	if !env.HasEnvFile(cwd) {
+		if err := setUpEnv(auto, cwd); err != nil {
 			showerr(err)
 			return
 		}
@@ -122,7 +110,11 @@ func setDefaults(newEnv map[string]string, root string) map[string]string {
 // populate baseEnv with default values for all fields
 // get users input for client name, username, email
 func setUpEnv(auto bool, root string) error {
+	// new baseline environment configurations
 	newEnv := setDefaults(env.BaseEnv, root)
+
+	// get users input for client name, username, email, or
+	// generate automatic defaults depending on the auto param
 	for setting, value := range newEnv {
 		if strings.Contains(setting, "CLIENT") && value == "" {
 			if !auto {
