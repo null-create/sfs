@@ -61,8 +61,8 @@ else
 fi
 
 # Add empty .env file to be populated during setup
-configs='
-ADMIN_MODE=""
+if [ ! -f ".env" ]; then
+  echo 'ADMIN_MODE=""
 BUFFERED_EVENTS=""
 CLIENT_ADDRESS=""
 CLIENT_BACKUP_DIR=""
@@ -95,10 +95,7 @@ SERVICE_ENV=""
 SERVICE_LOG_DIR=""
 SERVICE_ROOT=""
 SERVICE_TEST_ROOT=""
-'
-
-if [ ! -f ".env" ]; then
-  echo $configs >".env"
+' >".env"
 fi
 
 # Build the project
