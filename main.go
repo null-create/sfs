@@ -1,8 +1,6 @@
 package main
 
 import (
-	_ "net/http/pprof"
-
 	"github.com/sfs/cmd"
 	"github.com/sfs/pkg/configs"
 )
