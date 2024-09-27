@@ -22,13 +22,13 @@ func NewSvcConfig() *SvcConfigs {
 	if err != nil {
 		log.Fatal(err)
 	}
-	envCfgs, err := load(cfgsPath)
+	svcCfgs, err := load(cfgsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return &SvcConfigs{
 		configs: cfgsPath,
-		env:     envCfgs,
+		env:     svcCfgs,
 		EnvCfgs: env.NewE(),
 	}
 }
