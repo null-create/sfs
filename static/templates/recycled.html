@@ -4,52 +4,56 @@
   <body>
     {{template "frame"}}
     <div id="content">
-      <h3 id="recycle-header">Recycled Items</h3>
-      <p class="recycle-bin-instructions">
-        Items listed here were removed from the SFS service, but still have
-        backup copies available for download. If you wish to remove a file
-        perminantly, then select the "delete" check box and click the red delete
-        button.
-      </p>
-      <button id="remove-button" onclick="emptyBin()">Empty Recycle Bin</button>
-      <table class="file-table">
-        <tr>
-          <th></th>
-          <th>Name</th>
-          <th></th>
-          <th>Restore</th>
-          <th>Delete</th>
-        </tr>
-        {{range .Dirs}}
-        <tr>
-          <td>
-            <img src="/assets/folder-small.png" alt="small folder icon" />
-          </td>
-          <td>{{.Name}}</td>
-          <td></td>
-          <td>
-            <input id="restore-checkbox" type="checkbox" />
-          </td>
-          <td>
-            <intput id="delete-checkbox" type="checkbox" />
-          </td>
-        </tr>
-        {{end}} {{range .Files}}
-        <tr>
-          <td>
-            <img src="/assets/file-small.png" alt="small file icon" />
-          </td>
-          <td>{{.Name}}</td>
-          <td></td>
-          <td>
-            <input id="restore-checkbox" type="checkbox" />
-          </td>
-          <td>
-            <input id="delete-checkbox" type="checkbox" />
-          </td>
-        </tr>
-        {{end}}
-      </table>
+      <div class="recycle-bin-container">
+        <h2 id="recycle-header">Recycled Items</h2>
+        <p class="recycle-bin-instructions">
+          Items listed here were removed from the SFS service, but still have
+          backup copies available for download. If you wish to remove a file
+          perminantly, then select the "delete" check box and click the red
+          delete button.
+        </p>
+        <button id="remove-button" onclick="emptyBin()">
+          Empty Recycle Bin
+        </button>
+        <table class="file-table">
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th></th>
+            <th>Restore</th>
+            <th>Delete</th>
+          </tr>
+          {{range .Dirs}}
+          <tr>
+            <td>
+              <img src="/assets/folder-small.png" alt="small folder icon" />
+            </td>
+            <td>{{.Name}}</td>
+            <td></td>
+            <td>
+              <input id="restore-checkbox" type="checkbox" />
+            </td>
+            <td>
+              <intput id="delete-checkbox" type="checkbox" />
+            </td>
+          </tr>
+          {{end}} {{range .Files}}
+          <tr>
+            <td>
+              <img src="/assets/file-small.png" alt="small file icon" />
+            </td>
+            <td>{{.Name}}</td>
+            <td></td>
+            <td>
+              <input id="restore-checkbox" type="checkbox" />
+            </td>
+            <td>
+              <input id="delete-checkbox" type="checkbox" />
+            </td>
+          </tr>
+          {{end}}
+        </table>
+      </div>
     </div>
     <script type="text/javascript">
       let url = "http://" + `{{.ServerHost}}`;

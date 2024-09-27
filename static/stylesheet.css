@@ -758,6 +758,11 @@ input[type="checkbox"] {
   padding-top: 10px;
 }
 
+.recycle-bin-container {
+  padding-top: 10px;
+  padding-left: 10px;
+}
+
 .recycle-bin-instructions {
   display: flex;
   padding-top: 10px;
