@@ -101,9 +101,6 @@ SERVICE_TEST_ROOT=""
 
 if [ ! -f "$ENV_FILE" ]; then
   echo $configs >"$ENV_FILE"
-  echo $configs >configs.yaml
-  cp configs.yaml ./pkg/configs/configs.yaml
-  rm configs.yaml
 fi
 
 # Build the project
