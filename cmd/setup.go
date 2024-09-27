@@ -35,9 +35,7 @@ CLIENT_NAME and CLIENT_USERNAME will be randomly generated.
 		`,
 		Run: runSetupCmd,
 	}
-	// flags
 	auto bool
-	dir  string
 )
 
 func init() {

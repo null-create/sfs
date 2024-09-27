@@ -63,8 +63,7 @@ fi
 # Add empty .env file to be populated during setup
 ENV_FILE=".env"
 
-if [ ! -f "$ENV_FILE" ]; then
-  configs='
+configs='
 ADMIN_MODE=""
 BUFFERED_EVENTS=""
 CLIENT_ADDRESS=""
@@ -99,8 +98,12 @@ SERVICE_LOG_DIR=""
 SERVICE_ROOT=""
 SERVICE_TEST_ROOT=""
 '
+
+if [ ! -f "$ENV_FILE" ]; then
   echo $configs >"$ENV_FILE"
-  echo $configs >"$PWD/pkg/configs/configs.yaml"
+  echo $configs >configs.yaml
+  cp configs.yaml ./pkg/configs/configs.yaml
+  rm configs.yaml
 fi
 
 # Build the project
