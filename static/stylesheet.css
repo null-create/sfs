@@ -416,6 +416,12 @@ form#search-form {
   text-decoration: underline;
 }
 
+/* Folder and file icon size */
+.item-icon {
+  max-height: 25px;
+  max-width: 25px;
+}
+
 /* --------------------- File Page ----------------------- */
 
 .file-info-container {
