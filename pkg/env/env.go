@@ -201,7 +201,7 @@ func (e *Env) Set(k, v string) error {
 			}
 		}
 	} else {
-		fmt.Printf("env var %v does not exist", k)
+		fmt.Printf("env var '%v' does not exist", k)
 	}
 	return nil
 }
