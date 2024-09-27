@@ -25,7 +25,11 @@
             onclick="redirectToPage('/dirs/i/{{.ID}}');"
             style="cursor: pointer"
           >
-            <img src="/assets/folder-small.png" alt="small folder icon" />
+            <img
+              class="item-icon"
+              src="/assets/folder-small.png"
+              alt="small folder icon"
+            />
           </td>
           <td>{{.Name}}</td>
           <td>{{.Size}} bytes</td>
@@ -38,7 +42,11 @@
             onclick="redirectToPage('/files/i/{{.ID}}');"
             style="cursor: pointer"
           >
-            <img src="/assets/file-small.png" alt="small file icon" />
+            <img
+              class="item-icon"
+              src="/assets/file-small.png"
+              alt="small file icon"
+            />
           </td>
           <td>{{.Name}}</td>
           <td>{{.Size}} bytes</td>

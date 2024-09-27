@@ -416,6 +416,12 @@ form#search-form {
   text-decoration: underline;
 }
 
+/* Folder and file icon size */
+.item-icon {
+  max-height: 25px;
+  max-width: 25px;
+}
+
 /* --------------------- File Page ----------------------- */
 
 .file-info-container {
@@ -756,6 +762,11 @@ input[type="checkbox"] {
 
 #recycle-header {
   padding-top: 10px;
+}
+
+.recycle-bin-container {
+  padding-top: 10px;
+  padding-left: 10px;
 }
 
 .recycle-bin-instructions {
