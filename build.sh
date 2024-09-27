@@ -64,7 +64,7 @@ fi
 ENV_FILE=".env"
 
 if [ ! -f ".env" ]; then
-cat << EOF >  $ENV_FILE
+cat << EOL >  $ENV_FILE
 ADMIN_MODE=""
 BUFFERED_EVENTS=""
 CLIENT_ADDRESS=""
@@ -98,7 +98,7 @@ SERVICE_ENV="C"
 SERVICE_LOG_DIR=""
 SERVICE_ROOT=""
 SERVICE_TEST_ROOT=""
-EOF 
+EOL 
   echo ".env file has been generated at $PWD/$ENV_FILE"
 fi
 
