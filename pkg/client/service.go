@@ -515,10 +515,14 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
 
+	// TODO: need to example how file.BackupPath is set if the file is
+	// placed in the sfs root. sfs is looking for ../username/backups/root/filename.txt
+	// when it should be ../username/backups/filename.txt. causing "not found" errors
+
 	// remove the backup file from root (or the subdir its located in)
-	if err := os.Remove(file.BackupPath); err != nil {
-		return fmt.Errorf("failed to remove backup copy of file: %v", err)
-	}
+	// if err := os.Remove(file.BackupPath); err != nil {
+	// 	return fmt.Errorf("failed to remove backup copy of file: %v", err)
+	// }
 
 	// remove file data from the service. does not remove *original* physical file,
 	// only meta-data used by the service.
