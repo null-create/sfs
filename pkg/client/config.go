@@ -12,29 +12,27 @@ import (
 	"github.com/joeshaw/envdecode"
 )
 
-var EndpointRoot = "http://" + cCfgs.Host
-
 type Conf struct {
-	IsAdmin         bool   `env:"ADMIN_MODE"`                   // whether the service should be run in admin mode or not
-	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`     // whether events should be buffered (i.e. have a delay between sync events)
-	EventBufferSize int    `env:"EVENT_BUFFER_SIZE,required"`   // size of events buffer
-	User            string `env:"CLIENT_NAME,required"`         // users name
-	UserAlias       string `env:"CLIENT_USERNAME,required"`     // users alias (username)
-	ID              string `env:"CLIENT_ID,required"`           // this is generated at creation time. won't be in the initial .env file
-	Email           string `env:"CLIENT_EMAIL,required"`        // users email
-	ProfilePic      string `env:"CLIENT_PROFILE_PIC,required"`  // path to users profile picture
-	Root            string `env:"CLIENT_ROOT,required"`         // client service root (ie. ../sfs/client/run/)
-	TestRoot        string `env:"CLIENT_TESTING,required"`      // testing root directory
-	ClientPort      int    `env:"CLIENT_PORT,required"`         // client port
-	Addr            string `env:"CLIENT_ADDRESS,required"`      // address for http client
-	NewService      bool   `env:"CLIENT_NEW_SERVICE,required"`  // whether we need to initialize a new client service instance.
-	LogDir          string `env:"CLIENT_LOG_DIR,required"`      // location of log directory
-	LocalBackup     bool   `env:"CLIENT_LOCAL_BACKUP,required"` // whether we're backing up to a local file directory
-	BackupDir       string `env:"CLIENT_BACKUP_DIR,required"`   // location of backup directory
-	ServerAddr      string `env:"SERVER_ADDR,required"`         // server address
-	Host            string `env:"SERVER_HOST,required"`         // client host
-	Port            int    `env:"SERVER_PORT,required"`         // server port
-	EnvFile         string `env:"SERVICE_ENV,required"`         // absoloute path to the dedicated .env file
+	IsAdmin         bool   `env:"ADMIN_MODE"`                  // whether the service should be run in admin mode or not
+	BufferedEvents  bool   `env:"BUFFERED_EVENTS,required"`    // whether events should be buffered (i.e. have a delay between sync events)
+	EventBufferSize int    `env:"EVENT_BUFFER_SIZE,required"`  // size of events buffer
+	User            string `env:"CLIENT_NAME,required"`        // users name
+	UserAlias       string `env:"CLIENT_USERNAME,required"`    // users alias (username)
+	ID              string `env:"CLIENT_ID,required"`          // this is generated at creation time. won't be in the initial .env file
+	Email           string `env:"CLIENT_EMAIL,required"`       // users email
+	ProfilePic      string `env:"CLIENT_PROFILE_PIC,required"` // path to users profile picture
+	Root            string `env:"CLIENT_ROOT,required"`        // client service root (ie. ../sfs/client/run/)
+	TestRoot        string `env:"CLIENT_TESTING,required"`     // testing root directory
+	ClientPort      int    `env:"CLIENT_PORT,required"`        // client port
+	Addr            string `env:"CLIENT_ADDRESS,required"`     // address for http client
+	NewService      bool   `env:"CLIENT_NEW_SERVICE,required"` // whether we need to initialize a new client service instance.
+	LogDir          string `env:"CLIENT_LOG_DIR,required"`     // location of log directory
+	ServerSync      bool   `env:"CLIENT_SERVER_SYNC,required"` // whether we're syncing with the server in addition to creating local backups.
+	BackupDir       string `env:"CLIENT_BACKUP_DIR,required"`  // location of backup directory
+	ServerAddr      string `env:"SERVER_ADDR,required"`        // server address
+	Host            string `env:"SERVER_HOST,required"`        // client host
+	Port            int    `env:"SERVER_PORT,required"`        // server port
+	EnvFile         string `env:"SERVICE_ENV,required"`        // absoloute path to the dedicated .env file
 }
 
 func GetClientConfigs() *Conf {
@@ -49,36 +47,37 @@ func GetClientConfigs() *Conf {
 
 // client env, user, and service configurations
 var (
-	cCfgs   = GetClientConfigs()
-	svcCfgs = configs.NewSvcConfig()
+	cCfgs        = GetClientConfigs()
+	svcCfgs      = configs.NewSvcConfig()
+	EndpointRoot = "http://" + cCfgs.Host
 )
 
 // update user and application configurations
 func (c *Client) UpdateConfigSetting(setting, value string) error {
 	switch setting {
-	case "CLIENT_NAME":
+	case configs.CLIENT_NAME:
 		return c.updateClientName(value)
-	case "CLIENT_USERNAME":
+	case configs.CLIENT_USERNAME:
 		return c.updateUserAlias(value)
-	case "CLIENT_EMAIL":
+	case configs.CLIENT_EMAIL:
 		return c.updateClientEmail(value)
-	case "CLIENT_PASSWORD":
+	case configs.CLIENT_PASSWORD:
 		return c.updateUserPassword(c.User.Password, value)
-	case "CLIENT_PORT":
+	case configs.CLIENT_PORT:
 		return c.updateClientPort(value)
-	case "CLIENT_BACKUP_DIR":
+	case configs.CLIENT_BACKUP_DIR:
 		return c.UpdateBackupPath(value)
-	case "CLIENT_LOCAL_BACKUP":
-		return c.SetLocalBackup(value)
-	case "CLIENT_PROFILE_PIC":
+	case configs.CLIENT_SERVER_SYNC:
+		return c.EnableServerSync(value)
+	case configs.CLIENT_PROFILE_PIC:
 		return c.updateClientIcon(value)
-	case "CLIENT_NOTIFICATIONS":
+	case configs.CLIENT_NOTIFICATIONS:
 		fmt.Print("no implemented yet") // TODO:
-	case "CLIENT_NEW_SERVICE":
+	case configs.CLIENT_NEW_SERVICE:
 		return c.updateClientNewService(value)
-	case "NEW_SERVICE":
+	case configs.NEW_SERVICE:
 		return c.updateNewService(value)
-	case "EVENT_BUFFER_SIZE":
+	case configs.EVENT_BUFFER_SIZE:
 		return c.updateEventBufferSize(value)
 	default:
 		return fmt.Errorf("unsupported setting: '%s'", setting)
@@ -87,20 +86,20 @@ func (c *Client) UpdateConfigSetting(setting, value string) error {
 }
 
 // enable or disable backing up files to local storage.
-func (c *Client) SetLocalBackup(modeStr string) error {
+func (c *Client) EnableServerSync(modeStr string) error {
 	mode, err := strconv.ParseBool(modeStr)
 	if err != nil {
 		c.log.Error(fmt.Sprintf("failed to parse string: %v", err))
 		return err
 	}
-	c.Conf.LocalBackup = mode
-	if err := svcCfgs.Set("CLIENT_LOCAL_BACKUP", strconv.FormatBool(mode)); err != nil {
+	c.Conf.ServerSync = mode
+	if err := svcCfgs.Set(configs.CLIENT_SERVER_SYNC, strconv.FormatBool(mode)); err != nil {
 		return err
 	}
 	if mode {
-		c.log.Info("local backup enabled")
+		c.log.Info("server synchronization enabled")
 	} else {
-		c.log.Info("local backup disabled")
+		c.log.Info("server synchronization disabled")
 	}
 	if err := c.SaveState(); err != nil {
 		c.log.Error("failed to update state file: " + err.Error())
@@ -142,7 +141,7 @@ func (c *Client) updateBackupPaths(newPath string) error {
 		return err
 	}
 	c.Conf.BackupDir = newPath
-	if err := svcCfgs.Set("CLIENT_BACKUP_DIR", newPath); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_BACKUP_DIR, newPath); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -173,7 +172,7 @@ func (c *Client) updateClientName(newName string) error {
 	if err := c.Db.UpdateDrive(c.Drive); err != nil {
 		return err
 	}
-	if err := svcCfgs.Set("CLIENT_NAME", newName); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_NAME, newName); err != nil {
 		return err
 	}
 	// TODO: sync with remote server, if necessary
@@ -192,7 +191,7 @@ func (c *Client) updateUserAlias(newAlias string) error {
 	if err := c.Db.UpdateUser(c.User); err != nil {
 		return err
 	}
-	if err := svcCfgs.Set("CLIENT_USERNAME", newAlias); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_USERNAME, newAlias); err != nil {
 		return err
 	}
 	// TODO: sync with remote server, if necessary
@@ -208,7 +207,7 @@ func (c *Client) updateClientIcon(fileName string) error {
 		return fmt.Errorf("no path specified")
 	}
 	c.Conf.ProfilePic = fileName
-	if err := svcCfgs.Set("CLIENT_PROFILE_PIC", fileName); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_PROFILE_PIC, fileName); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -231,7 +230,7 @@ func (c *Client) updateClientEmail(newEmail string) error {
 	if err := c.Db.UpdateUser(user); err != nil {
 		return err
 	}
-	if err := svcCfgs.Set("CLIENT_EMAIL", newEmail); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_EMAIL, newEmail); err != nil {
 		return err
 	}
 	// TODO: sync with remote server, if necessary
@@ -264,7 +263,7 @@ func (c *Client) updateUserPassword(oldPw, newPw string) error {
 	if err := c.Db.UpdateUser(user); err != nil {
 		return err
 	}
-	if err := svcCfgs.Set("CLIENT_PASSWORD", newPw); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_PASSWORD, newPw); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -283,7 +282,7 @@ func (c *Client) updateClientPort(pvalue string) error {
 		return nil // nothing to do here
 	}
 	c.Conf.ClientPort = port
-	if err := svcCfgs.Set("CLIENT_PORT", pvalue); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_PORT, pvalue); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -301,7 +300,7 @@ func (c *Client) updateEventBufferSize(sizestr string) error {
 		return nil
 	}
 	c.Conf.EventBufferSize = size
-	if err := svcCfgs.Set("EVENT_BUFFER_SIZE", sizestr); err != nil {
+	if err := svcCfgs.Set(configs.EVENT_BUFFER_SIZE, sizestr); err != nil {
 		return err
 	}
 	if err := c.SaveState(); err != nil {
@@ -320,7 +319,7 @@ func (c *Client) updateClientNewService(value string) error {
 	if !c.validServiceSetting(value) {
 		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)
 	}
-	if err := svcCfgs.Set("CLIENT_NEW_SERVICE", value); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_NEW_SERVICE, value); err != nil {
 		return err
 	}
 	return nil
@@ -330,7 +329,7 @@ func (c *Client) updateNewService(value string) error {
 	if !c.validServiceSetting(value) {
 		return fmt.Errorf("invalid value for new service setting (must be 'true' or 'false'): %v", value)
 	}
-	if err := svcCfgs.Set("NEW_SERVICE", value); err != nil {
+	if err := svcCfgs.Set(configs.NEW_SERVICE, value); err != nil {
 		return err
 	}
 	return nil

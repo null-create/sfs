@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/configs"
 )
 
 // Add a new user. Intended for use during first time set up.
@@ -29,11 +30,11 @@ func (c *Client) AddNewUser() error {
 	}
 
 	var newUserSettings = map[string]string{
-		"CLIENT_NAME":     newUser.Name,
-		"CLIENT_USERNAME": newUser.UserName,
-		"CLIENT_EMAIL":    newUser.Email,
-		"CLIENT_PASSWORD": newUser.Password,
-		"CLIENT_ID":       newUser.ID,
+		configs.CLIENT_NAME:     newUser.Name,
+		configs.CLIENT_USERNAME: newUser.UserName,
+		configs.CLIENT_EMAIL:    newUser.Email,
+		configs.CLIENT_PASSWORD: newUser.Password,
+		configs.CLIENT_ID:       newUser.ID,
 	}
 	for setting, value := range newUserSettings {
 		if err := c.UpdateConfigSetting(setting, value); err != nil {

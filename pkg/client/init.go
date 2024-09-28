@@ -104,7 +104,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 	if err := client.Db.AddDrive(client.Drive); err != nil {
 		return nil, err
 	}
-	if err := sfcCfg.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
+	if err := sfcCfg.Set(configs.CLIENT_NEW_SERVICE, "false"); err != nil {
 		return nil, err
 	}
 
@@ -125,7 +125,7 @@ func newUser() (*auth.User, error) {
 		cCfgs.Root,
 		cCfgs.IsAdmin,
 	)
-	if err := svcCfgs.Set("CLIENT_ID", newUser.ID); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_ID, newUser.ID); err != nil {
 		initLog.Error("failed to set user ID as an env variable: " + err.Error())
 		return nil, err
 	}

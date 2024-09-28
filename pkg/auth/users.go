@@ -45,7 +45,7 @@ func valid(name, userName, email, svcRoot string) bool {
 
 func NewUser(name string, userName string, email string, svcRoot string, isAdmin bool) *User {
 	if !valid(name, userName, email, svcRoot) {
-		log.Fatalf("[ERROR] all new user params must be provided")
+		log.Fatalf("all new user params must be provided")
 	}
 	return &User{
 		ID:        NewUUID(),

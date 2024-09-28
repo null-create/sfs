@@ -44,6 +44,9 @@ func (c *Client) StopMonitoring() {
 	c.Monitor.ShutDown()
 }
 
+// handler function for monitoring
+type Handler func(path string) error
+
 // initialize handlers and monitor off switch maps
 func (c *Client) InitHandlerMap() {
 	c.Handlers = make(map[string]Handler)
@@ -63,8 +66,6 @@ func (c *Client) WatchItem(path string) error {
 	}
 	return nil
 }
-
-type Handler func(path string) error
 
 // add a new event handler for the given file.
 // path to the given file must already have a monitoring
@@ -330,7 +331,7 @@ func (c *Client) handler(itemPath string) error {
 				}
 				// push meta-data changes to remote server if applicable
 				if !c.LocalSyncOnly() {
-					if err := c.Push(); err != nil {
+					if err := c.PushAll(); err != nil {
 						return err
 					}
 				}

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	cfgs "github.com/sfs/pkg/configs"
 	"github.com/sfs/pkg/server"
 	svc "github.com/sfs/pkg/service"
 )
@@ -42,9 +43,9 @@ func (c *Client) HandleNewUserInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Extract form data (add more fields as needed)
 	updates := map[string]string{
-		"CLIENT_NAME":     r.FormValue("name"),
-		"CLIENT_USERNAME": r.FormValue("username"),
-		"CLIENT_EMAIL":    r.FormValue("email"),
+		cfgs.CLIENT_NAME:     r.FormValue("name"),
+		cfgs.CLIENT_USERNAME: r.FormValue("username"),
+		cfgs.CLIENT_EMAIL:    r.FormValue("email"),
 	}
 
 	// iterate through and if any are not empty and are different than
@@ -90,7 +91,7 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update client configurations
-	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", fileName); err != nil {
+	if err := c.UpdateConfigSetting(cfgs.CLIENT_PROFILE_PIC, fileName); err != nil {
 		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -99,7 +100,7 @@ func (c *Client) UpdatePfpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) ClearPfpHandler(w http.ResponseWriter, r *http.Request) {
-	if err := c.UpdateConfigSetting("CLIENT_PROFILE_PIC", "default_profile_pic.jpg"); err != nil {
+	if err := c.UpdateConfigSetting(cfgs.CLIENT_PROFILE_PIC, "default_profile_pic.jpg"); err != nil {
 		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,7 +119,7 @@ func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) 
 // update config setting
 func (c *Client) updateSetting(w http.ResponseWriter, setting string, value interface{}) {
 	var v string
-	if setting == "CLIENT_LOCAL_BACKUP" {
+	if setting == cfgs.CLIENT_SERVER_SYNC {
 		v = strconv.FormatBool(!value.(bool)) // (server sync = false) == (client_local_backup = true)
 	} else {
 		v = value.(string)

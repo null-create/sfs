@@ -41,7 +41,7 @@ func newTestClient(t *testing.T, tmpDir string) *Client {
 	tmpClient.Drive.RecycleBin = tmpClient.RecycleBin
 
 	// set to local backups by default. could be overridden by individual tests.
-	if err := tmpClient.SetLocalBackup("true"); err != nil {
+	if err := tmpClient.EnableServerSync("true"); err != nil {
 		Fail(t, tmpDir, err)
 	}
 
@@ -347,7 +347,7 @@ func TestAddAndRemoveFileFromClientAndServer(t *testing.T) {
 	}()
 
 	// register the test client with the server
-	if err := tmpClient.SetLocalBackup("false"); err != nil {
+	if err := tmpClient.EnableServerSync("false"); err != nil {
 		stopServer <- true
 		Fail(t, tmpDir, err)
 	}
@@ -431,7 +431,7 @@ func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
-	if err := tmpClient.SetLocalBackup("true"); err != nil {
+	if err := tmpClient.EnableServerSync("true"); err != nil {
 		Fail(t, tmpDir, err)
 	}
 
@@ -449,7 +449,7 @@ func TestAddItemsLocallyThenRegisterWithServer(t *testing.T) {
 	}()
 
 	// update local backup settings and register items with server
-	if err := tmpClient.SetLocalBackup("false"); err != nil {
+	if err := tmpClient.EnableServerSync("false"); err != nil {
 		Fail(t, tmpDir, err)
 	}
 	if err := tmpClient.RegisterClient(); err != nil {
@@ -479,7 +479,7 @@ func TestAddAndUpdateDir(t *testing.T) {
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
-	tmpClient.SetLocalBackup("true")
+	tmpClient.EnableServerSync("true")
 
 	td, err := MakeTmpDir(t, filepath.Join(tmpDir, "tmp"))
 	if err != nil {
@@ -553,7 +553,7 @@ func TestUpdateBackupDirs(t *testing.T) {
 	if err := tmpClient.SaveState(); err != nil {
 		Fail(t, tmpDir, err)
 	}
-	if err := tmpClient.SetLocalBackup("true"); err != nil {
+	if err := tmpClient.EnableServerSync("true"); err != nil {
 		Fail(t, tmpDir, err)
 	}
 
