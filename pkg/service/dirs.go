@@ -316,9 +316,16 @@ func (d *Directory) Unlock(password string) bool {
 
 // updates internal file map and file's sync time
 func (d *Directory) addFile(file *File) {
+	var backupPath string
+	if d.Name == "root" {
+		backupPath = filepath.Join(filepath.Dir(d.BackupPath), file.Name)
+	} else {
+		backupPath = filepath.Join(d.BackupPath, file.Name)
+	}
+
 	file.DirID = d.ID
 	file.DriveID = d.DriveID
-	file.BackupPath = filepath.Join(d.BackupPath, file.Name)
+	file.BackupPath = backupPath
 	d.Size += file.GetSize()
 	d.Files[file.ID] = file
 	d.Files[file.ID].LastSync = time.Now().UTC()
