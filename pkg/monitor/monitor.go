@@ -34,9 +34,6 @@ type Watcher func(string, chan bool) chan Event
 type Monitor struct {
 	mu sync.Mutex // guards
 
-	// path to the users drive root to monitor
-	Path string
-
 	// logger for monitor
 	log *logger.Logger
 
@@ -60,7 +57,6 @@ type Monitor struct {
 
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
-		Path:        drvRoot,
 		log:         logger.NewLogger("Monitor", "None"),
 		Events:      make(map[string]chan Event),
 		Watchers:    make(map[string]Watcher),
@@ -164,23 +160,23 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 	return nil
 }
 
-// get an off switch for a given monitoring goroutine.
-// off switches, when set to true, will shut down the monitoring process.
-// returns nil if no off switch is available.
-func (m *Monitor) GetOffSwitch(path string) chan bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// // get an off switch for a given monitoring goroutine.
+// // off switches, when set to true, will shut down the monitoring process.
+// // returns nil if no off switch is available.
+// func (m *Monitor) GetOffSwitch(path string) chan bool {
+// 	m.mu.Lock()
+// 	defer m.mu.Unlock()
 
-	if offSwitch, exists := m.OffSwitches[path]; exists {
-		return offSwitch
-	}
-	m.log.Error(
-		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
-			filepath.Base(path),
-		),
-	)
-	return nil
-}
+// 	if offSwitch, exists := m.OffSwitches[path]; exists {
+// 		return offSwitch
+// 	}
+// 	m.log.Error(
+// 		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
+// 			filepath.Base(path),
+// 		),
+// 	)
+// 	return nil
+// }
 
 // close a watcher function and event channel for a given item.
 // will be a no-op if the file is not registered.
