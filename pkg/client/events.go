@@ -311,7 +311,7 @@ func (c *Client) handler(itemPath string) error {
 			}
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap() {
-				c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.GetFiles(), c.Drive.GetDirs(), c.Drive.SyncIndex)
+				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), c.Drive.GetDirs(), c.Drive.SyncIndex)
 				if c.IsDir(evt.Path) {
 					d, err := c.GetDirByPath(evt.Path) // event paths are client side
 					if err != nil {
