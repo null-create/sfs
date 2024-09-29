@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 	_ "net/http/pprof"
-	"os"
 	"runtime/pprof"
 
 	"github.com/sfs/cmd"
 	"github.com/sfs/pkg/configs"
+	"github.com/sfs/pkg/utils"
 )
 
 /*
@@ -20,23 +20,11 @@ import (
     		SIMPLE FILE SYNC
 */
 
-func createPprofFiles() (*os.File, *os.File) {
-	cpuFile, err := os.Create("cpu.pprof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	memFile, err := os.Create("mem.pprof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return cpuFile, memFile
-}
-
 func main() {
 	// TEMP: for cpu and memory profiling
-	// run: go tool pprof -http=localhost:6060 sfs.exe <cpu.pprof or mem.pprof>
+	// run: go tool pprof -http=localhost:6060 ./bin/sfs.exe <cpu.pprof or mem.pprof>
 	// to see results
-	cpuFile, memFile := createPprofFiles()
+	cpuFile, memFile := utils.CreatePprofFiles()
 	defer memFile.Close()
 	defer cpuFile.Close()
 
@@ -51,7 +39,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// main
 	configs.SetEnv(false)
 	cmd.Execute()
 }

@@ -65,8 +65,8 @@ const closeMenu = (event, buttonCn, menuCn) => {
 
 // ------- uploads ---------------------------------------
 
-// add items in bulk via the /add page
-const addItems = () => {
+// add items by passing the path to the web client server
+document.addEventListener("DOMContentLoaded", () => {
   const folderPath = document.getElementById("submit-folder-path")
   if (folderPath) {
     folderPath.addEventListener("click", () => {
@@ -105,10 +105,7 @@ const addItems = () => {
       });
     });
   }
-
-}
-
-document.addEventListener("DOMContentLoaded", addItems);
+});
 
 const removeAllUploads = () => {
   const dropzoneInstance = Dropzone.forElement("#dropzone-form");

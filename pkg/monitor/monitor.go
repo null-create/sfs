@@ -34,9 +34,6 @@ type Watcher func(string, chan bool) chan Event
 type Monitor struct {
 	mu sync.Mutex // guards
 
-	// path to the users drive root to monitor
-	Path string
-
 	// logger for monitor
 	log *logger.Logger
 
@@ -60,7 +57,6 @@ type Monitor struct {
 
 func NewMonitor(drvRoot string) *Monitor {
 	return &Monitor{
-		Path:        drvRoot,
 		log:         logger.NewLogger("Monitor", "None"),
 		Events:      make(map[string]chan Event),
 		Watchers:    make(map[string]Watcher),
@@ -164,29 +160,29 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 	return nil
 }
 
-// get an off switch for a given monitoring goroutine.
-// off switches, when set to true, will shut down the monitoring process.
-// returns nil if no off switch is available.
-func (m *Monitor) GetOffSwitch(path string) chan bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// // get an off switch for a given monitoring goroutine.
+// // off switches, when set to true, will shut down the monitoring process.
+// // returns nil if no off switch is available.
+// func (m *Monitor) GetOffSwitch(path string) chan bool {
+// 	m.mu.Lock()
+// 	defer m.mu.Unlock()
 
-	if offSwitch, exists := m.OffSwitches[path]; exists {
-		return offSwitch
-	}
-	m.log.Error(
-		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
-			filepath.Base(path),
-		),
-	)
-	return nil
-}
+// 	if offSwitch, exists := m.OffSwitches[path]; exists {
+// 		return offSwitch
+// 	}
+// 	m.log.Error(
+// 		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
+// 			filepath.Base(path),
+// 		),
+// 	)
+// 	return nil
+// }
 
 // close a watcher function and event channel for a given item.
 // will be a no-op if the file is not registered.
 func (m *Monitor) StopWatching(path string) {
 	if m.IsMonitored(path) {
-		m.OffSwitches[path] <- true
+		m.Watchers[path] = nil
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
@@ -273,7 +269,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				case stat.Size() != initialStat.Size():
 					log.Log(logger.INFO, fmt.Sprintf(
 						"size change detected: %f kb -> %f kb | path: %s",
-						float64(initialStat.Size()/1000), float64(stat.Size()/1000), filePath),
+						float32(initialStat.Size()/1000), float32(stat.Size()/1000), filePath),
 					)
 					evt <- Event{
 						IType: "File",

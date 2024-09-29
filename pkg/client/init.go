@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/sfs/pkg/auth"
+	"github.com/sfs/pkg/configs"
 	"github.com/sfs/pkg/db"
-	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/logger"
 	"github.com/sfs/pkg/monitor"
 	svc "github.com/sfs/pkg/service"
@@ -46,8 +46,8 @@ as well as elmininate the need for a dedicated "root" service directory.
 func SetupClient(svcRoot string) (*Client, error) {
 	var setupLog = logger.NewLogger("CLIENT_SETUP", "None")
 
-	// get environment variables and client envCfg
-	envCfg := env.NewE()
+	// get service configs
+	sfcCfg := configs.NewSvcConfig()
 
 	// make client service root directory
 	setupLog.Info("making SFS service directories...")
@@ -104,8 +104,7 @@ func SetupClient(svcRoot string) (*Client, error) {
 	if err := client.Db.AddDrive(client.Drive); err != nil {
 		return nil, err
 	}
-	// set .env file CLIENT_NEW_SERVICE to false so we don't reinitialize every time
-	if err := envCfg.Set("CLIENT_NEW_SERVICE", "false"); err != nil {
+	if err := sfcCfg.Set(configs.CLIENT_NEW_SERVICE, "false"); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +125,7 @@ func newUser() (*auth.User, error) {
 		cCfgs.Root,
 		cCfgs.IsAdmin,
 	)
-	if err := svcCfgs.Set("CLIENT_ID", newUser.ID); err != nil {
+	if err := svcCfgs.Set(configs.CLIENT_ID, newUser.ID); err != nil {
 		initLog.Error("failed to set user ID as an env variable: " + err.Error())
 		return nil, err
 	}
@@ -236,7 +235,7 @@ func LoadClient(persist bool) (*Client, error) {
 		// if synchronization with the server is enabled. If so, make sure
 		// any local items that have been added since our last sync are also
 		// registered with the server.
-		if !client.LocalSyncOnly() {
+		if client.SvrSync() {
 			if err := client.RegisterClient(); err != nil {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register client: %v", err))
 			}
@@ -361,7 +360,7 @@ func NewClient(user *auth.User) (*Client, error) {
 
 	// register drive with the server if autosync is enabled, if not defaulting
 	// to using local storage.
-	if !client.LocalSyncOnly() {
+	if client.SvrSync() {
 		if err := client.RegisterClient(); err != nil {
 			client.log.Warn("failed to register client with server: " + err.Error())
 		}

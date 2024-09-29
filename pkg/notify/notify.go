@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/sfs/pkg/configs"
 	"github.com/sfs/pkg/env"
 	"github.com/sfs/pkg/logger"
 
@@ -25,11 +26,11 @@ type Email struct {
 func NewEmail() *Email {
 	envCfgs := env.NewE()
 
-	email, err := envCfgs.Get("CLIENT_EMAIL")
+	email, err := envCfgs.Get(configs.CLIENT_EMAIL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pw, err := envCfgs.Get("CLIENT_PASSWORD")
+	pw, err := envCfgs.Get(configs.CLIENT_PASSWORD)
 	if err != nil {
 		log.Fatal(err)
 	}

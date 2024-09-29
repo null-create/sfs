@@ -418,8 +418,8 @@ form#search-form {
 
 /* Folder and file icon size */
 .item-icon {
-  max-height: 25px;
-  max-width: 25px;
+  max-height: 30px;
+  max-width: 30px;
 }
 
 /* --------------------- File Page ----------------------- */

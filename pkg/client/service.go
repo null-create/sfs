@@ -404,7 +404,7 @@ func (c *Client) AddFile(filePath string) error {
 	if err := c.BackupFile(newFile); err != nil {
 		return err
 	}
-	if !c.LocalSyncOnly() {
+	if c.SvrSync() {
 		// push metadata to server if autosync is enabled
 		// and we don't default to using local storage for backup purposes.
 		//
@@ -515,10 +515,14 @@ func (c *Client) RemoveFile(file *svc.File) error {
 		return fmt.Errorf("failed to copy file to recyle directory: %v", err)
 	}
 
+	// TODO: need to example how file.BackupPath is set if the file is
+	// placed in the sfs root. sfs is looking for ../username/backups/root/filename.txt
+	// when it should be ../username/backups/filename.txt. causing "not found" errors
+
 	// remove the backup file from root (or the subdir its located in)
-	if err := os.Remove(file.BackupPath); err != nil {
-		return fmt.Errorf("failed to remove backup copy of file: %v", err)
-	}
+	// if err := os.Remove(file.BackupPath); err != nil {
+	// 	return fmt.Errorf("failed to remove backup copy of file: %v", err)
+	// }
 
 	// remove file data from the service. does not remove *original* physical file,
 	// only meta-data used by the service.
@@ -531,7 +535,7 @@ func (c *Client) RemoveFile(file *svc.File) error {
 	c.log.Info(fmt.Sprintf("%s was moved to the recycle bin", file.Name))
 
 	// remove from backup server if necessary
-	if !c.LocalSyncOnly() {
+	if c.SvrSync() {
 		req, err := c.DeleteFileRequest(file)
 		if err != nil {
 			c.log.Error("failed to create request: " + err.Error())
@@ -693,7 +697,7 @@ func (c *Client) AddDir(dirPath string) error {
 	// 	return err
 	// }
 	// push metadata to server if localBackup is disabled
-	if !c.LocalSyncOnly() {
+	if c.SvrSync() {
 		req, err := c.NewDirectoryRequest(newDir)
 		if err != nil {
 			return err
@@ -1074,7 +1078,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 		if err := c.WatchItem(file.ClientPath); err != nil {
 			return nil, err
 		}
-		if !c.LocalSyncOnly() {
+		if c.SvrSync() {
 			if err := c.RegisterFile(file); err != nil {
 				return nil, err
 			}
@@ -1092,7 +1096,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 		// if err := c.WatchItem(subDir.ClientPath); err != nil {
 		// 	return err
 		// }
-		if !c.LocalSyncOnly() {
+		if c.SvrSync() {
 			if err := c.RegisterDirectory(subDir); err != nil {
 				return nil, err
 			}
@@ -1110,7 +1114,7 @@ func (c *Client) Discover(dirPath string) (*svc.Directory, error) {
 	if err := c.Drive.AddSubDir(c.Drive.RootID, newDir); err != nil {
 		return nil, fmt.Errorf("failed to add root to drive instance: %v", err)
 	}
-	if !c.LocalSyncOnly() {
+	if c.SvrSync() {
 		if err := c.RegisterDirectory(newDir); err != nil {
 			return nil, err
 		}

@@ -18,8 +18,8 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// whether we should save to local storage, or push files to server.
-func (c *Client) LocalSyncOnly() bool { return c.Conf.LocalBackup }
+// whether the client is automatically syncing with the server
+func (c *Client) SvrSync() bool { return c.Conf.ServerSync }
 
 // resets client side sync mechanisms with a
 // new baseline for item last sync times.
@@ -149,7 +149,7 @@ func (c *Client) ServerSync() error {
 // server, then upload each in their own goroutines one batch at a time.
 // each file is assumed to be already registered with the server, otherwise
 // this will receive a 404 response and the upload will fail.
-func (c *Client) Push() error {
+func (c *Client) PushAll() error {
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		c.log.Warn("no files marked for uploading. sync index update map is empty")
 		return nil
@@ -184,7 +184,7 @@ func (c *Client) Push() error {
 // gets a sync index from the server, compares with the local one,
 // and pulls any files that are out of date on the client side from the server.
 // create goroutines for each download and 'fans-in' once all are complete.
-func (c *Client) Pull() error {
+func (c *Client) PullAll() error {
 	if len(c.Drive.SyncIndex.FilesToUpdate) == 0 {
 		c.log.Warn("sync index update map has no contents. nothing to pull")
 		return nil

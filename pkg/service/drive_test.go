@@ -71,7 +71,7 @@ func TestDriveSecurityFeatures(t *testing.T) {
 }
 
 func TestPopulateDrive(t *testing.T) {
-	env.SetEnv(true)
+	env.SetEnv(false)
 
 	// make test files without creating file/dir objects
 	MakeTmpDirs(t)
