@@ -427,6 +427,7 @@ func (c *Client) AddFile(filePath string) error {
 				return err
 			}
 			newFile.ServerPath = svrpath
+			newFile.Registered = true
 			if err := c.UpdateFile(newFile); err != nil {
 				return err
 			}
