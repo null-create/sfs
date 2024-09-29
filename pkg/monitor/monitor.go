@@ -232,7 +232,7 @@ func watch(filePath string, stop chan bool) chan Event {
 	}
 
 	// dedicated watcher function
-	var watcher = func() {
+	go func() {
 		for {
 			select {
 			case <-stop:
@@ -328,10 +328,7 @@ func watch(filePath string, stop chan bool) chan Event {
 				}
 			}
 		}
-	}
-
-	// start watcher
-	go watcher()
+	}()
 
 	return evtChan
 }
