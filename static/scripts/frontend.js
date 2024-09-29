@@ -373,7 +373,7 @@ const submitSettings = () => {
   // TODO: handle theme on the client side
 
   const settings = {
-    CLIENT_LOCAL_BACKUP: serverSync,
+    CLIENT_SERVER_SYNC: serverSync,
     CLIENT_BACKUP_DIR: backupDir,
     CLIENT_PORT: clientPort,
     EVENT_BUFFER_SIZE: syncDelay
