@@ -404,6 +404,8 @@ func watchfsn(filePath string, stop chan bool) chan Event {
 					w.Close()
 					close(evtChan)
 					return
+				default:
+					time.Sleep(WAIT)
 				}
 			case err, ok := <-w.Errors:
 				if !ok {
