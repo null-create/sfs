@@ -401,7 +401,7 @@ func (c *Client) AddFile(filePath string) error {
 		return err
 	}
 	// make a local backup copy of the file
-	if err := newFile.Copy(c.LocalBackupDir); err != nil {
+	if err := c.BackupFile(newFile); err != nil {
 		return err
 	}
 	if c.SvrSync() {
