@@ -329,7 +329,8 @@ func (c *Client) handler(itemPath string) error {
 						return err
 					}
 				}
-				// push meta-data changes to remote server if applicable
+				// push meta-data changes and backup copies of file(s)
+				// to remote server, if applicable.
 				if c.SvrSync() {
 					if err := c.PushAll(); err != nil {
 						return err
