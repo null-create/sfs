@@ -14,10 +14,10 @@ import (
 )
 
 // creates a new listener goroutine and checks received events
-func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
+func testingMonitor(t *testing.T, path string, stopMonitor chan bool, stopListener chan bool) {
 	go func() {
 		log.Printf("[TEST] listening for %s events...", filepath.Base(path))
-		fileChan := watchFile(path, stopMonitor)
+		fileChan := watch(path, stopMonitor)
 		for {
 			select {
 			case evt := <-fileChan:
@@ -76,7 +76,7 @@ func testListener(t *testing.T, path string, stopMonitor chan bool, stopListener
 func NewTestListener(t *testing.T, path string) (chan bool, chan bool) {
 	stopMonitor := make(chan bool)
 	stopListener := make(chan bool)
-	testListener(t, path, stopMonitor, stopListener)
+	testingMonitor(t, path, stopMonitor, stopListener)
 	return stopMonitor, stopListener
 }
 
@@ -100,7 +100,7 @@ func TestMonitorWithOneFile(t *testing.T) {
 	// listen for events from file monitor
 	shutDown := make(chan bool)
 	stopListener := make(chan bool)
-	testListener(t, file.Path, shutDown, stopListener)
+	testingMonitor(t, file.Path, shutDown, stopListener)
 
 	time.Sleep(2 * time.Second)
 
@@ -136,7 +136,7 @@ func TestMonitorOneFileWithMultipleChanges(t *testing.T) {
 	// listen for events from file monitor
 	shutDown := make(chan bool)
 	stopListener := make(chan bool)
-	testListener(t, file.Path, shutDown, stopListener)
+	testingMonitor(t, file.Path, shutDown, stopListener)
 
 	// wait for listener to start
 	time.Sleep(time.Second)
@@ -174,7 +174,7 @@ func TestMonitorOneFileWithDifferentEvents(t *testing.T) {
 	// listen for events from file monitor
 	shutDown := make(chan bool)
 	stopListener := make(chan bool)
-	testListener(t, file.Path, shutDown, stopListener)
+	testingMonitor(t, file.Path, shutDown, stopListener)
 
 	time.Sleep(time.Second)
 

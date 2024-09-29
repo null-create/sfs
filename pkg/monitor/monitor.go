@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/logger"
 )
@@ -140,7 +141,7 @@ func (m *Monitor) Watch(path string) error {
 		if !isdir {
 			stop := make(chan bool)
 			m.OffSwitches[path] = stop
-			m.AddWatcher(path, watchFile)
+			m.AddWatcher(path, watch)
 			m.StartWatcher(path, stop)
 			m.log.Log(logger.INFO, fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 		}
@@ -160,23 +161,23 @@ func (m *Monitor) GetEventChan(path string) chan Event {
 	return nil
 }
 
-// // get an off switch for a given monitoring goroutine.
-// // off switches, when set to true, will shut down the monitoring process.
-// // returns nil if no off switch is available.
-// func (m *Monitor) GetOffSwitch(path string) chan bool {
-// 	m.mu.Lock()
-// 	defer m.mu.Unlock()
+// get an off switch for a given monitoring goroutine.
+// off switches, when set to true, will shut down the monitoring process.
+// returns nil if no off switch is available.
+func (m *Monitor) GetOffSwitch(path string) chan bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-// 	if offSwitch, exists := m.OffSwitches[path]; exists {
-// 		return offSwitch
-// 	}
-// 	m.log.Error(
-// 		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
-// 			filepath.Base(path),
-// 		),
-// 	)
-// 	return nil
-// }
+	if offSwitch, exists := m.OffSwitches[path]; exists {
+		return offSwitch
+	}
+	m.log.Error(
+		fmt.Sprintf("off switch not found for '%s' monitoring goroutine",
+			filepath.Base(path),
+		),
+	)
+	return nil
+}
 
 // close a watcher function and event channel for a given item.
 // will be a no-op if the file is not registered.
@@ -208,12 +209,16 @@ func (m *Monitor) ShutDown() {
 	}
 }
 
-// ----------------------------------------------------------------------------
-
 // creates a new monitor goroutine for a given file or directory.
 // returns a channel that sends events to the listener for handling
-func watchFile(filePath string, stop chan bool) chan Event {
+func watch(filePath string, stop chan bool) chan Event {
 	log := logger.NewLogger("FILE_WATCHER", auth.NewUUID())
+
+	// base file name for easier output reading
+	baseName := filepath.Base(filePath)
+
+	// event channel to pass file events to the event handler
+	evtChan := make(chan Event)
 
 	// get initial info for the file
 	initialStat, err := os.Stat(filePath)
@@ -226,44 +231,50 @@ func watchFile(filePath string, stop chan bool) chan Event {
 		return nil
 	}
 
-	// base file name for easier output reading
-	baseName := filepath.Base(filePath)
-
-	// event channel used by the event handler
-	evt := make(chan Event)
-
 	// dedicated watcher function
-	watcher := func() {
+	var watcher = func() {
 		for {
 			select {
 			case <-stop:
 				log.Log(logger.INFO, fmt.Sprintf("shutting down monitoring for '%s'...", baseName))
-				close(evt)
+				close(evtChan)
 				return
 			default:
+				// TODO:
+				// - examine performance around this os.Stat() call.
+				//   it will be called A LOT of if we're watching hundreds or
+				//   thousands of files across as many goroutines.
+				//
+				// - examine how it is implemented and see if we can hack a smaller DIY version, if necessary.
+				//   also examine how fs-notify is implemented to get a better understanding of
+				//   reading files and file systems for changes.
+				//
+				// - anything that needs to be changed should match how we're using the os.Stat(),
+				//   and should only be concerned with adding an additional "backend," rather than
+				//   changing anything on either side of this os.Stat() call.
 				stat, err := os.Stat(filePath)
 				if err != nil && err != os.ErrNotExist {
 					log.Log(logger.INFO, fmt.Sprintf("%v - stopping monitoring for '%s'...", err, baseName))
-					evt <- Event{
+					evtChan <- Event{
 						IType: "File",
 						Etype: Error,
 						ID:    auth.NewUUID(),
 						Path:  filePath,
 					}
-					close(evt)
+					close(evtChan)
 					return
 				}
 				switch {
 				// file deletion
 				case err == os.ErrNotExist:
 					log.Log(logger.INFO, fmt.Sprintf("'%s' was deleted. stopping monitoring.", baseName))
-					evt <- Event{
+					evtChan <- Event{
 						IType: "File",
 						Etype: Delete,
 						ID:    auth.NewUUID(),
 						Path:  filePath,
 					}
-					close(evt)
+					close(evtChan)
 					return
 				// file size change
 				case stat.Size() != initialStat.Size():
@@ -271,7 +282,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 						"size change detected: %f kb -> %f kb | path: %s",
 						float32(initialStat.Size()/1000), float32(stat.Size()/1000), filePath),
 					)
-					evt <- Event{
+					evtChan <- Event{
 						IType: "File",
 						Etype: Size,
 						ID:    auth.NewUUID(),
@@ -281,7 +292,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				// file modification time change
 				case stat.ModTime() != initialStat.ModTime():
 					log.Log(logger.INFO, fmt.Sprintf("mod time change detected: %v -> %v", initialStat.ModTime(), stat.ModTime()))
-					evt <- Event{
+					evtChan <- Event{
 						IType: "File",
 						Etype: ModTime,
 						ID:    auth.NewUUID(),
@@ -291,7 +302,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				// file mode change
 				case stat.Mode() != initialStat.Mode():
 					log.Log(logger.INFO, (fmt.Sprintf("mode change detected: %v -> %v", initialStat.Mode(), stat.Mode())))
-					evt <- Event{
+					evtChan <- Event{
 						IType: "File",
 						Etype: Mode,
 						ID:    auth.NewUUID(),
@@ -301,7 +312,7 @@ func watchFile(filePath string, stop chan bool) chan Event {
 				// file name change
 				case stat.Name() != initialStat.Name():
 					log.Log(logger.INFO, fmt.Sprintf("file name change detected: %v -> %v", initialStat.Name(), stat.Name()))
-					evt <- Event{
+					evtChan <- Event{
 						IType: "File",
 						Etype: Name,
 						ID:    auth.NewUUID(),
@@ -322,92 +333,96 @@ func watchFile(filePath string, stop chan bool) chan Event {
 	// start watcher
 	go watcher()
 
-	return evt
+	return evtChan
 }
 
-// NOTE: no longer used, but kept for reference.
-// watch for changes in a directory
-func watchDir(dirPath string, stop chan bool) chan Event {
-	var log = logger.NewLogger("DIR_WATCHER", auth.NewUUID())
+// alternative implementation using fsnotify. still experimental.
+func watchfsn(filePath string, stop chan bool) chan Event {
+	log := logger.NewLogger("FILE_WATCHER", auth.NewUUID())
 
-	// get initial slice of file and subdirectories
-	initialItems, err := os.ReadDir(dirPath)
+	// base file name for easier output reading
+	baseName := filepath.Base(filePath)
+
+	// event channel to pass file events to the event handler
+	evtChan := make(chan Event)
+
+	// setup watcher
+	w, err := fsnotify.NewBufferedWatcher(0)
 	if err != nil {
-		log.Error(fmt.Sprintf("failed to ready directory contents: %v", err))
-		return nil
+		log.Error(err.Error())
 	}
 
-	// add initial items to context
-	dirCtx := NewDirCtx(dirPath)
-	// NOTE: need to make sure these are added to the service
-	// if they're not already present! not watchDir's responsibility, though.
-	dirCtx.AddItems(initialItems)
-
-	// directory name
-	dirName := filepath.Base(dirPath)
-
-	// event channel used by the event handler goroutine
-	evt := make(chan Event)
-
-	// watcher function
-	var watcher = func() {
+	// event loop
+	go func() {
 		for {
 			select {
 			case <-stop:
-				log.Log(logger.INFO, fmt.Sprintf("stopping monitor for %s...", dirName))
+				log.Info("stopping watcher for " + baseName)
+				w.Close()
+				close(evtChan)
 				return
-			default:
-				currItems, err := os.ReadDir(dirPath)
-				if err != nil {
-					log.Error(fmt.Sprintf("failed to read directory: %v", err))
+			case event, ok := <-w.Events:
+				if !ok {
+					log.Error("failed to receive events for " + baseName)
+					w.Close()
+					close(evtChan)
 					return
 				}
 				switch {
-				// directory was deleted
-				case err == os.ErrExist:
-					log.Log(logger.INFO, fmt.Sprintf("%s was deleted", dirName))
-					evt <- Event{
-						IType: "Directory",
+				case event.Has(fsnotify.Write):
+					log.Log(logger.INFO, "writing change detected for "+baseName)
+					evtChan <- Event{
+						IType: "File",
+						Etype: Size,
 						ID:    auth.NewUUID(),
-						Etype: Delete,
-						Path:  dirPath,
+						Path:  filePath,
 					}
-					close(evt)
+				case event.Has(fsnotify.Chmod):
+					log.Log(logger.INFO, "mode change detected for "+baseName)
+					evtChan <- Event{
+						IType: "File",
+						Etype: Mode,
+						ID:    auth.NewUUID(),
+						Path:  filePath,
+					}
+				case event.Has(fsnotify.Rename):
+					log.Log(logger.INFO, "file name change detected for "+baseName)
+					evtChan <- Event{
+						IType: "File",
+						Etype: Name,
+						ID:    auth.NewUUID(),
+						Path:  filePath,
+					}
+				case event.Has(fsnotify.Remove):
+					log.Log(logger.INFO, fmt.Sprintf("file '%s' removed", baseName))
+					evtChan <- Event{
+						IType: "File",
+						Etype: Delete,
+						ID:    auth.NewUUID(),
+						Path:  filePath,
+					}
+					w.Close()
+					close(evtChan)
 					return
-				// item(s) were deleted
-				case len(currItems) < len(initialItems):
-					log.Log(logger.INFO, fmt.Sprintf("%d items were deleted in %s", len(currItems)-len(initialItems), dirName))
-					diffs := dirCtx.RemoveItems(currItems) // get list of deleted items
-					evt <- Event{
-						IType: "Directory",
-						ID:    auth.NewUUID(),
-						Etype: Delete,
-						Path:  dirPath,
-						Items: diffs,
-					}
-					initialItems = currItems
-				// item(s) were added
-				case len(currItems) > len(initialItems):
-					log.Log(logger.INFO, fmt.Sprintf("%d items were added in %s", len(currItems)-len(initialItems), dirName))
-					diffs := dirCtx.AddItems(currItems) // get list of removed items
-					evt <- Event{
-						IType: "Directory",
-						ID:    auth.NewUUID(),
-						Etype: Add,
-						Path:  dirPath,
-						Items: diffs,
-					}
-					initialItems = currItems
 				}
-				// TODO: other directory changes?
+			case err, ok := <-w.Errors:
+				if !ok {
+					w.Close()
+					return
+				}
+				log.Error("error: " + err.Error())
 			}
 		}
+	}()
+
+	// Add the path to the item we want to monitor
+	if err := w.Add(filePath); err != nil {
+		log.Error("failed to add file to watcher: " + err.Error())
+		w.Close()
+		return nil
 	}
 
-	// start watcher
-	go watcher()
-
-	return evt
+	return evtChan
 }
 
 // add all files and directories under the given path

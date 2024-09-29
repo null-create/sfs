@@ -435,7 +435,6 @@ func (c *Client) AddFile(filePath string) error {
 			c.log.Warn(fmt.Sprintf("failed to send metadata to server. server response code: %v", resp.Status))
 		}
 	}
-	// update service state
 	if err := c.SaveState(); err != nil {
 		c.log.Error(fmt.Sprintf("failed to save state file: %v", err))
 	}

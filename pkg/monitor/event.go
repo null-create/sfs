@@ -52,7 +52,7 @@ type Events struct {
 func NewEvents(buffered bool) *Events {
 	var threshold int
 	if buffered {
-		threshold = MonCfgs.BufSize
+		threshold = MonCfgs.BuffSize
 	} else {
 		threshold = 1
 	}
