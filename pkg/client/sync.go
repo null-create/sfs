@@ -18,7 +18,7 @@ import (
 	svc "github.com/sfs/pkg/service"
 )
 
-// whether we should save to local storage, or push files to server.
+// whether the client is automatically syncing with the server
 func (c *Client) SvrSync() bool { return c.Conf.ServerSync }
 
 // resets client side sync mechanisms with a
