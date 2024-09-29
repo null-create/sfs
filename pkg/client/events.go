@@ -330,7 +330,7 @@ func (c *Client) handler(itemPath string) error {
 					}
 				}
 				// push meta-data changes to remote server if applicable
-				if !c.LocalSyncOnly() {
+				if c.SvrSync() {
 					if err := c.PushAll(); err != nil {
 						return err
 					}

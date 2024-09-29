@@ -19,7 +19,7 @@ import (
 )
 
 // whether we should save to local storage, or push files to server.
-func (c *Client) LocalSyncOnly() bool { return c.Conf.ServerSync }
+func (c *Client) SvrSync() bool { return c.Conf.ServerSync }
 
 // resets client side sync mechanisms with a
 // new baseline for item last sync times.
