@@ -186,7 +186,7 @@ func (m *Monitor) GetOffSwitch(path string) chan bool {
 // will be a no-op if the file is not registered.
 func (m *Monitor) StopWatching(path string) {
 	if m.IsMonitored(path) {
-		m.OffSwitches[path] <- true
+		m.Watchers[path] = nil
 		delete(m.OffSwitches, path)
 		delete(m.Events, path)
 		delete(m.Watchers, path)
