@@ -120,7 +120,7 @@ func (c *Client) EmptyRecycleBinHandler(w http.ResponseWriter, r *http.Request) 
 func (c *Client) updateSetting(w http.ResponseWriter, setting string, value interface{}) {
 	var v string
 	if setting == cfgs.CLIENT_SERVER_SYNC {
-		v = strconv.FormatBool(!value.(bool)) // (server sync = false) == (client_local_backup = true)
+		v = strconv.FormatBool(value.(bool))
 	} else {
 		v = value.(string)
 	}
@@ -140,7 +140,7 @@ func (c *Client) SettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	var newSettings map[string]interface{}
+	var newSettings map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &newSettings); err != nil {
 		c.error(w, r, err.Error(), http.StatusInternalServerError)
 		return
