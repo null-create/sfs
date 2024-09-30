@@ -245,6 +245,9 @@ func LoadClient(persist bool) (*Client, error) {
 			}
 		}
 
+		// intialize sync index
+		client.BuildSyncIndex()
+
 		// initialize handlers map
 		if err := client.BuildHandlers(); err != nil {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to initialize handlers: %v", err))
