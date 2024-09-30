@@ -12,6 +12,7 @@ import (
 
 const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 
+// retrieve users JWT secret used for signing tokens
 func GetSecret() ([]byte, error) {
 	s, err := configs.NewSvcConfig().Get(configs.JWT_SECRET)
 	if err != nil {
