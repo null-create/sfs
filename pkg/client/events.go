@@ -75,8 +75,6 @@ func (c *Client) NewHandler(path string) error {
 		if err := c.NewEHandler(path); err != nil {
 			return err
 		}
-	} else {
-		return fmt.Errorf("'%s' is already registered", filepath.Base(path))
 	}
 	return nil
 }
