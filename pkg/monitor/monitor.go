@@ -142,7 +142,7 @@ func (m *Monitor) Watch(path string) error {
 		if !isdir {
 			stop := make(chan bool)
 			m.OffSwitches[path] = stop
-			m.AddWatcher(path, watch)
+			m.AddWatcher(path, watchfsn)
 			m.StartWatcher(path, stop)
 			m.log.Log(logger.INFO, fmt.Sprintf("monitoring %s...", filepath.Base(path)))
 		}
@@ -155,6 +155,7 @@ func (m *Monitor) Watch(path string) error {
 func (m *Monitor) GetEventChan(path string) chan Event {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
 	if evtChan, exists := m.Events[path]; exists {
 		return evtChan
 	}
@@ -200,11 +201,6 @@ func (m *Monitor) ShutDown() {
 	m.log.Info(
 		fmt.Sprintf("shutting down %d active monitoring threads...", len(m.Watchers)),
 	)
-	// the "graceful" way. blocks and is really slow.
-	// for path := range m.OffSwitches {
-	// 	m.OffSwitches[path] <- true
-	// }
-	// the "just erase it" way
 	for key := range m.Watchers {
 		m.Watchers[key] = nil
 	}
@@ -335,11 +331,11 @@ func watch(filePath string, stop chan bool) chan Event {
 }
 
 // alternative implementation using fsnotify. still experimental.
-func watchfsn(filePath string, stop chan bool) chan Event {
+func watchfsn(itemPath string, stop chan bool) chan Event {
 	log := logger.NewLogger("FILE_WATCHER", auth.NewUUID())
 
 	// base file name for easier output reading
-	baseName := filepath.Base(filePath)
+	baseName := filepath.Base(itemPath)
 
 	// event channel to pass file events to the event handler
 	evtChan := make(chan Event)
@@ -373,15 +369,7 @@ func watchfsn(filePath string, stop chan bool) chan Event {
 						IType: "File",
 						Etype: Size,
 						ID:    auth.NewUUID(),
-						Path:  filePath,
-					}
-				case event.Has(fsnotify.Chmod):
-					log.Log(logger.INFO, "mode change detected for "+baseName)
-					evtChan <- Event{
-						IType: "File",
-						Etype: Mode,
-						ID:    auth.NewUUID(),
-						Path:  filePath,
+						Path:  itemPath,
 					}
 				case event.Has(fsnotify.Rename):
 					log.Log(logger.INFO, "file name change detected for "+baseName)
@@ -389,7 +377,7 @@ func watchfsn(filePath string, stop chan bool) chan Event {
 						IType: "File",
 						Etype: Name,
 						ID:    auth.NewUUID(),
-						Path:  filePath,
+						Path:  itemPath,
 					}
 				case event.Has(fsnotify.Remove):
 					log.Log(logger.INFO, fmt.Sprintf("file '%s' removed", baseName))
@@ -397,7 +385,7 @@ func watchfsn(filePath string, stop chan bool) chan Event {
 						IType: "File",
 						Etype: Delete,
 						ID:    auth.NewUUID(),
-						Path:  filePath,
+						Path:  itemPath,
 					}
 					w.Close()
 					close(evtChan)
@@ -416,7 +404,7 @@ func watchfsn(filePath string, stop chan bool) chan Event {
 	}()
 
 	// Add the path to the item we want to monitor
-	if err := w.Add(filePath); err != nil {
+	if err := w.Add(itemPath); err != nil {
 		log.Error("failed to add file to watcher: " + err.Error())
 		w.Close()
 		return nil
