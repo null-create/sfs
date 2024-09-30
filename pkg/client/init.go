@@ -62,10 +62,10 @@ func SetupClient(svcRoot string) (*Client, error) {
 		filepath.Join(svcDir, "root"),
 		filepath.Join(svcDir, "state"),
 		filepath.Join(svcDir, "recycle"),
-		filepath.Join(svcDir, "backups"),
+		filepath.Join(svcDir, "backups", "root"),
 	}
 	for _, dirPath := range svcPaths {
-		if err := os.Mkdir(dirPath, svc.PERMS); err != nil {
+		if err := os.MkdirAll(dirPath, svc.PERMS); err != nil {
 			return nil, err
 		}
 	}
