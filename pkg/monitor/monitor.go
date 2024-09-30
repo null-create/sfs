@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+
 	"github.com/sfs/pkg/auth"
 	"github.com/sfs/pkg/logger"
 )
