@@ -118,7 +118,7 @@ func (c *Client) StartHandler(path string) error {
 	if handler, exists := c.Handlers[path]; exists {
 		go func() {
 			if err := handler(path); err != nil {
-				c.log.Error(err.Error())
+				c.log.Error(fmt.Sprintf("failed to start handler for '%s': %v", filepath.Base(path), err))
 			}
 		}()
 		return nil
