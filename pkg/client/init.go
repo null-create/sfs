@@ -62,10 +62,10 @@ func SetupClient(svcRoot string) (*Client, error) {
 		filepath.Join(svcDir, "root"),
 		filepath.Join(svcDir, "state"),
 		filepath.Join(svcDir, "recycle"),
-		filepath.Join(svcDir, "backups"),
+		filepath.Join(svcDir, "backups", "root"),
 	}
 	for _, dirPath := range svcPaths {
-		if err := os.Mkdir(dirPath, svc.PERMS); err != nil {
+		if err := os.MkdirAll(dirPath, svc.PERMS); err != nil {
 			return nil, err
 		}
 	}
@@ -244,21 +244,20 @@ func LoadClient(persist bool) (*Client, error) {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register local items: %v", err))
 			}
 		}
-		// start monitoring services in SFS root directory
-		if err := client.StartMonitor(); err != nil {
-			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start monitoring services: %v", err))
-			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
-		}
+
 		// initialize handlers map
 		if err := client.BuildHandlers(); err != nil {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to initialize handlers: %v", err))
 			return nil, fmt.Errorf("failed to initialize handlers: %v", err)
 		}
-		// start event handlers
-		if err := client.StartHandlers(); err != nil {
-			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start event handlers: %v", err))
-			return nil, fmt.Errorf("failed to start event handlers: %v", err)
+
+		// start monitoring services in SFS root directory
+		// creates event handlers for each item thats being monitored.
+		if err := client.StartMonitor(); err != nil {
+			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start monitoring services: %v", err))
+			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
 		}
+
 		// parse html templates for the web ui
 		if err := client.ParseTemplates(); err != nil {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to parse templates: %v", err))
@@ -266,6 +265,7 @@ func LoadClient(persist bool) (*Client, error) {
 		}
 		client.log.Info(fmt.Sprintf("monitor is running. watching %d local item(s)", len(client.Monitor.Events)))
 	}
+
 	client.StartTime = time.Now().UTC()
 	if err := client.SaveState(); err != nil {
 		client.log.Error("failed to save state file: " + err.Error())

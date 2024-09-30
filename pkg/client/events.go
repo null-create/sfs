@@ -75,8 +75,6 @@ func (c *Client) NewHandler(path string) error {
 		if err := c.NewEHandler(path); err != nil {
 			return err
 		}
-	} else {
-		return fmt.Errorf("'%s' is already registered", filepath.Base(path))
 	}
 	return nil
 }
@@ -311,7 +309,7 @@ func (c *Client) handler(itemPath string) error {
 			}
 			// *** trigger synchronization operations once the event buffer has reached capacity ***
 			if evtBuf.AtCap() {
-				c.Drive.SyncIndex = svc.BuildSyncIndex(c.Drive.GetFiles(), c.Drive.GetDirs(), c.Drive.SyncIndex)
+				c.Drive.SyncIndex = svc.BuildToUpdate(c.Drive.GetFiles(), c.Drive.GetDirs(), c.Drive.SyncIndex)
 				if c.IsDir(evt.Path) {
 					d, err := c.GetDirByPath(evt.Path) // event paths are client side
 					if err != nil {
@@ -329,7 +327,8 @@ func (c *Client) handler(itemPath string) error {
 						return err
 					}
 				}
-				// push meta-data changes to remote server if applicable
+				// push meta-data changes and backup copies of file(s)
+				// to remote server, if applicable.
 				if c.SvrSync() {
 					if err := c.PushAll(); err != nil {
 						return err

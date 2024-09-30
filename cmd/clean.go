@@ -28,7 +28,7 @@ func proceed(totalEntries int) bool {
 	var answer string
 	fmt.Printf(
 		"WARNING: this process will permanently delete %d files in the SFS recycle bin."+
-			"Do you want to proceed? (y/n)",
+			"Do you want to proceed? (y/n)\n",
 		totalEntries,
 	)
 	fmt.Scan(&answer)
