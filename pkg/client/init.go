@@ -223,7 +223,7 @@ func LoadClient(persist bool) (*Client, error) {
 	// add monitoring component
 	client.Monitor = monitor.NewMonitor(client.Root)
 
-	// initialize event maps
+	// initialize event map
 	client.InitHandlerMap()
 
 	// load and start persistent services only when necessary.
