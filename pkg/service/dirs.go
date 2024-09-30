@@ -368,7 +368,7 @@ func (d *Directory) ModifyFile(file *File, data []byte) error {
 			d.Size += file.GetSize() - origSize
 		} else {
 			var output = fmt.Sprintf(
-				"file (id=%s) does not belong to this directory. file dirid=%s cur dirid=%s",
+				"file (id=%s) does not belong to this directory\nfile parent dir id=%s, cur dir id=%s\n",
 				file.ID, file.DirID, d.ID,
 			)
 			return fmt.Errorf(output)

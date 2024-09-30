@@ -1,5 +1,5 @@
 # Build
-FROM golang:1.21 as builder
+FROM golang:1.21 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify && go mod tidy
@@ -7,7 +7,6 @@ COPY . .
 RUN GOOS=linux go build -o sfs
 RUN chmod +x ./sfs 
 RUN ./sfs --help
-RUN ./sfs setup -a -d /app
 RUN ./sfs client --new && ./sfs server --new
 
 # Prepare image

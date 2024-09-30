@@ -67,21 +67,9 @@ func (c *Client) WatchItem(path string) error {
 	return nil
 }
 
-// add a new event handler for the given file.
-// path to the given file must already have a monitoring
-// goroutine in place (call client.WatchFile(filePath) first).
-func (c *Client) NewHandler(path string) error {
-	if _, exists := c.Handlers[path]; !exists {
-		if err := c.NewEHandler(path); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // build a new event handler for a given file. does not start the handler,
-// only adds it (and its offswitch) to the handlers map.
-func (c *Client) NewEHandler(path string) error {
+// only adds it to the handlers map.
+func (c *Client) NewHandler(path string) error {
 	if _, exists := c.Handlers[path]; !exists {
 		c.Handlers[path] = c.handler
 	}
@@ -130,7 +118,7 @@ func (c *Client) StartHandler(path string) error {
 	if handler, exists := c.Handlers[path]; exists {
 		go func() {
 			if err := handler(path); err != nil {
-				c.log.Error(err.Error())
+				c.log.Error(fmt.Sprintf("failed to start handler for '%s': %v", filepath.Base(path), err))
 			}
 		}()
 		return nil
@@ -188,7 +176,7 @@ func (c *Client) BuildHandlers() error {
 		return err
 	}
 	for _, file := range files {
-		if err := c.NewEHandler(file.Path); err != nil {
+		if err := c.NewHandler(file.Path); err != nil {
 			return err
 		}
 	}
@@ -289,13 +277,6 @@ func (c *Client) handler(itemPath string) error {
 			// item mod time change
 			case monitor.ModTime:
 				if err := c.apply(evt.Path, "modtime"); err != nil {
-					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
-					break
-				}
-				evtBuf.AddEvent(evt)
-			// items content change
-			case monitor.Change:
-				if err := c.apply(evt.Path, "change"); err != nil {
 					c.log.Error(fmt.Sprintf("failed to apply action: %v", err))
 					break
 				}

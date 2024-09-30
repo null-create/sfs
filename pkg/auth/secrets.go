@@ -5,20 +5,20 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/sfs/pkg/env"
+	"github.com/sfs/pkg/configs"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 
+// retrieve users JWT secret used for signing tokens
 func GetSecret() ([]byte, error) {
-	envCfg := env.NewE()
-	if s, err := envCfg.Get("JWT_SECRET"); err == nil {
-		return []byte(s), nil
-	} else {
+	s, err := configs.NewSvcConfig().Get(configs.JWT_SECRET)
+	if err != nil {
 		return nil, err
 	}
+	return []byte(s), nil
 }
 
 // generate a random string of n length to use as a secret

@@ -300,7 +300,7 @@ func (d *Drive) UpdateFile(dirID string, file *File) error {
 	if !d.Protected {
 		if d.Root.ID == dirID {
 			if err := d.Root.PutFile(file); err != nil {
-				return fmt.Errorf("failed to update file %s: %v", file.ID, err)
+				return fmt.Errorf("failed to update file (id=%s): %v", file.ID, err)
 			}
 		} else {
 			dir := d.GetDir(dirID)

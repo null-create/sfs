@@ -223,7 +223,7 @@ func LoadClient(persist bool) (*Client, error) {
 	// add monitoring component
 	client.Monitor = monitor.NewMonitor(client.Root)
 
-	// initialize event maps
+	// initialize event map
 	client.InitHandlerMap()
 
 	// load and start persistent services only when necessary.
@@ -236,9 +236,11 @@ func LoadClient(persist bool) (*Client, error) {
 		// any local items that have been added since our last sync are also
 		// registered with the server.
 		if client.SvrSync() {
+			// register client with server if necessary
 			if err := client.RegisterClient(); err != nil {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register client: %v", err))
 			}
+
 			// register any files with the server that weren't previously registered
 			if err := client.RegisterItems(); err != nil {
 				initLog.Log(logger.ERROR, fmt.Sprintf("failed to register local items: %v", err))
@@ -256,6 +258,8 @@ func LoadClient(persist bool) (*Client, error) {
 		if err := client.StartMonitor(); err != nil {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to start monitoring services: %v", err))
 			return nil, fmt.Errorf("failed to start monitoring services: %v", err)
+		} else {
+			client.log.Info(fmt.Sprintf("monitor is running. watching %d local item(s)", len(client.Monitor.Events)))
 		}
 
 		// parse html templates for the web ui
@@ -263,13 +267,13 @@ func LoadClient(persist bool) (*Client, error) {
 			initLog.Log(logger.ERROR, fmt.Sprintf("failed to parse templates: %v", err))
 			return nil, fmt.Errorf("failed to parse templates: %v", err)
 		}
-		client.log.Info(fmt.Sprintf("monitor is running. watching %d local item(s)", len(client.Monitor.Events)))
 	}
 
 	client.StartTime = time.Now().UTC()
 	if err := client.SaveState(); err != nil {
 		client.log.Error("failed to save state file: " + err.Error())
 	}
+
 	initLog.Log(logger.INFO, fmt.Sprintf("client started at: %v", time.Now().UTC()))
 	return client, nil
 }
