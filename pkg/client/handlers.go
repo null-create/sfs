@@ -312,7 +312,7 @@ func (c *Client) AddItems(w http.ResponseWriter, r *http.Request) {
 
 	path := buf.String()
 	if path == "" {
-		c.error(w, r, "no path provided", http.StatusInternalServerError)
+		c.error(w, r, "no path provided", http.StatusBadRequest)
 		return
 	}
 
