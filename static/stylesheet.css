@@ -1,12 +1,35 @@
 /* Global */
 
+/* All the colors */
+:root {
+  --slightly-white: rgb(247, 247, 247);
+  --slightlier-white: rgb(238, 238, 238);
+  --form-white: rgb(249, 249, 249);
+  --folder-dropdown: rgb(218, 218, 218);
+  --white: rgb(255, 255, 255);
+  --button-blue: rgb(30, 136, 229);
+  --button-hover: rgb(21, 101, 192);
+  --hover-grey: rgb(201, 210, 226);
+  --green: rgb(0, 128, 0);
+  --red: rgb(216, 23, 23);
+  --remove-hover: rgb(173, 7, 7);
+  --file-link: rgb(26, 115, 232);
+  --form-border: rgb(221, 221, 221);
+  --sidebar-item: rgb(95, 99, 104);
+  --sidebar-hover: rgb(190, 228, 247);
+  --user-label: rgb(85, 85, 85);
+  --upload-button: rgb(40, 167, 69);
+  --upload-button-hover: rgb(33, 136, 56);
+  --spinner: rgb(52, 152, 219);
+}
+
 body {
   font-family: Google Sans;
   font-weight: lighter;
   margin: 0;
   display: flex;
   height: 100vh;
-  background-color: rgb(247, 247, 247);
+  background-color: var(--slightly-white);
 }
 
 header {
@@ -14,7 +37,7 @@ header {
   /* justify-content: space-evenly; */
   align-items: center;
   padding: 0 20px;
-  background-color: rgb(247, 247, 247);
+  background-color: var(--slightly-white);
   width: 100%;
   height: 60px;
   position: fixed;
@@ -26,7 +49,7 @@ header {
 #content {
   display: flex;
   flex-direction: column;
-  background-color: white;
+  background-color: var(--white);
   margin-left: 250px;
   padding: 60px 20px 20px;
   flex-grow: 1;
@@ -43,8 +66,8 @@ header {
 
 form {
   max-width: 1200px;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
+  background-color: rgb(249, 249, 249);
+  border: 1px solid rgb(221, 221, 221);
   padding: 20px;
   border-radius: 5px;
   margin: 20px auto;
@@ -70,7 +93,7 @@ form input[type="text"] {
 }
 
 form button {
-  background-color: #1e88e5;
+  background-color: var(--button-blue);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -82,7 +105,7 @@ form button {
 }
 
 form button:hover {
-  background-color: #1565c0;
+  background-color: rgb(21, 101, 192);
 }
 
 /* Specific button for folder selection */
@@ -130,7 +153,7 @@ form#search-form {
   display: flex;
   align-self: center;
   font-size: medium;
-  background-color: rgb(238, 238, 238);
+  background-color: var(--slightlier-white);
   color: black;
   cursor: pointer;
   border: 5px;
@@ -139,14 +162,14 @@ form#search-form {
 }
 
 .type-button:hover {
-  background-color:  rgb(201, 210, 226)
+  background-color:  var(--hover-grey);
 }
 
 .modified-button {
   display: flex;
   align-self: center;
   font-size: medium;
-  background-color: rgb(238, 238, 238);
+  background-color: var(--slightlier-white);
   color: black;
   cursor: pointer;
   border: 5px;
@@ -155,14 +178,14 @@ form#search-form {
 }
 
 .modified-button:hover {
-  background-color: rgb(201, 210, 226)
+  background-color: var(--hover-grey);
 }
 
 .location-button {
   display: flex;
   align-self: center;
   font-size: medium;
-  background-color: rgb(238, 238, 238);
+  background-color: var(--slightlier-white);
   color: black;
   cursor: pointer;
   border: 5px;
@@ -171,7 +194,7 @@ form#search-form {
 }
 
 .location-button:hover {
-  background-color:  rgb(201, 210, 226)
+  background-color:  var(--hover-grey);
 }
 
 /* -------------------- Top bar --------------------- */
@@ -236,11 +259,11 @@ form#search-form {
 }
 
 #status-text.online {
-  color: green;
+  color: var(--green);
 }
 
 #status-text.offline {
-  color: red;
+  color: var(--red);
 }
 
 .sidebar-link, .file-link {
@@ -251,12 +274,12 @@ form#search-form {
 
 .sidebar-item {
   padding: 10px 20px;
-  color: #5f6368;
+  color: var(--sidebar-item);
   cursor: pointer;
 }
 
 .sidebar-item:hover {
-  background-color: rgb(190, 228, 247);
+  background-color: var(--sidebar-hover);
 }
 
 .icon {
@@ -278,7 +301,7 @@ form#search-form {
 }
 
 #folder-dropdown-btn:hover {
-  background-color: rgb(218, 218, 218);
+  background-color: var(--folder-dropdown);
   box-shadow: unset;
 }
 
@@ -407,7 +430,7 @@ form#search-form {
 }
 
 .file-name {
-  color: #1a73e8;
+  color: rgb(26, 115, 232);
   font-weight: bold;
   cursor: pointer;
 }
@@ -470,7 +493,7 @@ form#search-form {
 
 #file-download {
   text-decoration: none;
-  color: #1e88e5;
+  color: var(--button-hover);
   font-weight: bold;
   border-bottom: 1px solid transparent;
   display: inline;
@@ -480,7 +503,7 @@ form#search-form {
 #open-loc-button {
   align-self: flex-start; /* Align button to the start of the container */
   text-decoration: none;
-  background-color: #1e88e5;
+  background-color: var(--button-blue);
   font-weight: bold;
   border: none;
   color: white;
@@ -501,7 +524,7 @@ form#search-form {
 
 #remove-button {
   align-self: flex-start; /* Align button to the start of the container */
-  background-color: #e90f0f;
+  background-color: var(--red);
   border: none;
   color: white;
   padding: 8px 16px;
@@ -515,7 +538,7 @@ form#search-form {
 }
 
 #remove-button:hover {
-  background-color: #ad0707;
+  background-color: var(--remove-hover);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -543,7 +566,7 @@ form#search-form {
 
 .user-label {
   font-weight: bold;
-  color: #555;
+  color: var(--user-label);
   flex: 0 0 150px; /* Label takes up 150px width */
 }
 
@@ -579,7 +602,7 @@ form#search-form {
 }
 
 #upload-pfp-button {
-  background-color: #28a745;
+  background-color: var(--upload-button);
   color: white;
   font-weight: bold;
   border-radius: 20px;
@@ -600,7 +623,7 @@ form#search-form {
 /* --------------------- Upload and Add pages ---------------------------- */
 
 .modal-header {
-  background-color: white;
+  background-color: var(--white);
 }
 
 .modal-header h4 {
@@ -624,12 +647,12 @@ form#search-form {
 
 .modal-body {
   padding: 20px;
-  background-color: white;
+  background-color: var(--white);
 }
 
 .modal-footer {
   padding: 15px;
-  background-color: white;
+  background-color: var(--white);
   text-align: right;
 }
 
@@ -653,12 +676,12 @@ form#search-form {
 }
 
 .modal-footer .btn-primary {
-  background-color: #007bff;
+  background-color: var(--button-blue);
   color: white;
 }
 
 .modal-footer .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: var(--button-hover);
 }
 
 /* Add page ID's */
@@ -691,7 +714,7 @@ form#search-form {
 }
 
 #upload-button {
-  background-color: #28a745;
+  background-color: var(--upload-button);
   color: white;
   font-weight: bold;
   border-radius: 20px;
@@ -702,7 +725,7 @@ form#search-form {
 }
 
 #upload-button:hover {
-  background-color: #218838;
+  background-color: var(--upload-button-hover);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -724,7 +747,7 @@ form#search-form {
   height: 40px;
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  border-top-color: #3498db;
+  border-top-color: var(--spinner);
   animation: spin 1s ease-in-out infinite;
   margin: 20px auto;
 }
