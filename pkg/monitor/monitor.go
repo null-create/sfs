@@ -372,13 +372,16 @@ func watchfsn(itemPath string, stop chan bool) chan Event {
 						Path:  itemPath,
 					}
 				case event.Has(fsnotify.Rename):
-					log.Log(logger.INFO, "file name change detected for "+baseName)
+					log.Warn(fmt.Sprintf("file name change detected for '%s'. unable to monitor. exiting.", baseName))
 					evtChan <- Event{
 						IType: "File",
 						Etype: Name,
 						ID:    auth.NewUUID(),
 						Path:  itemPath,
 					}
+					w.Close()
+					close(evtChan)
+					return
 				case event.Has(fsnotify.Remove):
 					log.Log(logger.INFO, fmt.Sprintf("file '%s' removed", baseName))
 					evtChan <- Event{
