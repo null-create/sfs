@@ -5,7 +5,9 @@
     {{template "frame"}}
     <div id="content">
       <div class="settings-container">
-        <h2 style="text-align: center">Application Settings</h2>
+        <h2 style="text-align: center" id="settings header">
+          Application Settings
+        </h2>
         <form id="settings-form">
           <div class="setting-item">
             <label for="theme">Theme:</label>
@@ -60,11 +62,12 @@
           <div class="setting-item">
             <label for="sync-delay">Sync Delay</label>
             <p id="sync-delay-instructions">
-              This affects how often the client will attempt to synchronize with
-              the server. The current setting is one sync event per
-              {{.EventBufferSize}} detected events for a given item. Default is
-              2 detections per sync event. Increasing this number will increase
-              the time between syncronization events.
+              This affects how often the client will create backups and attempt
+              to synchronize with the server. The current setting is one sync
+              event per {{.EventBufferSize}} detected events for a given item.
+              Increasing this number will increase the time between
+              syncronization events. Setting it to zero will have the client
+              sync with every detected event.
             </p>
             <input
               type="number"

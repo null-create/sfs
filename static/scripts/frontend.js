@@ -369,24 +369,24 @@ const submitSettings = () => {
   const backupDir = document.getElementById("local-backup-dir").value;
   const clientPort = document.getElementById("client-port").value;
   const syncDelay = document.getElementById("sync-delay").value;
+  if (syncDelay < 0) {
+    alert("Sync delay must be at least 0");
+    redirectToPage("/settings");
+  }
 
   // TODO: handle theme on the client side
-
-  const settings = {
-    CLIENT_SERVER_SYNC: serverSync,
-    CLIENT_BACKUP_DIR: backupDir,
-    CLIENT_PORT: clientPort,
-    EVENT_BUFFER_SIZE: syncDelay
-  };
-
-  console.log("sending settings to server: ", JSON.stringify(settings));
 
   fetch("/settings", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(settings),
+    body: JSON.stringify({
+      CLIENT_SERVER_SYNC: serverSync,
+      CLIENT_BACKUP_DIR: backupDir,
+      CLIENT_PORT: clientPort,
+      EVENT_BUFFER_SIZE: syncDelay
+    }),
   })
   .then((response) => {
     if (!response.ok) {

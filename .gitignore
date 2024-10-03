@@ -11,6 +11,7 @@
 
 # binaries
 sfs.*
+bin/
 
 # util testing script
 reset.sh
