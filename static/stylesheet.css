@@ -34,7 +34,6 @@ body {
 
 header {
   display: flex;
-  /* justify-content: space-evenly; */
   align-items: center;
   padding: 0 20px;
   background-color: var(--slightly-white);
@@ -49,11 +48,11 @@ header {
 #content {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   background-color: var(--white);
   margin-left: 250px;
-  padding: 60px 20px 20px;
-  flex-grow: 1;
-  border-radius: 25px;
+  padding: 60px 20px 0px 20px;
+  /* border-radius: 25px; */
 }
 
 .welcome-container {
@@ -66,8 +65,7 @@ header {
 
 form {
   max-width: 1200px;
-  background-color: rgb(249, 249, 249);
-  border: 1px solid rgb(221, 221, 221);
+  background-color: var(--form-white);
   padding: 20px;
   border-radius: 5px;
   margin: 20px auto;
@@ -248,7 +246,6 @@ form#search-form {
 #sidebar {
   width: 250px;
   background-color: rgb(247, 247, 247);
-  border-right: 1px solid #e0e0e0;
   position: fixed;
   top: 60px;
   bottom: 0;
@@ -764,6 +761,17 @@ form#search-form {
 }
 
 /* -------------------------- Settings Page ---------------------------- */
+
+#settings-form {
+  background-color: var(--white);
+  box-shadow: none;
+  border: none;
+  padding-bottom: 0px;
+}
+
+.settings-container h2 {
+  padding-top: 10px;
+}
 
 .setting-item {
   margin-bottom: 15px;

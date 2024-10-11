@@ -245,6 +245,9 @@ func (c *Client) DropZoneHandler(w http.ResponseWriter, r *http.Request) {
 		destFolder = dir.Path
 	}
 
+	// TODO: need a way for the dropzone to be able to monitor
+	// the *original* file. This monitors the copy of the file
+	// thats been uploaded.
 	savePath := filepath.Join(destFolder, handler.Filename)
 	c.log.Info(fmt.Sprintf("saving file to: %s", savePath))
 
